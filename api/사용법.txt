@@ -1,0 +1,160 @@
+# API 시스템 사용법
+
+## 기능 소개
+이 시스템은 문서 처리를 위한 3가지 주요 기능을 제공합니다:
+
+1. **PDF 변환**: PDF 파일을 이미지로 변환
+2. **문자 인식(OCR)**: 이미지나 스캔 문서에서 텍스트 추출
+3. **정보 추출(NER)**: 텍스트에서 이름, 전화번호, 주소 등 중요 정보 자동 추출
+
+## 설치 방법
+
+### 1. 필요한 프로그램 설치
+```bash
+pip install -r requirements.txt
+```
+
+### 2. 기본 실행
+```bash
+python api.py
+```
+
+## 간단한 사용법
+
+### 1. 텍스트에서 정보 추출
+```python
+# 텍스트에서 이름, 전화번호 등 찾기
+text = "계약자: 김민수, 전화번호: 010-1234-5678"
+결과 = extract_entities_from_text(text)
+
+# 결과 보기
+for 정보, 종류 in 결과:
+    print(f"{정보} ({종류})")
+```
+
+### 2. PDF 파일 처리
+```python
+# PDF를 이미지로 변환
+pdf_to_image("계약서.pdf", "이미지폴더/")
+
+# 이미지에서 텍스트 추출  
+ocr_google("이미지폴더/", "텍스트폴더/")
+
+# 텍스트에서 정보 추출
+ner_predict("텍스트폴더/", "결과폴더/")
+```
+
+## 찾을 수 있는 정보 종류
+
+- 이름 (NAME): 김민수, 박영희
+- 전화번호 (PHONE): 010-1234-5678, 02-123-4567
+- 주소 (ADDRESS): 서울시 강남구 테헤란로 123
+- 이메일 (EMAIL): test@example.com
+- 회사명 (COMPANY): 삼성전자, 한국콘텐츠진흥원
+- 날짜 (DATE): 2024년 1월 1일
+- 금액 (MONEY): 1,000,000원
+- 기타 20여개 정보 유형
+
+## 문제 해결
+
+### 설치가 안 될 때
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 속도가 느릴 때
+- GPU가 있는 컴퓨터 사용 권장
+- 파일 크기를 줄여서 테스트
+
+### 결과가 이상할 때  
+- 문서 품질 확인 (스캔 품질, 해상도)
+- 다른 OCR 엔진 사용해보기
+
+## 지원하는 엔티티 타입
+
+| 타입 | 설명 | 예시 |
+|------|------|------|
+| NAME | 이름 | 김민수, 박영희 |
+| PHONE | 전화번호 | 010-1234-5678, 02-123-4567 |
+| ADDRESS | 주소 | 서울시 강남구 테헤란로 123 |
+| EMAIL | 이메일 | test@example.com |
+| COMPANY | 회사/기관명 | 삼성전자, 한국콘텐츠진흥원 |
+| DATE | 날짜 | 2024년 1월 1일, 2024.01.01 |
+| MONEY | 금액 | 1,000,000원 |
+| POSITION | 직책 | 부장, 팀장, 대리 |
+| CONTRACT_TYPE | 계약서 유형 | 양도계약서, 용역계약 |
+| CONSENT_TYPE | 동의서 유형 | 자유이용허락동의서 |
+| RIGHT_INFO | 권리정보 | 저작권, 초상권 |
+| PERIOD | 기간 | 1년간, 6개월 |
+| PROJECT_NAME | 사업명 | 디지털 전환 사업 |
+| LAW_REFERENCE | 법령 근거 | 저작권법 제25조 |
+| ID_NUM | 신분증번호 | 901215-1234567 |
+| TITLE | 제목 | 저작물 양도 계약서 |
+| URL | URL정보 | https://example.com |
+| DESCRIPTION | 설명 | 공공저작물 활용 |
+| TYPE | 유형 | 영상, 이미지, 텍스트 |
+| STATUS | 상태 | 승인, 대기, 완료 |
+| DEPARTMENT | 부서정보 | 기획부, 개발팀 |
+| LANGUAGE | 언어 | 한국어, 영어 |
+| QUANTITY | 수량정보 | 100건, 50개 |
+
+## 훈련 파라미터 설정
+
+### 빠른 테스트용
+```python
+ner_train(epochs=1, batch_size=4, max_length=64)
+```
+
+### 일반 운영용
+```python
+ner_train(epochs=3, batch_size=8, max_length=128)
+```
+
+### 고성능용
+```python
+ner_train(epochs=5, batch_size=16, max_length=256, enable_fp16=True)
+```
+
+## 파일 구조
+```
+api/module/ner/
+├── ner_system.py      # 메인 시스템
+├── ner_train.py       # 훈련 모듈
+├── requirements.txt   # 패키지 의존성
+└── backup/           # 백업 파일들
+```
+
+## 문제 해결
+
+### GPU 메모리 부족
+```python
+# 배치 크기 줄이기
+ner_train(batch_size=4, enable_fp16=True)
+```
+
+### 예측 정확도 낮음
+```python
+# 재훈련 실행
+ner_train(force_retrain=True, epochs=5)
+```
+
+### 모델 로드 실패
+```python
+# 모델 상태 확인 후 재훈련
+status = get_training_status()
+if not status['model_exists']:
+    ner_train()
+```
+
+## 성능 최적화 팁
+
+1. **GPU 사용**: CUDA 지원 GPU 사용시 10배 이상 속도 향상
+2. **배치 크기**: GPU 메모리에 맞게 조정 (8-16 권장)
+3. **텍스트 길이**: 긴 텍스트는 자동 분할 처리
+4. **FP16**: Mixed Precision Training으로 속도 향상
+5. **정규표현식**: B-I-O 모델 실패시 자동 백업 처리
+
+## 지원 및 문의
+
+시스템 관련 문의사항이나 오류 발생시 개발팀에 연락해주세요.

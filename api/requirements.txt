@@ -1,0 +1,28 @@
+# API System Requirements
+
+# PDF Processing
+PyMuPDF>=1.23.0
+
+# OCR Libraries
+google-cloud-vision>=3.4.0
+requests>=2.31.0
+
+# NER and ML Libraries  
+torch>=2.0.0
+transformers>=4.30.0
+numpy>=1.21.0
+scikit-learn>=1.0.0
+datasets>=2.14.0
+seqeval>=1.2.2
+
+# Utilities
+tqdm>=4.64.0
+python-dotenv>=1.0.0
+
+# REST API Server
+Flask>=3.0.0
+werkzeug>=3.0.0
+
+# Optional (for specific OCR providers)
+# mistralai>=0.4.0
+# Pillow>=9.0.0

@@ -1,0 +1,160 @@
+# API System Usage Guide
+
+## What This System Does
+This system provides 3 main functions for document processing:
+
+1. **PDF Conversion**: Convert PDF files to images
+2. **Text Recognition (OCR)**: Extract text from images or scanned documents  
+3. **Information Extraction (NER)**: Automatically find names, phone numbers, addresses etc. from text
+
+## Installation
+
+### 1. Install Required Packages
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Basic Usage
+```bash
+python api.py
+```
+
+## Simple Usage Examples
+
+### 1. Extract Information from Text
+```python
+# Find names, phone numbers etc. from text
+text = "Contractor: Kim Minsu, Phone: 010-1234-5678"
+results = extract_entities_from_text(text)
+
+# View results
+for info, type in results:
+    print(f"{info} ({type})")
+```
+
+### 2. Process PDF Files
+```python
+# Convert PDF to images
+pdf_to_image("contract.pdf", "images/")
+
+# Extract text from images
+ocr_google("images/", "text/")
+
+# Extract information from text
+ner_predict("text/", "results/")
+```
+
+## Information Types We Can Find
+
+- Names (NAME): Kim Minsu, Park Younghee
+- Phone Numbers (PHONE): 010-1234-5678, 02-123-4567  
+- Addresses (ADDRESS): Seoul Gangnam-gu Teheran-ro 123
+- Emails (EMAIL): test@example.com
+- Companies (COMPANY): Samsung Electronics, KOCCA
+- Dates (DATE): January 1, 2024
+- Money (MONEY): 1,000,000 KRW
+- 20+ other information types
+
+## Troubleshooting
+
+### Installation Problems
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### Slow Processing
+- Use computer with GPU if available
+- Try with smaller files first
+
+### Poor Results
+- Check document quality (scan quality, resolution)
+- Try different OCR engines
+
+## Supported Entity Types
+
+| Type | Description | Examples |
+|------|-------------|----------|
+| NAME | Person names | Kim Minsu, Park Younghee |
+| PHONE | Phone numbers | 010-1234-5678, 02-123-4567 |
+| ADDRESS | Addresses | Seoul Gangnam-gu Teheran-ro 123 |
+| EMAIL | Email addresses | test@example.com |
+| COMPANY | Company/Organization names | Samsung Electronics, KOCCA |
+| DATE | Dates | January 1, 2024, 2024.01.01 |
+| MONEY | Monetary amounts | 1,000,000 KRW |
+| POSITION | Job positions | Manager, Team Lead, Assistant |
+| CONTRACT_TYPE | Contract types | Transfer Agreement, Service Contract |
+| CONSENT_TYPE | Consent types | Free Use Permission Agreement |
+| RIGHT_INFO | Rights information | Copyright, Portrait rights |
+| PERIOD | Time periods | 1 year, 6 months |
+| PROJECT_NAME | Project names | Digital Transformation Project |
+| LAW_REFERENCE | Legal references | Copyright Act Article 25 |
+| ID_NUM | ID numbers | 901215-1234567 |
+| TITLE | Titles | Copyright Transfer Agreement |
+| URL | URL information | https://example.com |
+| DESCRIPTION | Descriptions | Public work utilization |
+| TYPE | Types | Video, Image, Text |
+| STATUS | Status | Approved, Pending, Complete |
+| DEPARTMENT | Department info | Planning Dept, Dev Team |
+| LANGUAGE | Languages | Korean, English |
+| QUANTITY | Quantity info | 100 cases, 50 items |
+
+## Training Parameter Settings
+
+### Quick Test
+```python
+ner_train(epochs=1, batch_size=4, max_length=64)
+```
+
+### General Production
+```python
+ner_train(epochs=3, batch_size=8, max_length=128)
+```
+
+### High Performance
+```python
+ner_train(epochs=5, batch_size=16, max_length=256, enable_fp16=True)
+```
+
+## File Structure
+```
+api/module/ner/
+├── ner_system.py      # Main system
+├── ner_train.py       # Training module
+├── requirements.txt   # Package dependencies
+└── backup/           # Backup files
+```
+
+## Troubleshooting
+
+### GPU Memory Insufficient
+```python
+# Reduce batch size
+ner_train(batch_size=4, enable_fp16=True)
+```
+
+### Low Prediction Accuracy
+```python
+# Execute retraining
+ner_train(force_retrain=True, epochs=5)
+```
+
+### Model Load Failure
+```python
+# Check model status and retrain
+status = get_training_status()
+if not status['model_exists']:
+    ner_train()
+```
+
+## Performance Optimization Tips
+
+1. **GPU Usage**: 10x+ speed improvement with CUDA-enabled GPU
+2. **Batch Size**: Adjust according to GPU memory (8-16 recommended)
+3. **Text Length**: Long texts are automatically split and processed
+4. **FP16**: Speed improvement with Mixed Precision Training
+5. **Regex Fallback**: Automatic backup processing when B-I-O model fails
+
+## Support and Contact
+
+Please contact the development team for system-related inquiries or error reports.
