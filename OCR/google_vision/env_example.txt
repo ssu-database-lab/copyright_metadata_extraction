@@ -1,0 +1,9 @@
+# OCR API Configuration
+# Copy this file to .env and fill in your actual API keys
+
+# Mistral API Key for OCR processing
+# Get your API key from: https://console.mistral.ai/
+MISTRAL_API_KEY=your_mistral_api_key_here
+
+# Google Cloud credentials are handled via the JSON file
+# GOOGLE_APPLICATION_CREDENTIALS is set in the code

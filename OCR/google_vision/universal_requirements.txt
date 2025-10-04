@@ -1,0 +1,27 @@
+# Universal OCR Processor Requirements
+# Additional dependencies for comprehensive file processing
+
+# Core OCR dependencies (already in existing requirements.txt)
+# google-cloud-vision>=3.4.0
+# mistralai>=1.0.0
+# dashscope>=1.24.0      # Alibaba Cloud Model Studio SDK
+# PyMuPDF>=1.23.0
+# python-dotenv>=1.0.0
+
+# Document processing
+python-docx>=0.8.11  # For DOCX files
+openpyxl>=3.1.0     # For Excel files
+pandas>=2.0.0       # For data processing
+
+# Image processing (if needed)
+Pillow>=10.0.0      # For image manipulation
+opencv-python>=4.8.0  # For advanced image processing
+
+# Additional utilities
+requests>=2.28.0     # For API calls
+pathlib2>=2.3.7     # For path handling
+argparse            # Built-in, but listed for completeness
+
+# Optional: For HWP files (Korean)
+# olefile>=0.46      # For HWP file support
+# hwp5>=0.1.0       # Korean HWP file reader

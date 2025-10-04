@@ -1,0 +1,130 @@
+# Model files (large)
+OCR/gpt-oss-20b/original/model.safetensors
+*.safetensors
+*.bin
+*.h5
+*.pkl
+
+# NER output directories
+/ner/out/consent_model
+/ner/out/contract_model
+/ner/out/unified_model
+
+# Image files (large files)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.tif
+*.webp
+*.svg
+
+# LLM Extraction Results
+llm_extraction/metadata_results/
+llm_extraction/metadata_results_fixed/
+llm_extraction/metadata_results_timestamped/
+llm_extraction/logs/
+llm_extraction/models/hf_models/
+
+# OCR Test Results and Outputs
+OCR/google_vision/test_ocr_results/
+OCR/google_vision/test_google_results/
+OCR/google_vision/test_mistral_results/
+OCR/google_vision/simple_tiff_ocr_results/
+OCR/google_vision/universal_ocr_results/
+OCR/google_vision/ocr_results/
+OCR/converted_document/
+OCR/ocr_document/
+
+# Environment files (sensitive)
+.env
+.env.local
+.env.production
+.env.staging
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+
+# Test data and large content directories
+data/pdf/
+data/ni/
+data/nii/
+ssu/
+venv*/
+env*/
+*/venv/
+*/env/
+
+# Cursor IDE specific
+.cursorindexingignore
+.specstory/
+
+# Downloaded model files and large documents
+*.pdf
+05_연구개발계획서*.pdf
+
+# Large archive files
+*.zip
+*.7z
+*.alz
+*.tar
+*.egg
+*.rar
+
+# Large document files
+*.hwp
+*.docx
+*.xlsx
+*.pptx
+
+# Large data directories
+OCR/document/
+data/nii/
+
+# Google Cloud credentials and secrets
+*.json
+semiotic-pager-*.json
+**/semiotic-pager-*.json
+
+# Large deployment files
+*.bundle
+project-deployment.bundle
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Hugging Face cache (optional - uncomment if you want to exclude)
+# ~/.cache/huggingface/

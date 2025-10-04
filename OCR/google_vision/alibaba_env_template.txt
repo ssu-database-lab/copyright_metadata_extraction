@@ -1,0 +1,15 @@
+# Alibaba Cloud Model Studio API Configuration
+# Copy this file to .env_alibaba and fill in your actual API key
+
+# Alibaba Cloud API Key (official environment variable name from documentation)
+DASHSCOPE_API_KEY=your_alibaba_api_key_here
+
+# Alternative variable name (also supported)
+ALIBABA_API_KEY=your_alibaba_api_key_here
+
+# Instructions:
+# 1. Replace 'your_alibaba_api_key_here' with your actual API key
+# 2. Keep this file secure and never commit it to version control
+# 3. Get your API key from: https://dashscope.console.aliyun.com/
+# 4. API keys for Singapore and China regions are different
+# 5. Documentation: https://www.alibabacloud.com/help/en/model-studio/use-qwen-by-calling-api
