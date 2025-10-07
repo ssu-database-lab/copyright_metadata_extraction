@@ -61,7 +61,23 @@ ENTITY_TYPES = [
 
 # 기본 설정
 DEFAULT_MAX_LENGTH = 512
-DEFAULT_MODEL_NAME = "klue-roberta-large"
+
+# model_config.json에서 기본 모델 로드
+def load_default_model_name():
+    """model_config.json에서 기본 모델 이름 로드"""
+    try:
+        config_path = Path(__file__).parent.parent.parent / "model_config.json"
+        if config_path.exists():
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            default_model = config.get("ner", {}).get("default_model", "klue-roberta-large")
+            print(f"✓ 기본 모델 설정: {default_model}")
+            return default_model
+    except Exception as e:
+        print(f"⚠️  model_config.json 로드 실패: {e}, 기본값 사용")
+    return "klue-roberta-large"
+
+DEFAULT_MODEL_NAME = load_default_model_name()
 
 def check_system_requirements():
     """시스템 요구사항 확인"""
@@ -77,16 +93,23 @@ def check_system_requirements():
     return device
 
 def get_model_path(model_name: str = DEFAULT_MODEL_NAME) -> Path:
-    """모델 저장 경로 반환"""
+    """
+    모델 저장 경로 반환
+    
+    경로 구조: api/models/ner/{model_name}/
+    예: api/models/ner/klue-roberta-large/
+    """
     current_dir = Path(__file__).parent
     api_dir = current_dir.parent.parent
-    models_dir = api_dir / "models"
-    models_dir.mkdir(exist_ok=True)
     
-    if model_name.startswith("klue/"):
-        model_name = model_name.replace("klue/", "")
+    # 새로운 경로 구조: models/ner/{model_name}
+    models_base_dir = api_dir / "models" / "ner"
+    models_base_dir.mkdir(parents=True, exist_ok=True)
     
-    model_path = models_dir / model_name
+    # 모델명에서 슬래시를 대시로 변경 (예: klue/roberta-large -> klue-roberta-large)
+    model_name_safe = model_name.replace('/', '-')
+    
+    model_path = models_base_dir / model_name_safe
     return model_path
 
 def load_model_and_tokenizer(model_path: Path, verbose: bool = True):
@@ -362,6 +385,25 @@ def clean_entity_text(entity: str) -> str:
     entity = re.sub(r'[:\s,.-]+$', '', entity)
     return entity
 
+def group_entities_by_type(entities: List[Tuple[str, str]]) -> Dict[str, List[str]]:
+    """
+    엔티티를 타입별로 그룹화
+    
+    Args:
+        entities: [(값, 타입), ...] 형태의 엔티티 리스트
+    
+    Returns:
+        {타입: [값1, 값2, ...], ...} 형태의 딕셔너리
+    """
+    grouped = {}
+    for entity, entity_type in entities:
+        if entity_type not in grouped:
+            grouped[entity_type] = []
+        grouped[entity_type].append(entity)
+    
+    # 알파벳 순으로 정렬
+    return dict(sorted(grouped.items()))
+
 def is_valid_entity(entity: str, entity_type: Optional[str] = None) -> bool:
     """유효한 엔티티인지 확인 - 정확도 개선 버전"""
     
@@ -562,15 +604,22 @@ def train_model_if_needed(model_path: Path, verbose: bool = True) -> bool:
         print(f"모델 훈련 중 오류: {e}")
         return False
 
-def extract_entities_from_text(text: str, debug: bool = False) -> List[Tuple[str, str]]:
+def extract_entities_from_text(text: str, model_name: Optional[str] = None, debug: bool = False) -> List[Tuple[str, str]]:
     """텍스트에서 엔티티 추출 (통합 메인 함수)"""
     if debug:
         print(f"엔티티 추출 시작 (텍스트 길이: {len(text)}자)")
     
+    # 모델 이름이 지정되지 않으면 기본 모델 사용
+    if model_name is None:
+        model_name = DEFAULT_MODEL_NAME
+    
+    if debug:
+        print(f"사용 모델: {model_name}")
+    
     all_entities = set()
     
     # 모델 경로 확인 및 훈련
-    model_path = get_model_path()
+    model_path = get_model_path(model_name)
     
     if not train_model_if_needed(model_path, verbose=debug):
         if debug:
@@ -695,15 +744,20 @@ def ner_predict(
                 if len(content.strip()) < 10:
                     continue
                 
-                # 엔티티 추출
-                entities = extract_entities_from_text(content, debug=False)
+                # 엔티티 추출 (model_name 전달)
+                entities = extract_entities_from_text(content, model_name=model_name, debug=False)
                 
                 # 결과 저장 - 입력 경로 구조 유지 (pdf_to_image와 동일한 패턴)
                 if entities:
+                    # 엔티티 리스트를 타입별로 그룹화
+                    entities_grouped = group_entities_by_type(entities)
+                    
+                    # 결과 구조: 타입별로 그룹화된 형태
                     file_result = {
                         'file': str(file_path),
-                        'entities': entities,
-                        'entity_count': len(entities)
+                        'entities': entities_grouped,
+                        'entity_count': len(entities),
+                        'entity_types': list(entities_grouped.keys())
                     }
                     all_entities.extend(entities)
                     

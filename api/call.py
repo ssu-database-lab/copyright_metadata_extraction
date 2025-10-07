@@ -46,6 +46,25 @@ LOG_DIR.mkdir(exist_ok=True)
 TEMP_DIR = Path("temp")
 TEMP_DIR.mkdir(exist_ok=True)
 
+# 모델 설정 로드
+def load_model_config():
+    """model_config.json에서 모델 설정 로드"""
+    config_path = Path(__file__).parent / "model_config.json"
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        return config
+    except Exception as e:
+        logger.warning(f"모델 설정 로드 실패: {e}, 기본값 사용")
+        return {
+            "ner": {
+                "default_model": "xlm-roberta-large"
+            }
+        }
+
+MODEL_CONFIG = load_model_config()
+DEFAULT_NER_MODEL = MODEL_CONFIG.get("ner", {}).get("default_model", "xlm-roberta-large")
+
 # 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
@@ -104,23 +123,31 @@ def allowed_file(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'pdf'}
 
 
-def process_pdf(pdf_path: Path, output_base: Path) -> Dict[str, Any]:
+def process_pdf(pdf_path: Path, output_base: Path, model_name: Optional[str] = None) -> Dict[str, Any]:
     """
     PDF 처리 파이프라인: PDF → 이미지 → OCR → NER
     
     Args:
         pdf_path: PDF 파일 경로
         output_base: 출력 기본 디렉토리
+        model_name: NER 모델 이름 (None이면 기본 모델 사용)
     
     Returns:
         처리 결과 딕셔너리
     """
+    # 모델 이름이 지정되지 않으면 기본 모델 사용
+    if model_name is None:
+        model_name = DEFAULT_NER_MODEL
+    
+    logger.info(f"사용 모델: {model_name}")
+    
     result = {
         'success': False,
         'error': None,
         'steps': {},
         'entities': None,
-        'entity_count': 0
+        'entity_count': 0,
+        'model_name': model_name
     }
     
     try:
@@ -132,14 +159,14 @@ def process_pdf(pdf_path: Path, output_base: Path) -> Dict[str, Any]:
         pdf_result = pdf_to_image(str(pdf_path), str(image_dir))
         result['steps']['pdf_to_image'] = {
             'success': pdf_result.get('success', False),
-            'images_created': pdf_result.get('images_created', 0)
+            'images_created': pdf_result.get('total_images', 0)
         }
         
         if not pdf_result.get('success'):
             result['error'] = "PDF to image conversion failed"
             return result
         
-        logger.info(f"✓ 이미지 변환 완료: {pdf_result.get('images_created', 0)}개")
+        logger.info(f"✓ 이미지 변환 완료: {pdf_result.get('total_images', 0)}개")
         
         # 2단계: OCR 처리
         logger.info("[2/3] OCR 처리 시작")
@@ -149,25 +176,26 @@ def process_pdf(pdf_path: Path, output_base: Path) -> Dict[str, Any]:
         ocr_result = ocr_google(str(image_dir), str(output_base))
         result['steps']['ocr'] = {
             'success': ocr_result.get('success', False),
-            'files_processed': ocr_result.get('files_processed', 0)
+            'files_processed': ocr_result.get('processed_files', 0)
         }
         
         if not ocr_result.get('success'):
             result['error'] = "OCR processing failed"
             return result
         
-        logger.info(f"✓ OCR 완료: {ocr_result.get('files_processed', 0)}개 파일")
+        logger.info(f"✓ OCR 완료: {ocr_result.get('processed_files', 0)}개 파일")
         
         # 3단계: NER 처리
-        logger.info("[3/3] NER 엔티티 추출 시작")
+        logger.info(f"[3/3] NER 엔티티 추출 시작 (모델: {model_name})")
         ner_dir = output_base / "ner"
         ner_dir.mkdir(exist_ok=True, parents=True)
         
-        ner_result = ner_predict(str(ocr_dir / "google"), str(output_base))
+        ner_result = ner_predict(str(ocr_dir / "google"), str(output_base), model_name=model_name)
         result['steps']['ner'] = {
             'success': ner_result.get('success', False),
-            'files_processed': ner_result.get('files_processed', 0),
-            'total_entities': ner_result.get('total_entities', 0)
+            'files_processed': ner_result.get('processed_files', 0),
+            'total_entities': ner_result.get('total_entities', 0),
+            'model_name': model_name
         }
         
         if not ner_result.get('success'):
@@ -176,18 +204,50 @@ def process_pdf(pdf_path: Path, output_base: Path) -> Dict[str, Any]:
         
         logger.info(f"✓ NER 완료: {ner_result.get('total_entities', 0)}개 엔티티")
         
-        # NER 결과 파일 읽기
-        ner_result_files = list((output_base / "ner").glob("*_entities.json"))
+        # NER 결과 파일 읽기 (재귀적으로 검색)
+        ner_dir_path = output_base / "ner"
+        logger.info(f"NER 결과 디렉토리 확인: {ner_dir_path}")
+        logger.info(f"디렉토리 존재 여부: {ner_dir_path.exists()}")
+        
+        if ner_dir_path.exists():
+            all_files = list(ner_dir_path.rglob("*"))
+            logger.info(f"디렉토리 내 전체 파일/폴더: {len(all_files)}개")
+        
+        # rglob으로 재귀적 검색
+        ner_result_files = list(ner_dir_path.rglob("*_entities.json"))
+        logger.info(f"NER 결과 파일 수: {len(ner_result_files)}")
         
         if ner_result_files:
-            all_entities = []
+            logger.info(f"발견된 파일: {[f.name for f in ner_result_files]}")
+            # 새 형식: 타입별로 그룹화된 엔티티 병합
+            all_entities_grouped = {}
+            
             for ner_file in ner_result_files:
+                logger.info(f"파일 읽기: {ner_file}")
                 with open(ner_file, 'r', encoding='utf-8') as f:
                     ner_data = json.load(f)
-                    all_entities.extend(ner_data.get('entities', []))
+                    entities = ner_data.get('entities', {})
+                    logger.info(f"파일 {ner_file.name}에서 {len(entities)}가지 타입 발견")
+                    
+                    # 각 타입별로 엔티티 병합
+                    for entity_type, entity_list in entities.items():
+                        if entity_type not in all_entities_grouped:
+                            all_entities_grouped[entity_type] = []
+                        all_entities_grouped[entity_type].extend(entity_list)
             
-            result['entities'] = all_entities
-            result['entity_count'] = len(all_entities)
+            # 중복 제거 및 정렬
+            for entity_type in all_entities_grouped:
+                all_entities_grouped[entity_type] = sorted(list(set(all_entities_grouped[entity_type])))
+            
+            # 전체 엔티티 개수 계산
+            total_count = sum(len(v) for v in all_entities_grouped.values())
+            
+            result['entities'] = all_entities_grouped
+            result['entity_count'] = total_count
+            result['entity_types'] = sorted(list(all_entities_grouped.keys()))
+            logger.info(f"최종 엔티티: {total_count}개, {len(all_entities_grouped)}가지 타입")
+        else:
+            logger.warning("NER 결과 파일을 찾을 수 없습니다!")
         
         result['success'] = True
         logger.info("✓ 전체 파이프라인 완료")
@@ -228,12 +288,14 @@ def process_document():
     
     Request:
         - file: PDF 파일 (multipart/form-data)
+        - model_name: (선택) NER 모델 이름 (기본값: model_config.json의 default_model)
     
     Response:
         - success: 성공 여부
         - entities: 추출된 엔티티 리스트
         - entity_count: 엔티티 개수
         - steps: 각 단계별 결과
+        - model_name: 사용된 모델 이름
         - log_file: 로그 파일명
     """
     start_time = datetime.now()
@@ -248,6 +310,15 @@ def process_document():
     }
     
     try:
+        # model_name 파라미터 받기 (선택적)
+        model_name = request.form.get('model_name', None)
+        if model_name:
+            log_data['model_name'] = model_name
+            logger.info(f"요청된 모델: {model_name}")
+        else:
+            log_data['model_name'] = DEFAULT_NER_MODEL
+            logger.info(f"기본 모델 사용: {DEFAULT_NER_MODEL}")
+        
         # 파일 확인
         if 'file' not in request.files:
             log_data['error'] = 'No file provided'
@@ -290,9 +361,9 @@ def process_document():
         
         logger.info(f"Processing request {request_id}: {filename} ({log_data['file_size_mb']}MB)")
         
-        # PDF 처리
+        # PDF 처리 (model_name 전달)
         output_dir = temp_request_dir / "output"
-        result = process_pdf(pdf_path, output_dir)
+        result = process_pdf(pdf_path, output_dir, model_name=model_name)
         
         # 처리 시간 계산
         end_time = datetime.now()
@@ -309,18 +380,20 @@ def process_document():
         # 로그 저장
         log_file = request_logger.log_request(log_data)
         
-        # 임시 파일 정리
-        try:
-            shutil.rmtree(temp_request_dir)
-            logger.info(f"Cleaned up temporary files for request {request_id}")
-        except Exception as e:
-            logger.warning(f"Failed to clean up temp files: {e}")
+        # 임시 파일 정리 (디버깅용 주석)
+        # try:
+        #     shutil.rmtree(temp_request_dir)
+        #     logger.info(f"Cleaned up temporary files for request {request_id}")
+        # except Exception as e:
+        #     logger.warning(f"Failed to clean up temp files: {e}")
+        logger.info(f"임시 파일 보존 (디버깅): {temp_request_dir}")
         
         # 응답 생성
         response = {
             'success': result['success'],
             'request_id': request_id,
             'filename': filename,
+            'model_name': result.get('model_name', model_name),
             'entities': result.get('entities', []),
             'entity_count': result.get('entity_count', 0),
             'steps': result['steps'],

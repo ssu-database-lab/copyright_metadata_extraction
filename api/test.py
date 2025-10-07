@@ -10,4 +10,4 @@ from api import *
 # ocr_complete("data/out/pdf_convert/7.저작물양도계약서","data/out",)
 
 # 기본 NER 테스트 (자동으로 klue-roberta_large 사용, 자동 다운로드 및 훈련)
-ner_predict("data/out/ocr", "data/out")
+ner_predict("data/out/ocr", "data/out", model_name="XLM-RoBERTa-Large")

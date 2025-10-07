@@ -2,6 +2,23 @@
 """
 NER Fine-Tuning 시스템 - 고성능 버전
 B-I-O 태깅 기법으로 23개 엔티티 타입 지원 + 실시간 성능 모니터링
+
+디렉토리 구조:
+    api/
+    ├── models/
+    │   └── ner/
+    │       └── {model_name}/          # 예: klue-roberta-large
+    │           ├── config.json
+    │           ├── model.safetensors
+    │           ├── label_map.json
+    │           └── ...
+    └── module/
+        └── ner/
+            └── training/
+                └── {model_name}/      # 예: klue-roberta-large
+                    ├── dynamic_train.txt
+                    ├── logs/
+                    └── checkpoints/
 """
 
 import os
@@ -843,18 +860,26 @@ def train_ner_model():
     else:
         print("CPU 모드로 실행")
     
-    # 경로 설정 - api/models에 모델 저장
+    # 경로 설정 - 모델명 기반 디렉토리 구조
     current_dir = Path(__file__).parent
     api_dir = current_dir.parent.parent  # api 디렉토리
-    models_dir = api_dir / "models"
-    models_dir.mkdir(exist_ok=True)
-    model_output_dir = models_dir / "klue-roberta-large"
+    
+    # 모델명 추출 (예: klue/roberta-large -> klue-roberta-large)
+    model_name_safe = config.model_name.replace('/', '-')
+    
+    # 모델 저장 위치: api/models/ner/{model_name}
+    models_base_dir = api_dir / "models" / "ner"
+    models_base_dir.mkdir(parents=True, exist_ok=True)
+    model_output_dir = models_base_dir / model_name_safe
     model_output_dir.mkdir(exist_ok=True)
     
-    # 훈련 데이터는 api/module/ner/training에 저장
-    training_dir = current_dir / "training"
+    # 훈련 데이터는 api/module/ner/training/{model_name}에 저장
+    training_base_dir = current_dir / "training"
+    training_base_dir.mkdir(exist_ok=True)
+    training_dir = training_base_dir / model_name_safe
     training_dir.mkdir(exist_ok=True)
     
+    print(f"모델 이름: {config.model_name}")
     print(f"모델 저장 위치: {model_output_dir}")
     print(f"훈련 데이터 위치: {training_dir}")
     
