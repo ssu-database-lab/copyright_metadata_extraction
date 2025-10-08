@@ -168,7 +168,7 @@ def main():
     parser.add_argument(
         "--model", 
         default="qwen",
-        choices=["solar-ko", "qwen", "lightweight", "llama", "qwen72b", "qwenvl", "qwen3", "gemma3", "mixtral"],
+        choices=["solar-ko", "qwen", "lightweight", "llama", "qwen72b", "qwenvl", "qwen3", "qwen3-next", "qwen3-30b", "qwen3-235b", "gemma3", "mixtral"],
         help="LLM model to use (default: qwen)"
     )
     
@@ -241,7 +241,7 @@ def main():
             logger.info("Available options:")
             logger.info("  --test: Run test extraction")
             logger.info("  --ocr-results-dir: Process OCR results directory")
-            logger.info("  --model: Choose model (solar-ko, qwen, lightweight, llama, qwen72b, qwenvl, qwen3, gemma3, mixtral)")
+            logger.info("  --model: Choose model (solar-ko, qwen, lightweight, llama, qwen72b, qwenvl, qwen3, qwen3-next, qwen3-30b, qwen3-235b, gemma3, mixtral)")
     
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")

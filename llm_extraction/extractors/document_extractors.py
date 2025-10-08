@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Document-Specific Metadata Extractors
-Handles different document types with specialized extraction logic
+Handles different document types with specialized extraction logic and checkbox support
 """
 
 import os
@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from models.base_extractor import BaseLLMExtractor, ExtractionResult
 from schemas.document_schemas import DocumentSchemas
+from .checkbox_extractor import UniversalCheckboxExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,8 @@ class ContractExtractor:
     
     def __init__(self, llm_extractor: BaseLLMExtractor):
         self.llm_extractor = llm_extractor
-        self.schema = DocumentSchemas.get_contract_schema()
+        self.schema = DocumentSchemas.get_contract_schema_enhanced()
+        self.checkbox_extractor = UniversalCheckboxExtractor()
     
     def extract_contract_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
         """Extract metadata from contract documents"""
@@ -37,6 +39,14 @@ class ContractExtractor:
         
         # Post-process results
         result.metadata = self._postprocess_contract_metadata(result.metadata)
+        
+        # Add checkbox information
+        checkbox_data = self.checkbox_extractor.extract_document_checkboxes(processed_text, "contract")
+        result.metadata["checkbox_info"] = {
+            "pattern_detected": self.checkbox_extractor.detect_checkbox_pattern(processed_text).value,
+            "extraction_confidence": self.checkbox_extractor.calculate_confidence(checkbox_data),
+            "checkbox_fields_found": self.checkbox_extractor.get_checkbox_fields(checkbox_data)
+        }
         
         return result
     
@@ -84,7 +94,8 @@ class ConsentExtractor:
     
     def __init__(self, llm_extractor: BaseLLMExtractor):
         self.llm_extractor = llm_extractor
-        self.schema = DocumentSchemas.get_consent_schema()
+        self.schema = DocumentSchemas.get_consent_schema_enhanced()
+        self.checkbox_extractor = UniversalCheckboxExtractor()
     
     def extract_consent_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
         """Extract metadata from consent forms"""
@@ -134,6 +145,119 @@ class ConsentExtractor:
         
         return metadata
 
+class PublicCopyrightConsentExtractor:
+    """Specialized extractor for public copyright consent forms (공공저작물 자유이용허락 동의서)"""
+    
+    def __init__(self, llm_extractor: BaseLLMExtractor):
+        self.llm_extractor = llm_extractor
+        self.schema = DocumentSchemas.get_public_copyright_consent_schema_enhanced()
+        self.checkbox_extractor = UniversalCheckboxExtractor()
+    
+    def extract_public_copyright_consent_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
+        """Extract metadata from public copyright consent forms"""
+        logger.info(f"Extracting public copyright consent metadata from: {document_name}")
+        
+        # Preprocess text for better extraction
+        processed_text = self._preprocess_consent_text(text)
+        
+        # Extract metadata using LLM
+        result = self.llm_extractor.extract_metadata(
+            processed_text, 
+            self.schema, 
+            "공공저작물 자유이용허락 동의서"
+        )
+        
+        # Post-process results
+        result.metadata = self._postprocess_public_copyright_consent_metadata(result.metadata)
+        
+        # Add checkbox information
+        checkbox_data = self.checkbox_extractor.extract_document_checkboxes(processed_text, "public_copyright_consent")
+        result.metadata["processing_info"] = {
+            "checkbox_pattern_detected": self.checkbox_extractor.detect_checkbox_pattern(processed_text).value,
+            "extraction_confidence": self.checkbox_extractor.calculate_confidence(checkbox_data)
+        }
+        
+        return result
+    
+    def _preprocess_consent_text(self, text: str) -> str:
+        """Preprocess consent text for better extraction"""
+        # Remove excessive whitespace
+        text = " ".join(text.split())
+        
+        # Add section markers for better parsing
+        text = text.replace("□ 저작물 표시", "\n□ 저작물 표시")
+        text = text.replace("□ 저작재산권 이용허락 동의", "\n□ 저작재산권 이용허락 동의")
+        text = text.replace("□ 공공누리 적용 동의", "\n□ 공공누리 적용 동의")
+        
+        return text
+    
+    def _postprocess_public_copyright_consent_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """Post-process extracted public copyright consent metadata"""
+        # Clean up extracted data
+        if "work_display" in metadata and metadata["work_display"]:
+            work_display = metadata["work_display"]
+            if "work_names" in work_display and work_display["work_names"]:
+                work_display["work_names"] = [name.strip() for name in work_display["work_names"]]
+        
+        return metadata
+
+class CopyrightTransferConsentExtractor:
+    """Specialized extractor for copyright transfer consent forms (저작재산권 양도동의서)"""
+    
+    def __init__(self, llm_extractor: BaseLLMExtractor):
+        self.llm_extractor = llm_extractor
+        self.schema = DocumentSchemas.get_copyright_transfer_consent_schema()
+        self.checkbox_extractor = UniversalCheckboxExtractor()
+    
+    def extract_copyright_transfer_consent_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
+        """Extract metadata from copyright transfer consent forms"""
+        logger.info(f"Extracting copyright transfer consent metadata from: {document_name}")
+        
+        # Preprocess text for better extraction
+        processed_text = self._preprocess_transfer_text(text)
+        
+        # Extract metadata using LLM
+        result = self.llm_extractor.extract_metadata(
+            processed_text, 
+            self.schema, 
+            "저작재산권 양도동의서"
+        )
+        
+        # Post-process results
+        result.metadata = self._postprocess_copyright_transfer_metadata(result.metadata)
+        
+        # Add checkbox information
+        checkbox_data = self.checkbox_extractor.extract_document_checkboxes(processed_text, "copyright_transfer")
+        result.metadata["checkbox_info"] = {
+            "pattern_detected": self.checkbox_extractor.detect_checkbox_pattern(processed_text).value,
+            "extraction_confidence": self.checkbox_extractor.calculate_confidence(checkbox_data),
+            "checkbox_fields_found": self.checkbox_extractor.get_checkbox_fields(checkbox_data)
+        }
+        
+        return result
+    
+    def _preprocess_transfer_text(self, text: str) -> str:
+        """Preprocess transfer text for better extraction"""
+        # Remove excessive whitespace
+        text = " ".join(text.split())
+        
+        # Add section markers for better parsing
+        text = text.replace("제1조", "\n제1조")
+        text = text.replace("제2조", "\n제2조")
+        text = text.replace("제3조", "\n제3조")
+        
+        return text
+    
+    def _postprocess_copyright_transfer_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """Post-process extracted copyright transfer metadata"""
+        # Clean up extracted data
+        if "work_info" in metadata and metadata["work_info"]:
+            work_info = metadata["work_info"]
+            if "work_title" in work_info and work_info["work_title"]:
+                work_info["work_title"] = work_info["work_title"].strip()
+        
+        return metadata
+
 class DocumentMetadataExtractor:
     """Main extractor that handles different document types"""
     
@@ -141,18 +265,29 @@ class DocumentMetadataExtractor:
         self.llm_extractor = llm_extractor
         self.contract_extractor = ContractExtractor(llm_extractor)
         self.consent_extractor = ConsentExtractor(llm_extractor)
+        self.public_copyright_consent_extractor = PublicCopyrightConsentExtractor(llm_extractor)
+        self.copyright_transfer_consent_extractor = CopyrightTransferConsentExtractor(llm_extractor)
     
     def extract_metadata(self, text: str, document_type: str, document_name: str = "") -> ExtractionResult:
-        """Extract metadata based on document type"""
+        """Extract metadata based on document type with enhanced detection"""
         logger.info(f"Extracting metadata for {document_type}: {document_name}")
         
-        if "계약서" in document_type or "contract" in document_type.lower():
+        # Enhanced document type detection
+        if any(keyword in document_type for keyword in [
+            "저작재산권 양도동의서", "copyright transfer consent", "양도동의서", "transfer consent"
+        ]):
+            return self.copyright_transfer_consent_extractor.extract_copyright_transfer_consent_metadata(text, document_name)
+        elif any(keyword in document_type for keyword in [
+            "공공저작물 자유이용허락 동의서", "public copyright consent", "공공누리"
+        ]):
+            return self.public_copyright_consent_extractor.extract_public_copyright_consent_metadata(text, document_name)
+        elif "계약서" in document_type or "contract" in document_type.lower():
             return self.contract_extractor.extract_contract_metadata(text, document_name)
         elif "동의서" in document_type or "consent" in document_type.lower():
             return self.consent_extractor.extract_consent_metadata(text, document_name)
         else:
             # Use general schema for unknown document types
-            schema = DocumentSchemas.get_general_document_schema()
+            schema = DocumentSchemas.get_general_document_schema_enhanced()
             return self.llm_extractor.extract_metadata(text, schema, document_type)
     
     def batch_extract_from_ocr_results(self, ocr_results_dir: str, output_dir: str) -> List[ExtractionResult]:

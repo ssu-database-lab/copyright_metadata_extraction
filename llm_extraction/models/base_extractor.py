@@ -83,9 +83,14 @@ class BaseLLMExtractor(ABC):
 5. 전화번호는 숫자와 하이픈(-)만 포함하세요
 6. 주소는 전체 주소를 정확히 추출하세요
 7. 사업자등록번호는 숫자와 하이픈(-)만 포함하세요
-8. 반드시 유효한 JSON 형식으로 응답하세요
-9. 추가 정보나 설명은 포함하지 마세요
-10. ```json이나 ``` 같은 마크다운 문법 사용 금지
+8. 체크박스 정보 처리:
+   - 체크박스가 체크된 상태(📧, ☑, ✓, ■, ●, ◼, ◉)인 경우 true로 설정
+   - 체크박스가 체크되지 않은 상태(☐, □, ○, ◯, ◻, ◦)인 경우 false로 설정
+   - 체크박스 패턴을 자동으로 감지하여 일관성 있게 처리
+   - OCR 오류 고려: "목제권"은 "복제권"으로 해석
+9. 반드시 유효한 JSON 형식으로 응답하세요
+10. 추가 정보나 설명은 포함하지 마세요
+11. ```json이나 ``` 같은 마크다운 문법 사용 금지
 
 응답 (JSON만):
 
@@ -109,9 +114,14 @@ Instructions:
 5. Include only numbers and hyphens(-) for phone numbers
 6. Extract complete addresses accurately
 7. Include only numbers and hyphens(-) for registration numbers
-8. Respond only with valid JSON format
-9. Do not include additional information or explanations
-10. Do not use ```json or ``` markdown syntax
+8. Checkbox information processing:
+   - Set true for checked checkboxes (📧, ☑, ✓, ■, ●, ◼, ◉)
+   - Set false for unchecked checkboxes (☐, □, ○, ◯, ◻, ◦)
+   - Automatically detect checkbox patterns for consistent processing
+   - Consider OCR errors: "목제권" should be interpreted as "복제권"
+9. Respond only with valid JSON format
+10. Do not include additional information or explanations
+11. Do not use ```json or ``` markdown syntax
 
 Response (JSON only):"""
         
@@ -1034,6 +1044,12 @@ def create_extractor(model_name: str, config_path: str = "config/model_config.ya
         return QwenVLExtractor(config['models']['qwenvl'])
     elif model_name.lower() == "qwen3" or model_name.lower() == "qwen3-4b":
         return Qwen3Extractor(config['models']['qwen3'])
+    elif model_name.lower() == "qwen3-next" or model_name.lower() == "qwen3-next-80b":
+        return Qwen3Extractor(config['models']['qwen3_next_80b'])
+    elif model_name.lower() == "qwen3-30b":
+        return Qwen3Extractor(config['models']['qwen3_30b'])
+    elif model_name.lower() == "qwen3-235b":
+        return Qwen3Extractor(config['models']['qwen3_235b'])
     elif model_name.lower() == "gemma3" or model_name.lower() == "gemma3-12b":
         return Gemma3Extractor(config['models']['gemma3_12b'])
     elif model_name.lower() == "mixtral" or model_name.lower() == "mixtral-8x7b":

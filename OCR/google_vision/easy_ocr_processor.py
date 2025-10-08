@@ -34,20 +34,59 @@ def get_ocr_provider():
     print("1. Google Cloud Vision API (recommended for Korean text)")
     print("2. Mistral OCR API")
     print("3. Naver Clova OCR API")
-    print("4. Alibaba Cloud Model Studio (Qwen-Plus)")
+    print("4. Alibaba Cloud Model Studio (Qwen3-VL models)")
     
     while True:
         choice = input("Select provider (1-4): ").strip()
         if choice == "1":
-            return "google_cloud"
+            return "google_cloud", None
         elif choice == "2":
-            return "mistral"
+            return "mistral", None
         elif choice == "3":
-            return "naver"
+            return "naver", None
         elif choice == "4":
-            return "alibaba"
+            return "alibaba", get_alibaba_model()
         else:
             print("❌ Invalid choice. Please select 1-4.")
+
+def get_alibaba_model():
+    """Get Alibaba model choice from user."""
+    print("\n🤖 Choose Alibaba Qwen3-VL Model:")
+    print("1. Qwen-VL-OCR (Original) - General OCR tasks")
+    print("2. Qwen3-VL-Plus - Enhanced performance")
+    print("3. Qwen3-VL-30B-A3B-Instruct - Balanced performance")
+    print("4. Qwen3-VL-235B-A22B-Instruct - Highest accuracy")
+    
+    while True:
+        choice = input("Select model (1-4): ").strip()
+        if choice == "1":
+            return "qwen-vl-ocr"
+        elif choice == "2":
+            return "qwen-vl-plus"
+        elif choice == "3":
+            return "qwen3-vl-30b-a3b-instruct"
+        elif choice == "4":
+            return "qwen3-vl-235b-a22b-instruct"
+        else:
+            print("❌ Invalid choice. Please select 1-4.")
+
+def get_processing_mode():
+    """Get processing mode choice from user."""
+    print("\n⚡ Choose Processing Mode:")
+    print("1. Batch Processing - Complete response (DashScope SDK)")
+    print("2. Streaming Processing - Real-time output (API Client)")
+    print("3. API Client Batch - Complete response (API Client)")
+    
+    while True:
+        choice = input("Select mode (1-3): ").strip()
+        if choice == "1":
+            return "batch"  # DashScope SDK batch processing
+        elif choice == "2":
+            return "streaming"   # API Client streaming processing
+        elif choice == "3":
+            return "api_client"  # API Client batch processing
+        else:
+            print("❌ Invalid choice. Please select 1-3.")
 
 def process_single_file():
     """Process a single file."""
@@ -60,31 +99,101 @@ def process_single_file():
         print(f"❌ Error: File {file_path} not found!")
         return False
     
-    provider = get_ocr_provider()
+    provider, model = get_ocr_provider()
+    
+    # Ask for processing mode only for Alibaba provider (multiple processing options)
+    if provider == "alibaba":
+        processing_mode = get_processing_mode()
+    else:
+        processing_mode = "batch"  # Other providers only support batch processing
     
     try:
-        processor = UniversalOCRProcessor(provider)
-        result = processor.process_single_file(file_path)
+        processor = UniversalOCRProcessor(provider, model=model)
         
-        print(f"\n✅ Processing Complete!")
-        print(f"📄 File: {result['file_name']}")
-        print(f"📊 Status: {result['status']}")
-        
-        if result['status'] == 'success':
-            print(f"📝 Text Length: {result['total_text_length']} characters")
-            print(f"📖 Pages: {result['total_pages']}")
-            print(f"🔍 Provider: {result['ocr_provider']}")
+        if processing_mode == "streaming":
+            # Streaming processing
+            print(f"\n🔄 Streaming Processing Started!")
+            print(f"📄 File: {Path(file_path).name}")
+            print("=" * 50)
+            print("Streaming output:")
+            print("-" * 30)
+            
+            full_content = ""
+            for chunk in processor.process_single_file_streaming(file_path):
+                print(chunk, end='', flush=True)
+                full_content += chunk
+            
+            print("\n" + "-" * 30)
+            print(f"\n✅ Streaming Processing Complete!")
+            print(f"📝 Total characters: {len(full_content)}")
+            print(f"🔍 Provider: {provider}")
+            if model:
+                print(f"🤖 Model: {model}")
             
             # Show sample text
-            if result['full_text']:
-                sample_text = result['full_text'][:300]
+            if full_content:
+                sample_text = full_content[:300]
                 print(f"\n📋 Sample Text (first 300 chars):")
                 print("-" * 50)
                 print(sample_text + "..." if len(sample_text) == 300 else sample_text)
                 print("-" * 50)
-        
-        elif result['status'] == 'failed':
-            print(f"❌ Error: {result.get('error', 'Unknown error')}")
+                
+        elif processing_mode == "api_client":
+            # API Client batch processing
+            print(f"\n🔧 API Client Batch Processing Started!")
+            print(f"📄 File: {Path(file_path).name}")
+            print("=" * 50)
+            
+            result = processor.process_single_file_api_client(file_path)
+            
+            print(f"\n✅ API Client Processing Complete!")
+            print(f"📄 File: {result['file_name']}")
+            print(f"📊 Status: {result['status']}")
+            
+            if result['status'] == 'success':
+                print(f"📝 Text Length: {result['total_text_length']} characters")
+                print(f"📖 Pages: {result['total_pages']}")
+                print(f"🔍 Provider: {result['ocr_provider']}")
+                print(f"⚙️ Processing Mode: {result['processing_mode']}")
+                
+                # Show sample text
+                if result['full_text']:
+                    sample_text = result['full_text'][:300]
+                    print(f"\n📋 Sample Text (first 300 chars):")
+                    print("-" * 50)
+                    print(sample_text + "..." if len(sample_text) == 300 else sample_text)
+                    print("-" * 50)
+            
+            elif result['status'] == 'failed':
+                print(f"❌ Error: {result.get('error', 'Unknown error')}")
+                
+        else:  # processing_mode == "batch"
+            # DashScope SDK batch processing
+            print(f"\n📦 DashScope SDK Batch Processing Started!")
+            print(f"📄 File: {Path(file_path).name}")
+            print("=" * 50)
+            
+            result = processor.process_single_file(file_path)
+            
+            print(f"\n✅ Batch Processing Complete!")
+            print(f"📄 File: {result['file_name']}")
+            print(f"📊 Status: {result['status']}")
+            
+            if result['status'] == 'success':
+                print(f"📝 Text Length: {result['total_text_length']} characters")
+                print(f"📖 Pages: {result['total_pages']}")
+                print(f"🔍 Provider: {result['ocr_provider']}")
+                
+                # Show sample text
+                if result['full_text']:
+                    sample_text = result['full_text'][:300]
+                    print(f"\n📋 Sample Text (first 300 chars):")
+                    print("-" * 50)
+                    print(sample_text + "..." if len(sample_text) == 300 else sample_text)
+                    print("-" * 50)
+            
+            elif result['status'] == 'failed':
+                print(f"❌ Error: {result.get('error', 'Unknown error')}")
         
         return True
         
@@ -107,10 +216,10 @@ def process_directory(recursive=False):
         print(f"❌ Error: {dir_path} is not a directory!")
         return False
     
-    provider = get_ocr_provider()
+    provider, model = get_ocr_provider()
     
     try:
-        processor = UniversalOCRProcessor(provider)
+        processor = UniversalOCRProcessor(provider, model=model)
         results = processor.process_directory(dir_path, recursive)
         
         if not results:
@@ -173,7 +282,16 @@ def show_supported_types():
     print("   - Google Cloud Vision API")
     print("   - Mistral OCR API")
     print("   - Naver Clova OCR API")
-    print("   - Alibaba Cloud Model Studio (Qwen-Plus)")
+    print("   - Alibaba Cloud Model Studio (Qwen3-VL models)")
+    print("     • Qwen-VL-OCR (Original)")
+    print("     • Qwen3-VL-Plus")
+    print("     • Qwen3-VL-30B-A3B-Instruct")
+    print("     • Qwen3-VL-235B-A22B-Instruct")
+    
+    print("\n⚡ Processing Modes:")
+    print("   - Batch Processing - Complete response (DashScope SDK)")
+    print("   - Streaming Processing - Real-time output (API Client)")
+    print("   - API Client Batch - Complete response (API Client)")
 
 def main():
     """Main function with interactive menu."""

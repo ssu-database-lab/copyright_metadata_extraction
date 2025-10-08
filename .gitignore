@@ -96,6 +96,9 @@ env*/
 *.pdf
 05_연구개발계획서*.pdf
 
+# Hugging Face models directory (very large)
+hf_models/
+
 # Large archive files
 *.zip
 *.7z

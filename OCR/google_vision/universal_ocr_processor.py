@@ -248,16 +248,32 @@ class NaverClovaOCRProvider(OCRProvider):
         return "naver_clova"
 
 class AlibabaCloudOCRProvider(OCRProvider):
-    """Alibaba Cloud Model Studio OCR provider using Qwen-OCR model with DashScope SDK."""
+    """Alibaba Cloud Model Studio OCR provider using Qwen-OCR models with DashScope SDK."""
     
-    def __init__(self, api_key: str, model: str = "qwen-vl-ocr", region: str = "singapore"):
+    # Available Qwen3-VL models
+    AVAILABLE_MODELS = {
+        "qwen-vl-ocr": "Qwen-VL-OCR (Original)",
+        "qwen-vl-plus": "Qwen3-VL-Plus",
+        "qwen3-vl-30b-a3b-instruct": "Qwen/Qwen3-VL-30B-A3B-Instruct", 
+        "qwen3-vl-235b-a22b-instruct": "Qwen/Qwen3-VL-235B-A22B-Instruct"
+    }
+    
+    def __init__(self, api_key: str, model: str = "qwen-vl-ocr", region: str = "singapore", 
+                 temperature: float = 1.0, top_p: float = 0.8, top_k: int = None):
         """
         Initialize the Alibaba Cloud Model Studio OCR client.
         
         Args:
             api_key: Your Alibaba Cloud API key
-            model: Model name (default: qwen-vl-ocr)
+            model: Model name - choose from:
+                - "qwen-vl-ocr" (default, original Qwen-VL-OCR)
+                - "qwen-vl-plus" (Qwen3-VL-Plus)
+                - "qwen3-vl-30b-a3b-instruct" (Qwen3-VL-30B-A3B-Instruct)
+                - "qwen3-vl-235b-a22b-instruct" (Qwen3-VL-235B-A22B-Instruct)
             region: Region - "singapore" or "china"
+            temperature: Controls randomness (0.0-2.0, default: 1.0)
+            top_p: Controls nucleus sampling (0.0-1.0, default: 0.8)
+            top_k: Controls candidate set size (optional)
         """
         try:
             import dashscope
@@ -265,15 +281,204 @@ class AlibabaCloudOCRProvider(OCRProvider):
         except ImportError:
             raise ImportError("dashscope package not found. Install with: pip install dashscope")
         
+        # Validate and map model name
+        if model not in self.AVAILABLE_MODELS:
+            available_models = ", ".join(self.AVAILABLE_MODELS.keys())
+            raise ValueError(f"Unsupported model: {model}. Available models: {available_models}")
+        
         self.api_key = api_key
         self.model = model
         self.region = region
+        self.temperature = temperature
+        self.top_p = top_p
+        self.top_k = top_k
+        
+        # Map model names to actual DashScope model IDs
+        self.model_mapping = {
+            "qwen-vl-ocr": "qwen-vl-ocr",
+            "qwen-vl-plus": "qwen-vl-plus", 
+            "qwen3-vl-30b-a3b-instruct": "qwen3-vl-30b-a3b-instruct",
+            "qwen3-vl-235b-a22b-instruct": "qwen3-vl-235b-a22b-instruct"
+        }
+        
+        self.dashscope_model_id = self.model_mapping.get(model, model)
         
         # Set base URL based on region
         if region == "singapore":
             self.dashscope.base_http_api_url = 'https://dashscope-intl.aliyuncs.com/api/v1'
         else:  # china
             self.dashscope.base_http_api_url = 'https://dashscope.aliyuncs.com/api/v1'
+    
+    def process_image_streaming(self, image_path: str):
+        """Process image with streaming support using OpenAI compatible interface."""
+        try:
+            # Import OpenAI client for streaming
+            try:
+                from openai import OpenAI
+            except ImportError:
+                raise ImportError("openai package not found. Install with: pip install openai")
+            
+            # Initialize OpenAI client with DashScope compatible endpoint
+            client = OpenAI(
+                api_key=self.api_key,
+                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+            )
+            
+            # Read and encode image as base64
+            import base64
+            with open(image_path, "rb") as image_file:
+                image_data = base64.b64encode(image_file.read()).decode('utf-8')
+            
+            # Determine image format from file extension
+            image_format = Path(image_path).suffix.lower().lstrip('.')
+            if image_format == 'tif':
+                image_format = 'tiff'  # Convert tif to tiff for MIME type
+            
+            # Prepare messages in OpenAI format with base64 image
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are an expert OCR (Optical Character Recognition) assistant specialized in Korean and multilingual document processing. Your task is to accurately extract all text content from images while preserving the original layout, formatting, and structure. Pay special attention to Korean text recognition, checkbox states (☑, ☐, ✓, ○, ■, □), and maintain proper line breaks and spacing."
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Extract all the text from the uploaded document."},
+                        {
+                            "type": "image_url", 
+                            "image_url": {
+                                "url": f"data:image/{image_format};base64,{image_data}"
+                            }
+                        }
+                    ]
+                }
+            ]
+            
+            logger.info(f"Making streaming Alibaba Cloud Qwen-OCR request for {image_path}")
+            
+            # Prepare generation parameters
+            generation_params = {
+                "temperature": self.temperature,
+                "top_p": self.top_p
+            }
+            
+            # Add top_k if specified
+            if self.top_k is not None:
+                generation_params["top_k"] = self.top_k
+            
+            # Call OpenAI compatible interface with streaming
+            completion = client.chat.completions.create(
+                model=self.dashscope_model_id,
+                messages=messages,
+                stream=True,
+                **generation_params
+            )
+            
+            # Stream the response
+            full_content = ""
+            for chunk in completion:
+                if chunk.choices[0].delta.content is not None:
+                    content = chunk.choices[0].delta.content
+                    full_content += content
+                    yield content  # Stream output
+            
+            logger.info(f"Streaming Alibaba Cloud Qwen-OCR processed {image_path} - {len(full_content)} characters")
+            
+            return full_content
+            
+        except Exception as e:
+            logger.error(f"Error in streaming OCR processing for {image_path}: {e}")
+            raise
+    
+    def process_image_api_client(self, image_path: str) -> Dict:
+        """Process image using API Client approach (non-streaming) with OpenAI compatible interface."""
+        try:
+            # Import OpenAI client for API client approach
+            try:
+                from openai import OpenAI
+            except ImportError:
+                raise ImportError("openai package not found. Install with: pip install openai")
+            
+            # Initialize OpenAI client with DashScope compatible endpoint
+            client = OpenAI(
+                api_key=self.api_key,
+                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+            )
+            
+            # Read and encode image as base64
+            import base64
+            with open(image_path, "rb") as image_file:
+                image_data = base64.b64encode(image_file.read()).decode('utf-8')
+            
+            # Determine image format from file extension
+            image_format = Path(image_path).suffix.lower().lstrip('.')
+            if image_format == 'tif':
+                image_format = 'tiff'  # Convert tif to tiff for MIME type
+            
+            # Prepare messages in OpenAI format with base64 image
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are an expert OCR (Optical Character Recognition) assistant specialized in Korean and multilingual document processing. Your task is to accurately extract all text content from images while preserving the original layout, formatting, and structure. Pay special attention to Korean text recognition, checkbox states (☑, ☐, ✓, ○, ■, □), and maintain proper line breaks and spacing."
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Extract all the text from the uploaded document."},
+                        {
+                            "type": "image_url", 
+                            "image_url": {
+                                "url": f"data:image/{image_format};base64,{image_data}"
+                            }
+                        }
+                    ]
+                }
+            ]
+            
+            logger.info(f"Making API Client Alibaba Cloud Qwen-OCR request for {image_path}")
+            
+            # Prepare generation parameters
+            generation_params = {
+                "temperature": self.temperature,
+                "top_p": self.top_p
+            }
+            
+            # Add top_k if specified
+            if self.top_k is not None:
+                generation_params["top_k"] = self.top_k
+            
+            # Call OpenAI compatible interface without streaming
+            completion = client.chat.completions.create(
+                model=self.dashscope_model_id,
+                messages=messages,
+                stream=False,  # Non-streaming
+                **generation_params
+            )
+            
+            # Extract text from complete response
+            extracted_text = completion.choices[0].message.content
+            
+            logger.info(f"API Client Alibaba Cloud Qwen-OCR processed {image_path} - {len(extracted_text)} characters")
+            
+            return {
+                "extracted_text": extracted_text,
+                "model": self.dashscope_model_id,
+                "provider": "alibaba_api_client",
+                "processing_time": None,  # Could be added if needed
+                "confidence": None,  # Could be added if needed
+                "metadata": {
+                    "temperature": self.temperature,
+                    "top_p": self.top_p,
+                    "top_k": self.top_k,
+                    "api_approach": "openai_compatible",
+                    "streaming": False,
+                    "image_format": image_format
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in API Client OCR processing for {image_path}: {e}")
+            raise
     
     def process_image(self, image_path: str) -> Dict:
         """Process image using Alibaba Cloud Qwen-OCR model with DashScope SDK."""
@@ -282,7 +487,12 @@ class AlibabaCloudOCRProvider(OCRProvider):
             image_file_path = f"file://{os.path.abspath(image_path)}"
             
             # Prepare messages for DashScope SDK
-            messages = [{
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are an expert OCR (Optical Character Recognition) assistant specialized in Korean and multilingual document processing. Your task is to accurately extract all text content from images while preserving the original layout, formatting, and structure. Pay special attention to Korean text recognition, checkbox states (☑, ☐, ✓, ○, ■, □), and maintain proper line breaks and spacing."
+                },
+                {
                     "role": "user",
                     "content": [{
                             "image": image_file_path,
@@ -291,17 +501,29 @@ class AlibabaCloudOCRProvider(OCRProvider):
                             # Maximum pixel threshold for the input image
                             # "max_pixels": 28 * 28 * 8192,
                             "enable_rotate": True},
-                        {"text": "Please output only the text content from the image without any additional descriptions but try your best to mainting the original layout."}]
-                }]
+                        {"text": "Extract all the text from the uploaded document."}]
+                }
+            ]
             
             logger.info(f"Making Alibaba Cloud Qwen-OCR request using DashScope SDK for {image_path}")
+            
+            # Prepare generation parameters
+            generation_params = {
+                "temperature": self.temperature,
+                "top_p": self.top_p
+            }
+            
+            # Add top_k if specified
+            if self.top_k is not None:
+                generation_params["top_k"] = self.top_k
             
             # Call DashScope MultiModalConversation
             response = self.dashscope.MultiModalConversation.call(
                 api_key=self.api_key,
-                model=self.model,
+                model=self.dashscope_model_id,
                 messages=messages,
-                ocr_options={"task": "multi_lan"}
+                ocr_options={"task": "multi_lan"},
+                **generation_params
             )
             print(response)
             print("-"*100)
@@ -345,6 +567,11 @@ class AlibabaCloudOCRProvider(OCRProvider):
     
     def get_provider_name(self) -> str:
         return "alibaba_cloud"
+    
+    @classmethod
+    def list_available_models(cls) -> Dict[str, str]:
+        """Return dictionary of available models."""
+        return cls.AVAILABLE_MODELS.copy()
 
 class FileProcessor:
     """Handles different file types and converts them to images for OCR."""
@@ -424,7 +651,15 @@ class FileProcessor:
 class UniversalOCRProcessor:
     """Main OCR processor that handles all file types."""
     
-    def __init__(self, provider: str, output_dir: str = "universal_ocr_results"):
+    def __init__(self, provider: str, output_dir: str = "universal_ocr_results", model: str = None):
+        """
+        Initialize Universal OCR Processor.
+        
+        Args:
+            provider: OCR provider ("google_cloud", "mistral", "naver", "alibaba")
+            output_dir: Base output directory for results
+            model: Model name for providers that support multiple models (e.g., alibaba)
+        """
         self.base_output_dir = Path(output_dir)
         self.base_output_dir.mkdir(exist_ok=True)
         
@@ -449,19 +684,264 @@ class UniversalOCRProcessor:
                 raise ValueError("DASHSCOPE_API_KEY or ALIBABA_API_KEY not found in environment variables")
             # Get region from environment or default to singapore
             region = os.getenv('ALIBABA_REGION', 'singapore')
-            self.ocr_provider = AlibabaCloudOCRProvider(api_key, region=region)
+            # Use provided model or default to qwen-vl-ocr
+            alibaba_model = model or os.getenv('ALIBABA_MODEL', 'qwen-vl-ocr')
+            
+            # Get generation parameters from environment or use defaults
+            temperature = float(os.getenv('ALIBABA_TEMPERATURE', '1.0'))
+            top_p = float(os.getenv('ALIBABA_TOP_P', '0.8'))
+            top_k = os.getenv('ALIBABA_TOP_K')
+            if top_k:
+                top_k = int(top_k)
+            
+            self.ocr_provider = AlibabaCloudOCRProvider(
+                api_key, 
+                model=alibaba_model, 
+                region=region,
+                temperature=temperature,
+                top_p=top_p,
+                top_k=top_k
+            )
         else:
             raise ValueError(f"Unsupported OCR provider: {provider}")
         
-        # Create provider-specific output directory
-        self.provider_output_dir = self.base_output_dir / f"{self.provider_name}_ocr"
-        self.provider_output_dir.mkdir(exist_ok=True)
+        # Create provider-specific output directory with model subdirectory for Alibaba
+        if self.provider_name == "alibaba" and hasattr(self.ocr_provider, 'model'):
+            # Create model-specific subdirectory for Alibaba Qwen3-VL models
+            model_name = self.ocr_provider.model.replace('-', '_')
+            self.provider_output_dir = self.base_output_dir / f"{self.provider_name}_ocr" / model_name
+        else:
+            self.provider_output_dir = self.base_output_dir / f"{self.provider_name}_ocr"
+        
+        self.provider_output_dir.mkdir(parents=True, exist_ok=True)
         
         # Initialize file processor with provider-specific directory
         self.file_processor = FileProcessor(self.provider_output_dir / "converted_images")
         
         logger.info(f"Initialized Universal OCR Processor with {self.provider_name} provider")
+        if self.provider_name == "alibaba" and hasattr(self.ocr_provider, 'model'):
+            logger.info(f"Model: {self.ocr_provider.model}")
+            logger.info(f"Temperature: {self.ocr_provider.temperature}")
+            logger.info(f"Top-p: {self.ocr_provider.top_p}")
+            if self.ocr_provider.top_k is not None:
+                logger.info(f"Top-k: {self.ocr_provider.top_k}")
         logger.info(f"Provider output directory: {self.provider_output_dir}")
+    
+    def process_single_file_streaming(self, file_path: str):
+        """Process a single file with streaming output."""
+        file_path = Path(file_path)
+        logger.info(f"Processing file with streaming: {file_path.name}")
+        
+        try:
+            # Create structured output paths
+            output_paths = self.create_structured_output_paths(str(file_path))
+            
+            # Create a temporary file processor for this specific file
+            temp_file_processor = FileProcessor(output_paths['images_dir'])
+            
+            # Convert file to images
+            image_paths = temp_file_processor.process_file(str(file_path))
+            
+            if not image_paths:
+                yield f"Error: Unsupported file type or conversion failed for {file_path.name}"
+                return
+            
+            # Process each image with streaming OCR
+            all_text = []
+            page_results = []
+            
+            for i, image_path in enumerate(image_paths):
+                try:
+                    logger.info(f"Processing page {i+1}/{len(image_paths)}: {Path(image_path).name}")
+                    
+                    # Check if provider supports streaming
+                    if hasattr(self.ocr_provider, 'process_image_streaming'):
+                        # Use streaming OCR
+                        page_text = ""
+                        for chunk in self.ocr_provider.process_image_streaming(image_path):
+                            page_text += chunk
+                            yield chunk  # Stream the chunk
+                        
+                        # Store the complete text for this page
+                        all_text.append(page_text)
+                        page_results.append({
+                            'page_number': i + 1,
+                            'image_path': image_path,
+                            'extracted_text': page_text,
+                            'text_length': len(page_text),
+                            'status': 'success'
+                        })
+                    else:
+                        # Fallback to regular OCR
+                        result = self.ocr_provider.process_image(image_path)
+                        page_text = result.get('extracted_text', '')
+                        all_text.append(page_text)
+                        page_results.append({
+                            'page_number': i + 1,
+                            'image_path': image_path,
+                            'extracted_text': page_text,
+                            'text_length': len(page_text),
+                            'status': 'success'
+                        })
+                        yield page_text  # Stream the complete text
+                
+                except Exception as e:
+                    logger.error(f"Error processing page {i+1}: {e}")
+                    page_results.append({
+                        'page_number': i + 1,
+                        'image_path': image_path,
+                        'extracted_text': '',
+                        'text_length': 0,
+                        'status': 'failed',
+                        'error': str(e)
+                    })
+                    yield f"Error processing page {i+1}: {e}"
+            
+            # Save results
+            full_text = '\n\n'.join(all_text)
+            
+            # Save extracted text
+            with open(output_paths['text_file'], 'w', encoding='utf-8') as f:
+                f.write(full_text)
+            
+            # Save detailed results
+            result_data = {
+                'file_name': file_path.name,
+                'file_path': str(file_path),
+                'total_pages': len(image_paths),
+                'total_text_length': len(full_text),
+                'pages': page_results,
+                'full_text': full_text,
+                'ocr_provider': self.ocr_provider.get_provider_name(),
+                'processing_mode': 'streaming',
+                'status': 'success'
+            }
+            
+            with open(output_paths['result_file'], 'w', encoding='utf-8') as f:
+                json.dump(result_data, f, ensure_ascii=False, indent=2)
+            
+            logger.info(f"Streaming processing complete for {file_path.name}: {len(full_text)} characters")
+            
+        except Exception as e:
+            logger.error(f"Error in streaming file processing for {file_path}: {e}")
+            yield f"Error processing file {file_path.name}: {e}"
+    
+    def process_single_file_api_client(self, file_path: str) -> Dict:
+        """Process a single file using API Client approach (non-streaming)."""
+        file_path = Path(file_path)
+        logger.info(f"Processing file with API Client: {file_path.name}")
+        
+        try:
+            # Create structured output paths
+            output_paths = self.create_structured_output_paths(str(file_path))
+            
+            # Create a temporary file processor for this specific file
+            temp_file_processor = FileProcessor(output_paths['images_dir'])
+            
+            # Convert file to images
+            image_paths = temp_file_processor.process_file(str(file_path))
+            
+            if not image_paths:
+                return {
+                    'file_name': file_path.name,
+                    'file_path': str(file_path),
+                    'status': 'failed',
+                    'error': 'Unsupported file type or conversion failed',
+                    'total_pages': 0,
+                    'total_text_length': 0,
+                    'pages': [],
+                    'full_text': '',
+                    'ocr_provider': self.ocr_provider.get_provider_name(),
+                    'processing_mode': 'api_client'
+                }
+            
+            # Process each image with API Client OCR
+            all_text = []
+            page_results = []
+            
+            for i, image_path in enumerate(image_paths):
+                try:
+                    logger.info(f"Processing page {i+1}/{len(image_paths)}: {Path(image_path).name}")
+                    
+                    # Check if provider supports API Client approach
+                    if hasattr(self.ocr_provider, 'process_image_api_client'):
+                        # Use API Client OCR
+                        result = self.ocr_provider.process_image_api_client(image_path)
+                        page_text = result.get('extracted_text', '')
+                        all_text.append(page_text)
+                        page_results.append({
+                            'page_number': i + 1,
+                            'image_path': image_path,
+                            'extracted_text': page_text,
+                            'text_length': len(page_text),
+                            'status': 'success',
+                            'metadata': result.get('metadata', {})
+                        })
+                    else:
+                        # Fallback to regular OCR
+                        result = self.ocr_provider.process_image(image_path)
+                        page_text = result.get('extracted_text', '')
+                        all_text.append(page_text)
+                        page_results.append({
+                            'page_number': i + 1,
+                            'image_path': image_path,
+                            'extracted_text': page_text,
+                            'text_length': len(page_text),
+                            'status': 'success'
+                        })
+                
+                except Exception as e:
+                    logger.error(f"Error processing page {i+1}: {e}")
+                    page_results.append({
+                        'page_number': i + 1,
+                        'image_path': image_path,
+                        'extracted_text': '',
+                        'text_length': 0,
+                        'status': 'failed',
+                        'error': str(e)
+                    })
+            
+            # Save results
+            full_text = '\n\n'.join(all_text)
+            
+            # Save extracted text
+            with open(output_paths['text_file'], 'w', encoding='utf-8') as f:
+                f.write(full_text)
+            
+            # Save detailed results
+            result_data = {
+                'file_name': file_path.name,
+                'file_path': str(file_path),
+                'total_pages': len(image_paths),
+                'total_text_length': len(full_text),
+                'pages': page_results,
+                'full_text': full_text,
+                'ocr_provider': self.ocr_provider.get_provider_name(),
+                'processing_mode': 'api_client',
+                'status': 'success'
+            }
+            
+            with open(output_paths['result_file'], 'w', encoding='utf-8') as f:
+                json.dump(result_data, f, ensure_ascii=False, indent=2)
+            
+            logger.info(f"API Client processing complete for {file_path.name}: {len(full_text)} characters")
+            
+            return result_data
+            
+        except Exception as e:
+            logger.error(f"Error in API Client file processing for {file_path}: {e}")
+            return {
+                'file_name': file_path.name,
+                'file_path': str(file_path),
+                'status': 'failed',
+                'error': str(e),
+                'total_pages': 0,
+                'total_text_length': 0,
+                'pages': [],
+                'full_text': '',
+                'ocr_provider': self.ocr_provider.get_provider_name(),
+                'processing_mode': 'api_client'
+            }
     
     def create_structured_output_paths(self, file_path: str) -> Dict[str, Path]:
         """Create structured output paths based on source file path."""
@@ -685,7 +1165,7 @@ def main():
     """Main function with command line interface."""
     parser = argparse.ArgumentParser(description="Universal OCR Processor")
     parser.add_argument("path", help="Path to file or directory to process")
-    parser.add_argument("--provider", "-p", choices=["google_cloud", "mistral", "naver"], 
+    parser.add_argument("--provider", "-p", choices=["google_cloud", "mistral", "naver", "alibaba"], 
                        default="mistral", help="OCR provider to use")
     parser.add_argument("--output", "-o", default="universal_ocr_results", 
                        help="Output directory for results")
@@ -693,29 +1173,55 @@ def main():
                        help="Process subdirectories recursively")
     parser.add_argument("--single-file", "-f", action="store_true", 
                        help="Process as single file (not directory)")
+    parser.add_argument("--model", "-m", 
+                       help="Model name for providers that support multiple models (e.g., alibaba: qwen-vl-ocr, qwen-vl-plus, qwen-vl-30b, qwen-vl-235b)")
+    parser.add_argument("--stream", "-s", action="store_true",
+                       help="Enable streaming output (real-time processing)")
     
     args = parser.parse_args()
     
     print("🚀 Universal OCR Processor")
     print("=" * 50)
     print(f"Provider: {args.provider}")
+    if args.model:
+        print(f"Model: {args.model}")
     print(f"Path: {args.path}")
     print(f"Output: {args.output}")
     print(f"Recursive: {args.recursive}")
+    if args.stream:
+        print(f"Streaming: Enabled")
     print("=" * 50)
     
     try:
-        processor = UniversalOCRProcessor(args.provider, args.output)
+        processor = UniversalOCRProcessor(args.provider, args.output, args.model)
         
         if args.single_file or Path(args.path).is_file():
             # Process single file
-            result = processor.process_single_file(args.path)
-            print(f"\n✅ Processing Complete!")
-            print(f"File: {result['file_name']}")
-            print(f"Status: {result['status']}")
-            if result['status'] == 'success':
-                print(f"Text Length: {result['total_text_length']} characters")
-                print(f"Pages: {result['total_pages']}")
+            if args.stream:
+                # Streaming processing
+                print(f"\n🔄 Streaming Processing Started!")
+                print(f"File: {Path(args.path).name}")
+                print("=" * 50)
+                print("Streaming output:")
+                print("-" * 30)
+                
+                full_content = ""
+                for chunk in processor.process_single_file_streaming(args.path):
+                    print(chunk, end='', flush=True)
+                    full_content += chunk
+                
+                print("\n" + "-" * 30)
+                print(f"\n✅ Streaming Processing Complete!")
+                print(f"Total characters: {len(full_content)}")
+            else:
+                # Regular processing
+                result = processor.process_single_file(args.path)
+                print(f"\n✅ Processing Complete!")
+                print(f"File: {result['file_name']}")
+                print(f"Status: {result['status']}")
+                if result['status'] == 'success':
+                    print(f"Text Length: {result['total_text_length']} characters")
+                    print(f"Pages: {result['total_pages']}")
         else:
             # Process directory
             results = processor.process_directory(args.path, args.recursive)
