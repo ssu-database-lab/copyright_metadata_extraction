@@ -251,7 +251,7 @@ def process_directory(recursive=False):
             if len(failed) > 5:
                 print(f"   ... and {len(failed) - 5} more files")
         
-        print(f"\n💾 Results saved to: {processor.output_dir}")
+        print(f"\n💾 Results saved to: {processor.provider_output_dir}")
         
         return True
         

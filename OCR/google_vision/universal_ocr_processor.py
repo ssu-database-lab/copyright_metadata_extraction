@@ -338,12 +338,12 @@ class AlibabaCloudOCRProvider(OCRProvider):
             messages = [
                 {
                     "role": "system",
-                    "content": "You are an expert OCR (Optical Character Recognition) assistant specialized in Korean and multilingual document processing. Your task is to accurately extract all text content from images while preserving the original layout, formatting, and structure. Pay special attention to Korean text recognition, checkbox states (☑, ☐, ✓, ○, ■, □), and maintain proper line breaks and spacing."
+                    "content": "You are an expert OCR (Optical Character Recognition) assistant specialized in Korean and multilingual document processing. Your task is to accurately extract all text content from images while preserving the original layout, formatting, and structure. Pay special attention to Korean text recognition, checkbox states (☑, ☐, ✓, ○, ■, □), and maintain proper line breaks and spacing. IMPORTANT: Output only raw text content without any markdown formatting, code blocks (```), or special formatting symbols."
                 },
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Extract all the text from the uploaded document."},
+                        {"type": "text", "text": "Extract all the text from the uploaded document. Output only the raw text content without any markdown formatting, code blocks, or special formatting."},
                         {
                             "type": "image_url", 
                             "image_url": {
@@ -382,6 +382,12 @@ class AlibabaCloudOCRProvider(OCRProvider):
                     full_content += content
                     yield content  # Stream output
             
+            # Post-process the complete content to remove markdown formatting
+            if full_content:
+                cleaned_content = self._clean_markdown_formatting(full_content)
+                # Note: This is for logging purposes only, streaming has already yielded content
+                logger.info(f"Streaming completed. Cleaned content length: {len(cleaned_content)}")
+            
             logger.info(f"Streaming Alibaba Cloud Qwen-OCR processed {image_path} - {len(full_content)} characters")
             
             return full_content
@@ -419,12 +425,12 @@ class AlibabaCloudOCRProvider(OCRProvider):
             messages = [
                 {
                     "role": "system",
-                    "content": "You are an expert OCR (Optical Character Recognition) assistant specialized in Korean and multilingual document processing. Your task is to accurately extract all text content from images while preserving the original layout, formatting, and structure. Pay special attention to Korean text recognition, checkbox states (☑, ☐, ✓, ○, ■, □), and maintain proper line breaks and spacing."
+                    "content": "You are an expert OCR (Optical Character Recognition) assistant specialized in Korean and multilingual document processing. Your task is to accurately extract all text content from images while preserving the original layout, formatting, and structure. Pay special attention to Korean text recognition, checkbox states (☑, ☐, ✓, ○, ■, □), and maintain proper line breaks and spacing. IMPORTANT: Output only raw text content without any markdown formatting, code blocks (```), or special formatting symbols."
                 },
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Extract all the text from the uploaded document."},
+                        {"type": "text", "text": "Extract all the text from the uploaded document. Output only the raw text content without any markdown formatting, code blocks, or special formatting."},
                         {
                             "type": "image_url", 
                             "image_url": {
@@ -458,6 +464,9 @@ class AlibabaCloudOCRProvider(OCRProvider):
             # Extract text from complete response
             extracted_text = completion.choices[0].message.content
             
+            # Post-process to remove markdown formatting
+            extracted_text = self._clean_markdown_formatting(extracted_text)
+            
             logger.info(f"API Client Alibaba Cloud Qwen-OCR processed {image_path} - {len(extracted_text)} characters")
             
             return {
@@ -480,6 +489,25 @@ class AlibabaCloudOCRProvider(OCRProvider):
             logger.error(f"Error in API Client OCR processing for {image_path}: {e}")
             raise
     
+    def _clean_markdown_formatting(self, text: str) -> str:
+        """Remove markdown formatting from OCR output."""
+        import re
+        
+        # Remove markdown code blocks
+        text = re.sub(r'```[a-zA-Z]*\n?', '', text)
+        text = re.sub(r'```\n?', '', text)
+        
+        # Remove other markdown formatting
+        text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)  # Bold
+        text = re.sub(r'\*(.*?)\*', r'\1', text)      # Italic
+        text = re.sub(r'`([^`]*)`', r'\1', text)      # Inline code
+        
+        # Clean up extra whitespace
+        text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)  # Multiple newlines to double
+        text = text.strip()
+        
+        return text
+    
     def process_image(self, image_path: str) -> Dict:
         """Process image using Alibaba Cloud Qwen-OCR model with DashScope SDK."""
         try:
@@ -490,7 +518,7 @@ class AlibabaCloudOCRProvider(OCRProvider):
             messages = [
                 {
                     "role": "system",
-                    "content": "You are an expert OCR (Optical Character Recognition) assistant specialized in Korean and multilingual document processing. Your task is to accurately extract all text content from images while preserving the original layout, formatting, and structure. Pay special attention to Korean text recognition, checkbox states (☑, ☐, ✓, ○, ■, □), and maintain proper line breaks and spacing."
+                    "content": "You are an expert OCR (Optical Character Recognition) assistant specialized in Korean and multilingual document processing. Your task is to accurately extract all text content from images while preserving the original layout, formatting, and structure. Pay special attention to Korean text recognition, checkbox states (☑, ☐, ✓, ○, ■, □), and maintain proper line breaks and spacing. IMPORTANT: Output only raw text content without any markdown formatting, code blocks (```), or special formatting symbols."
                 },
                 {
                     "role": "user",
@@ -501,7 +529,7 @@ class AlibabaCloudOCRProvider(OCRProvider):
                             # Maximum pixel threshold for the input image
                             # "max_pixels": 28 * 28 * 8192,
                             "enable_rotate": True},
-                        {"text": "Extract all the text from the uploaded document."}]
+                        {"text": "Extract all the text from the uploaded document. Output only the raw text content without any markdown formatting, code blocks, or special formatting."}]
                 }
             ]
             

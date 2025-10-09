@@ -167,7 +167,7 @@ def main():
     
     parser.add_argument(
         "--model", 
-        default="qwen",
+        default="qwen3-235b",
         choices=["solar-ko", "qwen", "lightweight", "llama", "qwen72b", "qwenvl", "qwen3", "qwen3-next", "qwen3-30b", "qwen3-235b", "gemma3", "mixtral"],
         help="LLM model to use (default: qwen)"
     )
