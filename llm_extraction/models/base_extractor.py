@@ -24,6 +24,12 @@ import time
 # Import model cache manager
 from .model_cache import ModelCacheManager
 
+# Import cloud extractors
+from .cloud_extractor import create_cloud_extractor, load_env_file
+
+# Load environment variables from .env file
+load_env_file()
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1023,10 +1029,135 @@ class MixtralExtractor(BaseLLMExtractor):
                 error=str(e)
             )
 
+
+class CloudExtractorWrapper(BaseLLMExtractor):
+    """Wrapper class to make cloud extractors compatible with BaseLLMExtractor interface."""
+    
+    def __init__(self, cloud_extractor, model_name: str):
+        self.cloud_extractor = cloud_extractor
+        self.model_name = model_name
+        self.model_config = {}  # Empty config for cloud models
+    
+    def _load_model(self):
+        """Load model - not needed for cloud extractors."""
+        pass
+    
+    def extract_metadata(self, text: str, schema: Dict[str, Any], document_type: str) -> ExtractionResult:
+        """Extract metadata using cloud extractor."""
+        start_time = time.time()
+        
+        try:
+            # Call cloud extractor
+            result = self.cloud_extractor.extract_metadata(text, schema, document_type)
+            
+            if "error" in result:
+                return ExtractionResult(
+                    document_type=document_type,
+                    metadata={},
+                    confidence=0.0,
+                    extraction_time=time.time() - start_time,
+                    model_used=self.model_name,
+                    error=result["error"]
+                )
+            
+            # Extract metadata and calculate confidence
+            metadata = result.get("metadata", {})
+            confidence = self._calculate_confidence(metadata, schema)
+            
+            return ExtractionResult(
+                document_type=document_type,
+                metadata=metadata,
+                confidence=confidence,
+                extraction_time=time.time() - start_time,
+                model_used=self.model_name,
+                raw_response=str(result)
+            )
+            
+        except Exception as e:
+            logger.error(f"Error during cloud metadata extraction: {e}")
+            return ExtractionResult(
+                document_type=document_type,
+                metadata={},
+                confidence=0.0,
+                extraction_time=time.time() - start_time,
+                model_used=self.model_name,
+                error=str(e)
+            )
+    
+    def _calculate_confidence(self, metadata: Dict[str, Any], schema: Dict[str, Any]) -> float:
+        """Calculate confidence score for extracted metadata."""
+        if not metadata:
+            return 0.0
+        
+        # Count non-null fields
+        total_fields = 0
+        filled_fields = 0
+        
+        def count_fields(obj, schema_obj):
+            nonlocal total_fields, filled_fields
+            
+            if isinstance(schema_obj, dict) and "properties" in schema_obj:
+                for key, prop_schema in schema_obj["properties"].items():
+                    total_fields += 1
+                    if key in obj and obj[key] is not None and obj[key] != "":
+                        filled_fields += 1
+                    elif isinstance(obj.get(key), dict) and isinstance(prop_schema, dict) and "properties" in prop_schema:
+                        count_fields(obj[key], prop_schema)
+            elif isinstance(obj, dict):
+                for key, value in obj.items():
+                    if isinstance(value, dict):
+                        count_fields(value, {})
+                    else:
+                        total_fields += 1
+                        if value is not None and value != "":
+                            filled_fields += 1
+        
+        count_fields(metadata, schema)
+        
+        if total_fields == 0:
+            return 0.0
+        
+        return min(filled_fields / total_fields, 1.0)
+
+
 def create_extractor(model_name: str, config_path: str = "config/model_config.yaml") -> BaseLLMExtractor:
     """Factory function to create appropriate extractor"""
     
-    # Load configuration
+    # Check for cloud-based models first
+    if model_name.lower().startswith("alibaba-"):
+        # Extract model ID from alibaba- prefix
+        alibaba_model = model_name.lower().replace("alibaba-", "")
+        api_key = os.getenv('DASHSCOPE_API_KEY') or os.getenv('ALIBABA_API_KEY')
+        if not api_key:
+            raise ValueError("DASHSCOPE_API_KEY or ALIBABA_API_KEY environment variable not set")
+        
+        # Map model names to Alibaba Cloud model IDs (verified working models)
+        model_mapping = {
+            "qwen-plus": "qwen-plus",
+            "qwen-max": "qwen-max", 
+            "qwen-turbo": "qwen-turbo",
+            "qwen-vl-plus": "qwen-vl-plus",
+            "qwen3-next-80b-a3b-instruct": "qwen3-next-80b-a3b-instruct",
+            "qwen3-vl-235b-a22b-instruct": "qwen3-vl-235b-a22b-instruct",
+            "qwen3-235b-a22b-instruct-2507": "qwen3-235b-a22b-instruct-2507"
+        }
+        
+        alibaba_model_id = model_mapping.get(alibaba_model, alibaba_model)
+        
+        # Create cloud extractor wrapper
+        cloud_extractor = create_cloud_extractor(
+            "alibaba", 
+            api_key, 
+            alibaba_model_id,
+            region="singapore",
+            temperature=1.0,
+            top_p=0.8
+        )
+        
+        # Return a wrapper that implements BaseLLMExtractor interface
+        return CloudExtractorWrapper(cloud_extractor, f"Alibaba-{alibaba_model_id}")
+    
+    # Load configuration for local models
     with open(config_path, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     

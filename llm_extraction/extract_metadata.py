@@ -20,6 +20,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from models.base_extractor import create_extractor
 from extractors.document_extractors import DocumentMetadataExtractor
 from schemas.document_schemas import DocumentSchemas
+from models.cloud_extractor import load_env_file
+
+# Load environment variables from .env file
+load_env_file()
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -108,6 +112,95 @@ class MetadataExtractionPipeline:
             logger.error(f"❌ Batch extraction failed: {e}")
             raise
     
+    def extract_from_single_file(self, file_path: str, output_dir: str) -> Dict[str, Any]:
+        """Extract metadata from a single OCR text file"""
+        file_path = Path(file_path)
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+        
+        if not file_path.suffix.lower() == '.txt':
+            raise ValueError(f"File must be a .txt file: {file_path}")
+        
+        # Create timestamped model-specific output directory
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        model_output_dir = output_path / f"{self.model_name}_{timestamp}"
+        model_output_dir.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            # Read OCR text
+            with open(file_path, 'r', encoding='utf-8') as f:
+                ocr_text = f.read()
+            
+            # Determine document type from filename or content
+            document_name = file_path.stem
+            document_type = self._detect_document_type(document_name, ocr_text)
+            
+            logger.info(f"Processing single file: {file_path.name}")
+            logger.info(f"Detected document type: {document_type}")
+            
+            # Extract metadata
+            result = self.doc_extractor.extract_metadata(ocr_text, document_type, document_name)
+            
+            # Save result
+            result_file = model_output_dir / f"{document_name}_metadata.json"
+            with open(result_file, 'w', encoding='utf-8') as f:
+                json.dump(result.model_dump(), f, ensure_ascii=False, indent=2)
+            
+            # Save summary
+            summary_file = model_output_dir / "extraction_summary.json"
+            summary = {
+                "total_documents": 1,
+                "successful_extractions": 1 if not result.error else 0,
+                "failed_extractions": 1 if result.error else 0,
+                "average_confidence": result.confidence,
+                "model_used": self.model_name,
+                "extraction_time": datetime.now().isoformat(),
+                "results": [result.model_dump()]
+            }
+            
+            with open(summary_file, 'w', encoding='utf-8') as f:
+                json.dump(summary, f, ensure_ascii=False, indent=2)
+            
+            logger.info(f"✅ Single file extraction completed. Results saved to: {model_output_dir}")
+            logger.info(f"📊 Summary: {summary['successful_extractions']}/{summary['total_documents']} successful")
+            
+            return result.model_dump()
+            
+        except Exception as e:
+            logger.error(f"❌ Single file extraction failed: {e}")
+            raise
+    
+    def _detect_document_type(self, filename: str, content: str) -> str:
+        """Detect document type from filename and content"""
+        filename_lower = filename.lower()
+        content_lower = content.lower()
+        
+        # Check filename for document type indicators
+        if any(keyword in filename_lower for keyword in ['계약서', 'contract']):
+            return "계약서"
+        elif any(keyword in filename_lower for keyword in ['동의서', 'consent']):
+            return "동의서"
+        elif any(keyword in filename_lower for keyword in ['양도', 'transfer']):
+            return "저작재산권 양도동의서"
+        elif any(keyword in filename_lower for keyword in ['공공', 'public']):
+            return "공공저작물 자유이용허락 동의서"
+        
+        # Check content for document type indicators
+        if any(keyword in content_lower for keyword in ['계약서', '계약', 'contract']):
+            return "계약서"
+        elif any(keyword in content_lower for keyword in ['동의서', '동의', 'consent']):
+            return "동의서"
+        elif any(keyword in content_lower for keyword in ['양도', 'transfer']):
+            return "저작재산권 양도동의서"
+        elif any(keyword in content_lower for keyword in ['공공저작물', '공공', 'public']):
+            return "공공저작물 자유이용허락 동의서"
+        
+        # Default to general document
+        return "기타문서"
+    
     def test_extraction(self):
         """Test the extraction pipeline with sample data"""
         logger.info("Testing extraction pipeline...")
@@ -167,15 +260,23 @@ def main():
     
     parser.add_argument(
         "--model", 
-        default="qwen3-235b",
-        choices=["solar-ko", "qwen", "lightweight", "llama", "qwen72b", "qwenvl", "qwen3", "qwen3-next", "qwen3-30b", "qwen3-235b", "gemma3", "mixtral"],
-        help="LLM model to use (default: qwen)"
+        default="alibaba-qwen-plus",
+        choices=["solar-ko", "qwen", "lightweight", "llama", "qwen72b", "qwenvl", "qwen3", "qwen3-next", "qwen3-30b", "qwen3-235b", "gemma3", "mixtral",
+                "alibaba-qwen-plus", "alibaba-qwen-max", "alibaba-qwen-turbo", "alibaba-qwen-vl-plus",
+                "alibaba-qwen3-next-80b-a3b-instruct", "alibaba-qwen3-vl-235b-a22b-instruct", "alibaba-qwen3-235b-a22b-instruct-2507"],
+        help="LLM model to use (default: qwen3-235b). Alibaba Cloud models require DASHSCOPE_API_KEY environment variable."
     )
     
     parser.add_argument(
         "--ocr-results-dir",
         type=str,
         help="Directory containing OCR results"
+    )
+    
+    parser.add_argument(
+        "--single-file",
+        type=str,
+        help="Single OCR text file to process"
     )
     
     parser.add_argument(
@@ -236,12 +337,24 @@ def main():
             
             pipeline.batch_extract_from_ocr_results(args.ocr_results_dir, args.output_dir)
         
+        elif args.single_file:
+            # Run single file extraction
+            if not Path(args.single_file).exists():
+                logger.error(f"Single file not found: {args.single_file}")
+                sys.exit(1)
+            
+            pipeline.extract_from_single_file(args.single_file, args.output_dir)
+        
         else:
-            logger.info("No action specified. Use --test for testing or --ocr-results-dir for batch extraction.")
+            logger.info("No action specified. Use --test for testing, --ocr-results-dir for batch extraction, or --single-file for single file processing.")
             logger.info("Available options:")
             logger.info("  --test: Run test extraction")
             logger.info("  --ocr-results-dir: Process OCR results directory")
-            logger.info("  --model: Choose model (solar-ko, qwen, lightweight, llama, qwen72b, qwenvl, qwen3, qwen3-next, qwen3-30b, qwen3-235b, gemma3, mixtral)")
+            logger.info("  --single-file: Process single OCR text file")
+            logger.info("  --model: Choose model:")
+            logger.info("    Local models: solar-ko, qwen, lightweight, llama, qwen72b, qwenvl, qwen3, qwen3-next, qwen3-30b, qwen3-235b, gemma3, mixtral")
+            logger.info("    Alibaba Cloud: alibaba-qwen-plus, alibaba-qwen-max, alibaba-qwen-turbo, alibaba-qwen-vl-plus")
+            logger.info("    Alibaba Qwen3: alibaba-qwen3-next-80b-a3b-instruct, alibaba-qwen3-vl-235b-a22b-instruct, alibaba-qwen3-235b-a22b-instruct-2507")
     
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")
