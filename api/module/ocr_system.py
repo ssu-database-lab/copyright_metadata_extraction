@@ -39,7 +39,7 @@ def _create_output_structure(file_path: Path, base_input_path: Path, output_base
 
 def _load_ocr_config() -> Dict[str, Any]:
     """OCR 설정 파일을 로드합니다."""
-    config_path = Path(__file__).parent.parent / "ocr_config.json"
+    config_path = Path(__file__).parent.parent / "ocr_key" / "ocr_config.json"
     
     if not config_path.exists():
         # 기본 설정 파일 생성
@@ -91,7 +91,7 @@ def ocr_naver(input_path: str, output_path: str) -> Dict[str, Any]:
         )
     
     설정 파일:
-        ocr_config.json에 API 정보를 설정하세요:
+        api/ocr_key/ocr_config.json에 API 정보를 설정하세요:
         {
             "naver": {
                 "api_url": "https://...",
@@ -130,7 +130,7 @@ def ocr_naver(input_path: str, output_path: str) -> Dict[str, Any]:
         if not api_url or not secret_key:
             return {
                 "success": False,
-                "error": "Naver OCR API 설정이 ocr_config.json에 올바르게 설정되지 않았습니다."
+                "error": "Naver OCR API 설정이 api/ocr_key/ocr_config.json에 올바르게 설정되지 않았습니다."
             }
         
         input_path_obj = Path(input_path)
@@ -344,7 +344,7 @@ def ocr_mistral(input_path: str, output_path: str) -> Dict[str, Any]:
         if not api_key:
             return {
                 "success": False,
-                "error": "Mistral API 설정이 ocr_config.json에 올바르게 설정되지 않았습니다."
+                "error": "Mistral API 설정이 api/ocr_key/ocr_config.json에 올바르게 설정되지 않았습니다."
             }
         
         input_path_obj = Path(input_path)

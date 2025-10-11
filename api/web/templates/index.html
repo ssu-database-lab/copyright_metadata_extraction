@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NER 엔티티 추출</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+            color: #2c3e50;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 0;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        /* 업로드 영역 */
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 50px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover {
+            border-color: #4299e1;
+            background: #f7fafc;
+        }
+
+        .upload-area.dragover {
+            border-color: #4299e1;
+            background: #ebf8ff;
+            transform: scale(1.01);
+        }
+
+        .upload-area h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .upload-area p {
+            color: #718096;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: #3182ce;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 모델 선택 */
+        .model-selection {
+            margin-bottom: 30px;
+        }
+
+        .model-selection h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .model-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .model-option {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .model-option:hover {
+            border-color: #4299e1;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(66, 153, 225, 0.15);
+        }
+
+        .model-option.selected {
+            border-color: #4299e1;
+            background: #ebf8ff;
+            box-shadow: 0 2px 8px rgba(66, 153, 225, 0.2);
+        }
+
+        .model-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f5f5f5;
+        }
+
+        .model-option.disabled:hover {
+            border-color: #e0e0e0;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .setup-required {
+            color: #e53e3e;
+            font-size: 0.75rem;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .model-option input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        .model-name {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .model-desc {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .model-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        /* 파일 정보 */
+        .file-info {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* 진행 상황 */
+        .progress-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .progress-section.show {
+            display: block;
+        }
+
+        .progress-bar-container {
+            background: #e0e0e0;
+            border-radius: 50px;
+            height: 30px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            background: #4299e1;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .progress-steps {
+            list-style: none;
+        }
+
+        .progress-step {
+            padding: 10px;
+            border-left: 3px solid #e0e0e0;
+            margin-left: 10px;
+            color: #999;
+        }
+
+        .progress-step.active {
+            border-left-color: #4299e1;
+            color: #4299e1;
+            font-weight: 500;
+        }
+
+        .progress-step.completed {
+            border-left-color: #4caf50;
+            color: #4caf50;
+        }
+
+        /* 결과 영역 */
+        .result-section {
+            display: none;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .result-section.show {
+            display: block;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #4299e1;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .entities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .entity-card {
+            background: #4299e1;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(66, 153, 225, 0.2);
+        }
+
+        .entity-type {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .entity-count {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .download-btn {
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        /* 에러 메시지 */
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* 로딩 애니메이션 */
+        .spinner {
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #4299e1;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+
+        .spinner.show {
+            display: block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .main-card {
+                padding: 25px;
+            }
+
+            .model-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NER 엔티티 추출</h1>
+        </header>
+
+        <div class="main-card">
+            <!-- OCR 엔진 선택 -->
+            <div class="model-selection">
+                <h3>OCR 엔진 선택</h3>
+                <div class="model-options">
+                    {% for key, engine in ocr_engines.items() %}
+                    <label class="model-option {% if loop.first and engine.available %}selected{% endif %} {% if not engine.available %}disabled{% endif %}">
+                        <input type="radio" name="ocr_engine" value="{{ key }}" 
+                               {% if loop.first and engine.available %}checked{% endif %}
+                               {% if not engine.available %}disabled{% endif %}>
+                        <div>
+                            <div class="model-name">{{ engine.name }}</div>
+                            <div class="model-desc">{{ engine.description }}</div>
+                            {% if not engine.available %}
+                            <div class="setup-required">설정 필요</div>
+                            {% else %}
+                            <div class="model-stats">
+                                <span>품질: {{ engine.quality }}</span>
+                                <span>속도: {{ engine.speed }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 모델 선택 -->
+            <div class="model-selection">
+                <h3>NER 모델 선택</h3>
+                <div class="model-options">
+                    {% for key, model in models.items() %}
+                    <label class="model-option {% if loop.first %}selected{% endif %}">
+                        <input type="radio" name="model" value="{{ key }}" {% if loop.first %}checked{% endif %}>
+                        <div class="model-name">{{ model.display_name }}</div>
+                        <div class="model-desc">{{ model.description }}</div>
+                        <div class="model-stats">
+                            <span>정확도: {{ model.accuracy }}</span>
+                            <span>속도: {{ model.speed }}</span>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 파일 업로드 -->
+            <div class="upload-area" id="uploadArea">
+                <h3>파일 업로드</h3>
+                <p>PDF, PNG, JPG, TIFF 파일을 드래그하거나 클릭하여 선택하세요 (최대 100MB)</p>
+                <button class="btn" id="selectFileBtn">
+                    파일 선택
+                </button>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff">
+            </div>
+
+            <!-- 파일 정보 -->
+            <div class="file-info" id="fileInfo">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-size" id="fileSize"></div>
+            </div>
+
+            <!-- 업로드 버튼 -->
+            <button class="btn" id="uploadBtn" style="width: 100%; display: none;" onclick="uploadFile()">
+                처리 시작
+            </button>
+
+            <!-- 진행 상황 -->
+            <div class="progress-section" id="progressSection">
+                <h3>처리 중...</h3>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar">0%</div>
+                </div>
+                <ul class="progress-steps">
+                    <li class="progress-step" id="step1">PDF 변환 중...</li>
+                    <li class="progress-step" id="step2">OCR 텍스트 추출 중...</li>
+                    <li class="progress-step" id="step3">NER 엔티티 분석 중...</li>
+                </ul>
+                <div class="spinner show"></div>
+            </div>
+
+            <!-- 에러 메시지 -->
+            <div class="error-message" id="errorMessage"></div>
+
+            <!-- 결과 영역 -->
+            <div class="result-section" id="resultSection">
+                <div class="result-header">
+                    <h3 class="result-title">처리 완료</h3>
+                </div>
+
+                <div class="result-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="entityCount">0</div>
+                        <div class="stat-label">추출된 엔티티</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="processingTime">0s</div>
+                        <div class="stat-label">처리 시간</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="ocrEngine">-</div>
+                        <div class="stat-label">OCR 엔진</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="modelUsed">-</div>
+                        <div class="stat-label">NER 모델</div>
+                    </div>
+                </div>
+
+                <h4 style="margin-top: 30px; margin-bottom: 15px; color: #333;">엔티티 타입별 분포</h4>
+                <div class="entities-grid" id="entitiesGrid"></div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn download-btn" id="downloadEntitiesBtn" style="flex: 1;">
+                        추출 엔티티 다운로드
+                    </button>
+                    <button class="btn download-btn" id="downloadStatsBtn" style="flex: 1; background: #10b981;">
+                        통계 리포트 다운로드
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let currentRequestId = null;
+
+        // localStorage에서 이전 선택 불러오기
+        function loadPreviousSelections() {
+            const savedOcrEngine = localStorage.getItem('selectedOcrEngine');
+            const savedModel = localStorage.getItem('selectedModel');
+
+            // OCR 엔진 복원
+            if (savedOcrEngine) {
+                const ocrRadio = document.querySelector(`input[name="ocr_engine"][value="${savedOcrEngine}"]`);
+                if (ocrRadio && !ocrRadio.disabled) {
+                    // 기존 선택 해제
+                    document.querySelectorAll('input[name="ocr_engine"]').forEach(r => {
+                        r.parentElement.classList.remove('selected');
+                        r.checked = false;
+                    });
+                    // 저장된 선택 복원
+                    ocrRadio.checked = true;
+                    ocrRadio.parentElement.classList.add('selected');
+                }
+            }
+
+            // NER 모델 복원
+            if (savedModel) {
+                const modelRadio = document.querySelector(`input[name="model"][value="${savedModel}"]`);
+                if (modelRadio) {
+                    // 기존 선택 해제
+                    document.querySelectorAll('input[name="model"]').forEach(r => {
+                        r.parentElement.classList.remove('selected');
+                        r.checked = false;
+                    });
+                    // 저장된 선택 복원
+                    modelRadio.checked = true;
+                    modelRadio.parentElement.classList.add('selected');
+                }
+            }
+        }
+
+        // OCR 엔진 선택 UI
+        document.querySelectorAll('input[name="ocr_engine"]').forEach(radio => {
+            if (!radio.disabled) {
+                radio.parentElement.addEventListener('click', function() {
+                    if (!this.classList.contains('disabled')) {
+                        document.querySelectorAll('input[name="ocr_engine"]').forEach(r => {
+                            r.parentElement.classList.remove('selected');
+                        });
+                        this.classList.add('selected');
+                        this.querySelector('input[type="radio"]').checked = true;
+                        
+                        // localStorage에 저장
+                        localStorage.setItem('selectedOcrEngine', this.querySelector('input[type="radio"]').value);
+                    }
+                });
+            }
+        });
+
+        // 모델 선택 UI
+        document.querySelectorAll('input[name="model"]').forEach(radio => {
+            radio.parentElement.addEventListener('click', function() {
+                document.querySelectorAll('input[name="model"]').forEach(r => {
+                    r.parentElement.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                this.querySelector('input[type="radio"]').checked = true;
+                
+                // localStorage에 저장
+                localStorage.setItem('selectedModel', this.querySelector('input[type="radio"]').value);
+            });
+        });
+
+        // 페이지 로드 시 이전 선택 복원
+        window.addEventListener('DOMContentLoaded', loadPreviousSelections);
+
+        // 파일 업로드 영역 설정
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const selectFileBtn = document.getElementById('selectFileBtn');
+
+        // 버튼 클릭 이벤트 (이벤트 전파 중지)
+        selectFileBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // 상위로 이벤트 전파 방지
+            fileInput.click();
+        });
+
+        // 업로드 영역 클릭 (버튼 영역 제외)
+        uploadArea.addEventListener('click', (e) => {
+            // 버튼을 클릭한 경우가 아니면 파일 선택
+            if (e.target !== selectFileBtn && !selectFileBtn.contains(e.target)) {
+                fileInput.click();
+            }
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            selectedFile = file;
+            
+            // 파일 정보 표시
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = `크기: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+            document.getElementById('fileInfo').classList.add('show');
+            document.getElementById('uploadBtn').style.display = 'block';
+            
+            // 이전 결과 숨기기
+            document.getElementById('resultSection').classList.remove('show');
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        async function uploadFile() {
+            if (!selectedFile) {
+                alert('파일을 선택해주세요');
+                return;
+            }
+
+            const selectedModelRadio = document.querySelector('input[name="model"]:checked');
+            const selectedOcrRadio = document.querySelector('input[name="ocr_engine"]:checked:not([disabled])');
+            
+            if (!selectedOcrRadio) {
+                alert('사용 가능한 OCR 엔진을 선택해주세요');
+                return;
+            }
+
+            const selectedModel = selectedModelRadio.value;
+            const selectedOcrEngine = selectedOcrRadio.value;
+
+            // UI 초기화
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('progressSection').classList.add('show');
+            document.getElementById('resultSection').classList.remove('show');
+            document.getElementById('errorMessage').classList.remove('show');
+            
+            updateProgress(0, 1);
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('model', selectedModel);
+                formData.append('ocr_engine', selectedOcrEngine);
+
+                updateProgress(33, 2);
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    updateProgress(100, 3, true);
+                    
+                    setTimeout(() => {
+                        showResults(result);
+                        document.getElementById('progressSection').classList.remove('show');
+                    }, 500);
+                } else {
+                    showError(result.error || '처리 중 오류가 발생했습니다');
+                }
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showError('서버 연결 오류: ' + error.message);
+            } finally {
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        }
+
+        function updateProgress(percent, step, completed = false) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressBar').textContent = percent + '%';
+
+            for (let i = 1; i <= 3; i++) {
+                const stepEl = document.getElementById(`step${i}`);
+                stepEl.classList.remove('active', 'completed');
+                
+                if (i < step || completed) {
+                    stepEl.classList.add('completed');
+                } else if (i === step) {
+                    stepEl.classList.add('active');
+                }
+            }
+        }
+
+        function showResults(result) {
+            currentRequestId = result.request_id;
+
+            // 통계 표시
+            document.getElementById('entityCount').textContent = result.entity_count;
+            document.getElementById('processingTime').textContent = result.processing_time + 's';
+            document.getElementById('ocrEngine').textContent = result.ocr_engine.split(' ')[0];
+            document.getElementById('modelUsed').textContent = result.model.split(' ')[0];
+
+            // 엔티티 타입별 카드 생성
+            const entitiesGrid = document.getElementById('entitiesGrid');
+            entitiesGrid.innerHTML = '';
+
+            const entities = result.entities;
+            const entityTypes = {
+                'NAME': '이름',
+                'DATE': '날짜',
+                'COMPANY': '회사/기관',
+                'LOCATION': '장소',
+                'ADDRESS': '주소',
+                'PHONE': '전화번호',
+                'EMAIL': '이메일',
+                'MONEY': '금액',
+                'OTHER': '기타'
+            };
+
+            for (const [type, koreanName] of Object.entries(entityTypes)) {
+                const count = entities[type] || 0;
+                if (count > 0) {
+                    const card = document.createElement('div');
+                    card.className = 'entity-card';
+                    card.innerHTML = `
+                        <div class="entity-type">${koreanName}</div>
+                        <div class="entity-count">${count}</div>
+                    `;
+                    entitiesGrid.appendChild(card);
+                }
+            }
+
+            // 결과 영역 표시
+            document.getElementById('resultSection').classList.add('show');
+
+            // 다운로드 버튼 설정
+            document.getElementById('downloadEntitiesBtn').onclick = () => {
+                window.location.href = `/download/${currentRequestId}?type=entities`;
+            };
+            
+            document.getElementById('downloadStatsBtn').onclick = () => {
+                window.location.href = `/download/${currentRequestId}?type=stats`;
+            };
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = '❌ ' + message;
+            errorEl.classList.add('show');
+            document.getElementById('progressSection').classList.remove('show');
+        }
+    </script>
+</body>
+</html>

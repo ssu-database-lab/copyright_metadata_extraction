@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 
 # API 버전 정보
 __version__ = "1.0.0"
-__author__ = "AI API Team"
+__author__ = "DBLab"
 
 # API에서 제공하는 함수들
 __all__ = [
