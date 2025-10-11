@@ -1,160 +1,652 @@
-# API System Usage Guide
+================================================================================
+API USAGE GUIDE
+================================================================================
 
-## What This System Does
-This system provides 3 main functions for document processing:
+This document provides comprehensive usage information for the AI API system.
+The API provides PDF processing, OCR, and NER (Named Entity Recognition) functions.
 
-1. **PDF Conversion**: Convert PDF files to images
-2. **Text Recognition (OCR)**: Extract text from images or scanned documents  
-3. **Information Extraction (NER)**: Automatically find names, phone numbers, addresses etc. from text
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+1. pdf_to_image    - Convert PDF to images
+2. ocr_naver       - Naver CLOVA OCR
+3. ocr_mistral     - Mistral Vision OCR
+4. ocr_google      - Google Cloud Vision OCR
+5. ocr_complete    - Unified OCR (all engines)
+6. ner_predict     - Named Entity Recognition (Prediction)
+7. ner_train       - NER Model Training
 
-## Installation
+================================================================================
+1. pdf_to_image - PDF to Image Converter
+================================================================================
 
-### 1. Install Required Packages
-```bash
-pip install -r requirements.txt
-```
+Function Signature:
+    pdf_to_image(
+        input_path: str,
+        output_path: str,
+        dpi: int = 200,
+        image_format: str = "png"
+    ) -> Dict[str, Any]
 
-### 2. Basic Usage
-```bash
-python api.py
-```
+Parameters:
+    input_path (str)      : PDF file path, image file path, or directory path
+    output_path (str)     : Output directory for saving images
+    dpi (int)             : Image resolution (default: 200, recommended: 150-300)
+    image_format (str)    : Output image format ("png", "jpg", "jpeg")
 
-## Simple Usage Examples
+Returns:
+    Dict[str, Any]:
+        - success (bool)            : Success status
+        - converted_files (int)     : Number of PDF files converted
+        - total_images (int)        : Total number of images generated
+        - output_directory (str)    : Output directory path
+        - images (List[str])        : List of generated image file paths
+        - processing_time (float)   : Processing time in seconds
 
-### 1. Extract Information from Text
-```python
-# Find names, phone numbers etc. from text
-text = "Contractor: Kim Minsu, Phone: 010-1234-5678"
-results = extract_entities_from_text(text)
+Usage Examples:
+    # Convert single PDF file
+    result = pdf_to_image(
+        input_path="document.pdf",
+        output_path="output/"
+    )
+    
+    # Convert with high resolution
+    result = pdf_to_image(
+        input_path="contract.pdf",
+        output_path="output/",
+        dpi=300,
+        image_format="jpg"
+    )
+    
+    # Process entire directory
+    result = pdf_to_image(
+        input_path="documents/",
+        output_path="output/"
+    )
 
-# View results
-for info, type in results:
-    print(f"{info} ({type})")
-```
+Output Structure:
+    output/
+    └── pdf_convert/
+        ├── document_name/
+        │   ├── 001.png
+        │   ├── 002.png
+        │   └── ...
+        └── another_document/
+            └── 001.png
 
-### 2. Process PDF Files
-```python
-# Convert PDF to images
-pdf_to_image("contract.pdf", "images/")
 
-# Extract text from images
-ocr_google("images/", "text/")
+================================================================================
+2. ocr_naver - Naver CLOVA OCR
+================================================================================
 
-# Extract information from text
-ner_predict("text/", "results/")
-```
+Function Signature:
+    ocr_naver(
+        input_path: str,
+        output_path: str
+    ) -> Dict[str, Any]
 
-## Information Types We Can Find
+Parameters:
+    input_path (str)      : Input image file path or directory path
+    output_path (str)     : Output directory path
 
-- Names (NAME): Kim Minsu, Park Younghee
-- Phone Numbers (PHONE): 010-1234-5678, 02-123-4567  
-- Addresses (ADDRESS): Seoul Gangnam-gu Teheran-ro 123
-- Emails (EMAIL): test@example.com
-- Companies (COMPANY): Samsung Electronics, KOCCA
-- Dates (DATE): January 1, 2024
-- Money (MONEY): 1,000,000 KRW
-- 20+ other information types
+Returns:
+    Dict[str, Any]:
+        - success (bool)            : Success status
+        - processed_files (int)     : Number of files processed
+        - output_directory (str)    : Output directory path
+        - processing_time (float)   : Processing time in seconds
 
-## Troubleshooting
+Configuration (ocr_config.json):
+    {
+        "naver": {
+            "api_url": "https://...",
+            "secret_key": "your_secret_key",
+            "template_ids": ["template_id_1"]
+        }
+    }
 
-### Installation Problems
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
+Usage Examples:
+    result = ocr_naver(
+        input_path="images/",
+        output_path="output/"
+    )
 
-### Slow Processing
-- Use computer with GPU if available
-- Try with smaller files first
+Notes:
+    - Requires Naver CLOVA OCR API account
+    - Get API URL and Secret Key from Naver Cloud Platform
+    - Supported formats: JPG, PNG, PDF, TIFF (max 20MB)
+    - Free tier: 1,000 requests/month
+    - Optimized for Korean documents
 
-### Poor Results
-- Check document quality (scan quality, resolution)
-- Try different OCR engines
+Output Structure:
+    output/
+    └── ocr/
+        └── naver/
+            ├── document_name/
+            │   └── document_name.txt
+            └── another_document/
+                └── another_document.txt
 
-## Supported Entity Types
 
-| Type | Description | Examples |
-|------|-------------|----------|
-| NAME | Person names | Kim Minsu, Park Younghee |
-| PHONE | Phone numbers | 010-1234-5678, 02-123-4567 |
-| ADDRESS | Addresses | Seoul Gangnam-gu Teheran-ro 123 |
-| EMAIL | Email addresses | test@example.com |
-| COMPANY | Company/Organization names | Samsung Electronics, KOCCA |
-| DATE | Dates | January 1, 2024, 2024.01.01 |
-| MONEY | Monetary amounts | 1,000,000 KRW |
-| POSITION | Job positions | Manager, Team Lead, Assistant |
-| CONTRACT_TYPE | Contract types | Transfer Agreement, Service Contract |
-| CONSENT_TYPE | Consent types | Free Use Permission Agreement |
-| RIGHT_INFO | Rights information | Copyright, Portrait rights |
-| PERIOD | Time periods | 1 year, 6 months |
-| PROJECT_NAME | Project names | Digital Transformation Project |
-| LAW_REFERENCE | Legal references | Copyright Act Article 25 |
-| ID_NUM | ID numbers | 901215-1234567 |
-| TITLE | Titles | Copyright Transfer Agreement |
-| URL | URL information | https://example.com |
-| DESCRIPTION | Descriptions | Public work utilization |
-| TYPE | Types | Video, Image, Text |
-| STATUS | Status | Approved, Pending, Complete |
-| DEPARTMENT | Department info | Planning Dept, Dev Team |
-| LANGUAGE | Languages | Korean, English |
-| QUANTITY | Quantity info | 100 cases, 50 items |
+================================================================================
+3. ocr_mistral - Mistral Vision OCR
+================================================================================
 
-## Training Parameter Settings
+Function Signature:
+    ocr_mistral(
+        input_path: str,
+        output_path: str
+    ) -> Dict[str, Any]
 
-### Quick Test
-```python
-ner_train(epochs=1, batch_size=4, max_length=64)
-```
+Parameters:
+    input_path (str)      : Input image file path or directory path
+    output_path (str)     : Output directory path
 
-### General Production
-```python
-ner_train(epochs=3, batch_size=8, max_length=128)
-```
+Returns:
+    Dict[str, Any]:
+        - success (bool)            : Success status
+        - processed_files (int)     : Number of files processed
+        - output_directory (str)    : Output directory path
+        - processing_time (float)   : Processing time in seconds
 
-### High Performance
-```python
-ner_train(epochs=5, batch_size=16, max_length=256, enable_fp16=True)
-```
+Configuration (ocr_config.json):
+    {
+        "mistral": {
+            "api_key": "your_api_key",
+            "model_name": "pixtral-12b-2409",
+            "prompt": "Extract all text from this image...",
+            "max_tokens": 2000
+        }
+    }
 
-## File Structure
-```
-api/module/ner/
-├── ner_system.py      # Main system
-├── ner_train.py       # Training module
-├── requirements.txt   # Package dependencies
-└── backup/           # Backup files
-```
+Usage Examples:
+    result = ocr_mistral(
+        input_path="images/",
+        output_path="output/"
+    )
 
-## Troubleshooting
+Notes:
+    - Uses Mistral AI's vision model
+    - Requires Mistral API key
+    - Good for multilingual documents
+    - Cost: Pay per API call
 
-### GPU Memory Insufficient
-```python
-# Reduce batch size
-ner_train(batch_size=4, enable_fp16=True)
-```
+Output Structure:
+    output/
+    └── ocr/
+        └── mistral/
+            └── document_name/
+                └── document_name.txt
 
-### Low Prediction Accuracy
-```python
-# Execute retraining
-ner_train(force_retrain=True, epochs=5)
-```
 
-### Model Load Failure
-```python
-# Check model status and retrain
-status = get_training_status()
-if not status['model_exists']:
-    ner_train()
-```
+================================================================================
+4. ocr_google - Google Cloud Vision OCR
+================================================================================
 
-## Performance Optimization Tips
+Function Signature:
+    ocr_google(
+        input_path: str,
+        output_path: str
+    ) -> Dict[str, Any]
 
-1. **GPU Usage**: 10x+ speed improvement with CUDA-enabled GPU
-2. **Batch Size**: Adjust according to GPU memory (8-16 recommended)
-3. **Text Length**: Long texts are automatically split and processed
-4. **FP16**: Speed improvement with Mixed Precision Training
-5. **Regex Fallback**: Automatic backup processing when B-I-O model fails
+Parameters:
+    input_path (str)      : Input image file path or directory path
+    output_path (str)     : Output directory path
 
-## Support and Contact
+Returns:
+    Dict[str, Any]:
+        - success (bool)            : Success status
+        - processed_files (int)     : Number of files processed
+        - output_directory (str)    : Output directory path
+        - processing_time (float)   : Processing time in seconds
 
-Please contact the development team for system-related inquiries or error reports.
+Configuration (ocr_config.json):
+    {
+        "google": {
+            "credentials_path": "path/to/credentials.json",
+            "use_document_detection": true
+        }
+    }
+
+Usage Examples:
+    result = ocr_google(
+        input_path="images/",
+        output_path="output/"
+    )
+
+Notes:
+    - Requires Google Cloud Vision API credentials
+    - Download JSON credentials from Google Cloud Console
+    - Highly accurate for various languages
+    - Free tier: 1,000 requests/month
+    - Cost: $1.50 per 1,000 images after free tier
+
+Setup:
+    1. Go to Google Cloud Console (console.cloud.google.com)
+    2. Enable Cloud Vision API
+    3. Create service account and download JSON credentials
+    4. Set credentials_path in ocr_config.json
+
+Output Structure:
+    output/
+    └── ocr/
+        └── google/
+            └── document_name/
+                └── document_name.txt
+
+
+================================================================================
+5. ocr_complete - Unified OCR (All Engines)
+================================================================================
+
+Function Signature:
+    ocr_complete(
+        input_path: str,
+        output_path: str
+    ) -> Dict[str, Any]
+
+Parameters:
+    input_path (str)      : Input image file path or directory path
+    output_path (str)     : Output directory path
+
+Returns:
+    Dict[str, Any]:
+        - success (bool)            : Success status
+        - processed_files (int)     : Number of files processed
+        - engines_used (List[str])  : List of OCR engines used
+        - output_directory (str)    : Output directory path
+        - processing_time (float)   : Processing time in seconds
+
+Usage Examples:
+    result = ocr_complete(
+        input_path="images/",
+        output_path="output/"
+    )
+
+Notes:
+    - Runs all configured OCR engines (Naver, Google, Mistral)
+    - Best accuracy by combining multiple engines
+    - Highest cost (uses all APIs)
+    - Configure all engines in ocr_config.json
+
+Output Structure:
+    output/
+    └── ocr/
+        ├── naver/
+        │   └── document_name/
+        ├── google/
+        │   └── document_name/
+        └── mistral/
+            └── document_name/
+
+
+================================================================================
+6. ner_predict - Named Entity Recognition (Prediction)
+================================================================================
+
+Function Signature:
+    ner_predict(
+        input_path: str,
+        output_path: str,
+        model_name: Optional[str] = None,
+        confidence_threshold: float = 0.85,
+        output_format: str = "both",
+        save_statistics: bool = True,
+        entity_filter: Optional[List[str]] = None,
+        auto_train: bool = True,
+        auto_download: bool = True
+    ) -> Dict[str, Any]
+
+Parameters:
+    input_path (str)              : Input file/directory path (.txt or .md files)
+    output_path (str)             : Output directory path
+    model_name (Optional[str])    : Model name (default: from model_config.json)
+                                    Examples: "klue-roberta-large", "xlm-roberta-large"
+    confidence_threshold (float)  : Confidence threshold (default: 0.85)
+    output_format (str)           : Output format (default: "both")
+    save_statistics (bool)        : Save statistics (default: True)
+    entity_filter (List[str])     : Entity type filter (default: None, extract all)
+    auto_train (bool)             : Auto-train if model doesn't exist (default: True)
+    auto_download (bool)          : Auto-download from Hugging Face (default: True)
+
+Supported Entity Types (23 types):
+    - NAME           : Person names
+    - PHONE          : Phone numbers
+    - ADDRESS        : Addresses
+    - DATE           : Dates
+    - COMPANY        : Company/organization names
+    - EMAIL          : Email addresses
+    - POSITION       : Job titles/positions
+    - CONTRACT_TYPE  : Contract types
+    - CONSENT_TYPE   : Consent types
+    - RIGHT_INFO     : Rights information
+    - MONEY          : Monetary amounts
+    - PERIOD         : Time periods
+    - PROJECT_NAME   : Project names
+    - LAW_REFERENCE  : Legal references
+    - ID_NUM         : ID numbers
+    - TITLE          : Titles
+    - URL            : URLs
+    - DESCRIPTION    : Descriptions
+    - TYPE           : Types
+    - STATUS         : Status
+    - DEPARTMENT     : Department information
+    - LANGUAGE       : Languages
+    - QUANTITY       : Quantities
+
+Returns:
+    Dict[str, Any]:
+        - success (bool)                : Success status
+        - processed_files (int)         : Number of files processed
+        - total_entities (int)          : Total entities extracted
+        - output_directory (str)        : Output directory path
+        - processing_time (float)       : Processing time in seconds
+        - summary_file (str)            : Summary file path
+
+Usage Examples:
+    # Basic usage (auto-download from Hugging Face)
+    result = ner_predict(
+        input_path="ocr_results/",
+        output_path="ner_results/"
+    )
+    
+    # Specify model name
+    result = ner_predict(
+        input_path="ocr_results/",
+        output_path="ner_results/",
+        model_name="xlm-roberta-large"
+    )
+    
+    # Filter specific entity types
+    result = ner_predict(
+        input_path="ocr_results/",
+        output_path="ner_results/",
+        entity_filter=["NAME", "COMPANY", "DATE"]
+    )
+    
+    # Disable auto-download and auto-train (use regex only)
+    result = ner_predict(
+        input_path="ocr_results/",
+        output_path="ner_results/",
+        auto_download=False,
+        auto_train=False
+    )
+
+Model Download Flow:
+    1. Check local model (models/ner/{model_name}/)
+       ↓ If not found
+    2. Auto-download from Hugging Face (auto_download=True)
+       ↓ If download fails
+    3. Auto-train model (auto_train=True)
+       ↓ If training is disabled
+    4. Use regex-based extraction only
+
+Supported Models:
+    - klue-roberta-large        : Korean optimized (from klue/roberta-large)
+    - xlm-roberta-large         : Multilingual (from xlm-roberta-large)
+    - bert-base-multilingual    : Multilingual BERT
+    - Any Hugging Face model name
+
+Output Structure:
+    output/
+    └── ner/
+        ├── document_name_entities.json
+        ├── another_document_entities.json
+        └── summary.json
+
+Output JSON Format:
+    {
+        "file": "path/to/document.txt",
+        "entities": {
+            "NAME": ["John Doe", "Jane Smith"],
+            "COMPANY": ["ABC Corp", "XYZ Inc"],
+            "DATE": ["2024-01-01", "2024-12-31"]
+        },
+        "entity_count": 5,
+        "entity_types": ["NAME", "COMPANY", "DATE"]
+    }
+
+
+================================================================================
+7. ner_train - NER Model Training
+================================================================================
+
+Function Signature:
+    ner_train(
+        epochs: int = 3,
+        batch_size: int = 8,
+        learning_rate: float = 3e-5,
+        model_name: str = "klue-roberta-large",
+        output_dir: Optional[str] = None,
+        enable_fp16: bool = True,
+        max_length: int = 128,
+        warmup_steps: int = 100,
+        save_steps: int = 200,
+        eval_steps: int = 100,
+        force_retrain: bool = False,
+        callback_url: Optional[str] = None
+    ) -> Dict[str, Any]
+
+Parameters:
+    epochs (int)                  : Number of training epochs (default: 3)
+    batch_size (int)              : Batch size (default: 8)
+    learning_rate (float)         : Learning rate (default: 3e-5)
+    model_name (str)              : Base model name (default: "klue-roberta-large")
+    output_dir (Optional[str])    : Output directory (default: auto-generated)
+    enable_fp16 (bool)            : Use mixed precision training (default: True)
+    max_length (int)              : Maximum token length (default: 128)
+    warmup_steps (int)            : Warmup steps (default: 100)
+    save_steps (int)              : Model save interval (default: 200)
+    eval_steps (int)              : Evaluation interval (default: 100)
+    force_retrain (bool)          : Force retrain even if model exists (default: False)
+    callback_url (Optional[str])  : Training status callback URL (optional)
+
+Returns:
+    Dict[str, Any]:
+        - success (bool)            : Success status
+        - model_path (str)          : Trained model path
+        - training_time (float)     : Training time in seconds
+        - final_epoch (int)         : Final epoch number
+        - config (Dict)             : Training configuration
+
+Usage Examples:
+    # Basic training (3 epochs)
+    result = ner_train()
+    
+    # Custom configuration
+    result = ner_train(
+        epochs=5,
+        batch_size=16,
+        learning_rate=2e-5,
+        model_name="xlm-roberta-large"
+    )
+    
+    # Force retrain existing model
+    result = ner_train(
+        force_retrain=True
+    )
+
+Training Data:
+    - Location: api/module/ner/training/{model_name}/dynamic_train.txt
+    - Format: BIO tagging
+    - Example:
+        김철수	B-NAME
+        씨는	O
+        서울	B-ADDRESS
+        강남구	I-ADDRESS
+
+Requirements:
+    - GPU recommended (CUDA support)
+    - Minimum 8GB RAM
+    - Training time: ~20-30 minutes (3 epochs)
+
+Output Structure:
+    api/
+    ├── models/
+    │   └── ner/
+    │       └── {model_name}/
+    │           ├── config.json
+    │           ├── model.safetensors
+    │           ├── tokenizer.json
+    │           └── label_map.json
+    └── module/
+        └── ner/
+            └── training/
+                └── {model_name}/
+                    ├── logs/
+                    └── checkpoints/
+
+
+================================================================================
+WORKFLOW EXAMPLES
+================================================================================
+
+Example 1: Complete Pipeline (PDF → OCR → NER)
+    # Step 1: Convert PDF to images
+    pdf_result = pdf_to_image(
+        input_path="documents/contract.pdf",
+        output_path="output/"
+    )
+    
+    # Step 2: Extract text with OCR
+    ocr_result = ocr_google(
+        input_path="output/pdf_convert/",
+        output_path="output/"
+    )
+    
+    # Step 3: Extract entities with NER
+    ner_result = ner_predict(
+        input_path="output/ocr/google/",
+        output_path="output/"
+    )
+
+Example 2: Batch Processing
+    # Process entire directory
+    pdf_to_image("documents/", "output/", dpi=300)
+    ocr_google("output/pdf_convert/", "output/")
+    ner_predict("output/ocr/google/", "output/")
+
+Example 3: Multiple OCR Engines
+    # Use all OCR engines for better accuracy
+    ocr_complete("output/pdf_convert/", "output/")
+    ner_predict("output/ocr/google/", "output/")
+
+
+================================================================================
+ERROR HANDLING
+================================================================================
+
+All functions return a dictionary with 'success' key:
+    result = ner_predict(input_path, output_path)
+    
+    if result['success']:
+        print(f"Processed {result['processed_files']} files")
+    else:
+        print(f"Error: {result.get('error', 'Unknown error')}")
+
+Common Errors:
+    - "Input path does not exist"
+        → Check input_path is correct
+    
+    - "No text files to process"
+        → NER requires .txt or .md files
+    
+    - "OCR API configuration error"
+        → Check ocr_config.json settings
+    
+    - "Model not found"
+        → Set auto_download=True or run ner_train()
+
+
+================================================================================
+CONFIGURATION FILES
+================================================================================
+
+1. ocr_config.json (OCR API settings)
+    Location: api/ocr_config.json
+    
+    {
+        "naver": {
+            "api_url": "https://...",
+            "secret_key": "your_secret_key",
+            "template_ids": ["template_id"]
+        },
+        "google": {
+            "credentials_path": "path/to/credentials.json",
+            "use_document_detection": true
+        },
+        "mistral": {
+            "api_key": "your_api_key",
+            "model_name": "pixtral-12b-2409",
+            "prompt": "Extract all text...",
+            "max_tokens": 2000
+        }
+    }
+
+2. model_config.json (NER model settings)
+    Location: api/model_config.json
+    
+    {
+        "ner": {
+            "default_model": "klue-roberta-large",
+            "available_models": [
+                "klue-roberta-large",
+                "xlm-roberta-large"
+            ]
+        }
+    }
+
+
+================================================================================
+PERFORMANCE TIPS
+================================================================================
+
+1. PDF Conversion
+    - Use dpi=200 for general documents
+    - Use dpi=300 for high-quality scans
+    - PNG format recommended for OCR
+
+2. OCR Processing
+    - Google OCR: Best overall accuracy
+    - Naver OCR: Best for Korean documents
+    - Mistral OCR: Good for complex layouts
+
+3. NER Prediction
+    - Use auto_download=True for convenience
+    - Fine-tune model for better accuracy (ner_train)
+    - Use entity_filter to focus on specific types
+
+4. Batch Processing
+    - Process directories instead of individual files
+    - Use progress bars (enabled by default)
+    - Check disk space before processing
+
+
+================================================================================
+SUPPORT AND RESOURCES
+================================================================================
+
+Documentation:
+    - API README: api/README.md
+    - Korean Guide: api/사용법.txt
+
+Configuration:
+    - OCR Config: api/ocr_config.json
+    - Model Config: api/model_config.json
+
+Models:
+    - NER Models: api/models/ner/
+    - Training Data: api/module/ner/training/
+
+Hugging Face:
+    - klue/roberta-large: https://huggingface.co/klue/roberta-large
+    - xlm-roberta-large: https://huggingface.co/xlm-roberta-large
+
+API Services:
+    - Naver Cloud: https://www.ncloud.com/
+    - Google Cloud: https://console.cloud.google.com/
+    - Mistral AI: https://mistral.ai/
+
+================================================================================
+END OF USAGE GUIDE
+================================================================================

@@ -1,160 +1,808 @@
-# API 시스템 사용법
+================================================================================
+API 사용 가이드 (한국어)
+================================================================================
 
-## 기능 소개
-이 시스템은 문서 처리를 위한 3가지 주요 기능을 제공합니다:
+이 문서는 AI API 시스템의 전체 사용법을 제공합니다.
+API는 PDF 처리, OCR, NER (개체명 인식) 기능을 제공합니다.
 
-1. **PDF 변환**: PDF 파일을 이미지로 변환
-2. **문자 인식(OCR)**: 이미지나 스캔 문서에서 텍스트 추출
-3. **정보 추출(NER)**: 텍스트에서 이름, 전화번호, 주소 등 중요 정보 자동 추출
+================================================================================
+목차
+================================================================================
+1. pdf_to_image    - PDF를 이미지로 변환
+2. ocr_naver       - 네이버 CLOVA OCR
+3. ocr_mistral     - Mistral Vision OCR
+4. ocr_google      - Google Cloud Vision OCR
+5. ocr_complete    - 통합 OCR (모든 엔진)
+6. ner_predict     - 개체명 인식 (예측)
+7. ner_train       - NER 모델 훈련
+8. ner_evaluate    - NER 모델 성능 평가
 
-## 설치 방법
+================================================================================
+1. pdf_to_image - PDF를 이미지로 변환
+================================================================================
 
-### 1. 필요한 프로그램 설치
-```bash
-pip install -r requirements.txt
-```
+함수 시그니처:
+    pdf_to_image(
+        input_path: str,
+        output_path: str,
+        dpi: int = 200,
+        image_format: str = "png"
+    ) -> Dict[str, Any]
 
-### 2. 기본 실행
-```bash
-python api.py
-```
+매개변수:
+    input_path (str)      : PDF 파일 경로, 이미지 파일 경로, 또는 디렉토리 경로
+    output_path (str)     : 이미지 저장 출력 디렉토리
+    dpi (int)             : 이미지 해상도 (기본값: 200, 권장: 150-300)
+    image_format (str)    : 출력 이미지 포맷 ("png", "jpg", "jpeg")
 
-## 간단한 사용법
+반환값:
+    Dict[str, Any]:
+        - success (bool)            : 성공 여부
+        - converted_files (int)     : 변환된 PDF 파일 수
+        - total_images (int)        : 생성된 총 이미지 수
+        - output_directory (str)    : 출력 디렉토리 경로
+        - images (List[str])        : 생성된 이미지 파일 경로 리스트
+        - processing_time (float)   : 처리 시간(초)
 
-### 1. 텍스트에서 정보 추출
-```python
-# 텍스트에서 이름, 전화번호 등 찾기
-text = "계약자: 김민수, 전화번호: 010-1234-5678"
-결과 = extract_entities_from_text(text)
+사용 예제:
+    # 단일 PDF 파일 변환
+    result = pdf_to_image(
+        input_path="문서.pdf",
+        output_path="output/"
+    )
+    
+    # 고해상도로 변환
+    result = pdf_to_image(
+        input_path="계약서.pdf",
+        output_path="output/",
+        dpi=300,
+        image_format="jpg"
+    )
+    
+    # 디렉토리 전체 처리
+    result = pdf_to_image(
+        input_path="documents/",
+        output_path="output/"
+    )
 
-# 결과 보기
-for 정보, 종류 in 결과:
-    print(f"{정보} ({종류})")
-```
+출력 구조:
+    output/
+    └── pdf_convert/
+        ├── 문서이름/
+        │   ├── 001.png
+        │   ├── 002.png
+        │   └── ...
+        └── 다른문서/
+            └── 001.png
 
-### 2. PDF 파일 처리
-```python
-# PDF를 이미지로 변환
-pdf_to_image("계약서.pdf", "이미지폴더/")
 
-# 이미지에서 텍스트 추출  
-ocr_google("이미지폴더/", "텍스트폴더/")
+================================================================================
+2. ocr_naver - 네이버 CLOVA OCR
+================================================================================
 
-# 텍스트에서 정보 추출
-ner_predict("텍스트폴더/", "결과폴더/")
-```
+함수 시그니처:
+    ocr_naver(
+        input_path: str,
+        output_path: str
+    ) -> Dict[str, Any]
 
-## 찾을 수 있는 정보 종류
+매개변수:
+    input_path (str)      : 입력 이미지 파일 경로 또는 디렉토리 경로
+    output_path (str)     : 출력 디렉토리 경로
 
-- 이름 (NAME): 김민수, 박영희
-- 전화번호 (PHONE): 010-1234-5678, 02-123-4567
-- 주소 (ADDRESS): 서울시 강남구 테헤란로 123
-- 이메일 (EMAIL): test@example.com
-- 회사명 (COMPANY): 삼성전자, 한국콘텐츠진흥원
-- 날짜 (DATE): 2024년 1월 1일
-- 금액 (MONEY): 1,000,000원
-- 기타 20여개 정보 유형
+반환값:
+    Dict[str, Any]:
+        - success (bool)            : 성공 여부
+        - processed_files (int)     : 처리된 파일 수
+        - output_directory (str)    : 출력 디렉토리 경로
+        - processing_time (float)   : 처리 시간(초)
 
-## 문제 해결
+설정 (ocr_config.json):
+    {
+        "naver": {
+            "api_url": "https://...",
+            "secret_key": "your_secret_key",
+            "template_ids": ["template_id_1"]
+        }
+    }
 
-### 설치가 안 될 때
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
+사용 예제:
+    result = ocr_naver(
+        input_path="images/",
+        output_path="output/"
+    )
 
-### 속도가 느릴 때
-- GPU가 있는 컴퓨터 사용 권장
-- 파일 크기를 줄여서 테스트
+주의사항:
+    - 네이버 CLOVA OCR API 계정 필요
+    - 네이버 클라우드 플랫폼에서 API URL과 Secret Key 발급
+    - 지원 포맷: JPG, PNG, PDF, TIFF (최대 20MB)
+    - 무료 플랜: 월 1,000건
+    - 한국어 문서에 최적화
 
-### 결과가 이상할 때  
-- 문서 품질 확인 (스캔 품질, 해상도)
-- 다른 OCR 엔진 사용해보기
+출력 구조:
+    output/
+    └── ocr/
+        └── naver/
+            ├── 문서이름/
+            │   └── 문서이름.txt
+            └── 다른문서/
+                └── 다른문서.txt
 
-## 지원하는 엔티티 타입
 
-| 타입 | 설명 | 예시 |
-|------|------|------|
-| NAME | 이름 | 김민수, 박영희 |
-| PHONE | 전화번호 | 010-1234-5678, 02-123-4567 |
-| ADDRESS | 주소 | 서울시 강남구 테헤란로 123 |
-| EMAIL | 이메일 | test@example.com |
-| COMPANY | 회사/기관명 | 삼성전자, 한국콘텐츠진흥원 |
-| DATE | 날짜 | 2024년 1월 1일, 2024.01.01 |
-| MONEY | 금액 | 1,000,000원 |
-| POSITION | 직책 | 부장, 팀장, 대리 |
-| CONTRACT_TYPE | 계약서 유형 | 양도계약서, 용역계약 |
-| CONSENT_TYPE | 동의서 유형 | 자유이용허락동의서 |
-| RIGHT_INFO | 권리정보 | 저작권, 초상권 |
-| PERIOD | 기간 | 1년간, 6개월 |
-| PROJECT_NAME | 사업명 | 디지털 전환 사업 |
-| LAW_REFERENCE | 법령 근거 | 저작권법 제25조 |
-| ID_NUM | 신분증번호 | 901215-1234567 |
-| TITLE | 제목 | 저작물 양도 계약서 |
-| URL | URL정보 | https://example.com |
-| DESCRIPTION | 설명 | 공공저작물 활용 |
-| TYPE | 유형 | 영상, 이미지, 텍스트 |
-| STATUS | 상태 | 승인, 대기, 완료 |
-| DEPARTMENT | 부서정보 | 기획부, 개발팀 |
-| LANGUAGE | 언어 | 한국어, 영어 |
-| QUANTITY | 수량정보 | 100건, 50개 |
+================================================================================
+3. ocr_mistral - Mistral Vision OCR
+================================================================================
 
-## 훈련 파라미터 설정
+함수 시그니처:
+    ocr_mistral(
+        input_path: str,
+        output_path: str
+    ) -> Dict[str, Any]
 
-### 빠른 테스트용
-```python
-ner_train(epochs=1, batch_size=4, max_length=64)
-```
+매개변수:
+    input_path (str)      : 입력 이미지 파일 경로 또는 디렉토리 경로
+    output_path (str)     : 출력 디렉토리 경로
 
-### 일반 운영용
-```python
-ner_train(epochs=3, batch_size=8, max_length=128)
-```
+반환값:
+    Dict[str, Any]:
+        - success (bool)            : 성공 여부
+        - processed_files (int)     : 처리된 파일 수
+        - output_directory (str)    : 출력 디렉토리 경로
+        - processing_time (float)   : 처리 시간(초)
 
-### 고성능용
-```python
-ner_train(epochs=5, batch_size=16, max_length=256, enable_fp16=True)
-```
+설정 (ocr_config.json):
+    {
+        "mistral": {
+            "api_key": "your_api_key",
+            "model_name": "pixtral-12b-2409",
+            "prompt": "이미지에서 모든 텍스트를 추출하세요...",
+            "max_tokens": 2000
+        }
+    }
 
-## 파일 구조
-```
-api/module/ner/
-├── ner_system.py      # 메인 시스템
-├── ner_train.py       # 훈련 모듈
-├── requirements.txt   # 패키지 의존성
-└── backup/           # 백업 파일들
-```
+사용 예제:
+    result = ocr_mistral(
+        input_path="images/",
+        output_path="output/"
+    )
 
-## 문제 해결
+주의사항:
+    - Mistral AI의 비전 모델 사용
+    - Mistral API 키 필요
+    - 다국어 문서에 유용
+    - 비용: API 호출당 과금
 
-### GPU 메모리 부족
-```python
-# 배치 크기 줄이기
-ner_train(batch_size=4, enable_fp16=True)
-```
+출력 구조:
+    output/
+    └── ocr/
+        └── mistral/
+            └── 문서이름/
+                └── 문서이름.txt
 
-### 예측 정확도 낮음
-```python
-# 재훈련 실행
-ner_train(force_retrain=True, epochs=5)
-```
 
-### 모델 로드 실패
-```python
-# 모델 상태 확인 후 재훈련
-status = get_training_status()
-if not status['model_exists']:
-    ner_train()
-```
+================================================================================
+4. ocr_google - Google Cloud Vision OCR
+================================================================================
 
-## 성능 최적화 팁
+함수 시그니처:
+    ocr_google(
+        input_path: str,
+        output_path: str
+    ) -> Dict[str, Any]
 
-1. **GPU 사용**: CUDA 지원 GPU 사용시 10배 이상 속도 향상
-2. **배치 크기**: GPU 메모리에 맞게 조정 (8-16 권장)
-3. **텍스트 길이**: 긴 텍스트는 자동 분할 처리
-4. **FP16**: Mixed Precision Training으로 속도 향상
-5. **정규표현식**: B-I-O 모델 실패시 자동 백업 처리
+매개변수:
+    input_path (str)      : 입력 이미지 파일 경로 또는 디렉토리 경로
+    output_path (str)     : 출력 디렉토리 경로
 
-## 지원 및 문의
+반환값:
+    Dict[str, Any]:
+        - success (bool)            : 성공 여부
+        - processed_files (int)     : 처리된 파일 수
+        - output_directory (str)    : 출력 디렉토리 경로
+        - processing_time (float)   : 처리 시간(초)
 
-시스템 관련 문의사항이나 오류 발생시 개발팀에 연락해주세요.
+설정 (ocr_config.json):
+    {
+        "google": {
+            "credentials_path": "path/to/credentials.json",
+            "use_document_detection": true
+        }
+    }
+
+사용 예제:
+    result = ocr_google(
+        input_path="images/",
+        output_path="output/"
+    )
+
+주의사항:
+    - Google Cloud Vision API 인증 정보 필요
+    - Google Cloud Console에서 JSON 인증 정보 다운로드
+    - 다양한 언어에서 높은 정확도
+    - 무료 플랜: 월 1,000건
+    - 비용: 무료 플랜 이후 1,000건당 $1.50
+
+설정 방법:
+    1. Google Cloud Console (console.cloud.google.com) 접속
+    2. Cloud Vision API 활성화
+    3. 서비스 계정 생성 및 JSON 인증 정보 다운로드
+    4. ocr_config.json에 credentials_path 설정
+
+출력 구조:
+    output/
+    └── ocr/
+        └── google/
+            └── 문서이름/
+                └── 문서이름.txt
+
+
+================================================================================
+5. ocr_complete - 통합 OCR (모든 엔진)
+================================================================================
+
+함수 시그니처:
+    ocr_complete(
+        input_path: str,
+        output_path: str
+    ) -> Dict[str, Any]
+
+매개변수:
+    input_path (str)      : 입력 이미지 파일 경로 또는 디렉토리 경로
+    output_path (str)     : 출력 디렉토리 경로
+
+반환값:
+    Dict[str, Any]:
+        - success (bool)            : 성공 여부
+        - processed_files (int)     : 처리된 파일 수
+        - engines_used (List[str])  : 사용된 OCR 엔진 리스트
+        - output_directory (str)    : 출력 디렉토리 경로
+        - processing_time (float)   : 처리 시간(초)
+
+사용 예제:
+    result = ocr_complete(
+        input_path="images/",
+        output_path="output/"
+    )
+
+주의사항:
+    - 설정된 모든 OCR 엔진 실행 (Naver, Google, Mistral)
+    - 여러 엔진 조합으로 최고 정확도
+    - 가장 높은 비용 (모든 API 사용)
+    - ocr_config.json에 모든 엔진 설정 필요
+
+출력 구조:
+    output/
+    └── ocr/
+        ├── naver/
+        │   └── 문서이름/
+        ├── google/
+        │   └── 문서이름/
+        └── mistral/
+            └── 문서이름/
+
+
+================================================================================
+6. ner_predict - 개체명 인식 (예측)
+================================================================================
+
+함수 시그니처:
+    ner_predict(
+        input_path: str,
+        output_path: str,
+        model_name: Optional[str] = None,
+        confidence_threshold: float = 0.85,
+        output_format: str = "both",
+        save_statistics: bool = True,
+        entity_filter: Optional[List[str]] = None,
+        train: bool = False,
+        debug: bool = False
+    ) -> Dict[str, Any]
+
+매개변수:
+    input_path (str)              : 입력 파일/디렉토리 경로 (.txt 또는 .md 파일)
+    output_path (str)             : 출력 디렉토리 경로
+    model_name (Optional[str])    : 모델 이름 (기본값: model_config.json에서)
+                                    예: "klue-roberta-large", "xlm-roberta-large"
+    confidence_threshold (float)  : 신뢰도 임계값 (기본값: 0.85)
+    output_format (str)           : 출력 포맷 (기본값: "both")
+    save_statistics (bool)        : 통계 저장 여부 (기본값: True)
+    entity_filter (List[str])     : 엔티티 타입 필터 (기본값: None, 모두 추출)
+    train (bool)                  : True이면 무조건 모델 훈련 후 예측 (기본값: False)
+    debug (bool)                  : True이면 상세 디버그 로그 출력 (기본값: False)
+
+지원 엔티티 타입 (23개):
+    - NAME           : 사람 이름
+    - PHONE          : 전화번호
+    - ADDRESS        : 주소
+    - DATE           : 날짜
+    - COMPANY        : 회사/조직명
+    - EMAIL          : 이메일 주소
+    - POSITION       : 직책/직위
+    - CONTRACT_TYPE  : 계약 유형
+    - CONSENT_TYPE   : 동의 유형
+    - RIGHT_INFO     : 권리 정보
+    - MONEY          : 금액
+    - PERIOD         : 기간
+    - PROJECT_NAME   : 프로젝트명
+    - LAW_REFERENCE  : 법령 근거
+    - ID_NUM         : 신분증 번호
+    - TITLE          : 제목
+    - URL            : URL
+    - DESCRIPTION    : 설명
+    - TYPE           : 유형
+    - STATUS         : 상태
+    - DEPARTMENT     : 부서 정보
+    - LANGUAGE       : 언어
+    - QUANTITY       : 수량
+
+반환값:
+    Dict[str, Any]:
+        - success (bool)                : 성공 여부
+        - processed_files (int)         : 처리된 파일 수
+        - total_entities (int)          : 추출된 총 엔티티 수
+        - output_directory (str)        : 출력 디렉토리 경로
+        - processing_time (float)       : 처리 시간(초)
+        - summary_file (str)            : 요약 파일 경로
+
+사용 예제:
+    # 기본 사용법 (기존 모델 사용, 조용한 모드)
+    result = ner_predict(
+        input_path="ocr_results/",
+        output_path="ner_results/"
+    )
+    
+    # 디버그 모드 (상세 로그 출력)
+    result = ner_predict(
+        input_path="ocr_results/",
+        output_path="ner_results/",
+        debug=True
+    )
+    
+    # 모델 훈련 후 예측
+    result = ner_predict(
+        input_path="ocr_results/",
+        output_path="ner_results/",
+        train=True,
+        debug=True
+    )
+    
+    # 특정 엔티티 타입만 추출
+    result = ner_predict(
+        input_path="ocr_results/",
+        output_path="ner_results/",
+        entity_filter=["NAME", "COMPANY", "DATE"]
+    )
+
+모델 사용 흐름:
+    1. 로컬 모델 확인 (models/ner/{model_name}/)
+       ↓ 있으면: 모델 로드하여 예측
+       ↓ 없으면: 정규표현식만 사용
+    
+    2. train=True이면:
+       → 무조건 모델 재훈련 후 예측
+    
+    3. debug=True이면:
+       → 상세 로그 출력
+       → 프로그레스 바 표시
+       → 디버그 파일 생성 (debug/ 디렉토리)
+
+지원 모델:
+    - klue-roberta-large        : 한국어 최적화 (klue/roberta-large에서)
+    - xlm-roberta-large         : 다국어 (xlm-roberta-large에서)
+    - bert-base-multilingual    : 다국어 BERT
+    - Hugging Face 모델 이름
+
+출력 구조:
+    output/
+    └── ner/
+        ├── 문서이름_entities.json
+        ├── 다른문서_entities.json
+        └── summary.json
+
+출력 JSON 포맷:
+    {
+        "file": "path/to/document.txt",
+        "entities": {
+            "NAME": ["홍길동", "김철수"],
+            "COMPANY": ["삼성전자", "LG전자"],
+            "DATE": ["2024-01-01", "2024-12-31"]
+        },
+        "entity_count": 5,
+        "entity_types": ["NAME", "COMPANY", "DATE"]
+    }
+
+
+================================================================================
+7. ner_train - NER 모델 훈련
+================================================================================
+
+함수 시그니처:
+    ner_train(
+        epochs: int = 3,
+        batch_size: int = 8,
+        learning_rate: float = 3e-5,
+        model_name: str = "klue-roberta-large",
+        output_dir: Optional[str] = None,
+        enable_fp16: bool = True,
+        max_length: int = 128,
+        warmup_steps: int = 100,
+        save_steps: int = 200,
+        eval_steps: int = 100,
+        force_retrain: bool = False,
+        callback_url: Optional[str] = None,
+        debug: bool = False
+    ) -> Dict[str, Any]
+
+매개변수:
+    epochs (int)                  : 훈련 에포크 수 (기본값: 3)
+    batch_size (int)              : 배치 크기 (기본값: 8)
+    learning_rate (float)         : 학습률 (기본값: 3e-5)
+    model_name (str)              : 기본 모델 이름 (기본값: "klue-roberta-large")
+    output_dir (Optional[str])    : 출력 디렉토리 (기본값: 자동 생성)
+    enable_fp16 (bool)            : 혼합 정밀도 훈련 사용 (기본값: True)
+    max_length (int)              : 최대 토큰 길이 (기본값: 128)
+    warmup_steps (int)            : 워밍업 스텝 수 (기본값: 100)
+    save_steps (int)              : 모델 저장 간격 (기본값: 200)
+    eval_steps (int)              : 평가 간격 (기본값: 100)
+    force_retrain (bool)          : 모델이 있어도 강제 재훈련 (기본값: False)
+    callback_url (Optional[str])  : 훈련 상태 콜백 URL (선택사항)
+    debug (bool)                  : True이면 상세 디버그 로그 출력 (기본값: False)
+
+반환값:
+    Dict[str, Any]:
+        - success (bool)            : 성공 여부
+        - model_path (str)          : 훈련된 모델 경로
+        - training_time (float)     : 훈련 시간(초)
+        - final_epoch (int)         : 최종 에포크 번호
+        - config (Dict)             : 훈련 설정
+
+사용 예제:
+    # 기본 훈련 (3 에포크, 조용한 모드)
+    result = ner_train()
+    
+    # 디버그 모드 훈련 (상세 로그)
+    result = ner_train(
+        debug=True
+    )
+    
+    # 커스텀 설정 + 디버그
+    result = ner_train(
+        epochs=5,
+        batch_size=16,
+        learning_rate=2e-5,
+        model_name="xlm-roberta-large",
+        debug=True
+    )
+    
+    # 기존 모델 강제 재훈련
+    result = ner_train(
+        force_retrain=True,
+        debug=True
+    )
+
+훈련 데이터:
+    - 위치: api/module/ner/training/{model_name}/dynamic_train.txt
+    - 포맷: BIO 태깅
+    - 예제:
+        김철수	B-NAME
+        씨는	O
+        서울	B-ADDRESS
+        강남구	I-ADDRESS
+
+요구사항:
+    - GPU 권장 (CUDA 지원)
+    - 최소 8GB RAM
+    - 훈련 시간: 약 20-30분 (3 에포크)
+
+출력 구조:
+    api/
+    ├── models/
+    │   └── ner/
+    │       └── {model_name}/
+    │           ├── config.json
+    │           ├── model.safetensors
+    │           ├── tokenizer.json
+    │           └── label_map.json
+    └── module/
+        └── ner/
+            └── training/
+                └── {model_name}/
+                    ├── logs/
+                    └── checkpoints/
+
+
+================================================================================
+8. ner_evaluate - NER 모델 성능 평가
+================================================================================
+
+함수 시그니처:
+    ner_evaluate(
+        test_data_path: Optional[str] = None,
+        model_name: Optional[str] = None,
+        output_path: Optional[str] = None,
+        verbose: bool = False,
+        debug: bool = False,
+        use_validation: bool = False,
+        use_test: bool = False
+    ) -> Dict[str, Any]
+
+매개변수:
+    test_data_path (Optional[str]) : 테스트 데이터 파일 경로 (BIO 포맷 .txt)
+                                     None이면 자동으로 training/{model_name}/test.txt 사용
+    model_name (Optional[str])     : 평가할 모델 이름 (기본값: klue-roberta-large)
+    output_path (Optional[str])    : 평가 결과 저장 경로
+                                     None이면 module/ner/validate/{model_name}/ 에 자동 저장
+    verbose (bool)                 : 상세 출력 여부 (기본값: False)
+    debug (bool)                   : 디버그 모드 (기본값: False, True이면 verbose도 True)
+    use_validation (bool)          : True면 validation.txt 사용 (훈련 중 성능 확인)
+    use_test (bool)                : True면 test.txt 사용 (최종 평가)
+
+반환값:
+    Dict[str, Any]:
+        - success (bool)                : 성공 여부
+        - overall (Dict):
+            - precision (float)         : 전체 정밀도 (%)
+            - recall (float)            : 전체 재현율 (%)
+            - f1_score (float)          : 전체 F1 Score (%)
+            - total_tokens (int)        : 총 토큰 수
+        - entity_metrics (Dict)         : 엔티티별 상세 점수
+        - evaluation_time (float)       : 평가 시간(초)
+
+디렉토리 구조:
+    module/ner/
+    ├── training/{model_name}/        # 훈련 데이터
+    │   ├── train.txt                 # 훈련용 (80%)
+    │   ├── validation.txt            # 검증용 (10%) - 과대적합 방지
+    │   ├── test.txt                  # 테스트용 (10%) - 최종 평가
+    │   ├── data_split_info.json      # 분할 정보 (날짜, 비율, 엔티티 분포)
+    │   └── dynamic_train_raw.txt     # 원본 데이터
+    │
+    └── validate/{model_name}/        # 평가 결과
+        ├── evaluation_log.txt        # 평가 기록 (누적)
+        ├── validation_results_*.json # 검증 평가 결과
+        └── test_results_*.json       # 최종 평가 결과
+
+테스트 데이터 포맷 (BIO 태깅):
+    김철수	B-NAME
+    씨는	O
+    서울	B-ADDRESS
+    강남구	I-ADDRESS
+    에	O
+    거주합니다	O
+    .	O
+    
+    연락처는	O
+    010-1234-5678	B-PHONE
+    입니다	O
+
+사용 예제:
+    # 1. Validation 평가 (훈련 중 성능 확인)
+    result = ner_evaluate(
+        model_name="klue-roberta-large",
+        use_validation=True,  # validation.txt 사용
+        verbose=True
+    )
+    
+    # 2. Test 평가 (최종 성능 평가)
+    result = ner_evaluate(
+        model_name="klue-roberta-large",
+        use_test=True,  # test.txt 사용 (훈련에 절대 미사용!)
+        verbose=True,
+        debug=True
+    )
+    
+    # 3. 커스텀 데이터로 평가
+    result = ner_evaluate(
+        test_data_path="my_test_data.txt",
+        model_name="klue-roberta-large",
+        output_path="results/",
+        verbose=True
+    )
+    
+    # 4. 결과 확인
+    if result.get('success'):
+        overall = result['overall']
+        print(f"F1 Score: {overall['f1_score']:.2f}%")
+        print(f"Precision: {overall['precision']:.2f}%")
+        print(f"Recall: {overall['recall']:.2f}%")
+
+출력 구조:
+    module/ner/validate/{model_name}/
+    ├── evaluation_log.txt                 # 누적 평가 기록
+    ├── validation_results_20251010_153045.json
+    └── test_results_20251010_160230.json
+
+평가 로그 포맷 (evaluation_log.txt):
+    ================================================================================
+    평가 시각: 2025-10-10 15:30:45
+    평가 타입: Validation (훈련 중)
+    모델명: klue-roberta-large
+    테스트 데이터: validation.txt
+    --------------------------------------------------------------------------------
+    Precision (정밀도): 95.50%
+    Recall (재현율):    93.20%
+    F1 Score:           94.34%
+    총 토큰 수:         1,250
+    평가 시간:          2.35초
+    
+    주요 엔티티별 성능:
+      NAME: F1=96.50% P=97.20% R=95.80%
+      ADDRESS: F1=94.30% P=93.50% R=95.10%
+      PHONE: F1=98.20% P=98.50% R=97.90%
+    ================================================================================
+
+과대적합 방지 전략:
+    1. Train/Validation/Test Split (80/10/10):
+       - Train (80%): 모델 학습용
+       - Validation (10%): 훈련 중 성능 모니터링, 조기 종료
+       - Test (10%): 최종 평가 (절대 훈련에 사용 안 함!)
+    
+    2. Stratified Split:
+       - 각 엔티티 타입별로 균등하게 분배
+       - 희귀 엔티티도 모든 세트에 포함
+    
+    3. 평가 권장 사항:
+       - 훈련 중: use_validation=True (자주 체크 OK)
+       - 최종 평가: use_test=True (단 1회만!)
+       - Test 세트는 마지막 최종 평가 때만 사용
+
+활용 방법:
+    - 훈련 전/후 모델 성능 비교
+    - 다양한 모델 벤치마크
+    - 평가 로그로 성능 히스토리 추적 (누적 기록)
+    - Validation으로 과대적합 조기 발견
+
+
+================================================================================
+워크플로우 예제
+================================================================================
+
+예제 1: 전체 파이프라인 (PDF → OCR → NER)
+    # 1단계: PDF를 이미지로 변환
+    pdf_result = pdf_to_image(
+        input_path="documents/계약서.pdf",
+        output_path="output/"
+    )
+    
+    # 2단계: OCR로 텍스트 추출
+    ocr_result = ocr_google(
+        input_path="output/pdf_convert/",
+        output_path="output/"
+    )
+    
+    # 3단계: NER로 엔티티 추출
+    ner_result = ner_predict(
+        input_path="output/ocr/google/",
+        output_path="output/"
+    )
+
+예제 2: 배치 처리
+    # 디렉토리 전체 처리
+    pdf_to_image("documents/", "output/", dpi=300)
+    ocr_google("output/pdf_convert/", "output/")
+    ner_predict("output/ocr/google/", "output/")
+
+예제 3: 여러 OCR 엔진 사용
+    # 모든 OCR 엔진으로 최고 정확도
+    ocr_complete("output/pdf_convert/", "output/")
+    ner_predict("output/ocr/google/", "output/")
+
+
+================================================================================
+오류 처리
+================================================================================
+
+모든 함수는 'success' 키가 있는 딕셔너리를 반환합니다:
+    result = ner_predict(input_path, output_path)
+    
+    if result['success']:
+        print(f"처리된 파일: {result['processed_files']}개")
+    else:
+        print(f"오류: {result.get('error', '알 수 없는 오류')}")
+
+일반적인 오류:
+    - "Input path does not exist"
+        → input_path가 올바른지 확인
+    
+    - "No text files to process"
+        → NER은 .txt 또는 .md 파일 필요
+    
+    - "OCR API configuration error"
+        → ocr_config.json 설정 확인
+    
+    - "Model not found"
+        → auto_download=True 설정 또는 ner_train() 실행
+
+
+================================================================================
+설정 파일
+================================================================================
+
+1. ocr_config.json (OCR API 설정)
+    위치: api/ocr_config.json
+    
+    {
+        "naver": {
+            "api_url": "https://...",
+            "secret_key": "your_secret_key",
+            "template_ids": ["template_id"]
+        },
+        "google": {
+            "credentials_path": "path/to/credentials.json",
+            "use_document_detection": true
+        },
+        "mistral": {
+            "api_key": "your_api_key",
+            "model_name": "pixtral-12b-2409",
+            "prompt": "모든 텍스트를 추출하세요...",
+            "max_tokens": 2000
+        }
+    }
+
+2. model_config.json (NER 모델 설정)
+    위치: api/model_config.json
+    
+    {
+        "ner": {
+            "default_model": "klue-roberta-large",
+            "available_models": [
+                "klue-roberta-large",
+                "xlm-roberta-large"
+            ]
+        }
+    }
+
+
+================================================================================
+성능 최적화 팁
+================================================================================
+
+1. PDF 변환
+    - 일반 문서: dpi=200 사용
+    - 고품질 스캔: dpi=300 사용
+    - OCR에는 PNG 포맷 권장
+
+2. OCR 처리
+    - Google OCR: 전체적으로 최고 정확도
+    - Naver OCR: 한국어 문서에 최적
+    - Mistral OCR: 복잡한 레이아웃에 유리
+
+3. NER 예측
+    - 편의성: auto_download=True 사용
+    - 정확도 향상: 모델 파인튜닝 (ner_train)
+    - 특정 타입만: entity_filter 사용
+
+4. 배치 처리
+    - 개별 파일보다 디렉토리 처리
+    - 진행 표시줄 사용 (기본 활성화)
+    - 디스크 공간 미리 확인
+
+
+================================================================================
+지원 및 자료
+================================================================================
+
+문서:
+    - API README: api/README.md
+    - 영문 가이드: api/USAGE.txt
+
+설정:
+    - OCR 설정: api/ocr_config.json
+    - 모델 설정: api/model_config.json
+
+모델:
+    - NER 모델: api/models/ner/
+    - 훈련 데이터: api/module/ner/training/
+
+Hugging Face:
+    - klue/roberta-large: https://huggingface.co/klue/roberta-large
+    - xlm-roberta-large: https://huggingface.co/xlm-roberta-large
+
+API 서비스:
+    - 네이버 클라우드: https://www.ncloud.com/
+    - Google Cloud: https://console.cloud.google.com/
+    - Mistral AI: https://mistral.ai/
+
+================================================================================
+사용 가이드 끝
+================================================================================

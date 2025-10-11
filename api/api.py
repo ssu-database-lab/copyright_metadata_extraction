@@ -37,7 +37,8 @@ from module import (
     ocr_mistral,            # Mistral OCR  
     ocr_google,             # Google OCR
     ocr_complete,           # 통합 OCR
-    ner_predict             # NER 예측
+    ner_predict,            # NER 예측
+    ner_evaluate            # NER 평가
 )
 
 # 로깅 설정
@@ -51,11 +52,14 @@ logger = logging.getLogger(__name__)
 __version__ = "1.0.0"
 __author__ = "AI API Team"
 
-# API에서는 ner_predict만 제공
+# API에서 제공하는 함수들
 __all__ = [
     'pdf_to_image',
     'ocr_naver', 'ocr_mistral', 'ocr_google', 'ocr_complete',
-    'ner_predict'  # NER 예측만 제공
+    'ner_predict',  # NER 예측
+    'ner_evaluate',  # NER 평가
+    'process_pdf_to_ner',  # 통합 파이프라인
+    'get_api_info'  # API 정보
 ]
 
 def process_pdf_to_ner(

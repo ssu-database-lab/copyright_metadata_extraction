@@ -42,7 +42,8 @@ from transformers import (
     TrainingArguments,
     Trainer,
     DataCollatorForTokenClassification,
-    get_linear_schedule_with_warmup
+    get_linear_schedule_with_warmup,
+    EarlyStoppingCallback
 )
 from sklearn.metrics import f1_score, precision_score, recall_score
 from seqeval.metrics import f1_score as seqeval_f1, precision_score as seqeval_precision, recall_score as seqeval_recall, accuracy_score as seqeval_accuracy
@@ -50,29 +51,36 @@ from datasets import Dataset as HFDataset
 import warnings
 warnings.filterwarnings("ignore")
 
+# 추가 경고 메시지 숨기기
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = '1'
+import logging as transformers_logging
+transformers_logging.getLogger("transformers").setLevel(transformers_logging.ERROR)
+
 # GPU 설정
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
 
 # 로깅 설정
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.WARNING, format='%(message)s')
 
-@dataclass 
+@dataclass
 class TrainingConfig:
-    """최적화된 고품질 Fine-Tuning 설정"""
-    model_name: str = "klue/roberta-large"
-    num_epochs: int = 5   # 더 높은 품질을 위해 5 에포크로 증가
-    batch_size: int = 16  # 배치 크기 증가로 안정성 향상
-    learning_rate: float = 2e-5  # 더 낮은 학습률로 정밀 학습
+    """Fine-Tuning 설정"""
+    model_name: str = os.getenv("NER_MODEL_NAME", "klue/roberta-large")
+    num_epochs: int = 2
+    batch_size: int = 32
+    learning_rate: float = 3e-5
     weight_decay: float = 0.01
-    warmup_steps: int = 200  # 더 긴 warmup으로 안정성 향상
-    max_length: int = 256    # 더 긴 컨텍스트로 정확도 향상
+    warmup_ratio: float = 0.1
+    max_length: int = 128
     gradient_accumulation_steps: int = 1
-    eval_steps: int = 150    # 평가 간격 조정
-    save_steps: int = 300    # 저장 간격 조정
-    fp16: bool = True        # Mixed precision training 유지
-
-# 23개 엔티티 타입 (B-I-O 태깅)
+    eval_steps: int = 200
+    save_steps: int = 500
+    fp16: bool = True
+    early_stopping_patience: int = 3
+    dropout: float = 0.1
+    label_smoothing: float = 0.0# 23개 엔티티 타입 (B-I-O 태깅)
 ENTITY_TYPES = [
     "NAME",           # 이름 
     "PHONE",          # 전화번호
@@ -113,11 +121,46 @@ ID_TO_LABEL = {idx: label for label, idx in LABEL_TO_ID.items()}
 print(f"Total labels: {len(BIO_LABELS)}")
 print(f"Label examples: {BIO_LABELS[:10]}...")
 
+# 엔티티 데이터 풀 (전체 명사 데이터셋)
+ENTITY_DATA_POOL = {
+    "names": ["김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "한", "오", "서", "신", "권", "황", "안", "송", "류", "전", "홍", "고", "문", "양", "손", "배", "백", "허", "유", "남", "심", "노", "하", "곽", "성", "차", "주", "우", "구", "나", "민", "진", "지", "엄", "채", "원", "천", "방", "변", "여", "추", "도", "소", "석", "선", "설", "마", "길", "연"],
+    "given_names": ["민수", "영희", "철수", "영수", "미영", "수진", "정훈", "지영", "성호", "은주", "태현", "소영", "준호", "혜진", "동현", "서연", "도윤", "시우", "하은", "주원", "지호", "은서", "예준", "지민", "서진", "예림", "지아", "현우", "채원", "시윤", "유진", "시은", "준혁", "예은", "도현", "채윤", "건우", "서우", "지율", "하윤", "준서", "서준", "하준", "지후", "민준", "선우", "연우", "정우", "승우", "지원", "서윤", "지우", "민서", "하린", "수아", "지유", "유나", "소율", "예서", "하율", "시연", "유주", "다은", "서현", "가윤", "나윤"],
+    "companies": [
+        "삼성전자", "LG전자", "현대자동차", "SK텔레콤", "네이버", "카카오", "한국전력공사", "포스코", "신한은행", "국민은행", "하나은행", "우리은행", "KB국민은행", "KT", "LG유플러스", "롯데그룹", "두산그룹", "GS그룹", "한화그룹", "CJ그룹",
+        "서울시청", "부산시청", "인천시청", "대구시청", "광주시청", "대전시청", "울산시청", "세종시청", "경기도청", "강원도청", "충청북도청", "충청남도청", "전라북도청", "전라남도청", "경상북도청", "경상남도청", "제주도청",
+        "한국문화예술위원회", "국가보훈처", "문화체육관광부", "교육부", "한국저작권위원회", "한국콘텐츠진흥원", "국립중앙도서관", "국사편찬위원회", "문화재청", "방송통신위원회", "한국정보화진흥원", "한국교육학술정보원",
+        "KBS", "MBC", "SBS", "JTBC", "tvN", "채널A", "MBN", "TV조선", "YTN", "연합뉴스", "조선일보", "중앙일보", "동아일보", "한겨레", "경향신문",
+        "국립극장", "세종문화회관", "예술의전당", "국립현대미술관", "국립중앙박물관", "대한민국역사박물관", "국립민속박물관", "서울시립미술관", "부산시립미술관", "광주시립미술관", "한국문화예술교육진흥원", "한국문화관광연구원", "한국예술종합학교", "국악방송", "아리랑TV",
+        "나라지식정보", "한국문화정보원", "디지털헤리티지", "문화콘텐츠닷컴", "아트센터나비", "미디어아트센터", "콘텐츠웨이브", "크리에이티브그룹", "뉴미디어아트", "인터랙티브미디어", "스마트컬처", "디지털큐레이션"
+    ],
+    "cities": ["서울시", "부산시", "대구시", "인천시", "광주시", "대전시", "울산시", "세종시"],
+    "districts": ["강남구", "서초구", "송파구", "영등포구", "마포구", "용산구", "중구", "종로구", "성동구", "광진구", "동대문구", "중랑구", "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "양천구", "강서구", "구로구", "금천구", "관악구", "동작구", "강동구"],
+    "streets": ["테헤란로", "강남대로", "서초대로", "한강대로", "마포대로", "을지로", "종로", "세종대로", "청계천로", "남산터널로"]
+}
+
+def split_entity_data(train_ratio=0.8, random_seed=42):
+    """명사 데이터를 훈련/평가용으로 분할"""
+    random.seed(random_seed)
+    
+    train_data = {}
+    eval_data = {}
+    
+    for key, data_list in ENTITY_DATA_POOL.items():
+        shuffled = data_list.copy()
+        random.shuffle(shuffled)
+        split_idx = int(len(shuffled) * train_ratio)
+        train_data[key] = shuffled[:split_idx]
+        eval_data[key] = shuffled[split_idx:]
+    
+    return train_data, eval_data
+
 # 고품질 엔티티 생성기들
-def generate_random_name():
+def generate_random_name(data_source=None):
     """한국어 이름 생성"""
-    surnames = ["김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "한", "오", "서", "신", "권", "황", "안", "송", "류", "전", "홍", "고", "문", "양", "손", "배", "백", "허", "유", "남", "심", "노", "하", "곽", "성", "차", "주", "우", "구", "나", "민", "진", "지", "엄", "채", "원", "천", "방", "변", "여", "추", "도", "소", "석", "선", "설", "마", "길", "연"]
-    given_names = ["민수", "영희", "철수", "영수", "미영", "수진", "정훈", "지영", "성호", "은주", "태현", "소영", "준호", "혜진", "동현", "서연", "도윤", "시우", "하은", "주원", "지호", "은서", "예준", "지민", "서진", "예림", "지아", "현우", "채원", "시윤", "유진", "시은", "준혁", "예은", "도현", "채윤", "건우", "서우", "지율", "하윤", "준서", "서준", "하준", "지후", "민준", "선우", "연우", "정우", "승우", "지원", "서윤", "지우", "민서", "하린", "수아", "지유", "유나", "소율", "예서", "하율", "시연", "유주", "다은", "서현", "가윤", "나윤"]
+    if data_source is None:
+        data_source = ENTITY_DATA_POOL
+    surnames = data_source.get("names", ENTITY_DATA_POOL["names"])
+    given_names = data_source.get("given_names", ENTITY_DATA_POOL["given_names"])
     return random.choice(surnames) + random.choice(given_names)
 
 def generate_random_phone():
@@ -133,16 +176,11 @@ def generate_random_phone():
     ]
     return random.choice(patterns)
 
-def generate_random_company():
+def generate_random_company(data_source=None):
     """회사/기관명 생성"""
-    companies = [
-        "삼성전자", "LG전자", "현대자동차", "SK텔레콤", "네이버", "카카오", "한국전력공사", "포스코", "신한은행", "국민은행", "하나은행", "우리은행", "KB국민은행", "KT", "LG유플러스", "롯데그룹", "두산그룹", "GS그룹", "한화그룹", "CJ그룹",
-        "서울시청", "부산시청", "인천시청", "대구시청", "광주시청", "대전시청", "울산시청", "세종시청", "경기도청", "강원도청", "충청북도청", "충청남도청", "전라북도청", "전라남도청", "경상북도청", "경상남도청", "제주도청",
-        "한국문화예술위원회", "국가보훈처", "문화체육관광부", "교육부", "한국저작권위원회", "한국콘텐츠진흥원", "국립중앙도서관", "국사편찬위원회", "문화재청", "방송통신위원회", "한국정보화진흥원", "한국교육학술정보원",
-        "KBS", "MBC", "SBS", "JTBC", "tvN", "채널A", "MBN", "TV조선", "YTN", "연합뉴스", "조선일보", "중앙일보", "동아일보", "한겨레", "경향신문",
-        "국립극장", "세종문화회관", "예술의전당", "국립현대미술관", "국립중앙박물관", "대한민국역사박물관", "국립민속박물관", "서울시립미술관", "부산시립미술관", "광주시립미술관", "한국문화예술교육진흥원", "한국문화관광연구원", "한국예술종합학교", "국악방송", "아리랑TV",
-        "나라지식정보", "한국문화정보원", "디지털헤리티지", "문화콘텐츠닷컴", "아트센터나비", "미디어아트센터", "콘텐츠웨이브", "크리에이티브그룹", "뉴미디어아트", "인터랙티브미디어", "스마트컬처", "디지털큐레이션"
-    ]
+    if data_source is None:
+        data_source = ENTITY_DATA_POOL
+    companies = data_source.get("companies", ENTITY_DATA_POOL["companies"])
     
     suffixes = {
         "corporation": ["㈜", "(주)", "주식회사"],
@@ -180,11 +218,13 @@ def generate_random_date():
     ]
     return random.choice(patterns)
 
-def generate_random_address():
+def generate_random_address(data_source=None):
     """주소 생성"""
-    cities = ["서울시", "부산시", "대구시", "인천시", "광주시", "대전시", "울산시", "세종시"]
-    districts = ["강남구", "서초구", "송파구", "영등포구", "마포구", "용산구", "중구", "종로구", "성동구", "광진구", "동대문구", "중랑구", "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "양천구", "강서구", "구로구", "금천구", "관악구", "동작구", "강동구"]
-    streets = ["테헤란로", "강남대로", "서초대로", "한강대로", "마포대로", "을지로", "종로", "세종대로", "청계천로", "남산터널로"]
+    if data_source is None:
+        data_source = ENTITY_DATA_POOL
+    cities = data_source.get("cities", ENTITY_DATA_POOL["cities"])
+    districts = data_source.get("districts", ENTITY_DATA_POOL["districts"])
+    streets = data_source.get("streets", ENTITY_DATA_POOL["streets"])
     
     city = random.choice(cities)
     district = random.choice(districts)
@@ -430,24 +470,31 @@ def create_char_bio_tags(text, entities):
             
             # 이미 다른 엔티티로 태깅된 위치인지 확인
             if all(tags[i] == 'O' for i in range(pos, min(pos + len(entity_text), len(tags)))):
-                # B- 태그 (첫 번째 문자)
-                if pos < len(tags):
-                    tags[pos] = f'B-{entity_type}'
+                # B- 태그 (첫 번째 문자) - 공백은 제외
+                first_non_space_idx = pos
+                while first_non_space_idx < min(pos + len(entity_text), len(tags)) and not text[first_non_space_idx].strip():
+                    first_non_space_idx += 1
                 
-                # I- 태그 (나머지 문자들)
-                for i in range(pos + 1, min(pos + len(entity_text), len(tags))):
-                    if entity_text[i - pos].strip():  # 공백이 아닌 문자만 I- 태그 적용
+                if first_non_space_idx < len(tags):
+                    tags[first_non_space_idx] = f'B-{entity_type}'
+                
+                # I- 태그 (나머지 문자들) - 공백은 O로 유지
+                for i in range(pos, min(pos + len(entity_text), len(tags))):
+                    if i == first_non_space_idx:
+                        continue  # 이미 B- 태그 부여됨
+                    if text[i].strip():  # 공백이 아닌 문자만 I- 태그 적용
                         tags[i] = f'I-{entity_type}'
-                    else:
-                        tags[i] = f'I-{entity_type}'  # 공백도 엔티티의 일부로 처리
+                    # 공백은 O로 유지 (토크나이저가 공백을 offset에 포함하지 않음)
             
             start = pos + 1
     
     return tags
 
-def generate_rich_training_data(training_dir: Path, num_samples=3000):
-    """고품질 효율적 훈련 데이터 생성 (99% F1 Score 목표)"""
-    print(f"고품질 효율적 데이터셋 생성 중... (목표: {num_samples:,}개 샘플)")
+def generate_rich_training_data(training_dir: Path, num_samples=3000, data_source=None):
+    """훈련 데이터 생성"""
+    if data_source is None:
+        data_source = ENTITY_DATA_POOL
+    
     training_data = []
     
     # 대폭 확장된 문서 템플릿들
@@ -639,8 +686,8 @@ def generate_rich_training_data(training_dir: Path, num_samples=3000):
     }
     
     for i in range(num_samples):
-        if i % 1000 == 0:
-            print(f"   진행상황: {i:,}/{num_samples:,} 샘플 ({(i/num_samples*100):.1f}%)")
+        if i % 5000 == 0 and i > 0:
+            print(f"   진행: {i:,}/{num_samples:,} ({(i/num_samples*100):.0f}%)")
         
         # 다중 템플릿 조합 전략 (40% 확률로 복합 문서)
         if random.random() < 0.4:
@@ -704,13 +751,13 @@ def generate_rich_training_data(training_dir: Path, num_samples=3000):
                 'entity_diversity': len(unique_entity_types)
             })
     
-    print(f"완료: {len(training_data):,}개의 고품질 학습 샘플 생성")
+    # print(f"완료: {len(training_data):,}개의 고품질 학습 샘플 생성")
     
     # 훈련 데이터를 파일로 저장
     training_data_file = training_dir / f"training_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(training_data_file, 'w', encoding='utf-8') as f:
         json.dump(training_data, f, ensure_ascii=False, indent=2)
-    print(f"훈련 데이터 저장: {training_data_file}")
+    # print(f"훈련 데이터 저장: {training_data_file}")
     
     return training_data
 
@@ -731,7 +778,7 @@ def save_to_conll(data, filename):
                     f.write(f"{char}\t{tag}\n")
             f.write("\n")  # 문장 구분
     
-    print(f"저장 완료: {len(data):,}개 샘플을 {filename}에 저장")
+    # print(f"저장 완료: {len(data):,}개 샘플을 {filename}에 저장")
 
 def load_conll_data(filename):
     """CoNLL 형식 데이터 읽기"""
@@ -785,10 +832,10 @@ def align_labels_with_tokens(tokenizer, texts, labels, max_length=512):
             if start == 0 and end == 0:  # [CLS], [SEP], [PAD]
                 aligned_label.append(-100)
             else:
-                # 문자 위치에 맞는 라벨 찾기
-                char_idx = start
-                if char_idx < len(label):
-                    aligned_label.append(LABEL_TO_ID[label[char_idx]])
+                # Offset 범위의 첫 번째 문자 라벨 사용
+                # 예: (0,2) → label[0] 사용 (B-NAME)
+                if start < len(label):
+                    aligned_label.append(LABEL_TO_ID[label[start]])
                 else:
                     aligned_label.append(LABEL_TO_ID['O'])
         
@@ -844,21 +891,21 @@ def compute_metrics(eval_pred):
         }
 
 def train_ner_model():
-    """99% F1 Score 목표의 고성능 NER Fine-Tuning"""
-    print("=" * 60)
-    print("     고성능 NER Fine-Tuning 시스템 (99% F1 목표)")
+    """고성능 NER Fine-Tuning"""
+    print("\n" + "=" * 60)
+    print("NER 모델 훈련 시작")
     print("=" * 60)
     
     start_time = time.time()
     config = TrainingConfig()
     
     if torch.cuda.is_available():
-        print(f"GPU 사용: {torch.cuda.get_device_name(0)}")
+        gpu_name = torch.cuda.get_device_name(0)
         memory_gb = torch.cuda.get_device_properties(0).total_memory / 1024**3
-        print(f"GPU 메모리: {memory_gb:.1f}GB")
+        print(f"GPU: {gpu_name} ({memory_gb:.1f}GB)")
         torch.cuda.empty_cache()
     else:
-        print("CPU 모드로 실행")
+        print("CPU 모드")
     
     # 경로 설정 - 모델명 기반 디렉토리 구조
     current_dir = Path(__file__).parent
@@ -879,82 +926,118 @@ def train_ner_model():
     training_dir = training_base_dir / model_name_safe
     training_dir.mkdir(exist_ok=True)
     
-    print(f"모델 이름: {config.model_name}")
-    print(f"모델 저장 위치: {model_output_dir}")
-    print(f"훈련 데이터 위치: {training_dir}")
+    print(f"모델: {config.model_name}")
     
-    # 1. 고품질 훈련 데이터 생성 (대규모 데이터셋)
-    print(f"\n{'='*10} 단계 1: 대규모 고품질 훈련 데이터 생성 {'='*10}")
-    training_data = generate_rich_training_data(training_dir, num_samples=20000)  # 20,000개로 대폭 확장
+    # 데이터 파일 경로
+    temp_train_file = training_dir / "train.txt"
+    temp_val_file = training_dir / "validation.txt"
+    temp_test_file = training_dir / "test.txt"
     
-    if not training_data:
-        print("오류: 학습 데이터 생성 실패!")
-        return False
+    # 데이터가 이미 존재하면 재사용
+    if temp_train_file.exists() and temp_val_file.exists() and temp_test_file.exists():
+        print(f"\n기존 데이터 사용 중...")
+        print(f"✓ 훈련 데이터: {temp_train_file}")
+        print(f"✓ 평가 데이터: {temp_val_file}")
+    else:
+        # 1. 명사 데이터 분할 (훈련 80% / 평가 20%)
+        print(f"\n명사 데이터 분할 중... (훈련 80% / 평가 20%)")
+        train_data_source, eval_data_source = split_entity_data(train_ratio=0.8, random_seed=42)
+        print(f"✓ 훈련용 명사: {sum(len(v) for v in train_data_source.values())}개")
+        print(f"✓ 평가용 명사: {sum(len(v) for v in eval_data_source.values())}개")
+        
+        # 2. 훈련 데이터 생성 (80% 명사 사용)
+        print(f"\n훈련 데이터 생성 중...")
+        training_data = generate_rich_training_data(training_dir, num_samples=3000, data_source=train_data_source)
+        
+        if not training_data:
+            print("오류: 학습 데이터 생성 실패!")
+            return False
+        
+        # 3. 평가 데이터 생성 (20% 명사 + 훈련 데이터에서 랜덤 20%)
+        print(f"\n평가 데이터 생성 중...")
+        eval_sample_count = int(3000 * 0.2)
+        
+        # 평가용 데이터: 새로운 명사(20%) + 훈련 데이터 일부(20%)
+        eval_data_new = generate_rich_training_data(training_dir, num_samples=eval_sample_count, data_source=eval_data_source)
+        eval_data_overlap = random.sample(training_data, k=int(len(training_data) * 0.2))
+        evaluation_data = eval_data_new + eval_data_overlap
+        random.shuffle(evaluation_data)
+        
+        print(f"✓ 훈련 데이터: {len(training_data):,}개")
+        print(f"✓ 평가 데이터: {len(evaluation_data):,}개 (신규 {len(eval_data_new):,} + 중복 {len(eval_data_overlap):,})")
+        
+        # 4. CoNLL 형식으로 저장
+        save_to_conll(training_data, str(temp_train_file))
+        save_to_conll(evaluation_data, str(temp_val_file))
+        save_to_conll(evaluation_data, str(temp_test_file))
+        
+        print(f"데이터 저장 완료")
     
-    # 2. CoNLL 형식으로 저장
-    print(f"\n{'='*10} 단계 2: 학습 데이터 저장 {'='*10}")
-    conll_file = training_dir / "dynamic_train.txt"
-    save_to_conll(training_data, str(conll_file))
+    # 5. 데이터 로드
+    train_file = training_dir / "train.txt"
+    val_file = training_dir / "validation.txt"
+    test_file = training_dir / "test.txt"
     
-    # 3. 데이터 검증
-    print(f"\n{'='*10} 단계 3: 데이터 품질 검증 {'='*10}")
-    sample_data = training_data[:3]
-    for i, sample in enumerate(sample_data):
-        print(f"  샘플 {i+1}:")
-        print(f"     텍스트: {sample['text'][:100]}...")
-        print(f"     엔티티: {len(sample['entities'])}개")
-        entity_tags = [tag for tag in sample['bio_tags'] if tag != 'O']
-        print(f"     태그: {len(entity_tags)}개 ({len(set(entity_tags))}종류)")
-        print(f"     다양성: {sample['entity_diversity']}개 엔티티 타입")
+    train_sentences, train_labels = load_conll_data(str(train_file))
+    val_sentences, val_labels = load_conll_data(str(val_file))
+    test_sentences, test_labels = load_conll_data(str(test_file))
     
-    # 4. 데이터 로드
-    print(f"\n{'='*10} 단계 4: 처리된 데이터 로드 {'='*10}")
-    sentences, labels = load_conll_data(str(conll_file))
-    print(f"데이터 로드 완료: {len(sentences):,}개 문장")
+    print(f"✓ 훈련 데이터: {len(train_sentences):,}개 문장")
+    print(f"✓ 검증 데이터: {len(val_sentences):,}개 문장")
+    print(f"✓ 테스트 데이터: {len(test_sentences):,}개 문장")
+    
+    # 데이터만 생성하고 종료
+    if os.getenv("GENERATE_DATA_ONLY") == "1":
+        print("\n데이터 생성 완료 (훈련 스킵)")
+        return True
     
     # 라벨 분포 확인
-    all_labels = [label for sentence_labels in labels for label in sentence_labels]
+    all_labels = [label for sentence_labels in train_labels for label in sentence_labels]
     entity_labels = [label for label in all_labels if label != 'O']
-    entity_ratio = len(entity_labels) / len(all_labels) * 100
-    print(f"전체 라벨: {len(all_labels):,}개")
-    print(f"엔티티 라벨: {len(entity_labels):,}개 ({entity_ratio:.1f}%)")
     
     if len(entity_labels) == 0:
         print("오류: 엔티티 라벨이 없습니다!")
         return False
     
-    # 5. RoBERTa-Large 모델 설정
-    print(f"\n{'='*10} 단계 5: RoBERTa-Large 모델 설정 {'='*10}")
-    model_name = config.model_name
+    # 5. 모델 초기화
+    print(f"\n모델 초기화 중... ({config.model_name})")
     
-    print("토크나이저 로드 중...")
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # 로컬 모델 경로 사용 (test.py의 Step 2에서 복사됨)
+    model_path = str(model_output_dir)
     
-    print("모델 초기화 중...")
-    print("   (새로운 분류 헤드 초기화로 인한 경고 메시지는 정상입니다)")
-    model = AutoModelForTokenClassification.from_pretrained(
-        model_name,
-        num_labels=len(BIO_LABELS),
-        id2label=ID_TO_LABEL,
-        label2id=LABEL_TO_ID,
-        ignore_mismatched_sizes=True
-    )
+    # 로컬 파일이 없으면 온라인에서 다운로드
+    if not (Path(model_path) / "config.json").exists():
+        print(f"  로컬 모델 없음, 온라인에서 로드: {config.model_name}")
+        tokenizer = AutoTokenizer.from_pretrained(config.model_name)
+        model = AutoModelForTokenClassification.from_pretrained(
+            config.model_name,
+            num_labels=len(BIO_LABELS),
+            id2label=ID_TO_LABEL,
+            label2id=LABEL_TO_ID,
+            ignore_mismatched_sizes=True,
+            hidden_dropout_prob=config.dropout,
+            attention_probs_dropout_prob=config.dropout
+        )
+    else:
+        print(f"  로컬 모델 로드: {model_path}")
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        model = AutoModelForTokenClassification.from_pretrained(
+            model_path,
+            num_labels=len(BIO_LABELS),
+            id2label=ID_TO_LABEL,
+            label2id=LABEL_TO_ID,
+            ignore_mismatched_sizes=True,
+            hidden_dropout_prob=config.dropout,
+            attention_probs_dropout_prob=config.dropout
+        )
     
     model.to(device)
     total_params = sum(p.numel() for p in model.parameters())
-    print(f"모델 설정 완료: {total_params:,}개 파라미터")
-    print(f"라벨 시스템: {len(BIO_LABELS)}개")
+    print(f"모델 준비 완료: {total_params:,} 파라미터, {len(BIO_LABELS)}개 라벨")
     
-    # 6. 데이터셋 준비
-    print(f"\n{'='*10} 단계 6: 데이터셋 준비 {'='*10}")
-    # 훈련/검증 데이터 분할 (80/20)
-    split_idx = int(len(sentences) * 0.8)
-    train_sentences = sentences[:split_idx]
-    train_labels = labels[:split_idx]
-    val_sentences = sentences[split_idx:]
-    val_labels = labels[split_idx:]
+    # 6. 데이터셋 준비 (이미 분할된 데이터 사용)
     
-    print("토큰화 및 라벨 정렬 중...")
+    print(f"데이터셋 토큰화 중...")
     train_encodings = align_labels_with_tokens(tokenizer, train_sentences, train_labels, config.max_length)
     val_encodings = align_labels_with_tokens(tokenizer, val_sentences, val_labels, config.max_length)
     
@@ -971,18 +1054,16 @@ def train_ner_model():
         'labels': val_encodings['labels']
     })
     
-    print(f"훈련 샘플: {len(train_dataset):,}개")
-    print(f"검증 샘플: {len(val_dataset):,}개")
+    print(f"데이터셋 준비 완료: 훈련 {len(train_dataset):,}개 / 검증 {len(val_dataset):,}개")
     
-    # 7. 최적화된 훈련 설정 (1 epoch마다 체크)
-    print(f"\n{'='*10} 단계 7: 최적화된 훈련 설정 {'='*10}")
+    # 7. 최적화된 훈련 설정
     
-    # 1 epoch마다 평가하도록 steps 계산
+    # Epoch당 스텝 계산
     steps_per_epoch = len(train_dataset) // (config.batch_size * config.gradient_accumulation_steps)
-    eval_steps = steps_per_epoch  # 1 epoch마다 평가
-    
-    print(f"에포크당 스텝: {steps_per_epoch}")
-    print(f"평가 주기: {eval_steps}스텝 (1 epoch마다)")
+    eval_steps = steps_per_epoch
+    save_steps = steps_per_epoch * 2
+    print(f"평가 주기: {eval_steps}스텝 (매 epoch)")
+    print(f"저장 주기: {save_steps}스텝 (2 epoch마다)")
     
     training_args = TrainingArguments(
         output_dir=str(model_output_dir),
@@ -990,14 +1071,14 @@ def train_ner_model():
         per_device_train_batch_size=config.batch_size,
         per_device_eval_batch_size=8,
         gradient_accumulation_steps=config.gradient_accumulation_steps,
-        warmup_steps=config.warmup_steps,
-        weight_decay=config.weight_decay,
+        warmup_ratio=config.warmup_ratio,
+        weight_decay=config.weight_decay,  # 과적합 방지
         learning_rate=config.learning_rate,
         logging_dir=str(training_dir / 'logs'),
         logging_steps=eval_steps // 2,
         eval_strategy="steps",
-        eval_steps=eval_steps,  # 1 epoch마다
-        save_steps=eval_steps * 2,  # 2 epoch마다 저장
+        eval_steps=eval_steps,
+        save_steps=save_steps,
         save_total_limit=3,
         load_best_model_at_end=True,
         metric_for_best_model="f1",
@@ -1008,17 +1089,19 @@ def train_ner_model():
         dataloader_pin_memory=True,
         remove_unused_columns=False,
         gradient_checkpointing=True if torch.cuda.is_available() else False,
-        # 최적화 옵션
-        lr_scheduler_type="linear",
+        lr_scheduler_type="cosine",  # 안정적인 학습
         optim="adamw_torch",
         disable_tqdm=False,
-        # 메모리 효율성
         dataloader_drop_last=True,
-        prediction_loss_only=False
+        prediction_loss_only=False,
+        label_smoothing_factor=config.label_smoothing  # 과적합 방지
     )
     
     # 8. 트레이너 설정
     data_collator = DataCollatorForTokenClassification(tokenizer, pad_to_multiple_of=8)
+    
+    # Early Stopping 콜백 (성능 개선 없으면 조기 종료)
+    callbacks = [EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience)]
     
     trainer = Trainer(
         model=model,
@@ -1027,25 +1110,21 @@ def train_ner_model():
         eval_dataset=val_dataset,
         processing_class=tokenizer,
         data_collator=data_collator,
-        compute_metrics=compute_metrics
+        compute_metrics=compute_metrics,
+        callbacks=callbacks  # 콜백 추가
     )
     
     # 9. 고성능 훈련 실행
-    print(f"\n{'='*10} 단계 8: 고성능 모델 훈련 시작 {'='*10}")
-    print(f"목표: 99% F1 Score")
-    print(f"데이터: {len(training_data):,}개 고품질 샘플")
-    print(f"디바이스: {trainer.args.device}")
-    print(f"Mixed Precision: {'활성화' if config.fp16 else '비활성화'}")
-    print(f"에포크: {config.num_epochs}회")
-    print(f"예상 훈련 시간: 약 30-45분")
-    print("=" * 60)
+    print(f"\n훈련 시작: {config.num_epochs} epochs, {len(train_sentences):,} 샘플")
+    print(f"디바이스: {trainer.args.device}, FP16: {'ON' if config.fp16 else 'OFF'}")
+    print(f"예상 시간: ~20-30분\n")
     
     try:
         # 훈련 시작
         trainer.train()
         
         # 10. 최종 모델 저장
-        print(f"\n{'='*10} 단계 9: 최종 모델 저장 {'='*10}")
+        print(f"\n모델 저장 중...")
         trainer.save_model()
         tokenizer.save_pretrained(str(model_output_dir))
         
@@ -1061,46 +1140,21 @@ def train_ner_model():
         with open(model_output_dir / 'label_map.json', 'w', encoding='utf-8') as f:
             json.dump(label_info, f, ensure_ascii=False, indent=2)
         
-        print("모델 저장 완료!")
-        
         # 11. 최종 평가
-        print(f"\n{'='*10} 단계 10: 최종 성능 평가 {'='*10}")
         eval_results = trainer.evaluate()
         
-        print("최종 평가 결과:")
-        for key, value in eval_results.items():
-            if key.startswith('eval_'):
-                metric = key.replace('eval_', '').upper()
-                print(f"   {metric:>12}: {value:.4f}")
-                
         total_time = time.time() - start_time
         
         print("\n" + "=" * 60)
-        print("     고성능 NER 모델 훈련 완료!")
+        print("NER 모델 훈련 완료!")
         print("=" * 60)
         print(f"저장 위치: {model_output_dir}")
-        print(f"지원 엔티티: {len(ENTITY_TYPES)}개 타입")
-        print(f"훈련 데이터: {len(training_data):,}개 고품질 샘플")
-        print(f"모델 크기: RoBERTa-Large ({total_params:,} 파라미터)")
-        print(f"총 소요시간: {total_time/60:.1f}분")
-        print(f"최종 F1 Score: {eval_results.get('eval_f1', 0):.4f}")
-        
-        # 엔티티 타입 요약 출력
-        print(f"\n지원 엔티티 타입 ({len(ENTITY_TYPES)}개):")
-        for i, entity in enumerate(ENTITY_TYPES[:15]):  # 처음 15개만 표시
-            print(f"   - {entity}")
-        if len(ENTITY_TYPES) > 15:
-            print(f"   ... 및 {len(ENTITY_TYPES) - 15}개 추가 타입")
-            
-        print(f"\n성능 최적화 적용:")
-        print(f"   - 대용량 데이터셋: {len(training_data):,}개 샘플")
-        print(f"   - Mixed Precision Training (FP16)")
-        print(f"   - Gradient Checkpointing")
-        print(f"   - 1 에포크마다 성능 체크")
-        print(f"   - 실시간 F1 Score 모니터링")
-            
-        print(f"\n모델 사용 준비 완료!")
-        print(f"   ner_system.py에서 바로 사용 가능합니다.")
+        print(f"훈련 데이터: {len(train_sentences):,}개 샘플")
+        print(f"소요 시간: {total_time/60:.1f}분")
+        print(f"F1 Score: {eval_results.get('eval_f1', 0):.4f}")
+        print(f"Precision: {eval_results.get('eval_precision', 0):.4f}")
+        print(f"Recall: {eval_results.get('eval_recall', 0):.4f}")
+        print("=" * 60 + "\n")
         
         return True
             
@@ -1114,10 +1168,10 @@ if __name__ == "__main__":
     try:
         success = train_ner_model()
         if success:
-            print("\nNER Fine-Tuning 성공!")
+            print("NER Fine-Tuning 성공!")
         else:
-            print("\nNER Fine-Tuning 실패!")
+            print("NER Fine-Tuning 실패!")
     except Exception as e:
-        print(f"\n오류 발생: {e}")
+        print(f"오류 발생: {e}")
         import traceback
         traceback.print_exc()
