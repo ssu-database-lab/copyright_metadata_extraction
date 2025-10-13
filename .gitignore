@@ -99,6 +99,10 @@ env*/
 # Hugging Face models directory (very large)
 hf_models/
 
+# API web results and OCR outputs
+api/web/results/
+api/data/out/
+
 # Large archive files
 *.zip
 *.7z

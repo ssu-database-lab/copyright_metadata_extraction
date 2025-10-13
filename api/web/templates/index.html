@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NER 엔티티 추출</title>
+    <title>Universal OCR & NER 엔티티 추출</title>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 2100px;
             margin: 0 auto;
         }
 
@@ -30,16 +30,22 @@
         }
 
         header h1 {
-            font-size: 2rem;
-            margin-bottom: 0;
+            font-size: 3rem;
+            margin-bottom: 10px;
             color: #2c3e50;
             font-weight: 600;
+        }
+        
+        header p {
+            font-size: 1.3rem;
+            color: #718096;
+            margin-bottom: 0;
         }
 
         .main-card {
             background: white;
             border-radius: 20px;
-            padding: 40px;
+            padding: 50px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
 
@@ -87,9 +93,9 @@
             background: #4299e1;
             color: white;
             border: none;
-            padding: 12px 32px;
+            padding: 15px 35px;
             border-radius: 6px;
-            font-size: 0.95rem;
+            font-size: 1.2rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -114,18 +120,19 @@
         .model-selection h3 {
             margin-bottom: 20px;
             color: #333;
+            font-size: 1.5rem;
         }
 
         .model-options {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
         }
 
         .model-option {
             border: 2px solid #e0e0e0;
             border-radius: 12px;
-            padding: 20px;
+            padding: 25px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
@@ -165,14 +172,68 @@
             margin-right: 10px;
         }
 
+        .model-option input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .checkbox-option {
+            border-style: dashed;
+        }
+
+        .checkbox-option:hover {
+            border-style: solid;
+        }
+
+        .checkbox-option.selected {
+            border-style: solid;
+            border-color: #10B981;
+            background: #f0fdf4;
+        }
+
+        .checkbox-option {
+            max-width: 300px;
+            margin: 0;
+        }
+
+        .checkbox-option .model-name {
+            font-size: 1rem;
+            margin-bottom: 3px;
+        }
+
+        .checkbox-option .model-desc {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .checkbox-option .model-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            margin: 0 8px 0 0;
+            display: inline-block;
+        }
+
         .model-name {
             font-weight: 600;
             color: #2d3748;
             margin-bottom: 5px;
+            font-size: 1.2rem;
+        }
+        
+        .model-icon {
+            width: 150px;
+            height: 150px;
+            flex-shrink: 0;
+            border-radius: 80px;
+            object-fit: contain;
+            display: block;
+            margin: -50px -2px -100px auto;
+            max-width: 100%;
         }
 
         .model-desc {
-            font-size: 0.9rem;
+            font-size: 1.1rem;
             color: #666;
             margin-bottom: 8px;
         }
@@ -180,7 +241,7 @@
         .model-stats {
             display: flex;
             justify-content: space-between;
-            font-size: 0.85rem;
+            font-size: 1rem;
             color: #999;
         }
 
@@ -377,6 +438,35 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* 스트리밍 결과 스타일 */
+        .streaming-result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .streaming-result h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .streaming-content {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
         /* 반응형 */
         @media (max-width: 768px) {
             header h1 {
@@ -396,33 +486,115 @@
 <body>
     <div class="container">
         <header>
-            <h1>NER 엔티티 추출</h1>
+            <h1>Universal OCR & NER 엔티티 추출</h1>
+            <p>Universal OCR 시스템과 NER 모델을 사용하여 문서에서 정보를 추출합니다</p>
         </header>
 
         <div class="main-card">
-            <!-- OCR 엔진 선택 -->
+            <!-- Universal OCR 선택 -->
             <div class="model-selection">
-                <h3>OCR 엔진 선택</h3>
+                <!-- <h3>Universal OCR 처리</h3>
                 <div class="model-options">
-                    {% for key, engine in ocr_engines.items() %}
-                    <label class="model-option {% if loop.first and engine.available %}selected{% endif %} {% if not engine.available %}disabled{% endif %}">
-                        <input type="radio" name="ocr_engine" value="{{ key }}" 
-                               {% if loop.first and engine.available %}checked{% endif %}
-                               {% if not engine.available %}disabled{% endif %}>
+                    <label class="model-option selected">
+                        <input type="radio" name="processing_mode" value="universal" checked>
                         <div>
-                            <div class="model-name">{{ engine.name }}</div>
-                            <div class="model-desc">{{ engine.description }}</div>
-                            {% if not engine.available %}
-                            <div class="setup-required">설정 필요</div>
-                            {% else %}
-                            <div class="model-stats">
-                                <span>품질: {{ engine.quality }}</span>
-                                <span>속도: {{ engine.speed }}</span>
-                            </div>
-                            {% endif %}
+                            <div class="model-name">Universal OCR</div>
+                            <div class="model-desc">통합 OCR 처리 (Google, Mistral, Alibaba Cloud)</div>
                         </div>
                     </label>
-                    {% endfor %}
+                </div> -->
+                
+                <!-- Universal OCR 설정 -->
+                <div id="universalOcrSettings" style="margin-top: 20px;">
+                    <div class="model-selection">
+                        <h3>Universal OCR 설정</h3>
+                        <div class="model-options">
+                            <label class="model-option">
+                                <input type="radio" name="universal_provider" value="google" checked>
+                                <div>
+                                    <div class="model-name">
+                                        <img class="model-icon" src="https://www.simpleocr.com/wp-content/uploads/2022/04/google_vision_cloud_ocr_api.jpg" alt="Google Cloud Vision">
+                                        Google Cloud Vision
+                                    </div>
+                                    <div class="model-desc">텍스트 분석률 좋음</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="universal_provider" value="mistral">
+                                <div>
+                                    <div class="model-name">
+                                        <img class="model-icon" src="https://parsio.io/blog/content/images/size/w2000/2025/03/mistralocr-1.jpg" alt="Mistral OCR">
+                                        Mistral OCR
+                                    </div>
+                                    <div class="model-desc">OCR 특화 모델, 높은 정확도</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="universal_provider" value="naver">
+                                <div>
+                                    <div class="model-name">
+                                        <img class="model-icon" src="https://cdn.aitimes.kr/news/photo/202012/18725_20610_574.jpg" alt="Naver CLOVA OCR">
+                                        Naver CLOVA OCR
+                                    </div>
+                                    <div class="model-desc">표 분석에 강함</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="universal_provider" value="alibaba">
+                                <div>
+                                    <img class="model-icon" src="https://www.nexusgroup.com/wp-content/uploads/2020/03/alibaba-cloud-logo.png" alt="Alibaba Cloud Qwen3-VL">
+                                    <div class="model-name">Alibaba Cloud Qwen3-VL</div>
+                                    <div class="model-desc">한국어 문서 특화, 최신 Qwen3 모델</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="model-selection" id="alibabaModelSelection" style="display: none;">
+                        <h4>Alibaba Cloud 모델 선택</h4>
+                        <div class="model-options">
+                            <label class="model-option">
+                                <input type="radio" name="alibaba_model" value="qwen-vl-plus" checked>
+                                <div>
+                                    <img class="model-icon" src="https://camo.githubusercontent.com/cc1b109f5c535ef826fb7016cea473bdf286c14ccf75481c76a0a0f0331e9edb/68747470733a2f2f7169616e77656e2d7265732e6f73732d616363656c65726174652e616c6979756e63732e636f6d2f5177656e332d564c2f7177656e33766c6c6f676f2e706e67" alt="Qwen3-VL-Plus">
+                                    <div class="model-name">Qwen3-VL-Plus</div>
+                                    <div class="model-desc">최신 Qwen3 Vision 모델</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="alibaba_model" value="qwen3-vl-30b-a3b-instruct">
+                                <div>
+                                    <img class="model-icon" src="https://camo.githubusercontent.com/cc1b109f5c535ef826fb7016cea473bdf286c14ccf75481c76a0a0f0331e9edb/68747470733a2f2f7169616e77656e2d7265732e6f73732d616363656c65726174652e616c6979756e63732e636f6d2f5177656e332d564c2f7177656e33766c6c6f676f2e706e67" alt="Qwen3-VL-30B">
+                                    <div class="model-name">Qwen3-VL-30B</div>
+                                    <div class="model-desc">30B 파라미터 모델</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="alibaba_model" value="qwen3-vl-235b-a22b-instruct">
+                                <div>
+                                    <img class="model-icon" src="https://camo.githubusercontent.com/cc1b109f5c535ef826fb7016cea473bdf286c14ccf75481c76a0a0f0331e9edb/68747470733a2f2f7169616e77656e2d7265732e6f73732d616363656c65726174652e616c6979756e63732e636f6d2f5177656e332d564c2f7177656e33766c6c6f676f2e706e67" alt="Qwen3-VL-235B">
+                                    <div class="model-name">Qwen3-VL-235B</div>
+                                    <div class="model-desc">235B 파라미터 모델 (최고 성능)</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="model-selection">
+                        <h4>처리 옵션</h4>
+                        <div class="model-options">
+                            <label class="model-option checkbox-option">
+                                <input type="checkbox" name="streaming_mode" id="streamingMode">
+                                <div>
+                                    <div class="model-name">
+                                        <img class="model-icon" src="https://upload.wikimedia.org/wikipedia/commons/8/8f/Microsoft_Stream.svg" alt="스트리밍 처리">
+                                        스트리밍 처리
+                                    </div>
+                                    <div class="model-desc">실시간 결과 출력</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -447,11 +619,12 @@
             <!-- 파일 업로드 -->
             <div class="upload-area" id="uploadArea">
                 <h3>파일 업로드</h3>
-                <p>PDF, PNG, JPG, TIFF 파일을 드래그하거나 클릭하여 선택하세요 (최대 100MB)</p>
+                <p>다음 파일 형식을 지원합니다: PDF, DOCX, DOC, PPTX, PPT, XLSX, XLS, HWP, JPG, JPEG, PNG, GIF, BMP, TIF, TIFF</p>
+                <p>파일을 드래그하거나 클릭하여 선택하세요 (최대 100MB)</p>
                 <button class="btn" id="selectFileBtn">
                     파일 선택
                 </button>
-                <input type="file" id="fileInput" class="file-input" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff">
+                <input type="file" id="fileInput" class="file-input" accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.hwp,.jpg,.jpeg,.png,.gif,.bmp,.tif,.tiff">
             </div>
 
             <!-- 파일 정보 -->
@@ -472,9 +645,9 @@
                     <div class="progress-bar" id="progressBar">0%</div>
                 </div>
                 <ul class="progress-steps">
-                    <li class="progress-step" id="step1">PDF 변환 중...</li>
+                    <li class="progress-step" id="step1">파일 변환 중...</li>
                     <li class="progress-step" id="step2">OCR 텍스트 추출 중...</li>
-                    <li class="progress-step" id="step3">NER 엔티티 분석 중...</li>
+                    <li class="progress-step" id="step3">처리 완료 중...</li>
                 </ul>
                 <div class="spinner show"></div>
             </div>
@@ -528,23 +701,7 @@
 
         // localStorage에서 이전 선택 불러오기
         function loadPreviousSelections() {
-            const savedOcrEngine = localStorage.getItem('selectedOcrEngine');
             const savedModel = localStorage.getItem('selectedModel');
-
-            // OCR 엔진 복원
-            if (savedOcrEngine) {
-                const ocrRadio = document.querySelector(`input[name="ocr_engine"][value="${savedOcrEngine}"]`);
-                if (ocrRadio && !ocrRadio.disabled) {
-                    // 기존 선택 해제
-                    document.querySelectorAll('input[name="ocr_engine"]').forEach(r => {
-                        r.parentElement.classList.remove('selected');
-                        r.checked = false;
-                    });
-                    // 저장된 선택 복원
-                    ocrRadio.checked = true;
-                    ocrRadio.parentElement.classList.add('selected');
-                }
-            }
 
             // NER 모델 복원
             if (savedModel) {
@@ -562,22 +719,58 @@
             }
         }
 
-        // OCR 엔진 선택 UI
-        document.querySelectorAll('input[name="ocr_engine"]').forEach(radio => {
-            if (!radio.disabled) {
-                radio.parentElement.addEventListener('click', function() {
-                    if (!this.classList.contains('disabled')) {
-                        document.querySelectorAll('input[name="ocr_engine"]').forEach(r => {
-                            r.parentElement.classList.remove('selected');
-                        });
-                        this.classList.add('selected');
-                        this.querySelector('input[type="radio"]').checked = true;
-                        
-                        // localStorage에 저장
-                        localStorage.setItem('selectedOcrEngine', this.querySelector('input[type="radio"]').value);
-                    }
+
+        // Universal OCR 설정 항상 표시
+        document.getElementById('universalOcrSettings').style.display = 'block';
+        
+        // Initialize Alibaba model selection visibility
+        const alibabaModelSelection = document.getElementById('alibabaModelSelection');
+        const selectedProvider = document.querySelector('input[name="universal_provider"]:checked');
+        if (selectedProvider && selectedProvider.value === 'alibaba') {
+            alibabaModelSelection.style.display = 'block';
+        } else {
+            alibabaModelSelection.style.display = 'none';
+        }
+
+        // Universal OCR 제공자 선택 UI
+        document.querySelectorAll('input[name="universal_provider"]').forEach(radio => {
+            radio.parentElement.addEventListener('click', function() {
+                document.querySelectorAll('input[name="universal_provider"]').forEach(r => {
+                    r.parentElement.classList.remove('selected');
                 });
-            }
+                this.classList.add('selected');
+                this.querySelector('input[type="radio"]').checked = true;
+                
+                // Alibaba 모델 선택 표시/숨김
+                const alibabaModelSelection = document.getElementById('alibabaModelSelection');
+                if (this.querySelector('input[type="radio"]').value === 'alibaba') {
+                    alibabaModelSelection.style.display = 'block';
+                } else {
+                    alibabaModelSelection.style.display = 'none';
+                }
+            });
+        });
+
+        // Alibaba 모델 선택 UI
+        document.querySelectorAll('input[name="alibaba_model"]').forEach(radio => {
+            radio.parentElement.addEventListener('click', function() {
+                document.querySelectorAll('input[name="alibaba_model"]').forEach(r => {
+                    r.parentElement.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                this.querySelector('input[type="radio"]').checked = true;
+            });
+        });
+
+        // Checkbox 옵션 UI
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    this.parentElement.classList.add('selected');
+                } else {
+                    this.parentElement.classList.remove('selected');
+                }
+            });
         });
 
         // 모델 선택 UI
@@ -594,8 +787,43 @@
             });
         });
 
+        // Add icons to NER models
+        function addNerModelIcons() {
+            const nerModels = document.querySelectorAll('input[name="model"]');
+            nerModels.forEach(radio => {
+                const modelName = radio.parentElement.querySelector('.model-name');
+                if (modelName && !modelName.querySelector('.model-icon')) {
+                    let iconSvg = '';
+                    
+                    if (radio.value === 'klue-roberta-large') {
+                        iconSvg = `<svg class="model-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#8B5CF6"/>
+                        </svg>`;
+                    } else if (radio.value === 'xlm-roberta') {
+                        iconSvg = `<svg class="model-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#F59E0B"/>
+                        </svg>`;
+                    } else if (radio.value === 'google-bert') {
+                        iconSvg = `<svg class="model-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>`;
+                    }
+                    
+                    if (iconSvg) {
+                        modelName.innerHTML = iconSvg + modelName.textContent;
+                    }
+                }
+            });
+        }
+
         // 페이지 로드 시 이전 선택 복원
-        window.addEventListener('DOMContentLoaded', loadPreviousSelections);
+        window.addEventListener('DOMContentLoaded', function() {
+            loadPreviousSelections();
+            addNerModelIcons();
+        });
 
         // 파일 업로드 영역 설정
         const uploadArea = document.getElementById('uploadArea');
@@ -661,16 +889,7 @@
             }
 
             const selectedModelRadio = document.querySelector('input[name="model"]:checked');
-            const selectedOcrRadio = document.querySelector('input[name="ocr_engine"]:checked:not([disabled])');
             
-            if (!selectedOcrRadio) {
-                alert('사용 가능한 OCR 엔진을 선택해주세요');
-                return;
-            }
-
-            const selectedModel = selectedModelRadio.value;
-            const selectedOcrEngine = selectedOcrRadio.value;
-
             // UI 초기화
             document.getElementById('uploadBtn').disabled = true;
             document.getElementById('progressSection').classList.add('show');
@@ -682,28 +901,88 @@
             try {
                 const formData = new FormData();
                 formData.append('file', selectedFile);
-                formData.append('model', selectedModel);
-                formData.append('ocr_engine', selectedOcrEngine);
+                formData.append('model', selectedModelRadio.value);
 
-                updateProgress(33, 2);
-
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    updateProgress(100, 3, true);
+                // Universal OCR 처리
+                    const selectedProviderRadio = document.querySelector('input[name="universal_provider"]:checked');
+                    const selectedAlibabaModelRadio = document.querySelector('input[name="alibaba_model"]:checked');
+                    const streamingModeCheckbox = document.getElementById('streamingMode');
                     
-                    setTimeout(() => {
-                        showResults(result);
-                        document.getElementById('progressSection').classList.remove('show');
-                    }, 500);
-                } else {
-                    showError(result.error || '처리 중 오류가 발생했습니다');
-                }
+                    if (!selectedProviderRadio) {
+                        alert('Universal OCR 제공자를 선택해주세요');
+                        return;
+                    }
+
+                    formData.append('provider', selectedProviderRadio.value);
+                    if (selectedAlibabaModelRadio) {
+                        formData.append('model', selectedAlibabaModelRadio.value);
+                    }
+                    if (streamingModeCheckbox.checked) {
+                        formData.append('stream', 'true');
+                    }
+
+                    updateProgress(33, 2);
+
+                    const response = await fetch('/api/ocr-universal', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    // Check if this is a streaming response
+                    if (streamingModeCheckbox.checked) {
+                        // Show result section for streaming
+                        document.getElementById('resultSection').classList.add('show');
+                        
+                        // Handle streaming response
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        let streamingText = '';
+                        
+                        // Create streaming result display
+                        const streamingDiv = document.createElement('div');
+                        streamingDiv.className = 'streaming-result';
+                        streamingDiv.innerHTML = '<h3>실시간 OCR 결과</h3><div class="streaming-content"></div>';
+                        document.getElementById('resultSection').appendChild(streamingDiv);
+                        
+                        const contentDiv = streamingDiv.querySelector('.streaming-content');
+                        
+                        try {
+                            while (true) {
+                                const { done, value } = await reader.read();
+                                if (done) break;
+                                
+                                const chunk = decoder.decode(value, { stream: true });
+                                streamingText += chunk;
+                                contentDiv.textContent = streamingText;
+                                contentDiv.scrollTop = contentDiv.scrollHeight;
+                            }
+                            
+                            // Update statistics for streaming results
+                            updateStreamingStats(streamingText, selectedProviderRadio.value, selectedAlibabaModelRadio ? selectedAlibabaModelRadio.value : null);
+                            
+                            updateProgress(100, 3, true);
+                            setTimeout(() => {
+                                document.getElementById('progressSection').classList.remove('show');
+                            }, 500);
+                            
+                        } catch (error) {
+                            showError('스트리밍 처리 중 오류가 발생했습니다: ' + error.message);
+                        }
+                    } else {
+                        // Handle regular JSON response
+                        const result = await response.json();
+
+                        if (result.success) {
+                            updateProgress(100, 3, true);
+                            
+                            setTimeout(() => {
+                                showUniversalOcrResults(result);
+                                document.getElementById('progressSection').classList.remove('show');
+                            }, 500);
+                        } else {
+                            showError(result.error || 'Universal OCR 처리 중 오류가 발생했습니다');
+                        }
+                    }
 
             } catch (error) {
                 console.error('Upload error:', error);
@@ -727,6 +1006,100 @@
                     stepEl.classList.add('active');
                 }
             }
+        }
+
+        function showUniversalOcrResults(result) {
+            currentRequestId = result.request_id;
+
+            // 통계 표시
+            document.getElementById('entityCount').textContent = result.total_text_length || 0;
+            document.getElementById('processingTime').textContent = result.processing_time + 's';
+            document.getElementById('ocrEngine').textContent = result.provider || 'Universal OCR';
+            document.getElementById('modelUsed').textContent = result.model || 'N/A';
+
+            // 결과 표시
+            document.getElementById('resultSection').classList.add('show');
+            
+            // 다운로드 버튼 설정
+            const downloadBtn = document.getElementById('downloadEntitiesBtn');
+            downloadBtn.textContent = 'OCR 텍스트 다운로드';
+            downloadBtn.onclick = () => {
+                const blob = new Blob([result.extracted_text || ''], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${result.filename}_ocr.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            const statsBtn = document.getElementById('downloadStatsBtn');
+            statsBtn.textContent = '처리 결과 다운로드';
+            statsBtn.onclick = () => {
+                const statsData = {
+                    filename: result.filename,
+                    provider: result.provider,
+                    model: result.model,
+                    processing_time: result.processing_time,
+                    total_pages: result.total_pages,
+                    total_text_length: result.total_text_length,
+                    success: result.success
+                };
+                const blob = new Blob([JSON.stringify(statsData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${result.filename}_ocr_stats.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            // 엔티티 그리드 숨기기 (OCR만 처리)
+            document.getElementById('entitiesGrid').innerHTML = '<p style="text-align: center; color: #666;">Universal OCR 처리 완료</p>';
+        }
+
+        function updateStreamingStats(streamingText, provider, model) {
+            // Update statistics for streaming results
+            document.getElementById('entityCount').textContent = streamingText.length;
+            document.getElementById('processingTime').textContent = '스트리밍';
+            document.getElementById('ocrEngine').textContent = provider.toUpperCase();
+            document.getElementById('modelUsed').textContent = model || provider;
+
+            // Setup download buttons for streaming results
+            const downloadBtn = document.getElementById('downloadEntitiesBtn');
+            downloadBtn.textContent = 'OCR 텍스트 다운로드';
+            downloadBtn.onclick = () => {
+                const blob = new Blob([streamingText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `streaming_ocr_result.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            const statsBtn = document.getElementById('downloadStatsBtn');
+            statsBtn.textContent = '처리 결과 다운로드';
+            statsBtn.onclick = () => {
+                const statsData = {
+                    provider: provider,
+                    model: model || provider,
+                    processing_mode: 'streaming',
+                    text_length: streamingText.length,
+                    timestamp: new Date().toISOString(),
+                    success: true
+                };
+                const blob = new Blob([JSON.stringify(statsData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `streaming_ocr_stats.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            // 엔티티 그리드 업데이트
+            document.getElementById('entitiesGrid').innerHTML = '<p style="text-align: center; color: #666;">스트리밍 OCR 처리 완료</p>';
         }
 
         function showResults(result) {

@@ -17,6 +17,10 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, FileResponse
@@ -31,7 +35,10 @@ api_dir = current_dir.parent
 sys.path.insert(0, str(api_dir))
 
 # api 모듈 import
-from api import pdf_to_image, ocr_google, ocr_naver, ocr_mistral, ner_predict
+from api import pdf_to_image, ner_predict
+
+# 새로운 OCR 모듈 import
+from module.ocr import UniversalOCRProcessor
 
 # FastAPI 앱 초기화
 app = FastAPI(
@@ -75,37 +82,40 @@ ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tif', 'tiff'}
 # OCR 설정 확인
 def check_ocr_availability() -> Dict[str, bool]:
     """OCR 엔진 사용 가능 여부 확인"""
-    config_path = api_dir / "ocr_key" / "ocr_config.json"
     available = {
         'google': False,
         'naver': False,
-        'mistral': False
+        'mistral': False,
+        'alibaba': False
     }
     
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
+        # Google 확인 - Google Cloud credentials JSON 파일
+        google_creds_path = api_dir / "google_credentials.json"
+        if google_creds_path.exists():
+            available['google'] = True
         
-        # Google 확인
-        ocr_key_dir = api_dir / "ocr_key"
-        if ocr_key_dir.exists():
-            json_files = list(ocr_key_dir.glob("*.json"))
-            available['google'] = len(json_files) > 0
+        # Mistral 확인 - 환경 변수에서 API 키
+        mistral_api_key = os.getenv('MISTRAL_API_KEY')
+        if mistral_api_key and mistral_api_key != 'your_mistral_api_key_here':
+            available['mistral'] = True
         
-        # Naver 확인
-        naver_config = config.get('naver', {})
-        if naver_config.get('api_url') and naver_config.get('secret_key'):
+        # Naver 확인 - 환경 변수에서 API 키
+        naver_api_url = os.getenv('NAVER_OCR_API_URL')
+        naver_secret_key = os.getenv('NAVER_OCR_SECRET_KEY')
+        if naver_api_url and naver_secret_key and naver_api_url != 'your_naver_api_url_here':
             available['naver'] = True
         
-        # Mistral 확인
-        mistral_config = config.get('mistral', {})
-        if mistral_config.get('api_key'):
-            available['mistral'] = True
-            
+        # Alibaba 확인 - 환경 변수에서 API 키
+        alibaba_api_key = os.getenv('DASHSCOPE_API_KEY') or os.getenv('ALIBABA_API_KEY')
+        if alibaba_api_key and alibaba_api_key != 'your_alibaba_api_key_here':
+            available['alibaba'] = True
+        
+        return available
+        
     except Exception as e:
-        logger.warning(f"OCR 설정 확인 실패: {e}")
-    
-    return available
+        logger.error(f"OCR 설정 확인 중 오류: {e}")
+        return available
 
 OCR_AVAILABILITY = check_ocr_availability()
 
@@ -134,33 +144,7 @@ AVAILABLE_MODELS = {
     }
 }
 
-# 사용 가능한 OCR 엔진
-AVAILABLE_OCR_ENGINES = {
-    'mistral': {
-        'name': 'Mistral Vision AI',
-        'description': '높은 정확도',
-        'quality': '높음',
-        'speed': '빠름',
-        'available': OCR_AVAILABILITY['mistral'],
-        'setup_guide': 'api/ocr_key/ocr_config.json에 Mistral API Key를 설정하세요'
-    },
-    'naver': {
-        'name': 'Naver CLOVA OCR',
-        'description': '표 분석에 강함',
-        'quality': '높음',
-        'speed': '빠름',
-        'available': OCR_AVAILABILITY['naver'],
-        'setup_guide': 'api/ocr_key/ocr_config.json에 Naver API URL과 Secret Key를 설정하세요'
-    },
-    'google': {
-        'name': 'Google Vision API',
-        'description': '텍스트 분석률 좋음',
-        'quality': '높음',
-        'speed': '빠름',
-        'available': OCR_AVAILABILITY['google'],
-        'setup_guide': 'api/ocr_key/ 디렉토리에 Google Cloud 인증 JSON 파일을 배치하세요'
-    }
-}
+# Universal OCR는 별도 엔드포인트(/api/ocr-universal)에서 처리
 
 def allowed_file(filename: str) -> bool:
     """허용된 파일 형식인지 확인"""
@@ -218,21 +202,45 @@ async def process_document(file_path: Path, output_dir: Path, model_name: str, o
             input_for_ocr = file_path
             result['steps']['pdf_to_image'] = {'success': True, 'skipped': True}
         
-        # 2단계: OCR 처리
+        # 2단계: OCR 처리 (Universal OCR 사용)
         logger.info(f"Step 2: OCR 처리 (엔진: {ocr_engine})")
         ocr_dir = output_dir / "ocr"
         
         try:
-            # OCR 엔진 선택
+            # Universal OCR Processor 사용
+            processor = UniversalOCRProcessor(output_dir=str(ocr_dir))
+            
+            # OCR 엔진별 모델 설정
             if ocr_engine == 'google':
-                ocr_result = ocr_google(str(input_for_ocr), str(ocr_dir))
-            elif ocr_engine == 'naver':
-                ocr_result = ocr_naver(str(input_for_ocr), str(ocr_dir))
+                provider = 'google'
+                model = None
             elif ocr_engine == 'mistral':
-                ocr_result = ocr_mistral(str(input_for_ocr), str(ocr_dir))
+                provider = 'mistral'
+                model = 'mistral-ocr-latest'
+            elif ocr_engine == 'alibaba':
+                provider = 'alibaba'
+                model = 'qwen3-vl-235b-a22b-instruct'
             else:
                 result['error'] = f'지원하지 않는 OCR 엔진: {ocr_engine}'
                 return result
+            
+            # OCR 처리 실행
+            if isinstance(input_for_ocr, Path) and input_for_ocr.is_dir():
+                # PDF에서 변환된 이미지 디렉토리 처리
+                ocr_result = processor.process_directory(
+                    input_dir=str(input_for_ocr),
+                    provider=provider,
+                    model=model,
+                    stream=False
+                )
+            else:
+                # 단일 파일 처리
+                ocr_result = processor.process_file(
+                    file_path=str(input_for_ocr),
+                    provider=provider,
+                    model=model,
+                    stream=False
+                )
             
             result['steps']['ocr'] = {
                 'success': ocr_result.get('success', False),
@@ -243,20 +251,12 @@ async def process_document(file_path: Path, output_dir: Path, model_name: str, o
             
             if not ocr_result.get('success'):
                 error_msg = ocr_result.get('error', 'OCR 처리 실패')
-                
-                # Google Cloud 인증 오류 처리
-                if 'credentials' in error_msg.lower() or 'authentication' in error_msg.lower():
-                    result['error'] = 'Google Cloud Vision API 인증 오류: 환경 변수 GOOGLE_APPLICATION_CREDENTIALS를 설정하거나 api/ocr_key/ 디렉토리에 인증 파일을 배치하세요.'
-                else:
-                    result['error'] = f'OCR 처리 실패: {error_msg}'
+                result['error'] = f'OCR 처리 실패: {error_msg}'
                 return result
             
         except Exception as e:
             error_str = str(e)
-            if 'credentials' in error_str.lower():
-                result['error'] = 'Google Cloud Vision API 인증 설정이 필요합니다. 관리자에게 문의하세요.'
-            else:
-                result['error'] = f'OCR 처리 오류: {error_str}'
+            result['error'] = f'OCR 처리 오류: {error_str}'
             result['steps']['ocr'] = {'success': False, 'error': str(e)}
             return result
         
@@ -311,8 +311,7 @@ async def index(request: Request):
         "index.html",
         {
             "request": request,
-            "models": AVAILABLE_MODELS,
-            "ocr_engines": AVAILABLE_OCR_ENGINES
+            "models": AVAILABLE_MODELS
         }
     )
 
@@ -462,8 +461,125 @@ async def health_check():
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
         'available_models': list(AVAILABLE_MODELS.keys()),
-        'available_ocr_engines': [k for k, v in AVAILABLE_OCR_ENGINES.items() if v['available']]
+        'universal_ocr_providers': [k for k, v in OCR_AVAILABILITY.items() if v]
     }
+
+@app.post("/api/ocr-universal")
+async def process_universal_ocr(
+    file: UploadFile = File(...),
+    provider: str = Form("google"),
+    model: str = Form(None),
+    stream: bool = Form(False)
+):
+    """Universal OCR processing endpoint
+    
+    Args:
+        file: Uploaded file (PDF, DOCX, DOC, PPTX, XLS, XLSX, PPT, HWP, images)
+        provider: OCR provider (google, mistral, naver, alibaba)
+        model: Model name (for Alibaba Cloud)
+        stream: Enable streaming output
+    """
+    try:
+        # Validate file
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="파일명이 없습니다")
+        
+        file_ext = Path(file.filename).suffix.lower()
+        supported_extensions = {'.pdf', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls', '.hwp',
+                               '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tif', '.tiff'}
+        
+        if file_ext not in supported_extensions:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"지원되지 않는 파일 형식: {file_ext}. 지원 형식: {', '.join(supported_extensions)}"
+            )
+        
+        # Validate provider
+        if provider not in ['google', 'mistral', 'naver', 'alibaba']:
+            raise HTTPException(status_code=400, detail="지원되지 않는 OCR 제공자")
+        
+        # Check provider availability
+        if not OCR_AVAILABILITY.get(provider, False):
+            raise HTTPException(status_code=400, detail=f"{provider} OCR 제공자가 사용할 수 없습니다")
+        
+        # Create timestamped result directory
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        result_dir = RESULTS_DIR / timestamp
+        result_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save uploaded file
+        file_path = result_dir / file.filename
+        with open(file_path, 'wb') as f:
+            content = await file.read()
+            f.write(content)
+        
+        logger.info(f"Universal OCR processing: {file.filename} with {provider}")
+        
+        # Initialize OCR processor
+        ocr_output_dir = result_dir / "ocr"
+        processor = UniversalOCRProcessor(provider, str(ocr_output_dir), model)
+        
+        start_time = datetime.now()
+        
+        if stream:
+            # Streaming processing
+            from fastapi.responses import StreamingResponse
+            
+            def generate_stream():
+                try:
+                    for chunk in processor.process_single_file_streaming(str(file_path)):
+                        yield chunk
+                except Exception as e:
+                    yield f"Error: {str(e)}"
+            
+            # Encode filename for HTTP headers (RFC 5987)
+            import urllib.parse
+            encoded_filename = urllib.parse.quote(file.filename.encode('utf-8'))
+            
+            return StreamingResponse(
+                generate_stream(),
+                media_type="text/plain",
+                headers={
+                    "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}_ocr.txt"
+                }
+            )
+        else:
+            # Regular processing
+            result = processor.process_single_file(str(file_path))
+            
+            processing_time = (datetime.now() - start_time).total_seconds()
+            
+            response = {
+                'request_id': timestamp,
+                'filename': file.filename,
+                'provider': provider,
+                'model': model or 'default',
+                'success': result['status'] == 'success',
+                'total_pages': result.get('total_pages', 0),
+                'total_text_length': result.get('total_text_length', 0),
+                'processing_time': round(processing_time, 2),
+                'result_directory': str(result_dir)
+            }
+            
+            if result['status'] == 'success':
+                response['extracted_text'] = result.get('full_text', '')
+                response['pages'] = result.get('pages', [])
+            else:
+                response['error'] = result.get('error', '알 수 없는 오류')
+            
+            # Save result JSON
+            result_json_path = result_dir / 'universal_ocr_result.json'
+            with open(result_json_path, 'w', encoding='utf-8') as f:
+                json.dump(response, f, ensure_ascii=False, indent=2)
+            
+            status_code = 200 if result['status'] == 'success' else 500
+            return JSONResponse(content=response, status_code=status_code)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Universal OCR 처리 오류: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/info")
 async def api_info():
@@ -473,7 +589,7 @@ async def api_info():
         'version': '2.0.0',
         'framework': 'FastAPI',
         'models': AVAILABLE_MODELS,
-        'ocr_engines': AVAILABLE_OCR_ENGINES
+        'universal_ocr_providers': [k for k, v in OCR_AVAILABILITY.items() if v]
     }
 
 if __name__ == '__main__':
@@ -483,10 +599,17 @@ if __name__ == '__main__':
     print(f"\n업로드 디렉토리: {UPLOAD_DIR}")
     print(f"결과 디렉토리: {RESULTS_DIR}")
     
-    print(f"\n사용 가능한 OCR 엔진:")
-    for key, info in AVAILABLE_OCR_ENGINES.items():
-        status = "✓" if info['available'] else "✗"
-        print(f"  {status} {info['name']}")
+    print(f"\n사용 가능한 Universal OCR 제공자:")
+    provider_names = {
+        'google': 'Google Vision API',
+        'mistral': 'Mistral OCR',
+        'naver': 'Naver CLOVA OCR',
+        'alibaba': 'Alibaba Cloud Qwen3-VL'
+    }
+    for key, available in OCR_AVAILABILITY.items():
+        status = "✓" if available else "✗"
+        name = provider_names.get(key, key)
+        print(f"  {status} {name}")
     
     print(f"\n사용 가능한 NER 모델:")
     for key, info in AVAILABLE_MODELS.items():
