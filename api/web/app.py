@@ -114,23 +114,23 @@ AVAILABLE_MODELS = {
     'klue-roberta-large': {
         'name': 'klue/roberta-large',
         'display_name': 'KLUE RoBERTa Large',
-        'description': '한국어 특화 모델 (뛰어난 성능)',
-        'accuracy': '92.72%',
-        'speed': '보통'
-    },
-    'xlm-roberta': {
-        'name': 'FacebookAI/xlm-roberta-large',
-        'display_name': 'XLM-RoBERTa Large',
         'description': '다국어 특화 모델 (최고 정확도)',
         'accuracy': '95.88%',
-        'speed': '느림'
+        'speed': '보통'
     },
     'google-bert': {
         'name': 'google-bert/bert-base-multilingual-cased',
         'display_name': 'Google mBERT',
         'description': '제일 가벼운 모델 (빠른 속도)',
-        'accuracy': '87.60%',
+        'accuracy': '92.72%',
         'speed': '빠름'
+    },
+    'xlm-roberta': {
+        'name': 'FacebookAI/xlm-roberta-large',
+        'display_name': 'XLM-RoBERTa Large',
+        'description': '한국어 특화 모델',
+        'accuracy': '87.60%',
+        'speed': '느림'
     }
 }
 
