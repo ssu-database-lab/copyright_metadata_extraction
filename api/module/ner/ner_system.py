@@ -732,7 +732,7 @@ def extract_entities_from_text(text: str, model_name: Optional[str] = None, debu
         text: 입력 텍스트
         model_name: 모델 이름
         debug: 디버그 로그 출력
-        train: True이면 무조건 모델 훈련 후 예측 (기본값: False)
+        train: True이면 훈련 수행, False이면 훈련 없이 예측 (기본값: False)
     """
     if debug:
         print(f"엔티티 추출 시작 (텍스트 길이: {len(text)}자)")
@@ -753,35 +753,61 @@ def extract_entities_from_text(text: str, model_name: Optional[str] = None, debu
     if debug:
         print(f"모델 경로: {model_path}")
     
-    # train=True이면 무조건 훈련
+    # 모델 존재 여부 확인 (config.json 확인)
+    model_exists = model_path.exists() and (model_path / "config.json").exists()
+    
+    # 모델이 없으면 무조건 다운로드
+    if not model_exists:
+        if debug:
+            print("=" * 60)
+            print(f"모델 없음: {model_name} 다운로드를 시작합니다...")
+            print("=" * 60)
+        
+        try:
+            from transformers import AutoTokenizer, AutoModelForTokenClassification
+            
+            # 모델 다운로드
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            model = AutoModelForTokenClassification.from_pretrained(model_name)
+            
+            # 모델 저장
+            model_path.mkdir(parents=True, exist_ok=True)
+            tokenizer.save_pretrained(model_path)
+            model.save_pretrained(model_path)
+            
+            if debug:
+                print(f"✓ 모델 다운로드 완료: {model_path}")
+            
+            model_exists = True
+        except Exception as e:
+            if debug:
+                print(f"⚠️ 모델 다운로드 실패: {e}")
+                print(f"정규표현식만 사용합니다.")
+    
+    # train=True이면 훈련 수행
     if train:
         if debug:
             print("=" * 60)
             print("train=True: 모델 훈련을 시작합니다...")
             print("=" * 60)
         
-        # ner_train 함수 호출 (debug 파라미터 전달)
+        # ner_train 함수 호출
         result = ner_train(
             model_name=model_name,
-            epochs=3,
-            force_retrain=True,
+            epochs=2,
+            force_retrain=True,  # train=True이면 무조건 훈련
             debug=debug
         )
         
         if not result.get('success', False):
             if debug:
-                print(f"모델 훈련 실패: {result.get('error', 'Unknown error')}")
-                print(f"정규표현식만 사용합니다.")
+                print(f"⚠️ 모델 훈련 실패: {result.get('error', 'Unknown error')}")
         else:
             if debug:
-                print(f"모델 훈련 완료!")
-    else:
-        # train=False이면 기존 모델 있으면 사용, 없으면 정규표현식만
-        model_exists = model_path.exists() and (model_path / "config.json").exists()
-        if not model_exists and debug:
-            print(f"모델이 없습니다: {model_path}")
-            print(f"정규표현식만 사용합니다.")
-            print(f"train=True로 설정하면 자동으로 훈련합니다.")
+                print(f"✓ 모델 훈련 완료!")
+    elif model_exists:
+        if debug:
+            print(f"✓ 기존 모델 사용 (훈련 없이 예측): {model_path}")
     
     try:
         # 1. B-I-O 모델 기반 예측
@@ -931,7 +957,65 @@ def ner_predict(
         if debug:
             print(f"처리할 파일 수: {len(files_to_process)}")
         
-        # 5. 엔티티 추출 시작
+        # 5. 모델 다운로드 및 훈련 (필요한 경우 한 번만 수행)
+        model_path = get_model_path(model_name)
+        model_exists = model_path.exists() and (model_path / "config.json").exists()
+        
+        # 모델이 없으면 무조건 다운로드
+        if not model_exists:
+            if debug:
+                print("=" * 60)
+                print(f"모델 없음: {model_name} 다운로드를 시작합니다...")
+                print("=" * 60)
+            
+            try:
+                from transformers import AutoTokenizer, AutoModelForTokenClassification
+                
+                # 모델 다운로드
+                tokenizer = AutoTokenizer.from_pretrained(model_name)
+                model = AutoModelForTokenClassification.from_pretrained(model_name)
+                
+                # 모델 저장
+                model_path.mkdir(parents=True, exist_ok=True)
+                tokenizer.save_pretrained(model_path)
+                model.save_pretrained(model_path)
+                
+                if debug:
+                    print(f"✓ 모델 다운로드 완료: {model_path}")
+                
+                model_exists = True
+            except Exception as e:
+                print(f"⚠️ 모델 다운로드 실패: {e}")
+                return {
+                    "success": False,
+                    "error": f"모델 다운로드 실패: {e}"
+                }
+        
+        # train=True이면 훈련 수행
+        if train:
+            if debug:
+                print("=" * 60)
+                print(f"train=True: {model_name} 훈련을 시작합니다...")
+                print("=" * 60)
+            
+            result = ner_train(
+                model_name=model_name,
+                epochs=2,
+                force_retrain=True,  # train=True이면 무조건 훈련
+                debug=debug
+            )
+            
+            if not result.get('success', False):
+                print(f"⚠️ 모델 훈련 실패: {result.get('error', 'Unknown error')}")
+                print(f"훈련 없이 베이스 모델로 예측을 계속합니다.")
+            else:
+                if debug:
+                    print(f"✓ 모델 훈련 완료!")
+        elif model_exists:
+            if debug:
+                print(f"✓ 기존 모델 사용 (훈련 없이 예측): {model_path}")
+        
+        # 6. 엔티티 추출 시작
         if debug:
             print("엔티티 추출 시작...")
         
@@ -948,8 +1032,8 @@ def ner_predict(
                 if len(content.strip()) < 10:
                     continue
                 
-                # 엔티티 추출 (train, debug 파라미터 전달)
-                entities = extract_entities_from_text(content, model_name=model_name, debug=False, train=train)
+                # 엔티티 추출 (train=False로 고정 - 이미 위에서 훈련 완료 또는 스킵)
+                entities = extract_entities_from_text(content, model_name=model_name, debug=False, train=False)
                 
                 # 결과 저장 - 입력 경로 구조 유지 (pdf_to_image와 동일한 패턴)
                 if entities:
