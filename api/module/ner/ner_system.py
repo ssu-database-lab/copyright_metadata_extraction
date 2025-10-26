@@ -95,23 +95,87 @@ def check_system_requirements(verbose: bool = False):
 
 def get_model_path(model_name: str = DEFAULT_MODEL_NAME) -> Path:
     """
-    모델 저장 경로 반환
+    모델 저장 경로 반환 및 준비
     
-    경로 구조: api/models/ner/{model_name}/
-    예: api/models/ner/klue-roberta-large/
+    로직:
+    1. models/ner/{model_name}/ 확인
+       - 있으면 → 사용
+       - 없으면 → 2단계
+    
+    2. model_downloaded/{model_name}/ 확인
+       - 있으면 → models/ner/로 복사 후 사용
+       - 없으면 → 3단계
+    
+    3. Hugging Face에서 다운로드
+       - model_downloaded/로 다운로드
+       - models/ner/로 복사 후 사용
+    
+    최종적으로 항상 models/ner/{model_name}/ 경로 반환
     """
     current_dir = Path(__file__).parent
     api_dir = current_dir.parent.parent
     
-    # 새로운 경로 구조: models/ner/{model_name}
-    models_base_dir = api_dir / "models" / "ner"
-    models_base_dir.mkdir(parents=True, exist_ok=True)
-    
     # 모델명에서 슬래시를 대시로 변경 (예: klue/roberta-large -> klue-roberta-large)
     model_name_safe = model_name.replace('/', '-')
     
-    model_path = models_base_dir / model_name_safe
-    return model_path
+    # 목표 경로: models/ner/{model_name}
+    models_ner_dir = api_dir / "models" / "ner" / model_name_safe
+    models_ner_dir.parent.mkdir(parents=True, exist_ok=True)
+    
+    # 1단계: models/ner/{model_name}이 이미 있는지 확인
+    if models_ner_dir.exists() and (models_ner_dir / "config.json").exists():
+        print(f"✓ 모델 발견: {models_ner_dir}")
+        return models_ner_dir
+    
+    # 2단계: model_downloaded/{model_name} 확인
+    model_downloaded_dir = api_dir / "model_downloaded" / model_name_safe
+    if model_downloaded_dir.exists() and (model_downloaded_dir / "config.json").exists():
+        print(f"✓ 다운로드된 모델 발견: {model_downloaded_dir}")
+        print(f"📦 모델 복사 중: {model_downloaded_dir} → {models_ner_dir}")
+        
+        import shutil
+        if models_ner_dir.exists():
+            shutil.rmtree(models_ner_dir)
+        shutil.copytree(model_downloaded_dir, models_ner_dir)
+        
+        print(f"✓ 모델 복사 완료: {models_ner_dir}")
+        return models_ner_dir
+    
+    # 3단계: Hugging Face에서 다운로드
+    print(f"⚠️  로컬에 모델 없음: {model_name}")
+    print(f"📥 Hugging Face에서 다운로드 중...")
+    
+    try:
+        from transformers import AutoTokenizer, AutoModelForTokenClassification
+        
+        # model_downloaded로 다운로드
+        model_downloaded_dir.parent.mkdir(parents=True, exist_ok=True)
+        
+        print(f"  → 다운로드 위치: {model_downloaded_dir}")
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForTokenClassification.from_pretrained(model_name)
+        
+        # 저장
+        tokenizer.save_pretrained(str(model_downloaded_dir))
+        model.save_pretrained(str(model_downloaded_dir))
+        
+        print(f"✓ 다운로드 완료: {model_downloaded_dir}")
+        
+        # models/ner/로 복사
+        print(f"📦 모델 복사 중: {model_downloaded_dir} → {models_ner_dir}")
+        
+        import shutil
+        if models_ner_dir.exists():
+            shutil.rmtree(models_ner_dir)
+        shutil.copytree(model_downloaded_dir, models_ner_dir)
+        
+        print(f"✓ 모델 복사 완료: {models_ner_dir}")
+        return models_ner_dir
+        
+    except Exception as e:
+        print(f"❌ 모델 다운로드 실패: {e}")
+        # 실패해도 경로는 반환 (나중에 훈련 시 재시도)
+        return models_ner_dir
 
 def load_model_and_tokenizer(model_path: Path, verbose: bool = True):
     """모델과 토크나이저 로드"""
@@ -1123,6 +1187,91 @@ def ner_predict(
             "error": f"예측 중 오류 발생: {str(e)}"
         }
 
+def ensure_training_data_exists(model_name: str, num_samples: int = 7500, force_regenerate: bool = False) -> bool:
+    """
+    훈련/검증 데이터가 존재하는지 확인하고 없거나 force_regenerate=True면 새로 생성
+    
+    Args:
+        model_name: 모델 이름
+        num_samples: 생성할 총 샘플 수 (기본값: 7500, 범위: 5000~10000)
+        force_regenerate: True면 기존 데이터를 삭제하고 재생성 (overfitting 방지)
+    
+    Returns:
+        bool: 데이터 준비 성공 여부
+    
+    Note:
+        - 생성된 데이터의 80%는 train.txt (훈련용)
+        - 나머지 20%는 validation.txt (검증/평가용)
+        - test.txt는 validation.txt와 동일하게 생성 (호환성)
+    """
+    try:
+        current_dir = Path(__file__).parent
+        model_name_safe = model_name.replace('/', '-')
+        training_dir = current_dir / "training" / model_name_safe
+        
+        train_file = training_dir / "train.txt"
+        val_file = training_dir / "validation.txt"
+        test_file = training_dir / "test.txt"
+        
+        # force_regenerate=True 또는 파일이 없으면 생성
+        if force_regenerate or not (train_file.exists() and val_file.exists()):
+            if force_regenerate:
+                print(f"\n{'='*60}")
+                print(f"🔄 훈련 데이터 재생성 (Overfitting 방지)")
+                print(f"{'='*60}")
+            else:
+                print(f"\n{'='*60}")
+                print(f"📦 훈련 데이터 생성")
+                print(f"{'='*60}")
+            
+            print(f"총 샘플 수: {num_samples:,}개")
+            print(f"훈련 데이터: {int(num_samples * 0.8):,}개 (80%)")
+            print(f"검증 데이터: {int(num_samples * 0.2):,}개 (20%)")
+            print(f"{'='*60}")
+            
+            # 기존 파일 삭제
+            if training_dir.exists():
+                import shutil
+                shutil.rmtree(training_dir)
+            
+            # 훈련 데이터 디렉토리 생성
+            training_dir.mkdir(parents=True, exist_ok=True)
+            
+            # ner_train.py의 데이터 생성 함수 import
+            try:
+                from .ner_train import generate_rich_training_data
+                
+                # 훈련 데이터 생성
+                result = generate_rich_training_data(training_dir, num_samples=num_samples)
+                
+                if result and train_file.exists() and val_file.exists():
+                    # test.txt는 validation.txt와 동일하게 생성 (호환성)
+                    if val_file.exists():
+                        import shutil
+                        shutil.copy(val_file, test_file)
+                    
+                    print(f"✓ 훈련 데이터 생성 완료!")
+                    print(f"  - Train: {train_file} ({train_file.stat().st_size // 1024}KB)")
+                    print(f"  - Validation: {val_file} ({val_file.stat().st_size // 1024}KB)")
+                    print(f"  - Test: {test_file} (검증 데이터 복사본)")
+                    return True
+                else:
+                    print(f"⚠️  데이터 생성 실패")
+                    return False
+                    
+            except ImportError as e:
+                print(f"⚠️  ner_train.py를 import할 수 없습니다: {e}")
+                return False
+        else:
+            print(f"✓ 기존 훈련 데이터 사용: {training_dir}")
+            return True
+            
+    except Exception as e:
+        print(f"⚠️  훈련 데이터 생성 중 오류: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
 def ner_train(
     epochs: int = 3,
     batch_size: int = 8,
@@ -1136,10 +1285,11 @@ def ner_train(
     eval_steps: int = 100,
     force_retrain: bool = False,
     callback_url: Optional[str] = None,
-    debug: bool = False
+    debug: bool = False,
+    num_train_samples: int = 7500
 ) -> Dict[str, Any]:
     """
-    NER 모델 훈련 API
+    NER 모델 훈련 API - 매번 새로운 데이터로 훈련 (overfitting 방지)
     
     Args:
         epochs: 훈련 에포크 수 (기본값: 3)
@@ -1155,9 +1305,15 @@ def ner_train(
         force_retrain: 기존 모델이 있어도 재훈련 여부
         callback_url: 훈련 상태 콜백 URL (옵션)
         debug: True이면 상세 로그 출력 (기본값: False)
+        num_train_samples: 생성할 총 샘플 수 (기본값: 7500, 80%는 훈련, 20%는 검증)
     
     Returns:
         Dict[str, Any]: 훈련 결과 정보
+    
+    Note:
+        - 훈련 시마다 새로운 데이터 생성 (force_regenerate=True)
+        - 생성된 데이터의 80%는 훈련용, 20%는 검증용
+        - 샘플 수 범위: 5,000 ~ 10,000개 권장
     """
     start_time = time.time()
     
@@ -1170,14 +1326,24 @@ def ner_train(
         # 1. 시스템 요구사항 확인
         device = check_system_requirements(verbose=debug)
         
-        # 2. 모델 경로 설정
+        # 2. 훈련 데이터 생성 (매번 새로 생성 - overfitting 방지)
+        if not ensure_training_data_exists(model_name, num_samples=num_train_samples, force_regenerate=True):
+            return {
+                "success": False,
+                "error": "훈련 데이터 생성 실패",
+                "training_time": time.time() - start_time
+            }
+        
+        # 3. 모델 경로 설정
         if output_dir:
             model_path = Path(output_dir)
         else:
             model_path = get_model_path(model_name)
         
-        # 3. 기존 모델 확인
+        # 기존 모델이 있어도 force_retrain=True이면 재훈련
         if not force_retrain and model_path.exists() and (model_path / "config.json").exists():
+            if debug:
+                print(f"⚠️  기존 모델 존재하지만 force_retrain=False라서 훈련 스킵")
             return {
                 "success": True,
                 "message": "기존 훈련된 모델을 사용합니다.",
@@ -1194,6 +1360,8 @@ def ner_train(
             print(f"  - Learning Rate: {learning_rate}")
             print(f"  - Max Length: {max_length}")
             print(f"  - FP16: {enable_fp16}")
+            print(f"  - Training Samples: {int(num_train_samples * 0.8):,} (80%)")
+            print(f"  - Validation Samples: {int(num_train_samples * 0.2):,} (20%)")
         
         # 4. ner_train.py 스크립트 실행
         current_dir = Path(__file__).parent
@@ -1291,6 +1459,30 @@ def ner_train(
         if return_code == 0:
             # 훈련된 모델 검증
             if model_path.exists() and (model_path / "config.json").exists():
+                # 훈련 정보를 JSON 파일로 저장
+                training_info = {
+                    "training_time": training_time,
+                    "training_time_minutes": training_time / 60,
+                    "final_epoch": current_epoch,
+                    "total_steps": total_steps,
+                    "completed_at": time.strftime('%Y-%m-%d %H:%M:%S'),
+                    "config": {
+                        "epochs": epochs,
+                        "batch_size": batch_size,
+                        "learning_rate": learning_rate,
+                        "model_name": model_name,
+                        "max_length": max_length,
+                        "num_train_samples": num_train_samples
+                    }
+                }
+                
+                training_info_file = model_path / "training_info.json"
+                with open(training_info_file, 'w', encoding='utf-8') as f:
+                    json.dump(training_info, f, ensure_ascii=False, indent=2)
+                
+                if debug:
+                    print(f"✓ 훈련 정보 저장: {training_info_file}")
+                
                 return {
                     "success": True,
                     "message": "NER 모델 훈련이 성공적으로 완료되었습니다!",
@@ -1362,32 +1554,39 @@ def get_training_status(model_path: Optional[str] = None) -> Dict[str, Any]:
     return status
 
 def ner_evaluate(
-    test_data_path: Optional[str] = None,
+    output_path: str,
     model_name: Optional[str] = None,
-    output_path: Optional[str] = None,
-    verbose: bool = False,
+    test_data_path: Optional[str] = None,
+    verbose: bool = True,
     debug: bool = False,
-    use_validation: bool = False,
-    use_test: bool = False,
     max_samples: Optional[int] = None
 ) -> Dict[str, Any]:
     """
     NER 모델 성능 평가 (F1 Score, Precision, Recall)
+    훈련 데이터의 20% 검증 데이터(validation.txt)를 사용하여 평가
     
     Args:
+        output_path: 평가 결과 저장 기본 경로 (예: "data/out")
+                    {output_path}/debug/ 디렉토리에 {model_name}_evaluation.txt로 저장
+        model_name: 평가할 모델 이름 (기본값: None이면 ner_predict와 동일한 기본 모델 사용)
         test_data_path: 테스트 데이터 경로 (BIO 포맷 .txt 파일)
-                       None이면 자동으로 training/{model_name}/test.txt 사용
-        model_name: 평가할 모델 이름
-        output_path: 평가 결과 저장 경로 (선택사항)
-                    None이면 module/ner/validate/{model_name}/ 에 자동 저장
-        verbose: 상세 출력 여부 (기본값: False)
+                       None이면 자동으로 training/{model_name}/validation.txt 사용
+        verbose: 상세 출력 여부 (기본값: True, debug 파라미터 통합)
         debug: 디버그 로그 출력 여부 (기본값: False, verbose보다 우선)
-        use_validation: True면 validation.txt 사용 (훈련 중 성능 확인용)
-        use_test: True면 test.txt 사용 (최종 평가용)
         max_samples: 평가할 최대 문장 수 (None이면 전체, 빠른 테스트용)
     
     Returns:
         Dict[str, Any]: 평가 결과 (F1, Precision, Recall, 엔티티별 점수)
+    
+    Usage:
+        # ner_test.py 스타일 사용법
+        ner_evaluate("data/out")  # 기본 모델, validation.txt 사용
+        ner_evaluate("data/out", "FacebookAI/xlm-roberta-large")
+        ner_evaluate("data/out", "google-bert/bert-base-multilingual-cased")
+    
+    Note:
+        - validation.txt는 전체 생성 데이터의 20%로, 훈련에 사용되지 않은 홀드아웃 데이터입니다.
+        - 매번 훈련할 때마다 새로운 데이터가 생성되므로, 평가 결과도 달라집니다.
     """
     # debug=True이면 verbose도 True로 설정
     if debug:
@@ -1406,11 +1605,13 @@ def ner_evaluate(
                 "error": f"scikit-learn 설치 실패: {str(e)}"
             }
     
-    start_time = time.time()
+    overall_start_time = datetime.now()
     
-    # 모델 이름 설정
+    # 모델 이름 설정 (None이면 기본 모델 사용 - ner_predict와 동일)
     if model_name is None:
         model_name = DEFAULT_MODEL_NAME
+        if verbose:
+            print(f"⚠️  모델 이름이 지정되지 않아 기본 모델 사용: {model_name}")
     
     # 모델명 정규화 (klue/roberta-large → klue-roberta-large)
     model_name_safe = model_name.replace('/', '-')
@@ -1419,39 +1620,44 @@ def ner_evaluate(
     current_dir = Path(__file__).parent
     api_dir = current_dir.parent.parent
     
-    # 테스트 데이터 경로 자동 설정
+    # 모델 경로에서 훈련 정보 로드
+    model_path = get_model_path(model_name)
+    training_info_file = model_path / "training_info.json"
+    training_info = None
+    
+    if training_info_file.exists():
+        try:
+            with open(training_info_file, 'r', encoding='utf-8') as f:
+                training_info = json.load(f)
+            if verbose:
+                print(f"✓ 훈련 정보 로드: 훈련 시간 {training_info.get('training_time', 0):.1f}초 ({training_info.get('training_time_minutes', 0):.1f}분)")
+        except Exception as e:
+            if debug:
+                print(f"⚠️  훈련 정보 로드 실패: {e}")
+    
+    # 훈련 데이터가 없으면 자동 생성
+    if not ensure_training_data_exists(model_name, num_samples=3000, force_regenerate=False):
+        return {
+            "success": False,
+            "error": "훈련 데이터 생성 실패",
+            "evaluation_time": (datetime.now() - overall_start_time).total_seconds()
+        }
+    
+    # 검증 데이터 경로 자동 설정 (항상 validation.txt 사용)
     if test_data_path is None:
         training_dir = current_dir / "training" / model_name_safe
-        
-        if use_test:
-            # 최종 평가용 (절대 훈련에 사용 안 함!)
-            test_data_path = str(training_dir / "test.txt")
-            eval_type = "Test (최종 평가)"
-        elif use_validation:
-            # 훈련 중 성능 확인용
-            test_data_path = str(training_dir / "validation.txt")
-            eval_type = "Validation (훈련 중)"
-        else:
-            # 기본값: test.txt
-            test_data_path = str(training_dir / "test.txt")
-            eval_type = "Test (최종 평가)"
+        test_data_path = str(training_dir / "validation.txt")
+        eval_type = "Validation (훈련 데이터의 20%)"
     else:
         eval_type = "Custom"
     
-    # 출력 경로 자동 설정
-    if output_path is None:
-        validate_dir = current_dir / "validate" / model_name_safe
-        validate_dir.mkdir(parents=True, exist_ok=True)
-        output_path = str(validate_dir)
-    
     if verbose:
-        print("=" * 60)
+        print("=" * 80)
         print("NER 모델 성능 평가")
-        print("=" * 60)
+        print("=" * 80)
         print(f"✓ 사용 모델: {model_name}")
         print(f"✓ 평가 타입: {eval_type}")
-        print(f"✓ 테스트 데이터: {test_data_path}")
-        print(f"✓ 결과 저장: {output_path}")
+        print(f"✓ 검증 데이터: {test_data_path}")
     
     # 1. 테스트 데이터 로드
     test_path = Path(test_data_path)
@@ -1462,8 +1668,6 @@ def ner_evaluate(
         }
     
     # BIO 포맷 파싱
-    true_labels = []
-    pred_labels = []
     sentences = []
     current_sentence = []
     current_labels = []
@@ -1473,8 +1677,7 @@ def ner_evaluate(
             line = line.strip()
             if not line:
                 if current_sentence:
-                    sentences.append(current_sentence)
-                    true_labels.extend(current_labels)
+                    sentences.append((current_sentence.copy(), current_labels.copy()))
                     current_sentence = []
                     current_labels = []
                 continue
@@ -1487,8 +1690,7 @@ def ner_evaluate(
     
     # 마지막 문장 처리
     if current_sentence:
-        sentences.append(current_sentence)
-        true_labels.extend(current_labels)
+        sentences.append((current_sentence.copy(), current_labels.copy()))
     
     if not sentences:
         return {
@@ -1496,55 +1698,18 @@ def ner_evaluate(
             "error": "테스트 데이터가 비어있습니다."
         }
     
-    # max_samples 적용 (빠른 테스트용)
-    original_sentence_count = len(sentences)
+    # max_samples 적용
+    original_count = len(sentences)
     if max_samples is not None and max_samples < len(sentences):
-        # 처음 max_samples개 문장만 사용
         sentences = sentences[:max_samples]
-        # true_labels도 해당 문장들의 라벨만
-        true_labels = []
-        for sent_labels in [s for s in sentences]:
-            # 다시 파일에서 해당 문장의 라벨 추출
-            pass
-        # 간단하게: 다시 로드
-        sentences_temp = []
-        true_labels = []
-        sentence_count = 0
-        current_sentence = []
-        current_labels = []
-        
-        with open(test_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    if current_sentence:
-                        sentences_temp.append(current_sentence)
-                        true_labels.extend(current_labels)
-                        current_sentence = []
-                        current_labels = []
-                        sentence_count += 1
-                        if sentence_count >= max_samples:
-                            break
-                    continue
-                
-                parts = line.split('\t')
-                if len(parts) >= 2:
-                    token, label = parts[0], parts[1]
-                    current_sentence.append(token)
-                    current_labels.append(label)
-        
-        sentences = sentences_temp
-        
         if verbose:
-            print(f"⚠️  샘플링: {max_samples}/{original_sentence_count}개 문장만 평가")
+            print(f"⚠️  샘플링: {max_samples}/{original_count}개 문장만 평가")
     
     if verbose:
-        print(f"✓ 테스트 문장 수: {len(sentences)}")
-        print(f"✓ 테스트 토큰 수: {len(true_labels)}")
+        print(f"✓ 테스트 문장 수: {len(sentences):,}")
     
     # 2. 모델 로드
     model_path = get_model_path(model_name)
-    model_source = "local"
     
     # 로컬 모델이 없으면 Hugging Face에서 로드
     if not model_path.exists():
@@ -1554,6 +1719,7 @@ def ner_evaluate(
         model_source = "huggingface"
     else:
         model_path_str = str(model_path)
+        model_source = "local"
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -1563,239 +1729,168 @@ def ner_evaluate(
         model.to(device)
         model.eval()
         
-        # label_map 로드 (로컬 모델만)
+        # label_map 로드
         if model_source == "local":
             label_map_path = model_path / "label_map.json"
             if label_map_path.exists():
                 with open(label_map_path, 'r', encoding='utf-8') as f:
                     label_data = json.load(f)
-                    # id2label이 중첩된 경우 처리
                     if 'id2label' in label_data:
                         id2label = {int(k): v for k, v in label_data['id2label'].items()}
                     else:
                         id2label = {int(k): v for k, v in label_data.items()}
             else:
-                id2label = model.config.id2label
+                id2label = {int(k): v for k, v in model.config.id2label.items()}
         else:
-            # Hugging Face 모델은 config에서 가져옴
-            id2label = model.config.id2label
-            
+            id2label = {int(k): v for k, v in model.config.id2label.items()}
+        
         if verbose:
-            print(f"✓ 모델 로드 완료 (출처: {model_source})")
+            print(f"✓ 모델 로드 완료 (출처: {model_source}, 디바이스: {device})")
     except Exception as e:
         return {
             "success": False,
             "error": f"모델 로드 실패: {str(e)}"
         }
     
-    # 3. 예측 수행
+    # 3. 평가 시작 시간 측정
+    eval_start_time = datetime.now()
+    
+    # 4. 예측 수행
     if verbose:
         print("예측 수행 중...")
     
-    with torch.no_grad():
-        for sentence in tqdm(sentences, disable=not verbose):
-            # 훈련 데이터와 동일하게 공백 없이 문장 구성
-            text = ''.join(sentence)
-            
-            # 토큰화 with offset_mapping
-            inputs = tokenizer(
-                text,
-                return_tensors="pt",
-                truncation=True,
-                max_length=512,
-                padding=True,
-                return_offsets_mapping=True
-            )
-            offset_mapping = inputs.pop('offset_mapping')[0]
-            inputs = {k: v.to(device) for k, v in inputs.items()}
-            
-            # 예측
-            outputs = model(**inputs)
-            predictions = torch.argmax(outputs.logits, dim=-1)
-            pred_label_ids = predictions[0].cpu().numpy()
-            
-            # Offset mapping을 사용하여 문자 단위 라벨 정렬
-            char_labels = ['O'] * len(text)
-            
-            for idx, (start, end) in enumerate(offset_mapping):
-                if start == 0 and end == 0:  # [CLS], [SEP], [PAD]
-                    continue
-                
-                label_id = int(pred_label_ids[idx])
-                label = id2label.get(label_id, 'O')
-                
-                # 해당 offset 범위의 모든 문자에 라벨 할당
-                # 첫 문자는 B- 태그 유지, 나머지는 I- 태그로 변환
-                for char_idx in range(start, end):
-                    if char_idx < len(char_labels):
-                        if char_idx == start:
-                            # 첫 문자: B- 태그 유지
-                            char_labels[char_idx] = label
-                        else:
-                            # 나머지 문자: I- 태그로 변환
-                            if label.startswith('B-'):
-                                char_labels[char_idx] = label.replace('B-', 'I-')
-                            else:
-                                char_labels[char_idx] = label
-            
-            # 원본 토큰 수와 매칭 (sentence는 문자 리스트)
-            token_pred_labels = []
-            for idx, char in enumerate(sentence):
-                if idx < len(char_labels):
-                    token_pred_labels.append(char_labels[idx])
-                else:
-                    token_pred_labels.append('O')
-            
-            pred_labels.extend(token_pred_labels)
-    
-    # 4. 엔티티 레벨 평가 (토큰 단위가 아닌 엔티티 단위)
-    # 문장별로 재구성
     all_true_labels = []
     all_pred_labels = []
+    successful_predictions = 0
+    failed_predictions = 0
     
-    sentence_start = 0
-    for sentence in sentences:
-        sentence_len = len(sentence)
-        sentence_true = true_labels[sentence_start:sentence_start + sentence_len]
-        sentence_pred = pred_labels[sentence_start:sentence_start + sentence_len]
-        
-        all_true_labels.append(sentence_true)
-        all_pred_labels.append(sentence_pred)
-        
-        sentence_start += sentence_len
+    with torch.no_grad():
+        for idx, (sentence_tokens, sentence_labels) in enumerate(tqdm(sentences, disable=not verbose)):
+            # 공백 없이 문장 구성
+            text = ''.join(sentence_tokens)
+            
+            try:
+                # 토큰화
+                inputs = tokenizer(
+                    text,
+                    return_tensors="pt",
+                    truncation=True,
+                    max_length=512,
+                    padding=True,
+                    return_offsets_mapping=True
+                )
+                offset_mapping = inputs.pop('offset_mapping')[0]
+                inputs = {k: v.to(device) for k, v in inputs.items()}
+                
+                # 예측
+                outputs = model(**inputs)
+                predictions = torch.argmax(outputs.logits, dim=-1)
+                pred_label_ids = predictions[0].cpu().numpy()
+                
+                # Offset mapping을 사용하여 문자 단위 라벨 정렬
+                char_pred_labels = ['O'] * len(text)
+                
+                for token_idx, (start, end) in enumerate(offset_mapping):
+                    if start == 0 and end == 0:  # [CLS], [SEP], [PAD]
+                        continue
+                    
+                    label_id = int(pred_label_ids[token_idx])
+                    label = id2label.get(label_id, 'O')
+                    
+                    # 해당 offset 범위의 모든 문자에 라벨 할당
+                    for char_idx in range(start, min(end, len(char_pred_labels))):
+                        if char_idx == start and label.startswith('B-'):
+                            char_pred_labels[char_idx] = label
+                        elif label.startswith('B-'):
+                            char_pred_labels[char_idx] = label.replace('B-', 'I-')
+                        else:
+                            char_pred_labels[char_idx] = label
+                
+                # Ground truth 라벨 (문자 단위)
+                char_true_labels = []
+                for token, label in zip(sentence_tokens, sentence_labels):
+                    for i, char in enumerate(token):
+                        if i == 0 and label.startswith('B-'):
+                            char_true_labels.append(label)
+                        elif label.startswith('B-'):
+                            char_true_labels.append(label.replace('B-', 'I-'))
+                        else:
+                            char_true_labels.append(label)
+                
+                # 길이 검증 및 맞추기
+                if len(char_true_labels) != len(char_pred_labels):
+                    if debug:
+                        print(f"\n⚠️  문장 {idx+1}: 라벨 길이 불일치")
+                        print(f"  True: {len(char_true_labels)}, Pred: {len(char_pred_labels)}")
+                    
+                    # 짧은 쪽에 맞춤
+                    min_len = min(len(char_true_labels), len(char_pred_labels))
+                    char_true_labels = char_true_labels[:min_len]
+                    char_pred_labels = char_pred_labels[:min_len]
+                
+                # 리스트에 추가
+                all_true_labels.append(char_true_labels)
+                all_pred_labels.append(char_pred_labels)
+                successful_predictions += 1
+                
+            except Exception as e:
+                if debug:
+                    print(f"\n⚠️  문장 {idx+1} 예측 실패: {e}")
+                failed_predictions += 1
+                continue
     
-    # Seqeval을 사용한 엔티티 레벨 평가
+    eval_end_time = datetime.now()
+    eval_time = (eval_end_time - eval_start_time).total_seconds()
+    
+    if successful_predictions == 0:
+        return {
+            "success": False,
+            "error": "모든 예측이 실패했습니다.",
+            "evaluation_time": eval_time
+        }
+    
+    # 5. 메트릭 계산 (seqeval 사용)
     try:
         from seqeval.metrics import precision_score as seqeval_precision
         from seqeval.metrics import recall_score as seqeval_recall
         from seqeval.metrics import f1_score as seqeval_f1
-        from seqeval.metrics import classification_report
         
-        precision = seqeval_precision(all_true_labels, all_pred_labels, zero_division=0)
-        recall = seqeval_recall(all_true_labels, all_pred_labels, zero_division=0)
-        f1 = seqeval_f1(all_true_labels, all_pred_labels, zero_division=0)
+        # seqeval은 zero_division 파라미터를 지원하지 않으므로 제거
+        precision = seqeval_precision(all_true_labels, all_pred_labels)
+        recall = seqeval_recall(all_true_labels, all_pred_labels)
+        f1 = seqeval_f1(all_true_labels, all_pred_labels)
         
-        # 엔티티별 메트릭 계산
-        entity_types = set()
-        for labels in all_true_labels:
-            for label in labels:
-                if label != 'O':
-                    # B-NAME, I-NAME → NAME으로 통일
-                    entity_type = label.replace('B-', '').replace('I-', '')
-                    entity_types.add(entity_type)
-        
-        entity_metrics = {}
-        for entity_type in entity_types:
-            # 해당 엔티티만 추출하여 평가
-            filtered_true = []
-            filtered_pred = []
-            
-            for true_sent, pred_sent in zip(all_true_labels, all_pred_labels):
-                filtered_true_sent = []
-                filtered_pred_sent = []
-                
-                for t_label, p_label in zip(true_sent, pred_sent):
-                    # 해당 엔티티 타입만 유지, 나머지는 O로
-                    t_clean = t_label.replace('B-', '').replace('I-', '')
-                    p_clean = p_label.replace('B-', '').replace('I-', '')
-                    
-                    if t_clean == entity_type:
-                        filtered_true_sent.append(t_label)
-                    else:
-                        filtered_true_sent.append('O')
-                    
-                    if p_clean == entity_type:
-                        filtered_pred_sent.append(p_label)
-                    else:
-                        filtered_pred_sent.append('O')
-                
-                filtered_true.append(filtered_true_sent)
-                filtered_pred.append(filtered_pred_sent)
-            
-            try:
-                p = seqeval_precision(filtered_true, filtered_pred, zero_division=0)
-                r = seqeval_recall(filtered_true, filtered_pred, zero_division=0)
-                f = seqeval_f1(filtered_true, filtered_pred, zero_division=0)
-                
-                entity_metrics[entity_type] = {
-                    'precision': float(p) * 100,
-                    'recall': float(r) * 100,
-                    'f1_score': float(f) * 100,
-                    'support': sum(1 for labels in all_true_labels for label in labels if label.replace('B-', '').replace('I-', '') == entity_type)
-                }
-            except:
-                entity_metrics[entity_type] = {
-                    'precision': 0.0,
-                    'recall': 0.0,
-                    'f1_score': 0.0,
-                    'support': 0
-                }
-    
+        use_seqeval = True
     except ImportError:
-        # Seqeval이 없으면 기존 토큰 레벨 평가 사용
         if verbose:
-            print("⚠️  seqeval이 설치되지 않아 토큰 레벨 평가를 사용합니다.")
+            print("⚠️  seqeval이 설치되지 않아 sklearn을 사용합니다.")
         
-        precision, recall, f1, support = precision_recall_fscore_support(
-            true_labels,
-            pred_labels,
+        # 평탄화
+        flat_true = [label for sent in all_true_labels for label in sent]
+        flat_pred = [label for sent in all_pred_labels for label in sent]
+        
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            flat_true,
+            flat_pred,
             average='weighted',
             zero_division=0
         )
-        
-        # 엔티티별 메트릭 (토큰 레벨)
-        entity_labels = list(set(true_labels) - {'O'})
-        entity_metrics = {}
-        
-        for entity_type in entity_labels:
-            y_true_binary = [1 if label == entity_type else 0 for label in true_labels]
-            y_pred_binary = [1 if label == entity_type else 0 for label in pred_labels]
-            
-            p, r, f, s = precision_recall_fscore_support(
-                y_true_binary,
-                y_pred_binary,
-                average='binary',
-                zero_division=0
-            )
-            
-            entity_metrics[entity_type] = {
-                'precision': float(p) * 100 if p is not None else 0.0,
-                'recall': float(r) * 100 if r is not None else 0.0,
-                'f1_score': float(f) * 100 if f is not None else 0.0,
-                'support': int(s) if s is not None else 0
-            }
+        use_seqeval = False
     
-    # 5. 결과 출력
+    # 6. 결과 출력 (콘솔)
     if verbose:
-        print("\n" + "=" * 60)
-        print("📊 모델 성능 평가 결과")
-        print("=" * 60)
-        print(f"\n전체 성능:")
-        print(f"  • Precision (정밀도): {precision * 100:.2f}%")
-        print(f"  • Recall (재현율):    {recall * 100:.2f}%")
-        print(f"  • F1 Score:           {f1 * 100:.2f}%")
-        print(f"  • 총 토큰 수:         {len(true_labels):,}")
-        
-        print(f"\n엔티티별 성능:")
-        print("-" * 60)
-        print(f"{'엔티티 타입':<20} {'F1 Score':<12} {'Precision':<12} {'Recall':<12}")
-        print("-" * 60)
-        
-        # F1 Score 기준으로 정렬
-        sorted_entities = sorted(
-            entity_metrics.items(),
-            key=lambda x: x[1]['f1_score'],
-            reverse=True
-        )
-        
-        for entity_type, metrics in sorted_entities:
-            # B-, I- 접두사 제거
-            display_name = entity_type.replace('B-', '').replace('I-', '')
-            print(f"{display_name:<20} {metrics['f1_score']:>10.2f}%  {metrics['precision']:>10.2f}%  {metrics['recall']:>10.2f}%")
-        
-        print("-" * 60)
+        print("\n" + "=" * 80)
+        print(f"{model_name} 평가 결과")
+        print("=" * 80)
+        print(f"평가 시간: {eval_time:.1f}s")
+        print(f"성공: {successful_predictions:,}, 실패: {failed_predictions}")
+        print(f"Precision: {precision * 100:.2f}%")
+        print(f"Recall: {recall * 100:.2f}%")
+        print(f"F1 Score: {f1 * 100:.2f}%")
     
-    # 6. 결과 저장
+    # 7. 결과 저장
+    overall_end_time = datetime.now()
+    
     results = {
         "success": True,
         "model_name": model_name,
@@ -1804,64 +1899,49 @@ def ner_evaluate(
             "precision": float(precision) * 100,
             "recall": float(recall) * 100,
             "f1_score": float(f1) * 100,
-            "total_tokens": len(true_labels)
+            "total_samples": successful_predictions
         },
-        "entity_metrics": entity_metrics,
-        "evaluation_time": time.time() - start_time
+        "evaluation_time": eval_time
     }
     
-    if output_path:
-        output_dir = Path(output_path)
-        output_dir.mkdir(parents=True, exist_ok=True)
+    # output_path/debug/ 디렉토리에 저장
+    output_dir = Path(output_path) / "debug"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # {model_name}_evaluation.txt 파일 생성
+    eval_file = output_dir / f"{model_name_safe}_evaluation.txt"
+    
+    # model_evaluation_log.txt 형식으로 저장
+    with open(eval_file, 'w', encoding='utf-8') as f:
+        f.write("=" * 80 + "\n")
+        f.write("NER Model Evaluation\n")
+        f.write("=" * 80 + "\n")
+        f.write(f"Start: {overall_start_time.strftime('%Y-%m-%d %H:%M:%S.%f')}\n")
+        f.write("=" * 80 + "\n\n\n")
         
-        # JSON 파일 저장 (module/ner/validate/{model_name}/)
-        timestamp_str = datetime.now().strftime('%Y%m%d_%H%M%S')
-        eval_prefix = "validation" if use_validation else "test" if use_test else "eval"
-        json_file = output_dir / f"{eval_prefix}_results_{timestamp_str}.json"
+        f.write(f"{model_name}\n")
+        f.write("=" * 80 + "\n")
         
-        with open(json_file, 'w', encoding='utf-8') as f:
-            json.dump(results, f, ensure_ascii=False, indent=2)
-        
-        # 텍스트 로그 파일 저장 (누적 기록)
-        log_file = output_dir / "evaluation_log.txt"
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
-        with open(log_file, 'a', encoding='utf-8') as f:
-            f.write("=" * 80 + "\n")
-            f.write(f"평가 시각: {timestamp}\n")
-            f.write(f"평가 타입: {eval_type}\n")
-            f.write(f"모델명: {model_name}\n")
-            f.write(f"테스트 데이터: {test_path.name}\n")
+        # 훈련 정보 추가
+        if training_info:
+            f.write(f"Training Time: {training_info.get('training_time', 0):.1f}s ({training_info.get('training_time_minutes', 0):.1f}min)\n")
+            f.write(f"Training Completed: {training_info.get('completed_at', 'N/A')}\n")
+            f.write(f"Training Epochs: {training_info.get('config', {}).get('epochs', 'N/A')}\n")
+            f.write(f"Training Samples: {training_info.get('config', {}).get('num_train_samples', 'N/A'):,}\n")
             f.write("-" * 80 + "\n")
-            f.write(f"Precision (정밀도): {precision * 100:.2f}%\n")
-            f.write(f"Recall (재현율):    {recall * 100:.2f}%\n")
-            f.write(f"F1 Score:           {f1 * 100:.2f}%\n")
-            f.write(f"총 토큰 수:         {len(true_labels):,}\n")
-            f.write(f"평가 시간:          {results['evaluation_time']:.2f}초\n")
-            
-            # 엔티티별 성능 (상위 5개)
-            if entity_metrics:
-                f.write("\n주요 엔티티별 성능:\n")
-                sorted_entities = sorted(
-                    entity_metrics.items(),
-                    key=lambda x: x[1]['f1_score'],
-                    reverse=True
-                )[:5]
-                for entity_type, metrics in sorted_entities:
-                    f.write(f"  {entity_type}: F1={metrics['f1_score']:.2f}% "
-                           f"P={metrics['precision']:.2f}% "
-                           f"R={metrics['recall']:.2f}%\n")
-            
-            f.write("=" * 80 + "\n\n")
         
-        if verbose:
-            print(f"\n✓ JSON 결과 저장: {json_file.name}")
-            print(f"✓ 평가 로그 저장: {log_file} (누적)")
-            print(f"✓ 저장 위치: {output_dir}")
+        f.write(f"Evaluation Time: {eval_time:.1f}s\n")
+        f.write(f"Evaluation Samples: {successful_predictions:,}\n")
+        f.write(f"Precision: {precision * 100:.2f}%\n")
+        f.write(f"Recall: {recall * 100:.2f}%\n")
+        f.write(f"F1 Score: {f1 * 100:.2f}%\n\n")
+        
+        f.write(f"Complete: {overall_end_time.strftime('%Y-%m-%d %H:%M:%S.%f')}\n")
+        f.write("=" * 80 + "\n\n")
     
     if verbose:
-        print(f"\n⏱️  평가 시간: {results['evaluation_time']:.2f}초")
-        print("=" * 60)
+        print(f"\n✓ 평가 결과 저장: {eval_file}")
+        print("=" * 80)
     
     return results
 
@@ -1898,3 +1978,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
