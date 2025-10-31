@@ -21,8 +21,8 @@ from api import *
 
 ner_train(
     iterations=1, 
-    epochs=10,
-    num_train_samples=300,
+    epochs=20,
+    num_train_samples=10,
     learning_rate=2e-5,
     batch_size=16, 
     enable_visualization=True,
@@ -30,13 +30,13 @@ ner_train(
 )
 
 # 예측 수행
-ner_predict("data/in/ocr", "data/out")
+ner_predict("data/in/test.txt", "data/out")
 
 # 2️⃣ klue/roberta-large
 ner_train(
     iterations=1, 
-    epochs=10, 
-    num_train_samples=300,
+    epochs=20,
+    num_train_samples=10,
     learning_rate=2e-5,
     batch_size=16,
     enable_visualization=True,
@@ -45,13 +45,13 @@ ner_train(
 )
 
 # 예측 수행
-ner_predict("data/in/ocr", "data/out", model_name="klue/roberta-large")
+ner_predict("data/in/test.txt", "data/out", model_name="klue/roberta-large")
 
 # 3️⃣ FacebookAI/xlm-roberta-large
 ner_train(
     iterations=1, 
-    epochs=10, 
-    num_train_samples=300,
+    epochs=20,
+    num_train_samples=10,
     learning_rate=2e-5,
     batch_size=16,
     enable_visualization=True,
@@ -60,4 +60,4 @@ ner_train(
 )
 
 # 예측 수행
-ner_predict("data/in/ocr", "data/out", model_name="FacebookAI/xlm-roberta-large")
+ner_predict("data/in/test.txt", "data/out", model_name="FacebookAI/xlm-roberta-large")

@@ -16,19 +16,30 @@ import math
 import re
 import warnings
 import argparse
+import shutil
+import time
 from pathlib import Path
 from datetime import datetime
 from typing import List, Tuple, Dict, Any, Optional, Union
 from dataclasses import dataclass
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 import torch
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, WeightedRandomSampler
 from torchcrf import CRF
+
+# torchcrf 1.x exposes `viterbi_decode` only; add a compat alias for legacy code
+if not hasattr(CRF, "decode") and hasattr(CRF, "viterbi_decode"):
+    def _crf_decode(self, emissions, mask=None):
+        if mask is None:
+            mask = torch.ones(emissions.shape[:2], dtype=torch.bool, device=emissions.device)
+        return self.viterbi_decode(emissions, mask)
+
+    CRF.decode = _crf_decode  # type: ignore[attr-defined]
 from transformers import (
     AutoTokenizer,
     AutoModel,
@@ -149,6 +160,7 @@ class Config:
     ema_decay: float = 0.999
     layer_lr_decay: float = 0.95
     enable_loss_smoothing: bool = True
+    enable_balanced_sampling: bool = True
 
 
 # 엔티티 타입 (23개)
@@ -379,7 +391,7 @@ def generate_random_korean_name():
     return surname + ''.join(name_parts)
 
 
-def load_bio_file(bio_file_path: str) -> List[Dict]:
+def load_bio_file(bio_file_path: Union[str, Path]) -> List[Dict]:
     """
     BIO 형식 파일 로드
     
@@ -393,7 +405,7 @@ def load_bio_file(bio_file_path: str) -> List[Dict]:
     current_tokens = []
     current_labels = []
     
-    with open(bio_file_path, 'r', encoding='utf-8') as f:
+    with open(Path(bio_file_path), 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             
@@ -478,6 +490,57 @@ def load_bio_file(bio_file_path: str) -> List[Dict]:
         })
     
     return samples
+
+
+def write_bio_file(
+    samples: List[Dict],
+    filepath: Union[str, Path],
+    *,
+    show_progress: bool = False,
+    progress_desc: Optional[str] = None
+) -> None:
+    """샘플 리스트를 BIO 포맷 파일로 저장"""
+    filepath = Path(filepath)
+    ensure_dir(filepath.parent)
+
+    iterator = samples
+    if show_progress:
+        iterator = tqdm(samples, desc=progress_desc or "BIO 저장", ncols=80)
+
+    with open(filepath, 'w', encoding='utf-8') as f:
+        for sample in iterator:
+            text = sample.get('text', '')
+            entities = sample.get('entities', []) or []
+
+            labels = ['O'] * len(text)
+            occupied = [False] * len(text)
+
+            for entity_text, entity_type in entities:
+                if not entity_text:
+                    continue
+
+                search_start = 0
+                while True:
+                    start_idx = text.find(entity_text, search_start)
+                    if start_idx == -1:
+                        break
+
+                    end_idx = start_idx + len(entity_text)
+                    if any(occupied[start_idx:end_idx]):
+                        search_start = start_idx + 1
+                        continue
+
+                    labels[start_idx] = f"B-{entity_type}"
+                    for idx in range(start_idx + 1, end_idx):
+                        labels[idx] = f"I-{entity_type}"
+
+                    for idx in range(start_idx, end_idx):
+                        occupied[idx] = True
+                    break
+
+            for char, label in zip(text, labels):
+                f.write(f"{char}\t{label}\n")
+            f.write("\n")
 
 
 def generate_training_samples(num_samples: int = 5000, balanced: bool = True) -> List[Dict]:
@@ -2251,41 +2314,54 @@ def generate_training_samples(num_samples: int = 5000, balanced: bool = True) ->
         print(f"대규모 균형 데이터 생성 시작: {num_samples:,}개 샘플")
         samples_per_entity = max(1, math.ceil(num_samples / len(ENTITY_TYPES)))
         print(f"   → 엔티티당 {samples_per_entity:,}개씩 생성 (총 {len(ENTITY_TYPES)}개 타입)")
-        
-        # 템플릿 통합
-        all_templates = build_template_list(single_entity_templates, dual_entity_templates, multi_entity_templates)
-        print(f"   → 총 {len(all_templates):,}개 템플릿 사용 가능")
-        
-        # 각 엔티티 타입별로 샘플 생성
-        for entity_type in tqdm(ENTITY_TYPES, desc="엔티티별 샘플 생성"):
-            # 해당 엔티티를 포함하는 템플릿만 필터링
-            relevant_templates = [(tmpl, entities) for tmpl, entities in all_templates if entity_type in entities]
-            if not relevant_templates:
-                relevant_templates = all_templates
-            
-            # 샘플 생성
-            generated = 0
-            attempts = 0
-            max_attempts = samples_per_entity * 3
-            
-            while generated < samples_per_entity and attempts < max_attempts:
-                attempts += 1
-                template, _ = random.choice(relevant_templates)
-                
+
+        # 호출마다 일정한 분포를 유지하기 위해 로컬 시드 고정
+        base_seed = 20251031 + int(num_samples)
+        original_random_state = random.getstate()
+        original_numpy_state = np.random.get_state()
+
+        try:
+            random.seed(base_seed)
+            np.random.seed(base_seed % (2**32 - 1))
+
+            # 템플릿 통합
+            all_templates = build_template_list(single_entity_templates, dual_entity_templates, multi_entity_templates)
+            print(f"   → 총 {len(all_templates):,}개 템플릿 사용 가능")
+
+            # 각 엔티티 타입별로 샘플 생성
+            for entity_type in tqdm(ENTITY_TYPES, desc="엔티티별 샘플 생성"):
+                # 해당 엔티티를 포함하는 템플릿만 필터링
+                relevant_templates = [(tmpl, entities) for tmpl, entities in all_templates if entity_type in entities]
+                if not relevant_templates:
+                    relevant_templates = all_templates
+
                 # 샘플 생성
-                text, entity_list = generate_sample_from_template(template, entity_generators)
-                
-                # 중복 확인 및 추가
-                if text not in seen_texts and entity_list:
-                    seen_texts.add(text)
-                    samples.append({"text": text, "entities": entity_list})
-                    generated += 1
-        
-        # 요청 수보다 더 생성되었으면 무작위로 잘라냄
-        if len(samples) > num_samples:
-            random.shuffle(samples)
-            samples = samples[:num_samples]
-        
+                generated = 0
+                attempts = 0
+                max_attempts = samples_per_entity * 3
+
+                while generated < samples_per_entity and attempts < max_attempts:
+                    attempts += 1
+                    template, _ = random.choice(relevant_templates)
+
+                    # 샘플 생성
+                    text, entity_list = generate_sample_from_template(template, entity_generators)
+
+                    # 중복 확인 및 추가
+                    if text not in seen_texts and entity_list:
+                        seen_texts.add(text)
+                        samples.append({"text": text, "entities": entity_list})
+                        generated += 1
+
+            # 요청 수보다 더 생성되었으면 무작위로 잘라냄 (고정 시드 기반)
+            if len(samples) > num_samples:
+                random.shuffle(samples)
+                samples = samples[:num_samples]
+
+        finally:
+            random.setstate(original_random_state)
+            np.random.set_state(original_numpy_state)
+
         print(f"생성 완료: {len(samples):,}개 샘플")
     
     else:
@@ -2301,6 +2377,121 @@ def generate_training_samples(num_samples: int = 5000, balanced: bool = True) ->
                 samples.append({"text": text, "entities": entity_list})
     
     return samples
+
+
+def prepare_training_data(
+    model_name: str,
+    num_samples: int,
+    *,
+    force_regenerate: bool = False,
+    use_realistic_data: bool = True,
+    balanced: bool = True,
+    test_file_copy: bool = True,
+    training_root: Optional[Path] = None
+) -> Tuple[List[Dict], List[Dict], Path, Path]:
+    """모델 전용 훈련/검증 BIO 데이터를 준비"""
+
+    model_name_safe = model_name.replace('/', '-')
+    if training_root is None:
+        training_root = Path(f"module/ner/training/{model_name_safe}")
+    else:
+        training_root = Path(training_root)
+
+    if force_regenerate and training_root.exists():
+        shutil.rmtree(training_root)
+
+    ensure_dir(training_root)
+
+    train_file = training_root / "train.txt"
+    val_file = training_root / "validation.txt"
+    test_file = training_root / "test.txt"
+
+    if not force_regenerate and train_file.exists() and val_file.exists():
+        print(f"   OK: 최적화 BIO 데이터 로드 ({model_name_safe})")
+        print(f"      훈련: {train_file}")
+        print(f"      평가: {val_file}")
+        train_samples = load_bio_file(train_file)
+        val_samples = load_bio_file(val_file)
+        print(f"   훈련 샘플: {len(train_samples):,}개")
+        print(f"   평가 샘플: {len(val_samples):,}개")
+        print(f"   → 사전 분리된 데이터 사용 (재분할 안함)")
+        return train_samples, val_samples, train_file, val_file
+
+    samples: List[Dict]
+
+    realistic_data_path = Path("data/in/ner/realistic_training_data.txt")
+    large_data_path = Path("data/in/ner/large_training_data.txt")
+
+    if use_realistic_data and realistic_data_path.exists():
+        print(f"   실전 기반 데이터 로드: {realistic_data_path}")
+        samples_loaded = load_bio_file(realistic_data_path)
+        print(f"   전체 샘플: {len(samples_loaded):,}개")
+        if len(samples_loaded) > num_samples:
+            random.shuffle(samples_loaded)
+            samples = samples_loaded[:num_samples]
+            print(f"   {num_samples:,}개 샘플 선택 (실전 데이터)")
+        else:
+            samples = samples_loaded
+    elif use_realistic_data and large_data_path.exists():
+        print(f"   대량 BIO 데이터 로드: {large_data_path}")
+        samples_loaded = load_bio_file(large_data_path)
+        print(f"   전체 샘플: {len(samples_loaded):,}개")
+        if len(samples_loaded) > num_samples:
+            random.shuffle(samples_loaded)
+            samples = samples_loaded[:num_samples]
+            print(f"   {num_samples:,}개 샘플 선택")
+        else:
+            samples = samples_loaded
+    else:
+        print(f"   경고: 훈련 데이터 없음. 템플릿 데이터 생성 중...")
+        samples = generate_training_samples(num_samples, balanced=balanced)
+
+    entity_type_samples = {entity_type: [] for entity_type in ENTITY_TYPES}
+    no_entity_samples: List[Dict] = []
+
+    for sample in samples:
+        entity_types_in_sample = {
+            etype for _, etype in sample.get('entities', [])
+            if etype in ENTITY_TYPES
+        }
+
+        if entity_types_in_sample:
+            primary_type = next(iter(entity_types_in_sample))
+            entity_type_samples[primary_type].append(sample)
+        else:
+            no_entity_samples.append(sample)
+
+    train_samples: List[Dict] = []
+    val_samples: List[Dict] = []
+
+    for entity_type in ENTITY_TYPES:
+        type_samples = entity_type_samples[entity_type]
+        if type_samples:
+            random.shuffle(type_samples)
+            split_idx = int(len(type_samples) * 0.8)
+            train_samples.extend(type_samples[:split_idx])
+            val_samples.extend(type_samples[split_idx:])
+
+    if no_entity_samples:
+        random.shuffle(no_entity_samples)
+        split_idx = int(len(no_entity_samples) * 0.8)
+        train_samples.extend(no_entity_samples[:split_idx])
+        val_samples.extend(no_entity_samples[split_idx:])
+
+    random.shuffle(train_samples)
+    random.shuffle(val_samples)
+
+    print(f"   데이터 분할 완료: Train {len(train_samples):,}개 / Val {len(val_samples):,}개")
+
+    write_bio_file(train_samples, train_file)
+    write_bio_file(val_samples, val_file)
+
+    if test_file_copy:
+        shutil.copy(val_file, test_file)
+
+    print(f"   저장 경로: {train_file}, {val_file}")
+
+    return train_samples, val_samples, train_file, val_file
 
 
 def tokenize_and_align_labels(
@@ -2662,6 +2853,35 @@ class AdvancedMetricsCallback(TrainerCallback):
                 self.history['train_loss_smoothed'].append(train_loss_smoothed)
 
 
+def compute_sample_weights(samples: List[Dict]) -> List[float]:
+    """Compute per-sample weights to mitigate entity imbalance."""
+    entity_freq = Counter()
+    for sample in samples:
+        for _, entity_type in sample.get('entities', []) or []:
+            entity_freq[entity_type] += 1
+
+    if not entity_freq:
+        return [1.0] * len(samples)
+
+    max_freq = max(entity_freq.values()) or 1
+    weights: List[float] = []
+
+    for sample in samples:
+        entities = [entity_type for _, entity_type in sample.get('entities', []) or []]
+        if not entities:
+            weights.append(1.0)
+            continue
+
+        entity_weights = [max_freq / max(entity_freq[etype], 1) for etype in entities]
+        weights.append(float(sum(entity_weights) / len(entity_weights)))
+
+    mean_weight = sum(weights) / len(weights) if weights else 1.0
+    if mean_weight > 0:
+        weights = [w / mean_weight for w in weights]
+
+    return weights
+
+
 class NERDataset(Dataset):
     """PyTorch Dataset for NER"""
     
@@ -2787,6 +3007,19 @@ def compute_metrics(pred):
     }
 
 
+class BalancedTrainer(Trainer):
+    """Trainer with optional external sampler for class balancing."""
+
+    def __init__(self, *args, weighted_sampler: Optional[WeightedRandomSampler] = None, **kwargs):
+        self.weighted_sampler = weighted_sampler
+        super().__init__(*args, **kwargs)
+
+    def _get_train_sampler(self, train_dataset=None):
+        if self.weighted_sampler is not None:
+            return self.weighted_sampler
+        return super()._get_train_sampler(train_dataset)
+
+
 # ========== 메인 학습 함수 ==========
 
 def train_ner_model(
@@ -2798,7 +3031,9 @@ def train_ner_model(
     output_dir: Optional[str] = None,
     use_gpu: bool = True,
     use_realistic_data: bool = True,  # 실전 기반 데이터 사용
-    enable_early_stopping: bool = False  # Early stopping 활성화 여부
+    enable_early_stopping: bool = False,  # Early stopping 활성화 여부
+    force_regenerate_data: bool = False,
+    enable_balanced_sampling: bool = True
 ):
     """
     NER 모델 학습 (재설계)
@@ -2816,9 +3051,10 @@ def train_ner_model(
         batch_size: 배치 크기
         learning_rate: 학습률
         output_dir: 모델 저장 경로
-        use_gpu: GPU 사용 여부
-        use_realistic_data: 실전 기반 데이터 사용 (기본 True)
-        enable_early_stopping: Early stopping 활성화 (기본 False)
+    use_gpu: GPU 사용 여부
+    use_realistic_data: 실전 기반 데이터 사용 (기본 True)
+    enable_early_stopping: Early stopping 활성화 (기본 False)
+    force_regenerate_data: True면 기존 BIO 데이터를 삭제 후 재생성
     """
     
     print("=" * 80)
@@ -2830,7 +3066,8 @@ def train_ner_model(
         model_name=model_name,
         num_epochs=num_epochs,
         batch_size=batch_size,
-        learning_rate=learning_rate
+        learning_rate=learning_rate,
+        enable_balanced_sampling=enable_balanced_sampling
     )
     
     # output_dir 설정 및 Path 객체로 변환
@@ -2857,103 +3094,16 @@ def train_ner_model(
     # 3. 데이터 로드 (최적화된 BIO 데이터 사용)
     print(f"\n학습 데이터 로드 중...")
     
-    # 모델명을 경로에 반영
-    model_name_safe = config.model_name.replace('/', '-')
-    train_data_path = Path(f"module/ner/training/{model_name_safe}/train.txt")
-    test_data_path = Path(f"module/ner/training/{model_name_safe}/test.txt")
-
-    if train_data_path.exists() and test_data_path.exists():
-        print(f"   OK: 최적화 BIO 데이터 로드 ({model_name_safe})")
-        print(f"      훈련: {train_data_path}")
-        print(f"      평가: {test_data_path}")
-        
-        train_samples = load_bio_file(str(train_data_path))
-        val_samples = load_bio_file(str(test_data_path))
-        
-        print(f"   훈련 샘플: {len(train_samples):,}개")
-        print(f"   평가 샘플: {len(val_samples):,}개")
-        print(f"   → 사전 분리된 데이터 사용 (재분할 안함)")
-        
-    else:
-        # 대체 데이터 경로
-        realistic_data_path = Path("data/in/ner/realistic_training_data.txt")
-        large_data_path = Path("data/in/ner/large_training_data.txt")
-        
-        if use_realistic_data and realistic_data_path.exists():
-            print(f"   실전 기반 데이터 로드: {realistic_data_path}")
-            samples_loaded = load_bio_file(str(realistic_data_path))
-            print(f"   전체 샘플: {len(samples_loaded):,}개")
-            
-            # 요청된 샘플 수만큼 무작위 선택
-            if len(samples_loaded) > num_samples:
-                random.shuffle(samples_loaded)
-                samples = samples_loaded[:num_samples]
-                print(f"   {num_samples:,}개 샘플 선택 (실전 데이터)")
-            else:
-                samples = samples_loaded
-                
-        elif large_data_path.exists():
-            print(f"   대량 BIO 데이터 로드: {large_data_path}")
-            samples_loaded = load_bio_file(str(large_data_path))
-            print(f"   전체 샘플: {len(samples_loaded):,}개")
-            
-            # 요청된 샘플 수만큼 무작위 선택
-            if len(samples_loaded) > num_samples:
-                random.shuffle(samples_loaded)
-                samples = samples_loaded[:num_samples]
-                print(f"   {num_samples:,}개 샘플 선택")
-            else:
-                samples = samples_loaded
-        else:
-            print(f"   경고: 훈련 데이터 없음. 템플릿 데이터 생성 중...")
-            samples = generate_training_samples(num_samples, balanced=True)
-        
-        # Train/Val split (80/20) with stratified sampling
-        print(f"\n   엔티티별 균등 분배로 Train/Val split 수행...")
-        
-        # 엔티티 타입별로 샘플 그룹화
-        entity_type_samples = {entity_type: [] for entity_type in ENTITY_TYPES}
-        no_entity_samples = []
-        
-        for sample in samples:
-            # 샘플에 포함된 엔티티 타입 확인
-            entity_types_in_sample = set()
-            for _, etype in sample.get('entities', []):
-                if etype in ENTITY_TYPES:
-                    entity_types_in_sample.add(etype)
-            
-            if entity_types_in_sample:
-                # 첫 번째 엔티티 타입으로 분류
-                primary_type = list(entity_types_in_sample)[0]
-                entity_type_samples[primary_type].append(sample)
-            else:
-                no_entity_samples.append(sample)
-        
-        # 각 엔티티 타입별 80/20 분할
-        train_samples = []
-        val_samples = []
-        
-        for entity_type in ENTITY_TYPES:
-            type_samples = entity_type_samples[entity_type]
-            if len(type_samples) > 0:
-                # 셔플 후 80/20 분할
-                random.shuffle(type_samples)
-                split_idx = int(len(type_samples) * 0.8)
-                train_samples.extend(type_samples[:split_idx])
-                val_samples.extend(type_samples[split_idx:])
-        
-        # 엔티티 없는 샘플도 분할
-        if no_entity_samples:
-            random.shuffle(no_entity_samples)
-            split_idx = int(len(no_entity_samples) * 0.8)
-            train_samples.extend(no_entity_samples[:split_idx])
-            val_samples.extend(no_entity_samples[split_idx:])
-        
-        # 최종 셔플
-        random.shuffle(train_samples)
-        random.shuffle(val_samples)
-        
-        print(f"   데이터 분할 완료: Train {len(train_samples):,}개 / Val {len(val_samples):,}개")
+    train_samples, val_samples, train_data_path, val_data_path = prepare_training_data(
+        config.model_name,
+        num_samples,
+        force_regenerate=force_regenerate_data,
+        use_realistic_data=use_realistic_data,
+        balanced=True
+    )
+    test_data_path = train_data_path.parent / "test.txt"
+    if not test_data_path.exists():
+        shutil.copy(val_data_path, test_data_path)
     
     # 4. 토큰화
     print(f"\n토큰화 중...")
@@ -2969,6 +3119,18 @@ def train_ner_model(
     
     train_dataset = NERDataset(train_encodings)
     val_dataset = NERDataset(val_encodings)
+
+    train_sampler: Optional[WeightedRandomSampler] = None
+    if config.enable_balanced_sampling:
+        sample_weights = compute_sample_weights(train_samples)
+        if sample_weights:
+            train_sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
+            weight_min = min(sample_weights)
+            weight_max = max(sample_weights)
+            print(f"   ⚖️ 클래스 밸런싱 샘플러 활성화 (가중치 범위 {weight_min:.2f}~{weight_max:.2f})")
+        else:
+            print("   ⚠️ 샘플 가중치 계산 실패, 균형 샘플링 비활성화")
+
     
     print(f"   ✅ 토큰화 완료")
     
@@ -2980,7 +3142,6 @@ def train_ner_model(
         dropout=config.dropout
     )
     
-    # K-Fold 모드에서는 각 fold마다 새로운 모델로 학습 (독립적 평가)
     # 기존 모델 로드 여부 확인 (이어 학습)
     model_pt_path = output_dir_path / "model.pt"
     is_continued_training = False
@@ -2997,12 +3158,6 @@ def train_ner_model(
     else:
         print(f"   새 모델로 시작")
     
-    # 학습률 조정 (이어 학습 시 감소)
-    adjusted_learning_rate = learning_rate
-    if is_continued_training:
-        adjusted_learning_rate = learning_rate * 0.3  # 이어 학습 시 30%로 감소
-        print(f"   학습률 조정: {learning_rate:.2e} → {adjusted_learning_rate:.2e}")
-    
     # 6. Training Arguments
     print(f"\n학습 설정 구성 중...")
     
@@ -3013,12 +3168,12 @@ def train_ner_model(
     # BERT Embeddings (가장 낮은 LR)
     optimizer_grouped_parameters.append({
         'params': [p for n, p in model.bert.embeddings.named_parameters() if p.requires_grad],
-        'lr': adjusted_learning_rate * (config.layer_lr_decay ** num_layers)
+        'lr': config.learning_rate * (config.layer_lr_decay ** num_layers)
     })
     
     # BERT Encoder Layers (Layer-wise decay)
     for layer_idx in range(num_layers):
-        layer_lr = adjusted_learning_rate * (config.layer_lr_decay ** (num_layers - layer_idx - 1))
+        layer_lr = config.learning_rate * (config.layer_lr_decay ** (num_layers - layer_idx - 1))
         optimizer_grouped_parameters.append({
             'params': [p for n, p in model.bert.encoder.layer[layer_idx].named_parameters() if p.requires_grad],
             'lr': layer_lr
@@ -3033,7 +3188,7 @@ def train_ner_model(
     if classifier_params:
         optimizer_grouped_parameters.append({
             'params': classifier_params,
-            'lr': adjusted_learning_rate
+            'lr': config.learning_rate
         })
     
     training_args = TrainingArguments(
@@ -3041,7 +3196,7 @@ def train_ner_model(
         num_train_epochs=config.num_epochs,  # 300 epochs
         per_device_train_batch_size=config.batch_size,
         per_device_eval_batch_size=config.eval_batch_size,
-        learning_rate=adjusted_learning_rate,
+        learning_rate=config.learning_rate,
         weight_decay=config.weight_decay,
         warmup_ratio=config.warmup_ratio,  # 8% warmup
         lr_scheduler_type="cosine_with_restarts",  # Cosine Annealing with Restarts
@@ -3091,15 +3246,16 @@ def train_ner_model(
         # Early stopping 비활성화 메시지만 표시
         pass
     
-    trainer = Trainer(
+    trainer = BalancedTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         compute_metrics=compute_metrics,
         callbacks=callbacks,
+        weighted_sampler=train_sampler,
         optimizers=(torch.optim.AdamW(optimizer_grouped_parameters, 
-                                      lr=adjusted_learning_rate,
+                                      lr=config.learning_rate,
                                       weight_decay=config.weight_decay), None)
     )
     
@@ -3110,7 +3266,7 @@ def train_ner_model(
     print(f"\n{'='*80}")
     print(f"학습 시작 ({config.num_epochs} Epochs)")
     print(f"{'='*80}")
-    print(f"Device: {trainer.args.device} | Epochs: {config.num_epochs} | Batch: {config.batch_size} | LR: {adjusted_learning_rate:.2e}")
+    print(f"Device: {trainer.args.device} | Epochs: {config.num_epochs} | Batch: {config.batch_size} | LR: {config.learning_rate:.2e}")
     print(f"{'='*80}\n")
     
     # 커스텀 학습 루프 (EMA 업데이트 포함)
@@ -3177,11 +3333,8 @@ def train_ner_model(
     final_eval_metrics = compute_metrics((np.array(all_preds), np.array(all_labels)))
     
     # 최종 평가 로그 저장
-    eval_log_dir = ensure_dir(Path("data/out/ner/training"))
-    
-    # 모델명에서 / 제거
-    safe_model_name = model_name.replace("/", "-")
-    eval_log_path = eval_log_dir / f"{safe_model_name}_evaluation_log.json"
+    eval_log_dir = ensure_dir(train_data_path.parent)
+    eval_log_path = eval_log_dir / "evaluation_log_latest.json"
     
     eval_log = {
         "model_name": model_name,
@@ -3262,7 +3415,9 @@ def ner_train(
     num_train_samples: int = 30000,   # 기본값: 30,000 (대규모 데이터)
     enable_visualization: bool = True,
     enable_early_stopping: bool = False,
-    debug: bool = False
+    enable_balanced_sampling: bool = True,
+    debug: bool = False,
+    force_regenerate_data: bool = False
 ) -> Dict[str, Any]:
     """
     기존 ner_system.py와 호환되는 래퍼 함수
@@ -3274,9 +3429,11 @@ def ner_train(
         batch_size: 배치 크기
         learning_rate: 학습률
         num_train_samples: 생성할 샘플 수
-        enable_visualization: 시각화 여부 (현재 미지원, 추후 추가)
-        enable_early_stopping: Early stopping 활성화 (기본 False)
-        debug: 디버그 모드
+    enable_visualization: 시각화 여부 (현재 미지원, 추후 추가)
+    enable_early_stopping: Early stopping 활성화 (기본 False)
+    enable_balanced_sampling: Weighted sampler를 활용한 클래스 밸런싱 활성화
+    debug: 디버그 모드
+    force_regenerate_data: True면 매 반복마다 BIO 데이터 재생성
         
     Returns:
         Dict[str, Any]: {
@@ -3298,6 +3455,8 @@ def ner_train(
     val_samples = None
     viz_dir = None
     
+    overall_start = time.time()
+
     for iteration in range(iterations):
         if iterations > 1:
             print(f"\n반복 {iteration + 1}/{iterations}")
@@ -3309,6 +3468,7 @@ def ner_train(
             val_samples = all_samples[split_idx:]
         
         # 모델 학습
+        iteration_start = time.time()
         model, tokenizer, metrics = train_ner_model(
             model_name=model_name,
             num_samples=num_train_samples,
@@ -3316,15 +3476,20 @@ def ner_train(
             batch_size=batch_size,
             learning_rate=learning_rate,
             output_dir=None,  # 자동 생성
-            enable_early_stopping=enable_early_stopping
+            enable_early_stopping=enable_early_stopping,
+            force_regenerate_data=force_regenerate_data,
+            enable_balanced_sampling=enable_balanced_sampling
         )
+        iteration_time = time.time() - iteration_start
         
         last_model = model
         last_tokenizer = tokenizer
         
         all_results.append({
             'iteration': iteration + 1,
-            'metrics': metrics
+            'metrics': metrics,
+            'training_time': iteration_time,
+            'success': True
         })
     
     # 시각화 (enable_visualization=True일 때)
@@ -3353,6 +3518,8 @@ def ner_train(
     # 결과 포맷 (기존 호환)
     final_metrics = all_results[-1]['metrics']
     
+    total_time = time.time() - overall_start
+
     return {
         'model_name': model_name,
         'epochs': epochs,
@@ -3368,132 +3535,9 @@ def ner_train(
         'status': 'success',
         'model_type': 'bert-crf',  # 새로운 필드
         'architecture': 'token-level-bio',  # 새로운 필드
-        'visualization_dir': str(viz_dir) if enable_visualization else None
+        'visualization_dir': str(viz_dir) if enable_visualization else None,
+        'total_time': total_time
     }
-
-
-# ========== 기존 ner_system.py 호환성 함수 ==========
-
-def generate_rich_training_data(output_dir: Path, num_samples: int = 7500):
-    """
-    대규모 균형 훈련 데이터 생성
-    - 모든 엔티티 타입에 대해 균형있게 생성
-    - 엔티티당 충분한 샘플 확보
-    
-    Args:
-        output_dir: 출력 디렉토리 (train.txt, validation.txt 생성)
-        num_samples: 총 샘플 수 (권장: 10,000 ~ 500,000)
-    
-    Returns:
-        bool: 성공 여부
-    """
-    try:
-        print(f"\n{'='*70}")
-        print(f"대규모 훈련 데이터 생성 시작")
-        print(f"{'='*70}")
-        print(f"목표 샘플 수: {num_samples:,}개")
-        print(f"엔티티 타입: {len(ENTITY_TYPES)}개")
-        print(f"  → {', '.join(ENTITY_TYPES[:5])}... (외 {len(ENTITY_TYPES)-5}개)")
-        
-        # 균형잡힌 대규모 샘플 생성
-        print(f"\n[1/3] 샘플 생성 중...")
-        samples = generate_training_samples(num_samples, balanced=True)
-        
-        # 엔티티별 통계
-        entity_counts = {etype: 0 for etype in ENTITY_TYPES}
-        for sample in samples:
-            for _, etype in sample['entities']:
-                if etype in entity_counts:
-                    entity_counts[etype] += 1
-        
-        print(f"\n생성된 샘플 통계:")
-        print(f"  총 샘플: {len(samples):,}개")
-        print(f"  엔티티별 분포:")
-        sorted_counts = sorted(entity_counts.items(), key=lambda x: x[1], reverse=True)
-        for etype, count in sorted_counts[:10]:
-            print(f"    - {etype:15s}: {count:6,}개")
-        if len(sorted_counts) > 10:
-            print(f"    ... (외 {len(sorted_counts)-10}개 타입)")
-        
-        # 80/20 분할
-        print(f"\n[2/3] 데이터 분할 중...")
-        train_size = int(len(samples) * 0.8)
-        train_samples = samples[:train_size]
-        val_samples = samples[train_size:]
-        
-        print(f"  → Train: {len(train_samples):,}개 (80%)")
-        print(f"  → Validation: {len(val_samples):,}개 (20%)")
-        
-        # BIO 포맷으로 저장
-        print(f"\n[3/3] 파일 저장 중...")
-        output_dir = ensure_dir(Path(output_dir))
-        
-        train_file = output_dir / "train.txt"
-        val_file = output_dir / "validation.txt"
-        
-        # train.txt 저장
-        print(f"  → {train_file}")
-        with open(train_file, 'w', encoding='utf-8') as f:
-            for sample in tqdm(train_samples, desc="Train 저장", ncols=80):
-                text = sample['text']
-                entities = sample['entities']
-                
-                # 텍스트를 문자로 분리
-                chars = list(text)
-                labels = ['O'] * len(chars)
-                
-                # 엔티티 라벨링
-                for entity_text, entity_type in entities:
-                    start = text.find(entity_text)
-                    if start != -1:
-                        end = start + len(entity_text)
-                        labels[start] = f'B-{entity_type}'
-                        for i in range(start + 1, end):
-                            labels[i] = f'I-{entity_type}'
-                
-                # BIO 포맷 출력
-                for char, label in zip(chars, labels):
-                    f.write(f"{char}\t{label}\n")
-                f.write("\n")  # 샘플 구분
-        
-        # validation.txt 저장
-        print(f"  → {val_file}")
-        with open(val_file, 'w', encoding='utf-8') as f:
-            for sample in tqdm(val_samples, desc="Validation 저장", ncols=80):
-                text = sample['text']
-                entities = sample['entities']
-                
-                chars = list(text)
-                labels = ['O'] * len(chars)
-                
-                for entity_text, entity_type in entities:
-                    start = text.find(entity_text)
-                    if start != -1:
-                        end = start + len(entity_text)
-                        labels[start] = f'B-{entity_type}'
-                        for i in range(start + 1, end):
-                            labels[i] = f'I-{entity_type}'
-                
-                for char, label in zip(chars, labels):
-                    f.write(f"{char}\t{label}\n")
-                f.write("\n")
-        
-        print(f"\n{'='*70}")
-        print(f"✓ 훈련 데이터 생성 완료!")
-        print(f"{'='*70}")
-        print(f"파일 크기:")
-        print(f"  - {train_file.name}: {train_file.stat().st_size // (1024*1024):.1f} MB")
-        print(f"  - {val_file.name}: {val_file.stat().st_size // (1024*1024):.1f} MB")
-        print(f"{'='*70}\n")
-        
-        return True
-        
-    except Exception as e:
-        print(f"\nERROR: 데이터 생성 실패: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
-
 
 # ========== 시각화 함수 ==========
 
@@ -3890,244 +3934,6 @@ def plot_training_curves(history: Dict[str, List], save_path: Path, model_name: 
     print(f"OK: Training curves saved: {save_path}")
 
 
-def plot_entity_performance(val_dataset, model, tokenizer, save_path: Path, device='cuda'):
-    """
-    엔티티 타입별 성능 시각화
-    
-    Args:
-        val_dataset: 검증 데이터셋
-        model: 학습된 모델
-        tokenizer: 토크나이저
-        save_path: 저장 경로
-        device: 디바이스
-    """
-    model.eval()
-    model.to(device)
-    
-    # 엔티티별 통계 수집
-    entity_stats = defaultdict(lambda: {'tp': 0, 'fp': 0, 'fn': 0})
-    
-    with torch.no_grad():
-        for item in val_dataset:
-            # item['input_ids']는 이미 리스트이므로 그대로 사용
-            input_ids = torch.tensor(item['input_ids']).unsqueeze(0).to(device)  # (1, seq_len)
-            attention_mask = torch.tensor(item['attention_mask']).unsqueeze(0).to(device)
-            labels = item['labels']
-            
-            # 예측 (모델의 forward 사용)
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-            
-            # CRF Viterbi decoding 결과 추출
-            if isinstance(outputs, dict) and 'predictions' in outputs:
-                predictions = outputs['predictions'].squeeze(0).tolist()  # (seq_len,)
-            else:
-                raise ValueError(f"Unexpected model output: {type(outputs)}")
-            
-            # BIO → 엔티티
-            # labels가 tensor일 수 있으므로 변환
-            if isinstance(labels, torch.Tensor):
-                labels = labels.tolist()
-            true_tags = [ID_TO_LABEL[l] for l in labels if l != -100]
-            pred_tags = [ID_TO_LABEL[p] for p in predictions[:len(true_tags)]]
-            
-            true_entities = bio_to_entities(true_tags)
-            pred_entities = bio_to_entities(pred_tags)
-            
-            # 엔티티별 집계
-            for start, end, etype in true_entities:
-                if (start, end, etype) in pred_entities:
-                    entity_stats[etype]['tp'] += 1
-                else:
-                    entity_stats[etype]['fn'] += 1
-            
-            for start, end, etype in pred_entities:
-                if (start, end, etype) not in true_entities:
-                    entity_stats[etype]['fp'] += 1
-    
-    # F1 계산
-    entity_f1 = {}
-    for etype, stats in entity_stats.items():
-        tp = stats['tp']
-        fp = stats['fp']
-        fn = stats['fn']
-        
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
-        
-        entity_f1[etype] = {'f1': f1, 'precision': precision, 'recall': recall, 'count': tp + fn}
-    
-    # 시각화
-    if not entity_f1:
-        print("경고: 엔티티 성능 데이터 없음")
-        return
-    
-    # Count 기준 정렬 (많이 나온 엔티티 우선)
-    sorted_entities = sorted(entity_f1.items(), key=lambda x: x[1]['count'], reverse=True)
-    top_entities = sorted_entities[:15]  # 상위 15개만
-    
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))  # 크기 증가
-    fig.suptitle('엔티티별 성능 분석', fontsize=18, fontweight='bold', y=0.98)
-    
-    # 1. F1 Score 막대 그래프
-    entity_names = [e[0] for e in top_entities]
-    f1_scores = [e[1]['f1'] for e in top_entities]
-    precisions = [e[1]['precision'] for e in top_entities]
-    recalls = [e[1]['recall'] for e in top_entities]
-    
-    x = np.arange(len(entity_names))
-    width = 0.25
-    
-    ax1.bar(x - width, f1_scores, width, label='F1', color='green', alpha=0.8, edgecolor='black')
-    ax1.bar(x, precisions, width, label='Precision', color='blue', alpha=0.8, edgecolor='black')
-    ax1.bar(x + width, recalls, width, label='Recall', color='red', alpha=0.8, edgecolor='black')
-    
-    ax1.set_xlabel('엔티티 타입', fontsize=14, fontweight='bold')
-    ax1.set_ylabel('Score', fontsize=14, fontweight='bold')
-    ax1.set_title('엔티티별 성능 (F1, Precision, Recall)', fontsize=16, fontweight='bold', pad=15)
-    ax1.set_xticks(x)
-    ax1.set_xticklabels(entity_names, rotation=45, ha='right', fontsize=11)
-    ax1.legend(fontsize=12, loc='upper right')
-    ax1.grid(True, alpha=0.3, axis='y', linestyle='--')
-    ax1.set_ylim([0, 1.1])
-    ax1.tick_params(axis='y', labelsize=11)
-    
-    # 2. 엔티티 출현 빈도
-    counts = [e[1]['count'] for e in top_entities]
-    colors = plt.cm.viridis(np.linspace(0.3, 0.9, len(entity_names)))  # type: ignore[attr-defined]
-    
-    ax2.barh(entity_names, counts, color=colors, alpha=0.8, edgecolor='black')
-    ax2.set_xlabel('출현 횟수', fontsize=14, fontweight='bold')
-    ax2.set_ylabel('엔티티 타입', fontsize=14, fontweight='bold')
-    ax2.set_title('엔티티 출현 빈도', fontsize=16, fontweight='bold', pad=15)
-    ax2.grid(True, alpha=0.3, axis='x', linestyle='--')
-    ax2.tick_params(axis='both', labelsize=11)
-    
-    # 값 표시
-    for i, (name, count) in enumerate(zip(entity_names, counts)):
-        ax2.text(count + max(counts) * 0.02, i, f' {count}', 
-                va='center', fontsize=11, fontweight='bold')
-    
-    plt.tight_layout(rect=(0, 0, 1, 0.96))  # 여백 조정
-    plt.savefig(save_path, dpi=300, bbox_inches='tight', pad_inches=0.3)
-    plt.close()
-    
-    print(f"OK: 엔티티 성능 저장: {save_path}")
-
-
-def plot_prediction_examples(val_samples, model, tokenizer, save_path: Path, num_examples=5, device='cuda'):
-    """
-    예측 예시 시각화 (실제 vs 예측 비교)
-    
-    Args:
-        val_samples: 검증 샘플
-        model: 학습된 모델
-        tokenizer: 토크나이저
-        save_path: 저장 경로
-        num_examples: 표시할 예시 수
-        device: 디바이스
-    """
-    model.eval()
-    model.to(device)
-    
-    # 랜덤 샘플 선택
-    examples = random.sample(val_samples, min(num_examples, len(val_samples)))
-    
-    fig, axes = plt.subplots(num_examples, 1, figsize=(16, 4 * num_examples))
-    if num_examples == 1:
-        axes = [axes]
-    
-    for idx, (sample, ax) in enumerate(zip(examples, axes)):
-        text = sample['text']
-        true_entities = sample['entities']
-        
-        # 토큰화
-        encoding = tokenizer(
-            text,
-            max_length=256,
-            padding='max_length',
-            truncation=True,
-            return_tensors='pt'
-        )
-        
-        input_ids = encoding['input_ids'].to(device)
-        attention_mask = encoding['attention_mask'].to(device)
-        
-        # 예측 (모델의 forward 사용)
-        with torch.no_grad():
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-            
-            # CRF Viterbi decoding 결과 추출
-            if isinstance(outputs, dict) and 'predictions' in outputs:
-                predictions = outputs['predictions'].squeeze(0).tolist()  # (seq_len,)
-            else:
-                raise ValueError(f"Unexpected model output: {type(outputs)}")
-        
-        # 토큰 → 문자 매핑
-        tokens = tokenizer.convert_ids_to_tokens(input_ids[0])
-        
-        # 예측 엔티티 추출 (간단히 B-/I- 태그만)
-        pred_entities = []
-        current_entity = None
-        
-        for token, pred_id in zip(tokens, predictions):
-            if token in ['[CLS]', '[SEP]', '[PAD]']:
-                continue
-            
-            pred_label = ID_TO_LABEL[pred_id]
-            
-            if pred_label.startswith('B-'):
-                if current_entity:
-                    pred_entities.append(current_entity)
-                current_entity = {'text': token.replace('##', ''), 'type': pred_label[2:]}
-            elif pred_label.startswith('I-') and current_entity:
-                current_entity['text'] += token.replace('##', '')
-        
-        if current_entity:
-            pred_entities.append(current_entity)
-        
-        # 시각화
-        ax.axis('off')
-        
-        # 텍스트 표시 (더 간결하게)
-        display_text = f"원문: {text[:80]}{'...' if len(text) > 80 else ''}\n\n"
-        
-        display_text += f"정답 엔티티:\n"
-        for ent_text, ent_type in true_entities:
-            display_text += f"   • {ent_text} ({ent_type})\n"
-        
-        display_text += f"\n예측 엔티티:\n"
-        if pred_entities:
-            for ent in pred_entities:
-                display_text += f"   • {ent['text']} ({ent['type']})\n"
-        else:
-            display_text += "   (없음)\n"
-        
-        # 정확도 계산
-        true_set = set((t, e) for t, e in true_entities)
-        pred_set = set((e['text'], e['type']) for e in pred_entities)
-        
-        matches = len(true_set & pred_set)
-        accuracy = matches / max(len(true_set), 1)
-        
-        display_text += f"\n정확도: {matches}/{len(true_set)} = {accuracy*100:.1f}%"
-        
-        # 배경색 (정확도에 따라)
-        bg_color = 'lightgreen' if accuracy >= 0.8 else 'lightyellow' if accuracy >= 0.5 else 'lightcoral'
-        
-        ax.text(0.05, 0.5, display_text, fontsize=11, family='monospace',
-                verticalalignment='center', wrap=True,
-                bbox=dict(boxstyle='round,pad=1.2', facecolor=bg_color, alpha=0.4, 
-                         edgecolor='black', linewidth=1.5))
-    
-    plt.suptitle('NER 예측 예시 (실제 vs 예측)', fontsize=18, fontweight='bold', y=0.995)
-    plt.tight_layout(rect=(0, 0, 1, 0.99))
-    plt.savefig(save_path, dpi=300, bbox_inches='tight', pad_inches=0.3)
-    plt.close()
-    
-    print(f"OK: 예측 예시 저장: {save_path}")
-
-
 # ===========================
 # 메인 실행
 # ===========================
@@ -4138,6 +3944,7 @@ if __name__ == "__main__":
     parser.add_argument("--samples", type=int, default=30000, help="학습 샘플 수")
     parser.add_argument("--epochs", type=int, default=10, help="에포크 수")
     parser.add_argument("--output", type=str, default=None, help="모델 저장 경로")
+    parser.add_argument("--disable-balanced-sampling", action="store_true", help="클래스 불균형 보정용 샘플러 비활성화")
     
     args = parser.parse_args()
     
@@ -4145,5 +3952,6 @@ if __name__ == "__main__":
         model_name=args.model,
         num_samples=args.samples,
         num_epochs=args.epochs,
-        output_dir=args.output
+        output_dir=args.output,
+        enable_balanced_sampling=not args.disable_balanced_sampling
     )

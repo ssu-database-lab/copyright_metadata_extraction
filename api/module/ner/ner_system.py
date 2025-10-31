@@ -133,51 +133,51 @@ def get_model_path(model_name: str = DEFAULT_MODEL_NAME) -> Path:
     
     # 1. models/ner/{model_name} 확인
     if models_ner_dir.exists() and (models_ner_dir / "config.json").exists():
-        print(f"OK: 모델 발견: {models_ner_dir}")
+        print(f"OK: 모델 발견: {models_ner_dir}", flush=True)
         return models_ner_dir
     
     # 2. model_downloaded/{model_name} 확인 및 복사
     model_downloaded_dir = api_dir / "model_downloaded" / model_name_safe
     if model_downloaded_dir.exists() and (model_downloaded_dir / "config.json").exists():
-        print(f"OK: 다운로드된 모델 발견: {model_downloaded_dir}")
-        print(f"[Package] 모델 복사 중: {model_downloaded_dir} → {models_ner_dir}")
+        print(f"OK: 다운로드된 모델 발견: {model_downloaded_dir}", flush=True)
+        print(f"[Package] 모델 복사 중: {model_downloaded_dir} → {models_ner_dir}", flush=True)
         
         import shutil
         if models_ner_dir.exists():
             shutil.rmtree(models_ner_dir)
         shutil.copytree(model_downloaded_dir, models_ner_dir)
         
-        print(f"OK: 모델 복사 완료: {models_ner_dir}")
+        print(f"OK: 모델 복사 완료: {models_ner_dir}", flush=True)
         return models_ner_dir
     
     # 3. Hugging Face에서 다운로드
-    print(f"WARNING: 로컬에 모델 없음: {model_name}")
-    print(f"[Download] Hugging Face에서 다운로드 중...")
+    print(f"WARNING: 로컬에 모델 없음: {model_name}", flush=True)
+    print(f"[Download] Hugging Face에서 다운로드 중...", flush=True)
     
     try:
         from transformers import AutoTokenizer, AutoModelForTokenClassification
         
         model_downloaded_dir.parent.mkdir(parents=True, exist_ok=True)
-        print(f"  → 다운로드 위치: {model_downloaded_dir}")
+        print(f"  → 다운로드 위치: {model_downloaded_dir}", flush=True)
         
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         model = AutoModelForTokenClassification.from_pretrained(model_name)
         
         tokenizer.save_pretrained(str(model_downloaded_dir))
         model.save_pretrained(str(model_downloaded_dir))
-        print(f"✓ 다운로드 완료: {model_downloaded_dir}")
+        print(f"✓ 다운로드 완료: {model_downloaded_dir}", flush=True)
         
         # models/ner/로 복사
         import shutil
         if models_ner_dir.exists():
             shutil.rmtree(models_ner_dir)
         shutil.copytree(model_downloaded_dir, models_ner_dir)
-        print(f"✓ 모델 복사 완료: {models_ner_dir}")
+        print(f"✓ 모델 복사 완료: {models_ner_dir}", flush=True)
         
         return models_ner_dir
         
     except Exception as e:
-        print(f"ERROR: 모델 다운로드 실패: {e}")
+        print(f"ERROR: 모델 다운로드 실패: {e}", flush=True)
         return models_ner_dir
 
 
@@ -877,6 +877,9 @@ def train_model_if_needed(model_name: str, model_path: Path, verbose: bool = Tru
             sys.executable, str(train_script)
         ], cwd=str(current_dir), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
         text=True, universal_newlines=True)
+
+        if process.stdout is None:
+            raise RuntimeError("훈련 프로세스에서 표준 출력 스트림을 확보하지 못했습니다.")
         
         # 실시간 출력 표시
         while True:
@@ -899,137 +902,124 @@ def train_model_if_needed(model_name: str, model_path: Path, verbose: bool = Tru
         print(f"모델 훈련 중 오류: {e}")
         return False
 
-def extract_entities_from_text(text: str, model_name: Optional[str] = None, debug: bool = False) -> List[Tuple[str, str]]:
-    """
-    텍스트에서 엔티티 추출 (통합 메인 함수)
-    
-    Args:
-        text: 입력 텍스트
-        model_name: 모델 이름
-        debug: 디버그 로그 출력
-        
-    Note:
-        훈련이 필요한 경우 ner_train() 함수를 별도로 호출하세요.
-        이 함수는 예측만 수행합니다.
-    """
+def extract_entities_from_text(
+    text: str,
+    model_name: Optional[str] = None,
+    *,
+    model_path: Optional[Path] = None,
+    debug: bool = False
+) -> List[Tuple[str, str]]:
+    """텍스트에서 엔티티 추출 (통합 메인 함수)"""
+
     if debug:
         print(f"엔티티 추출 시작 (텍스트 길이: {len(text)}자)")
-    
-    # 모델 이름이 지정되지 않으면 기본 모델 사용
+
     if model_name is None:
         model_name = DEFAULT_MODEL_NAME
         if debug:
             print(f"모델 이름이 지정되지 않아 기본 모델 사용: {model_name}")
-    
+
+    if model_path is not None:
+        resolved_model_path = Path(model_path)
+    else:
+        resolved_model_path = get_model_path(model_name)
+
     if debug:
         print(f"사용 모델: {model_name}")
-    
-    all_entities = set()
-    
-    # 모델 경로 확인
-    model_path = get_model_path(model_name)
-    if debug:
-        print(f"모델 경로: {model_path}")
-    
-    # 모델 존재 여부 확인 (config.json 확인)
-    model_exists = model_path.exists() and (model_path / "config.json").exists()
-    
-    # 모델이 없으면 무조건 다운로드
+        print(f"모델 경로: {resolved_model_path}")
+
+    all_entities: Set[Tuple[str, str]] = set()
+
+    model_exists = resolved_model_path.exists() and (resolved_model_path / "config.json").exists()
+
     if not model_exists:
         if debug:
             print("=" * 60)
             print(f"모델 없음: {model_name} 다운로드를 시작합니다...")
             print("=" * 60)
-        
+
         try:
             from transformers import AutoTokenizer, AutoModelForTokenClassification
-            
-            # 모델 다운로드
+
             tokenizer = AutoTokenizer.from_pretrained(model_name)
             model = AutoModelForTokenClassification.from_pretrained(model_name)
-            
-            # 모델 저장
-            model_path.mkdir(parents=True, exist_ok=True)
-            tokenizer.save_pretrained(model_path)
-            model.save_pretrained(model_path)
-            
+
+            resolved_model_path.mkdir(parents=True, exist_ok=True)
+            tokenizer.save_pretrained(resolved_model_path)
+            model.save_pretrained(resolved_model_path)
+
             if debug:
-                print(f"✓ 모델 다운로드 완료: {model_path}")
-            
+                print(f"✓ 모델 다운로드 완료: {resolved_model_path}")
+
             model_exists = True
-        except Exception as e:
+        except Exception as exc:
             if debug:
-                print(f"[경고] 모델 다운로드 실패: {e}")
-                print(f"정규표현식만 사용합니다.")
-    
-    # 모델이 없으면 에러 (train 파라미터 제거)
+                print(f"[경고] 모델 다운로드 실패: {exc}")
+                print("정규표현식만 사용합니다.")
+
     if not model_exists:
         if debug:
             print("=" * 60)
             print(f"[경고] 모델 없음: {model_name}")
             print("ner_train() 함수를 먼저 호출하여 모델을 훈련하세요.")
             print("=" * 60)
-    
+
     try:
-        # 1. B-I-O 모델 기반 예측
-        model_exists = model_path.exists() and (model_path / "config.json").exists()
-        
+        model_exists = resolved_model_path.exists() and (resolved_model_path / "config.json").exists()
+
         if model_exists:
             if debug:
-                print(f"파인튜닝 모델 파일 확인됨: {model_path}")
+                print(f"파인튜닝 모델 파일 확인됨: {resolved_model_path}")
                 print("B-I-O 태깅 기반 예측 시작...")
-            
-            tokenizer, model, id2label, device = load_model_and_tokenizer(model_path, verbose=debug)
+
+            tokenizer, model, id2label, device = load_model_and_tokenizer(resolved_model_path, verbose=debug)
             if debug:
                 print(f"모델 로드 완료 - 라벨 수: {len(id2label)}개")
-            
+
             bio_entities = extract_entities_by_bio_tagging(text, tokenizer, model, id2label, device)
             all_entities.update(bio_entities)
-            
+
             if debug:
                 print(f"B-I-O 예측 결과: {len(bio_entities)}개 엔티티")
-        
+
         else:
             if debug:
-                print(f"모델 파일 없음: {model_path}")
-                print(f"   - 디렉토리 존재: {model_path.exists()}")
-                if model_path.exists():
-                    print(f"   - config.json 존재: {(model_path / 'config.json').exists()}")
-        
-    except Exception as e:
+                print(f"모델 파일 없음: {resolved_model_path}")
+                print(f"   - 디렉토리 존재: {resolved_model_path.exists()}")
+                if resolved_model_path.exists():
+                    print(f"   - config.json 존재: {(resolved_model_path / 'config.json').exists()}")
+
+    except Exception as exc:
         if debug:
-            print(f"모델 예측 오류: {e}")
+            print(f"모델 예측 오류: {exc}")
             import traceback
             traceback.print_exc()
-    
-    # 2. 정규표현식 백업 예측 (기본 패턴만)
+
     if debug:
         print("정규표현식 백업 예측 시작...")
-    
+
     regex_entities = extract_entities_by_regex(text)
     all_entities.update(regex_entities)
-    
+
     if debug:
         print(f"정규표현식 예측 결과: {len(regex_entities)}개 엔티티")
-    
-    # 3. 결과 통합 및 중복 제거
-    final_entities = []
-    seen_entities = set()
-    
+
+    final_entities: List[Tuple[str, str]] = []
+    seen_entities: Set[str] = set()
+
     for entity, label in all_entities:
         entity_lower = entity.lower().strip()
         if entity_lower not in seen_entities:
             seen_entities.add(entity_lower)
             final_entities.append((entity, label))
-    
-    # 엔티티 타입별로 정렬
+
     final_entities.sort(key=lambda x: (x[1], x[0]))
-    
+
     if debug:
         print(f"최종 예측 결과: {len(final_entities)}개 엔티티")
-        for entity, label in final_entities[:10]:  # 처음 10개만 출력
+        for entity, label in final_entities[:10]:
             print(f"  - {entity} ({label})")
-    
+
     return final_entities
 
 def ner_predict(
@@ -1146,7 +1136,12 @@ def ner_predict(
                 if len(content.strip()) < 2:  # 최소 2글자 이상
                     continue
                 
-                entities = extract_entities_from_text(content, model_name=model_name, debug=debug)
+                entities = extract_entities_from_text(
+                    content,
+                    model_name=model_name,
+                    model_path=model_path,
+                    debug=debug
+                )
                 
                 # 결과 저장 - 입력 경로 구조 유지 (pdf_to_image와 동일한 패턴)
                 if entities:
@@ -1237,309 +1232,123 @@ def ner_predict(
         }
 
 def ensure_training_data_exists(model_name: str, num_samples: int = 7500, force_regenerate: bool = False, use_large_dataset: bool = True) -> bool:
-    """
-    훈련/검증 데이터가 존재하는지 확인하고 없거나 force_regenerate=True면 새로 생성
-    
-    Args:
-        model_name: 모델 이름
-        num_samples: 생성할 총 샘플 수 (기본값: 7500, 범위: 5000~10000)
-        force_regenerate: True면 기존 데이터를 삭제하고 재생성 (overfitting 방지)
-        use_large_dataset: True면 미리 생성된 대량 데이터 사용 (data/in/ner/large_training_data.txt)
-    
-    Returns:
-        bool: 데이터 준비 성공 여부
-    
-    Note:
-        - 생성된 데이터의 80%는 train.txt (훈련용)
-        - 나머지 20%는 validation.txt (검증/평가용)
-        - test.txt는 validation.txt와 동일하게 생성 (호환성)
-        - use_large_dataset=True시 대량 데이터 우선 사용 (2,000+ 샘플)
-    """
+    """prepare_training_data 헬퍼를 사용해 BIO 데이터셋을 준비"""
+
+    model_name_safe = model_name.replace('/', '-')
+    training_dir = Path(__file__).parent / "training" / model_name_safe
+
     try:
-        current_dir = Path(__file__).parent
-        model_name_safe = model_name.replace('/', '-')
-        training_dir = current_dir / "training" / model_name_safe
-        
-        train_file = training_dir / "train.txt"
-        val_file = training_dir / "validation.txt"
-        test_file = training_dir / "test.txt"
-        
-        # 대량 데이터셋 경로 (realistic 데이터 우선!)
-        realistic_dataset_path = Path(__file__).parent.parent.parent / "data" / "in" / "ner" / "realistic_training_data.txt"
-        large_dataset_path = Path(__file__).parent.parent.parent / "data" / "in" / "ner" / "large_training_data.txt"
-        
-        # force_regenerate=True 또는 파일이 없으면 생성
-        if force_regenerate or not (train_file.exists() and val_file.exists()):
-            if force_regenerate:
-                print(f"\n{'='*60}")
-                print(f"훈련 데이터 재생성 (Overfitting 방지)")
-                print(f"{'='*60}")
-            else:
-                print(f"\n{'='*60}")
-                print(f"훈련 데이터 생성")
-                print(f"{'='*60}")
-            
-            print(f"총 샘플 수: {num_samples:,}개")
-            print(f"훈련 데이터: {int(num_samples * 0.8):,}개 (80%)")
-            print(f"검증 데이터: {int(num_samples * 0.2):,}개 (20%)")
-            print(f"{'='*60}")
-            
-            # 기존 파일 삭제
-            if training_dir.exists():
-                import shutil
-                shutil.rmtree(training_dir)
-            
-            # 훈련 데이터 디렉토리 생성
-            training_dir.mkdir(parents=True, exist_ok=True)
-            
-            # 🔥 항상 파라미터 개수만큼 새로 생성 (기존 파일 무시)
-            print(f"\n[데이터 생성] 훈련 데이터 생성 중... (파라미터: {num_samples:,}개)")
-            
-            # ner_train.py의 데이터 생성 함수 import
-            try:
-                from .ner_train import generate_rich_training_data
-                
-                # 훈련 데이터 생성 (무작위)
-                result = generate_rich_training_data(training_dir, num_samples=num_samples)
-                
-                if result and train_file.exists() and val_file.exists():
-                    # test.txt는 validation.txt와 동일하게 생성 (호환성)
-                    if val_file.exists():
-                        import shutil
-                        shutil.copy(val_file, test_file)
-                    
-                    print(f"훈련 데이터 생성 완료!")
-                    print(f"  - Train: {train_file} ({train_file.stat().st_size // 1024}KB)")
-                    print(f"  - Validation: {val_file} ({val_file.stat().st_size // 1024}KB)")
-                    print(f"  - Test: {test_file} (검증 데이터 복사본)")
-                    print(f"  - 실제 생성: {num_samples:,}개 샘플 (매번 무작위)")
-                    return True
-                else:
-                    print(f"[경고] 데이터 생성 실패")
-                    return False
-                    
-            except ImportError as e:
-                print(f"[경고] ner_train.py를 import할 수 없습니다: {e}")
-                return False
-        else:
-            print(f"✓ 기존 훈련 데이터 사용: {training_dir}")
-            return True
-            
-    except Exception as e:
-        print(f"[경고] 훈련 데이터 생성 중 오류: {e}")
+        from .ner_train import prepare_training_data
+    except ImportError as exc:
+        print(f"[경고] prepare_training_data import 실패: {exc}")
+        return False
+
+    try:
+        prepare_training_data(
+            model_name=model_name,
+            num_samples=num_samples,
+            force_regenerate=force_regenerate,
+            use_realistic_data=use_large_dataset,
+            balanced=True,
+            training_root=training_dir
+        )
+    except Exception as exc:
+        print(f"[경고] 훈련 데이터 준비 실패: {exc}")
         import traceback
         traceback.print_exc()
         return False
 
+    train_file = training_dir / "train.txt"
+    val_file = training_dir / "validation.txt"
+
+    if train_file.exists() and val_file.exists():
+        print(f"✓ BIO 데이터 준비 완료: {training_dir}")
+        return True
+
+    print(f"[경고] BIO 데이터 파일이 누락되었습니다: {training_dir}")
+    return False
+
 def ner_train(
     model_name: str = DEFAULT_MODEL_NAME,
     iterations: int = 1,
-    epochs: int = 100,                # 기본값: 100 (충분한 학습)
-    batch_size: int = 12,             # 기본값: 12 (메모리 효율)
-    learning_rate: float = 1e-5,      # 기본값: 1e-5 (안정적 학습)
-    num_train_samples: int = 30000,   # 기본값: 30,000 (대규모 데이터)
+    epochs: int = 100,
+    batch_size: int = 12,
+    learning_rate: float = 1e-5,
+    num_train_samples: int = 30000,
     enable_visualization: bool = True,
     enable_early_stopping: bool = False,
-    debug: bool = False
+    enable_balanced_sampling: bool = True,
+    debug: bool = False,
+    force_regenerate_data: bool = True
 ) -> Dict[str, Any]:
-    """
-    NER 모델 훈련 전용 함수
-    
-    Args:
-        model_name: 훈련할 모델 이름
-        iterations: 훈련 반복 횟수 (각 반복마다 새 데이터 생성)
-        epochs: 에포크 수
-        batch_size: 배치 크기
-        learning_rate: 학습률
-        num_train_samples: 생성할 샘플 수 (80/20 분할)
-        enable_visualization: 학습 곡선 시각화 생성 여부
-        enable_early_stopping: Early stopping 활성화 (기본 False)
-        debug: 상세 로그 출력
-    
-    Returns:
-        Dict[str, Any]: 훈련 결과 및 메트릭
-    """
+    """Wrapper that delegates NER training to ``ner_train.py`` implementation."""
+
     overall_start = time.time()
-    
-    if debug:
-        print("=" * 80)
-        print("NER 모델 훈련 시작")
-        print("=" * 80)
-        print(f"모델: {model_name}")
-        print(f"반복 횟수: {iterations}")
-        print(f"에포크: {epochs}")
-        print(f"학습률: {learning_rate}")
-        print(f"샘플 수: {num_train_samples:,} (훈련 {int(num_train_samples*0.8):,} + 검증 {int(num_train_samples*0.2):,})")
-        print("=" * 80)
-    
-    results = []
+
+    from . import ner_train as training_module
+
+    training_result = training_module.ner_train(
+        model_name=model_name,
+        iterations=iterations,
+        epochs=epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        num_train_samples=num_train_samples,
+        enable_visualization=enable_visualization,
+        enable_early_stopping=enable_early_stopping,
+        enable_balanced_sampling=enable_balanced_sampling,
+        debug=debug,
+        force_regenerate_data=force_regenerate_data
+    )
+
+    results = training_result.get('all_iterations', [])
+    latest_metrics = results[-1].get('metrics', {}) if results else {}
+    history = latest_metrics.get('history', {}) if isinstance(latest_metrics, dict) else {}
+
     all_metrics = {
-        'epochs': [],
-        'train_loss': [],
-        'val_loss': [],
-        'val_f1': [],
-        'val_precision': [],
-        'val_recall': [],
-        'train_loss_history': [],
-        'steps': []
+        'epochs': list(history.get('epoch', [])),
+        'train_loss': list(history.get('train_loss', [])),
+        'val_loss': list(history.get('eval_loss', [])),
+        'val_f1': list(history.get('eval_f1', [])),
+        'val_precision': list(history.get('eval_precision', [])),
+        'val_recall': list(history.get('eval_recall', [])),
+        'train_loss_history': list(history.get('train_loss', [])),
+        'steps': list(range(1, len(history.get('train_loss', [])) + 1))
     }
-    
-    for iteration in range(1, iterations + 1):
-        print(f"\n{'='*80}")
-        print(f"Iteration {iteration}/{iterations}")
-        print(f"{'='*80}")
-        
-        iteration_start = time.time()
-        
-        try:
-            # 1. 모델 경로 준비
-            model_path = get_model_path(model_name)
-            
-            # 2. 훈련 데이터 생성 (매번 새로 생성)
-            print(f"\n훈련 데이터 재생성 (Iteration {iteration})")
-            model_name_safe = model_name.replace('/', '-')
-            training_dir = Path(__file__).parent / "training" / model_name_safe
-            
-            if not ensure_training_data_exists(model_name, num_samples=num_train_samples, force_regenerate=True):
-                results.append({
-                    "iteration": iteration,
-                    "success": False,
-                    "error": "훈련 데이터 생성 실패"
-                })
-                continue
-            
-            # 3. 훈련 직접 실행
-            print(f"\n모델 훈련 시작 (Iteration {iteration})")
-            
-            try:
-                from .ner_train import train_ner_model
-                
-                # 일반 모드
-                model, tokenizer, metrics = train_ner_model(
-                    model_name=model_name,
-                    num_samples=num_train_samples,
-                    num_epochs=epochs,
-                    batch_size=batch_size,
-                    learning_rate=learning_rate,
-                    output_dir=str(model_path),
-                    use_gpu=torch.cuda.is_available(),
-                    use_realistic_data=True,  # 실전 기반 데이터 사용
-                    enable_early_stopping=enable_early_stopping
-                )
-                
-                iteration_time = time.time() - iteration_start
-                
-                # 훈련 정보 저장
-                training_info = {
-                    "iteration": iteration,
-                    "training_time": iteration_time,
-                    "training_time_minutes": iteration_time / 60,
+
+    total_time = training_result.get('total_time', time.time() - overall_start)
+
+    try:
+        model_path = get_model_path(model_name)
+        if results:
+            last_iteration = results[-1]
+            training_info = {
+                "iteration": last_iteration.get('iteration'),
+                "training_time": last_iteration.get('training_time', 0.0),
+                "training_time_minutes": last_iteration.get('training_time', 0.0) / 60,
+                "epochs": epochs,
+                "completed_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                "config": {
                     "epochs": epochs,
-                    "completed_at": time.strftime('%Y-%m-%d %H:%M:%S'),
-                    "config": {
-                        "epochs": epochs,
-                        "batch_size": batch_size,
-                        "learning_rate": learning_rate,
-                        "model_name": model_name,
-                        "num_train_samples": num_train_samples
-                    },
-                    "metrics": metrics
-                }
-                
-                training_info_file = model_path / "training_info.json"
-                with open(training_info_file, 'w', encoding='utf-8') as f:
-                    json.dump(training_info, f, ensure_ascii=False, indent=2)
-                
-                # 최종 메트릭 추출 (history의 마지막 값)
-                final_f1 = 0
-                final_precision = 0
-                final_recall = 0
-                final_loss = 0
-                if 'history' in metrics and metrics['history']:
-                    hist = metrics['history']
-                    if 'eval_f1' in hist and hist['eval_f1']:
-                        final_f1 = hist['eval_f1'][-1]
-                    if 'eval_precision' in hist and hist['eval_precision']:
-                        final_precision = hist['eval_precision'][-1]
-                    if 'eval_recall' in hist and hist['eval_recall']:
-                        final_recall = hist['eval_recall'][-1]
-                    if 'eval_loss' in hist and hist['eval_loss']:
-                        final_loss = hist['eval_loss'][-1]
-                
-                # 메트릭 저장 (간단한 형식)
-                all_metrics['epochs'].append(epochs)
-                all_metrics['val_f1'].append(final_f1)
-                all_metrics['val_precision'].append(final_precision)
-                all_metrics['val_recall'].append(final_recall)
-                all_metrics['val_loss'].append(final_loss)
-                
-                # 성공 기록
-                results.append({
-                    "iteration": iteration,
-                    "success": True,
-                    "metrics": metrics,
-                    "training_time": iteration_time
-                })
-                
-                print(f"\nIteration {iteration} 완료!")
-                print(f"   - Best F1: {metrics.get('best_f1', 0):.4f}")
-                print(f"   - Final F1: {final_f1:.4f}")
-                print(f"   - Final Precision: {final_precision:.4f}")
-                print(f"   - Final Recall: {final_recall:.4f}")
-                print(f"   - Time elapsed: {iteration_time/60:.1f} min")
-                
-                # Generate visualization (save per iteration)
-                if enable_visualization and 'history' in metrics:
-                    try:
-                        from .ner_train import plot_training_curves
-                        
-                        # Visualization directory structure
-                        model_safe_name = model_name.replace('/', '-')
-                        base_viz_dir = Path("data/out/ner_visualization") / model_safe_name / str(iteration)
-                        base_viz_dir.mkdir(parents=True, exist_ok=True)
-                        timestamp = datetime.now().strftime("%y%m%d%H%M")
-                        viz_path = base_viz_dir / f"{model_safe_name}_{timestamp}.png"
-                        plot_training_curves(
-                            metrics['history'],
-                            viz_path,
-                            model_name
-                        )
-                        print(f"   Visualization saved: {viz_path}")
-                            
-                    except Exception as e:
-                        print(f"   Warning: Visualization generation failed: {e}")
-                        import traceback
-                        traceback.print_exc()
-                
-            except Exception as e:
-                results.append({
-                    "iteration": iteration,
-                    "success": False,
-                    "error": f"훈련 함수 호출 실패: {e}"
-                })
-                print(f"\nERROR: Iteration {iteration} 실패: {e}")
-                import traceback
-                traceback.print_exc()
-        
-        except Exception as e:
-            results.append({
-                "iteration": iteration,
-                "success": False,
-                "error": str(e)
-            })
-            print(f"\nERROR: Iteration {iteration} 오류: {e}")
-    
-    total_time = time.time() - overall_start
-    
-    print(f"\n{'='*80}")
-    print(f"전체 훈련 완료!")
-    print(f"총 소요 시간: {total_time/60:.1f}분")
-    print(f"완료된 에포크: {len(all_metrics['epochs'])}")
-    print(f"성공: {sum(1 for r in results if r['success'])}/{iterations}")
-    print(f"{'='*80}\n")
-    
+                    "batch_size": batch_size,
+                    "learning_rate": learning_rate,
+                    "model_name": model_name,
+                    "num_train_samples": num_train_samples
+                },
+                "metrics": latest_metrics
+            }
+
+            training_info_file = model_path / "training_info.json"
+            with open(training_info_file, 'w', encoding='utf-8') as f:
+                json.dump(training_info, f, ensure_ascii=False, indent=2)
+    except Exception as exc:
+        print(f"[경고] training_info 저장 실패: {exc}")
+
+    success = training_result.get('status', '').lower() == 'success'
+
     return {
-        "success": True,
+        "success": success,
+        "status": training_result.get('status', 'success' if success else 'failed'),
         "model_name": model_name,
         "iterations": iterations,
         "results": results,
@@ -1547,339 +1356,6 @@ def ner_train(
         "total_time": total_time
     }
 
-
-def extract_metrics_from_logs(logs: List[str]) -> Dict[str, Any]:
-    """훈련 로그에서 메트릭 추출 (에포크별)"""
-    import re
-    import json
-    
-    metrics = {
-        'epochs': [],
-        'train_loss': [],
-        'val_loss': [],
-        'val_f1': [],
-        'val_precision': [],
-        'val_recall': [],
-        'train_loss_history': [],
-        'steps': []
-    }
-    
-    current_epoch = None
-    step_count = 0
-    epoch_data = {}  # 에포크별로 데이터 수집
-    
-    for line in logs:
-        # Transformers Trainer 로그 파싱: {'loss': 0.5, 'epoch': 1, ...}
-        if "{'loss':" in line or '{"loss":' in line:
-            try:
-                # dict 형식 추출
-                dict_match = re.search(r'\{[^}]+\}', line)
-                if dict_match:
-                    data_str = dict_match.group(0).replace("'", '"')
-                    data = json.loads(data_str)
-                    
-                    # Epoch 정보
-                    if 'epoch' in data:
-                        current_epoch = int(float(data['epoch']))
-                    
-                    # Training loss (step별)
-                    if 'loss' in data and 'eval' not in line:
-                        loss_val = float(data['loss'])
-                        metrics['train_loss_history'].append(loss_val)
-                        step_count += 1
-                        metrics['steps'].append(step_count)
-            except Exception as e:
-                pass
-        
-        # Evaluation 로그 파싱: eval_loss, eval_f1, etc.
-        if 'eval_loss' in line or 'eval_f1' in line or 'eval_precision' in line:
-            try:
-                # Transformers 평가 결과: {'eval_loss': 0.234, 'eval_f1': 0.95, ...}
-                dict_match = re.search(r'\{[^}]+\}', line)
-                if dict_match:
-                    data_str = dict_match.group(0).replace("'", '"')
-                    data = json.loads(data_str)
-                    
-                    # Epoch 추정 (eval이 나올 때마다 epoch 증가)
-                    if 'eval_loss' in data:
-                        if current_epoch is None:
-                            current_epoch = 1
-                        
-                        # 새로운 에포크 데이터 저장
-                        if current_epoch not in epoch_data:
-                            epoch_data[current_epoch] = {}
-                        
-                        epoch_data[current_epoch]['val_loss'] = float(data.get('eval_loss', 0))
-                        epoch_data[current_epoch]['val_f1'] = float(data.get('eval_f1', 0)) * 100  # 0-1 -> 0-100
-                        epoch_data[current_epoch]['val_precision'] = float(data.get('eval_precision', 0)) * 100
-                        epoch_data[current_epoch]['val_recall'] = float(data.get('eval_recall', 0)) * 100
-            except Exception as e:
-                pass
-        
-        # 텍스트 형식 파싱 (명시적 출력)
-        # "Epoch 1/3" 형식
-        epoch_match = re.search(r'Epoch[:\s]+(\d+)', line, re.IGNORECASE)
-        if epoch_match:
-            current_epoch = int(epoch_match.group(1))
-        
-        # "F1 Score: 0.9567" 형식
-        if 'F1 Score:' in line and current_epoch:
-            f1_match = re.search(r'F1 Score:\s*([\d.]+)', line)
-            if f1_match:
-                f1_val = float(f1_match.group(1))
-                if f1_val <= 1.0:
-                    f1_val *= 100
-                if current_epoch not in epoch_data:
-                    epoch_data[current_epoch] = {}
-                epoch_data[current_epoch]['val_f1'] = f1_val
-        
-        # "Precision: 0.9567" 형식
-        if 'Precision:' in line and current_epoch:
-            prec_match = re.search(r'Precision:\s*([\d.]+)', line)
-            if prec_match:
-                prec_val = float(prec_match.group(1))
-                if prec_val <= 1.0:
-                    prec_val *= 100
-                if current_epoch not in epoch_data:
-                    epoch_data[current_epoch] = {}
-                epoch_data[current_epoch]['val_precision'] = prec_val
-        
-        # "Recall: 0.9567" 형식
-        if 'Recall:' in line and current_epoch:
-            rec_match = re.search(r'Recall:\s*([\d.]+)', line)
-            if rec_match:
-                rec_val = float(rec_match.group(1))
-                if rec_val <= 1.0:
-                    rec_val *= 100
-                if current_epoch not in epoch_data:
-                    epoch_data[current_epoch] = {}
-                epoch_data[current_epoch]['val_recall'] = rec_val
-    
-    # 에포크별 데이터를 리스트로 변환
-    if epoch_data:
-        sorted_epochs = sorted(epoch_data.keys())
-        for epoch in sorted_epochs:
-            metrics['epochs'].append(epoch)
-            data = epoch_data[epoch]
-            metrics['val_loss'].append(data.get('val_loss', 0))
-            metrics['val_f1'].append(data.get('val_f1', 0))
-            metrics['val_precision'].append(data.get('val_precision', 0))
-            metrics['val_recall'].append(data.get('val_recall', 0))
-            # Train loss는 에포크 평균 (나중에 계산)
-            metrics['train_loss'].append(0)  # placeholder
-    
-    return metrics
-
-
-def create_training_visualization(metrics: Dict, model_name: str) -> Optional[Path]:
-    """
-    학습 곡선 시각화 생성 (분류 모델 평가에 최적화)
-    
-    4개 그래프:
-    1. Epoch별 Loss (Train vs Val) - 과적합 감지
-    2. Epoch별 Performance Metrics (F1, Precision, Recall) - 성능 추이
-    3. Steps별 Loss 수렴 - 상세 학습 과정
-    4. Epoch별 F1 Score와 Loss 비교 - 성능-손실 관계
-    """
-    try:
-        import matplotlib
-        matplotlib.use('Agg')
-        import matplotlib.pyplot as plt
-        import matplotlib.font_manager as fm
-        import numpy as np
-        
-        # 한글 폰트 설정 (범용 폰트 사용)
-        try:
-            available_fonts = [f.name for f in fm.fontManager.ttflist]
-            
-            # 한글 폰트 우선순위 리스트
-            korean_fonts = ['Malgun Gothic', 'NanumGothic', 'NanumBarunGothic', 'AppleGothic']
-            
-            # 사용 가능한 한글 폰트 찾기
-            font_found = False
-            for font_name in korean_fonts:
-                if font_name in available_fonts:
-                    plt.rcParams['font.family'] = font_name
-                    font_found = True
-                    break
-            
-            if not font_found:
-                # 한글 폰트가 없으면 DejaVu Sans 사용
-                plt.rcParams['font.family'] = 'DejaVu Sans'
-            
-            plt.rcParams['axes.unicode_minus'] = False
-            
-        except Exception:
-            # 폰트 설정 실패 시 기본 폰트 사용
-            plt.rcParams['font.family'] = 'DejaVu Sans'
-            plt.rcParams['axes.unicode_minus'] = False
-        
-        fig = plt.figure(figsize=(18, 12))
-        gs = fig.add_gridspec(2, 2, hspace=0.3, wspace=0.25)
-        
-        epochs = metrics.get('epochs', [])
-        
-        # ==================== 1. Epoch별 Loss (Train vs Validation) ====================
-        ax1 = fig.add_subplot(gs[0, 0])
-        if epochs:
-            if metrics.get('val_loss'):
-                ax1.plot(epochs, metrics['val_loss'], 'r-o', label='Validation Loss', 
-                        linewidth=3, markersize=10, markeredgewidth=2, markeredgecolor='white')
-            if metrics.get('train_loss'):
-                # train_loss가 있으면 표시 (없을 수도 있음)
-                train_losses = [tl for tl in metrics['train_loss'] if tl > 0]
-                if train_losses:
-                    ax1.plot(epochs[:len(train_losses)], train_losses, 'b-s', 
-                            label='Training Loss', linewidth=3, markersize=10, 
-                            markeredgewidth=2, markeredgecolor='white', alpha=0.7)
-        
-        ax1.set_xlabel('Epoch', fontsize=14, fontweight='bold')
-        ax1.set_ylabel('Loss', fontsize=14, fontweight='bold')
-        ax1.set_title('Loss Convergence (Train vs Validation)', fontsize=16, fontweight='bold', pad=15)
-        ax1.legend(fontsize=12, loc='best', framealpha=0.9)
-        ax1.grid(True, alpha=0.3, linestyle='--')
-        if epochs:
-            ax1.set_xticks(epochs)
-        ax1.spines['top'].set_visible(False)
-        ax1.spines['right'].set_visible(False)
-        
-        # ==================== 2. Epoch별 Performance Metrics (F1, Precision, Recall) ====================
-        ax2 = fig.add_subplot(gs[0, 1])
-        if epochs:
-            if metrics.get('val_f1'):
-                ax2.plot(epochs, metrics['val_f1'], 'g-o', label='F1 Score', 
-                        linewidth=3, markersize=10, markeredgewidth=2, markeredgecolor='white')
-            if metrics.get('val_precision'):
-                ax2.plot(epochs, metrics['val_precision'], 'b-s', label='Precision', 
-                        linewidth=3, markersize=10, markeredgewidth=2, markeredgecolor='white')
-            if metrics.get('val_recall'):
-                ax2.plot(epochs, metrics['val_recall'], 'orange', marker='^', label='Recall', 
-                        linewidth=3, markersize=10, markeredgewidth=2, markeredgecolor='white')
-        
-        ax2.set_xlabel('Epoch', fontsize=14, fontweight='bold')
-        ax2.set_ylabel('Score (%)', fontsize=14, fontweight='bold')
-        ax2.set_title('Performance Metrics (F1, Precision, Recall)', fontsize=16, fontweight='bold', pad=15)
-        ax2.legend(fontsize=12, loc='best', framealpha=0.9)
-        ax2.grid(True, alpha=0.3, linestyle='--')
-        if epochs:
-            ax2.set_xticks(epochs)
-            ax2.set_ylim([max(0, min([min(m) for m in [metrics.get('val_f1', [80]), 
-                                                         metrics.get('val_precision', [80]), 
-                                                         metrics.get('val_recall', [80])] if m]) - 5), 105])
-        ax2.spines['top'].set_visible(False)
-        ax2.spines['right'].set_visible(False)
-        
-        # ==================== 3. Steps별 Training Loss (상세 수렴 과정) ====================
-        ax3 = fig.add_subplot(gs[1, 0])
-        if metrics.get('train_loss_history') and metrics.get('steps'):
-            steps = metrics['steps']
-            train_loss_hist = metrics['train_loss_history']
-            
-            # Raw data (반투명)
-            ax3.plot(steps, train_loss_hist, 'b-', alpha=0.3, linewidth=1, label='Raw Loss')
-            
-            # 이동 평균 (강조)
-            if len(train_loss_hist) > 20:
-                window = min(100, max(20, len(train_loss_hist) // 20))
-                smoothed = np.convolve(train_loss_hist, np.ones(window)/window, mode='valid')
-                smooth_steps = steps[window-1:window-1+len(smoothed)]
-                ax3.plot(smooth_steps, smoothed, 'r-', linewidth=3, 
-                        label=f'Smoothed (window={window})')
-        
-        ax3.set_xlabel('Training Steps', fontsize=14, fontweight='bold')
-        ax3.set_ylabel('Loss', fontsize=14, fontweight='bold')
-        ax3.set_title('Training Loss Convergence (Step-by-Step)', fontsize=16, fontweight='bold', pad=15)
-        ax3.legend(fontsize=12, loc='best', framealpha=0.9)
-        ax3.grid(True, alpha=0.3, linestyle='--')
-        ax3.spines['top'].set_visible(False)
-        ax3.spines['right'].set_visible(False)
-        
-        # ==================== 4. Epoch별 F1 Score vs Loss (듀얼 축) ====================
-        ax4 = fig.add_subplot(gs[1, 1])
-        ax4_twin = ax4.twinx()
-        
-        if epochs:
-            # F1 Score (왼쪽 축)
-            if metrics.get('val_f1'):
-                line1 = ax4.plot(epochs, metrics['val_f1'], 'g-o', label='F1 Score', 
-                                linewidth=3, markersize=10, markeredgewidth=2, markeredgecolor='white')
-                ax4.set_ylabel('F1 Score (%)', fontsize=14, fontweight='bold', color='g')
-                ax4.tick_params(axis='y', labelcolor='g')
-            
-            # Validation Loss (오른쪽 축)
-            if metrics.get('val_loss'):
-                line2 = ax4_twin.plot(epochs, metrics['val_loss'], 'r-s', label='Validation Loss', 
-                                     linewidth=3, markersize=10, markeredgewidth=2, markeredgecolor='white')
-                ax4_twin.set_ylabel('Loss', fontsize=14, fontweight='bold', color='r')
-                ax4_twin.tick_params(axis='y', labelcolor='r')
-        
-        ax4.set_xlabel('Epoch', fontsize=14, fontweight='bold')
-        ax4.set_title('⚖️ F1 Score vs Loss Trade-off', fontsize=16, fontweight='bold', pad=15)
-        ax4.grid(True, alpha=0.3, linestyle='--')
-        if epochs:
-            ax4.set_xticks(epochs)
-        
-        # 범례 통합
-        if epochs and metrics.get('val_f1') and metrics.get('val_loss'):
-            lines = line1 + line2
-            labels = [l.get_label() for l in lines]
-            ax4.legend(lines, labels, fontsize=12, loc='best', framealpha=0.9)
-        
-        ax4.spines['top'].set_visible(False)
-        
-        # 전체 타이틀
-        fig.suptitle(f'Model Training Analysis: {model_name}', 
-                    fontsize=18, fontweight='bold', y=0.98)
-        
-        # 저장
-        model_name_safe = model_name.replace('/', '-')
-        output_dir = Path(__file__).parent.parent.parent / "data" / "out" / "debug"
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_file = output_dir / f"{model_name_safe}_training_curves.png"
-        
-        plt.savefig(output_file, dpi=300, bbox_inches='tight', facecolor='white')
-        plt.close()
-        
-        return output_file
-        
-    except Exception as e:
-        print(f"[경고] 시각화 생성 실패: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
-
-
-def ner_train_legacy(
-    epochs: int = 3,
-    batch_size: int = 8,
-    learning_rate: float = 3e-5,
-    model_name: str = DEFAULT_MODEL_NAME,
-    output_dir: Optional[str] = None,
-    enable_fp16: bool = True,
-    max_length: int = 128,
-    warmup_steps: int = 100,
-    save_steps: int = 200,
-    eval_steps: int = 100,
-    force_retrain: bool = False,
-    callback_url: Optional[str] = None,
-    debug: bool = False,
-    num_train_samples: int = 7500
-) -> Dict[str, Any]:
-    """
-    레거시 NER 모델 훈련 API (하위 호환성)
-    
-    Note: 새 코드에서는 ner_train() 사용 권장
-    """
-    return ner_train(
-        model_name=model_name,
-        iterations=1,
-        epochs=epochs,
-        batch_size=batch_size,
-        learning_rate=learning_rate,
-        num_train_samples=num_train_samples,
-        enable_visualization=True,
-        debug=debug
-    )
 
 def get_training_status(model_path: Optional[str] = None) -> Dict[str, Any]:
     """훈련 상태 확인"""

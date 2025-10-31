@@ -138,3 +138,4 @@ project-deployment.bundle
 /api/models
 /api/module/ner
 /api/model_downloaded
+/api/module/ner/training
