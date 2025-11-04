@@ -588,7 +588,7 @@
                     <div class="model-selection">
                         <h3>Universal OCR 설정</h3>
                         <div class="model-options">
-                            <label class="model-option">
+                            <label class="model-option selected">
                                 <input type="radio" name="universal_provider" value="google" checked>
                                 <div>
                                     <div class="model-name">
@@ -632,7 +632,7 @@
                     <div class="model-selection" id="alibabaModelSelection" style="display: none;">
                         <h4>Alibaba Cloud 모델 선택</h4>
                         <div class="model-options">
-                            <label class="model-option">
+                            <label class="model-option selected">
                                 <input type="radio" name="alibaba_model" value="qwen-vl-plus" checked>
                                 <div>
                                     <img class="model-icon" src="https://camo.githubusercontent.com/cc1b109f5c535ef826fb7016cea473bdf286c14ccf75481c76a0a0f0331e9edb/68747470733a2f2f7169616e77656e2d7265732e6f73732d616363656c65726174652e616c6979756e63732e636f6d2f5177656e332d564c2f7177656e33766c6c6f676f2e706e67" alt="Qwen3-VL-Plus">
@@ -682,7 +682,7 @@
                 <h3>처리 방식 선택</h3>
                 <div class="model-options">
                     <label class="model-option">
-                        <input type="radio" name="processing_type" value="ner">
+                        <input type="radio" name="processing_type" value="ner" checked>
                         <div>
                             <div class="model-name">NER 엔티티 추출</div>
                             <div class="model-desc">기존 NER 모델을 사용한 엔티티 추출</div>
@@ -725,7 +725,7 @@
                         <h4>로컬 모델</h4>
                         <div class="model-options">
                             <label class="model-option">
-                                <input type="radio" name="llm_model" value="solar-ko">
+                                <input type="radio" name="llm_model" value="solar-ko" checked>
                                 <div>
                                     <div class="model-name">SOLAR-Ko-10.7B</div>
                                     <div class="model-desc">한국어 특화 모델 (권장)</div>
@@ -790,7 +790,7 @@
                 <h3>문서 유형 선택</h3>
                 <div class="model-options">
                     <label class="model-option">
-                        <input type="radio" name="document_type" value="기타문서">
+                        <input type="radio" name="document_type" value="기타문서" checked>
                         <div>
                             <div class="model-name">기타문서</div>
                             <div class="model-desc">일반적인 문서</div>
@@ -825,7 +825,7 @@
                 <h3>NER 모델 선택</h3>
                 <div class="model-options">
                     <label class="model-option">
-                        <input type="radio" name="ner_model" value="klue-roberta-large">
+                        <input type="radio" name="ner_model" value="klue-roberta-large" checked>
                         <div>
                             <div class="model-name">KLUE RoBERTa Large</div>
                             <div class="model-desc">다국어 특화 모델 (최고 정확도)</div>
@@ -1044,9 +1044,60 @@
             });
         }
 
+        // 문서 유형 선택 UI
+        document.querySelectorAll('input[name="document_type"]').forEach(radio => {
+            radio.parentElement.addEventListener('click', function() {
+                document.querySelectorAll('input[name="document_type"]').forEach(r => {
+                    r.parentElement.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                this.querySelector('input[type="radio"]').checked = true;
+            });
+        });
+
+        // NER 모델 선택 UI (LLM용)
+        document.querySelectorAll('input[name="ner_model"]').forEach(radio => {
+            radio.parentElement.addEventListener('click', function() {
+                document.querySelectorAll('input[name="ner_model"]').forEach(r => {
+                    r.parentElement.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                this.querySelector('input[type="radio"]').checked = true;
+            });
+        });
+
+        // LLM 모델 선택 UI
+        document.querySelectorAll('input[name="llm_model"]').forEach(radio => {
+            radio.parentElement.addEventListener('click', function() {
+                document.querySelectorAll('input[name="llm_model"]').forEach(r => {
+                    r.parentElement.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                this.querySelector('input[type="radio"]').checked = true;
+            });
+        });
+
         // 처리 방식 선택 이벤트
         document.querySelectorAll('input[name="processing_type"]').forEach(radio => {
+            // Handle click on label
+            radio.parentElement.addEventListener('click', function() {
+                document.querySelectorAll('input[name="processing_type"]').forEach(r => {
+                    r.parentElement.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                const radioInput = this.querySelector('input[type="radio"]');
+                radioInput.checked = true;
+                // Trigger change event to update visibility
+                radioInput.dispatchEvent(new Event('change'));
+            });
+            
+            // Handle change event
             radio.addEventListener('change', function() {
+                document.querySelectorAll('input[name="processing_type"]').forEach(r => {
+                    r.parentElement.classList.remove('selected');
+                });
+                this.parentElement.classList.add('selected');
+                
                 const nerModelSelection = document.getElementById('nerModelSelection');
                 const llmModelSelection = document.getElementById('llmModelSelection');
                 const documentTypeSelection = document.getElementById('documentTypeSelection');
@@ -1062,6 +1113,19 @@
                     documentTypeSelection.style.display = 'block';
                     nerModelSelection.style.display = 'block';
                     universalOcrSettings.style.display = 'block';
+                    
+                    // Ensure a NER model is selected (default to first if none selected)
+                    const checkedNerModel = document.querySelector('input[name="ner_model"]:checked');
+                    if (!checkedNerModel) {
+                        const firstNerModel = document.querySelector('input[name="ner_model"][value="klue-roberta-large"]');
+                        if (firstNerModel) {
+                            firstNerModel.checked = true;
+                            firstNerModel.parentElement.classList.add('selected');
+                        }
+                    } else {
+                        // Ensure selected class is added to the checked one
+                        checkedNerModel.parentElement.classList.add('selected');
+                    }
                 }
             });
         });
@@ -1071,10 +1135,27 @@
             loadPreviousSelections();
             addNerModelIcons();
             
-            // 초기 상태 설정
+            // 초기 상태 설정 - 처리 방식 선택에 selected 클래스 추가
             const processingType = document.querySelector('input[name="processing_type"]:checked');
             if (processingType) {
+                processingType.parentElement.classList.add('selected');
                 processingType.dispatchEvent(new Event('change'));
+            }
+            
+            // 초기 상태 설정 - 다른 선택들에도 selected 클래스 추가
+            const documentType = document.querySelector('input[name="document_type"]:checked');
+            if (documentType) {
+                documentType.parentElement.classList.add('selected');
+            }
+            
+            const nerModel = document.querySelector('input[name="ner_model"]:checked');
+            if (nerModel) {
+                nerModel.parentElement.classList.add('selected');
+            }
+            
+            const llmModel = document.querySelector('input[name="llm_model"]:checked');
+            if (llmModel) {
+                llmModel.parentElement.classList.add('selected');
             }
         });
 
