@@ -38,7 +38,7 @@ from module import (
     ocr_google,             # Google OCR
     ocr_complete,           # 통합 OCR
     ner_predict,            # NER 예측
-    ner_evaluate            # NER 평가
+    ner_train               # NER 훈련
 )
 
 # 로깅 설정
@@ -57,7 +57,7 @@ __all__ = [
     'pdf_to_image',
     'ocr_naver', 'ocr_mistral', 'ocr_google', 'ocr_complete',
     'ner_predict',  # NER 예측
-    'ner_evaluate',  # NER 평가
+    'ner_train',  # NER 훈련
     'process_pdf_to_ner',  # 통합 파이프라인
     'get_api_info'  # API 정보
 ]

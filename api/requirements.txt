@@ -30,11 +30,13 @@ sentencepiece>=0.1.99           # 토크나이저
 accelerate>=0.20.0              # 모델 가속화
 datasets>=2.14.0                # 데이터셋 처리
 seqeval>=1.2.2                  # NER 평가 메트릭
+pytorch-crf>=0.7.2              # CRF 레이어 (BERT-CRF 모델)
 
 # -------------------- Data Processing --------------------
 numpy>=1.21.0                   # 수치 연산
 pandas>=1.5.0                   # 데이터 처리 및 CSV 생성
 scikit-learn>=1.3.0             # 머신러닝 유틸리티
+matplotlib>=3.5.0               # 시각화 (학습 그래프)
 
 # -------------------- Utilities --------------------
 tqdm>=4.64.0                    # 진행률 표시

@@ -24,9 +24,9 @@ def setup_env_files():
     print("\nChecking existing environment files:")
     for name, path in env_files.items():
         if path.exists():
-            print(f"  ✓ {name}: {path}")
+            print(f"  OK: {name}: {path}")
         else:
-            print(f"  ✗ {name}: {path} (not found)")
+            print(f"  Missing: {name}: {path} (not found)")
     
     print("\n" + "=" * 60)
     print("API Key Configuration")
@@ -83,7 +83,7 @@ def setup_env_files():
         with open('.env', 'w', encoding='utf-8') as f:
             f.write(env_content)
         
-        print(f"\n✅ Created .env file with {len(api_keys)} API keys")
+        print(f"\nOK: Created .env file with {len(api_keys)} API keys")
         
         # Create Alibaba-specific .env file if Alibaba key provided
         if 'DASHSCOPE_API_KEY' in api_keys:
@@ -101,17 +101,17 @@ ALIBABA_API_KEY={api_keys['ALIBABA_API_KEY']}
             with open('.env_alibaba', 'w', encoding='utf-8') as f:
                 f.write(alibaba_content)
             
-            print("✅ Created .env_alibaba file")
+            print("OK: Created .env_alibaba file")
         
         # Copy to OCR directory
         ocr_env_path = Path('../OCR/google_vision/.env')
         if ocr_env_path.parent.exists():
             with open(ocr_env_path, 'w', encoding='utf-8') as f:
                 f.write(env_content)
-            print(f"✅ Copied .env to {ocr_env_path}")
+            print(f"OK: Copied .env to {ocr_env_path}")
         
     else:
-        print("\n⚠️  No API keys provided. Environment files not created.")
+        print("\nWarning: No API keys provided. Environment files not created.")
         print("   You can manually edit the template files:")
         print("   - .env (main configuration)")
         print("   - .env_alibaba (Alibaba Cloud specific)")
@@ -142,12 +142,12 @@ def check_google_credentials():
     found_cred = False
     for cred_path in cred_paths:
         if cred_path.exists():
-            print(f"✅ Found Google Cloud credentials: {cred_path}")
+            print(f"OK: Found Google Cloud credentials: {cred_path}")
             found_cred = True
             break
     
     if not found_cred:
-        print("❌ Google Cloud credentials not found")
+        print("ERROR: Google Cloud credentials not found")
         print("   Please download your service account key from:")
         print("   https://console.cloud.google.com/iam-admin/serviceaccounts")
         print("   and save it as 'google_credentials.json' in the api directory")
