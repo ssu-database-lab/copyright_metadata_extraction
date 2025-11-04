@@ -424,6 +424,13 @@ async def process_document_with_universal_ocr(file_path: Path, output_dir: Path,
             result['entities'] = statistics.get('entity_types_count', {})
             result['entity_count'] = ner_result.get('total_entities', 0)
             result['output_files'] = ner_result.get('output_files', [])
+            result['ner_processing_time'] = ner_result.get('processing_time', 0)
+            
+            # Debug logging
+            logger.info(f"process_document_with_universal_ocr - NER 결과 - total_entities: {ner_result.get('total_entities', 0)}, processing_time: {ner_result.get('processing_time', 0)}")
+            logger.info(f"process_document_with_universal_ocr - statistics: {statistics}")
+            logger.info(f"process_document_with_universal_ocr - entity_types_count: {statistics.get('entity_types_count', {})}")
+            logger.info(f"process_document_with_universal_ocr - result['entity_count'] 설정: {result['entity_count']}")
             
         except Exception as e:
             result['error'] = f'NER 처리 오류: {str(e)}'
@@ -456,6 +463,18 @@ def _format_ner_entities(ner_result: Dict[str, Any]) -> Dict[str, int]:
 
 def _count_ner_entities(ner_result: Dict[str, Any]) -> int:
     """NER 결과에서 총 엔티티 개수를 계산"""
+    # First try to get total_entities directly from ner_result (ner_predict format)
+    if 'total_entities' in ner_result:
+        return ner_result.get('total_entities', 0)
+    
+    # Try to get from statistics
+    statistics = ner_result.get('statistics', {})
+    if statistics and 'entity_types_count' in statistics:
+        entity_types_count = statistics.get('entity_types_count', {})
+        # Sum up all entity counts
+        return sum(entity_types_count.values()) if isinstance(entity_types_count, dict) else 0
+    
+    # Fallback to old format (entities dict)
     entities_data = ner_result.get('entities', {})
     total_entities = 0
     
@@ -825,6 +844,7 @@ async def llm_extract_metadata(
         """Process LLM extraction with progress updates"""
         # Capture outer scope variables
         captured_filename = filename
+        process_start_time = datetime.now()
         
         try:
             # 파일 검증
@@ -971,6 +991,8 @@ async def llm_extract_metadata(
                 yield _send_progress_update(f"NER 처리 중 오류 발생: {str(e)}", 4, 90, {"warning": str(e)})
             
             # 응답 구성
+            total_processing_time = (datetime.now() - process_start_time).total_seconds()
+            
             response = {
                 "success": llm_result.get('success', False),
                 "request_id": request_id,
@@ -990,8 +1012,13 @@ async def llm_extract_metadata(
                 "entities": _format_ner_entities(ner_result) if ner_result else {},
                 "entity_count": _count_ner_entities(ner_result) if ner_result else 0,
                 "ner_success": ner_result.get('success', False) if ner_result else False,
-                "ner_error": ner_result.get('error') if ner_result and not ner_result.get('success', False) else None
+                "ner_error": ner_result.get('error') if ner_result and not ner_result.get('success', False) else None,
+                "processing_time": round(total_processing_time, 2)
             }
+            
+            # Debug logging
+            logger.info(f"LLM 응답 생성 - entity_count: {response['entity_count']}, processing_time: {response.get('processing_time', 0)}")
+            logger.info(f"ner_result에서 가져온 값들 - total_entities: {ner_result.get('total_entities', 0) if ner_result else 0}, processing_time: {ner_result.get('processing_time', 0) if ner_result else 0}")
             
             # LLM 결과 JSON 저장
             llm_result_path = result_dir / 'llm_metadata.json'
@@ -1001,6 +1028,7 @@ async def llm_extract_metadata(
             # Final progress update with complete result
             logger.info(f"Sending final result for request_id: {request_id}")
             yield _send_progress_update("처리 완료", 5, 100, {"result": response})
+            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
             logger.info(f"Final result sent successfully for request_id: {request_id}")
             
         except Exception as e:
@@ -1150,10 +1178,12 @@ async def ner_extract_entities(
             )
         
         # 모델 검증
+        logger.info(f"NER 엔티티 추출 요청 - 받은 모델 파라미터: {model}")
         if model not in AVAILABLE_MODELS:
             raise HTTPException(status_code=400, detail="잘못된 모델 선택")
         
         model_name = AVAILABLE_MODELS[model]['name']
+        logger.info(f"사용할 NER 모델: {model_name} (키: {model})")
         
         # OCR 제공자 검증
         if ocr_provider not in AVAILABLE_OCR_ENGINES:
@@ -1190,6 +1220,10 @@ async def ner_extract_entities(
         processing_time = (datetime.now() - start_time).total_seconds()
         
         # 응답 생성
+        # Use processing_time from result if available, otherwise use calculated time
+        # The result should include total processing time from ner_predict
+        final_processing_time = result.get('ner_processing_time') or processing_time
+        
         response = {
             'success': result['success'],
             'request_id': request_id,
@@ -1202,8 +1236,13 @@ async def ner_extract_entities(
             'entities': result.get('entities', {}),
             'entity_count': result.get('entity_count', 0),
             'steps': result.get('steps', {}),
-            'processing_time': round(processing_time, 2)
+            'processing_time': round(final_processing_time, 2)
         }
+        
+        # Debug logging
+        logger.info(f"NER 응답 생성 - entity_count: {response['entity_count']}, processing_time: {response['processing_time']}")
+        logger.info(f"result에서 가져온 값들 - entity_count: {result.get('entity_count', 0)}, entities: {result.get('entities', {})}")
+        logger.info(f"ner_result에서 가져온 값들 - total_entities: {result.get('steps', {}).get('ner', {}).get('entity_count', 'N/A')}")
         
         if not result['success']:
             response['error'] = result.get('error', '알 수 없는 오류')

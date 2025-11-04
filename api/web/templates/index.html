@@ -721,7 +721,7 @@
                 <h3>LLM 모델 선택</h3>
                 <div class="model-options">
                     <!-- Local Models -->
-                    <div class="model-category">
+                    <!-- <div class="model-category">
                         <h4>로컬 모델</h4>
                         <div class="model-options">
                             <label class="model-option">
@@ -753,7 +753,7 @@
                                 </div>
                             </label>
                         </div>
-                    </div>
+                    </div> -->
                     
                     <!-- Cloud Models -->
                     <div class="model-category">
@@ -767,7 +767,7 @@
                                 </div>
                             </label>
                             <label class="model-option">
-                                <input type="radio" name="llm_model" value="alibaba-qwen-max">
+                                <input type="radio" name="llm_model" value="alibaba-qwen-max" checked>
                                 <div>
                                     <div class="model-name">Alibaba Qwen-Max</div>
                                     <div class="model-desc">최고 성능 모델</div>
@@ -821,7 +821,7 @@
             </div>
 
             <!-- NER 모델 선택 (LLM용) -->
-            <div class="model-selection" id="nerModelSelection" style="display: none;">
+            <div class="model-selection" id="llmNerModelSelection" style="display: none;">
                 <h3>NER 모델 선택</h3>
                 <div class="model-options">
                     <label class="model-option">
@@ -1099,19 +1099,22 @@
                 this.parentElement.classList.add('selected');
                 
                 const nerModelSelection = document.getElementById('nerModelSelection');
+                const llmNerModelSelection = document.getElementById('llmNerModelSelection');
                 const llmModelSelection = document.getElementById('llmModelSelection');
                 const documentTypeSelection = document.getElementById('documentTypeSelection');
                 const universalOcrSettings = document.getElementById('universalOcrSettings');
                 
                 if (this.value === 'ner') {
                     nerModelSelection.style.display = 'block';
+                    llmNerModelSelection.style.display = 'none';
                     llmModelSelection.style.display = 'none';
                     documentTypeSelection.style.display = 'none';
                     universalOcrSettings.style.display = 'block';
                 } else if (this.value === 'llm') {
                     llmModelSelection.style.display = 'block';
                     documentTypeSelection.style.display = 'block';
-                    nerModelSelection.style.display = 'block';
+                    llmNerModelSelection.style.display = 'block';
+                    nerModelSelection.style.display = 'none';
                     universalOcrSettings.style.display = 'block';
                     
                     // Ensure a NER model is selected (default to first if none selected)
@@ -1139,6 +1142,26 @@
             const processingType = document.querySelector('input[name="processing_type"]:checked');
             if (processingType) {
                 processingType.parentElement.classList.add('selected');
+                // 초기 상태에 맞게 섹션 표시/숨김 설정
+                const nerModelSelection = document.getElementById('nerModelSelection');
+                const llmNerModelSelection = document.getElementById('llmNerModelSelection');
+                const llmModelSelection = document.getElementById('llmModelSelection');
+                const documentTypeSelection = document.getElementById('documentTypeSelection');
+                const universalOcrSettings = document.getElementById('universalOcrSettings');
+                
+                if (processingType.value === 'ner') {
+                    nerModelSelection.style.display = 'block';
+                    llmNerModelSelection.style.display = 'none';
+                    llmModelSelection.style.display = 'none';
+                    documentTypeSelection.style.display = 'none';
+                    universalOcrSettings.style.display = 'block';
+                } else if (processingType.value === 'llm') {
+                    llmModelSelection.style.display = 'block';
+                    documentTypeSelection.style.display = 'block';
+                    llmNerModelSelection.style.display = 'block';
+                    nerModelSelection.style.display = 'none';
+                    universalOcrSettings.style.display = 'block';
+                }
                 processingType.dispatchEvent(new Event('change'));
             }
             
@@ -1258,6 +1281,10 @@
                     const selectedModelRadio = document.querySelector('input[name="model"]:checked');
                     const selectedProviderRadio = document.querySelector('input[name="universal_provider"]:checked');
                     
+                    console.log('NER 처리 선택됨');
+                    console.log('선택된 모델 라디오:', selectedModelRadio);
+                    console.log('모델 값:', selectedModelRadio ? selectedModelRadio.value : '없음');
+                    
                     if (!selectedModelRadio) {
                         alert('NER 모델을 선택해주세요');
                         return;
@@ -1270,6 +1297,7 @@
 
                     // NER 파라미터 설정
                     formData.append('model', selectedModelRadio.value);
+                    console.log('FormData에 추가된 모델:', selectedModelRadio.value);
                     formData.append('ocr_provider', selectedProviderRadio.value);
                     
                     // Alibaba 모델이 선택된 경우 모델 정보 추가
@@ -1501,7 +1529,7 @@
                                 </div>
                                 <div class="stat-item">
                                     <span class="stat-label">처리 시간:</span>
-                                    <span class="stat-value">${result.extraction_time.toFixed(2)}초</span>
+                                    <span class="stat-value">${(result.processing_time || result.extraction_time || 0).toFixed(2)}초</span>
                                 </div>
                             </div>
                             
@@ -1853,9 +1881,16 @@
         function showNerResults(result) {
             currentRequestId = result.request_id;
 
+            // Debug logging
+            console.log('showNerResults 호출됨');
+            console.log('받은 result 객체:', result);
+            console.log('entity_count:', result.entity_count);
+            console.log('processing_time:', result.processing_time);
+            console.log('entities:', result.entities);
+
             // 통계 표시
-            document.getElementById('entityCount').textContent = result.entity_count;
-            document.getElementById('processingTime').textContent = result.processing_time + 's';
+            document.getElementById('entityCount').textContent = result.entity_count || 0;
+            document.getElementById('processingTime').textContent = (result.processing_time || 0) + 's';
             document.getElementById('ocrEngine').textContent = result.ocr_engine_key;
             document.getElementById('modelUsed').textContent = result.model_key;
 
