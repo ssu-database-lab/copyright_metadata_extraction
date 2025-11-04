@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Universal OCR & NER 엔티티 추출</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -214,6 +215,61 @@
             display: inline-block;
         }
 
+        .model-category {
+            margin-bottom: 20px;
+        }
+
+        .model-category h4 {
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            padding-left: 10px;
+            border-left: 3px solid #4299e1;
+        }
+
+        .metadata-section, .ocr-text-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .metadata-section h4, .ocr-text-section h4 {
+            margin: 0 0 10px 0;
+            color: #2d3748;
+            font-size: 1.1rem;
+        }
+
+        .metadata-content, .ocr-text-content {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .metadata-content pre, .ocr-text-content pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .download-buttons .btn {
+            flex: 1;
+            min-width: 150px;
+        }
+
         .model-name {
             font-weight: 600;
             color: #2d3748;
@@ -361,7 +417,7 @@
         }
 
         .stat-value {
-            font-size: 2rem;
+            font-size: 1rem;
             font-weight: 600;
             color: #4299e1;
         }
@@ -396,6 +452,29 @@
         .entity-count {
             font-size: 2rem;
             font-weight: 700;
+        }
+
+        .entities-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .entities-section h4 {
+            margin: 0 0 15px 0;
+            color: #2d3748;
+            font-size: 1.1rem;
+        }
+
+        .warning {
+            margin-top: 15px;
+            padding: 10px;
+            background: #fed7d7;
+            color: #c53030;
+            border-radius: 4px;
+            font-size: 0.9rem;
         }
 
         .download-btn {
@@ -500,7 +579,7 @@
                         <div>
                             <div class="model-name">Universal OCR</div>
                             <div class="model-desc">통합 OCR 처리 (Google, Mistral, Alibaba Cloud)</div>
-                        </div>
+                            </div>
                     </label>
                 </div> -->
                 
@@ -517,8 +596,8 @@
                                         Google Cloud Vision
                                     </div>
                                     <div class="model-desc">텍스트 분석률 좋음</div>
-                                </div>
-                            </label>
+                        </div>
+                    </label>
                             <label class="model-option">
                                 <input type="radio" name="universal_provider" value="mistral">
                                 <div>
@@ -547,9 +626,9 @@
                                     <div class="model-desc">한국어 문서 특화, 최신 Qwen3 모델</div>
                                 </div>
                             </label>
-                        </div>
-                    </div>
-                    
+                </div>
+            </div>
+
                     <div class="model-selection" id="alibabaModelSelection" style="display: none;">
                         <h4>Alibaba Cloud 모델 선택</h4>
                         <div class="model-options">
@@ -580,7 +659,7 @@
                         </div>
                     </div>
                     
-                    <div class="model-selection">
+            <div class="model-selection">
                         <h4>처리 옵션</h4>
                         <div class="model-options">
                             <label class="model-option checkbox-option">
@@ -598,8 +677,29 @@
                 </div>
             </div>
 
-            <!-- 모델 선택 -->
+            <!-- 처리 방식 선택 -->
             <div class="model-selection">
+                <h3>처리 방식 선택</h3>
+                <div class="model-options">
+                    <label class="model-option selected">
+                        <input type="radio" name="processing_type" value="ner" checked>
+                        <div>
+                            <div class="model-name">NER 엔티티 추출</div>
+                            <div class="model-desc">기존 NER 모델을 사용한 엔티티 추출</div>
+                        </div>
+                    </label>
+                    <label class="model-option">
+                        <input type="radio" name="processing_type" value="llm">
+                        <div>
+                            <div class="model-name">LLM 메타데이터 추출</div>
+                            <div class="model-desc">대형 언어 모델을 사용한 구조화된 메타데이터 추출</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- NER 모델 선택 -->
+            <div class="model-selection" id="nerModelSelection">
                 <h3>NER 모델 선택</h3>
                 <div class="model-options">
                     {% for key, model in models.items() %}
@@ -613,6 +713,138 @@
                         </div>
                     </label>
                     {% endfor %}
+                </div>
+            </div>
+
+            <!-- LLM 모델 선택 -->
+            <div class="model-selection" id="llmModelSelection" style="display: none;">
+                <h3>LLM 모델 선택</h3>
+                <div class="model-options">
+                    <!-- Local Models -->
+                    <div class="model-category">
+                        <h4>로컬 모델</h4>
+                        <div class="model-options">
+                            <label class="model-option selected">
+                                <input type="radio" name="llm_model" value="solar-ko" checked>
+                                <div>
+                                    <div class="model-name">SOLAR-Ko-10.7B</div>
+                                    <div class="model-desc">한국어 특화 모델 (권장)</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="llm_model" value="qwen">
+                                <div>
+                                    <div class="model-name">Qwen2.5-7B</div>
+                                    <div class="model-desc">다국어 모델</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="llm_model" value="lightweight">
+                                <div>
+                                    <div class="model-name">SOLAR-Ko-1.7B</div>
+                                    <div class="model-desc">경량 모델</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="llm_model" value="qwen3">
+                                <div>
+                                    <div class="model-name">Qwen3-4B</div>
+                                    <div class="model-desc">최신 세대 모델</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Cloud Models -->
+                    <div class="model-category">
+                        <h4>클라우드 모델</h4>
+                        <div class="model-options">
+                            <label class="model-option">
+                                <input type="radio" name="llm_model" value="alibaba-qwen-plus">
+                                <div>
+                                    <div class="model-name">Alibaba Qwen-Plus</div>
+                                    <div class="model-desc">클라우드 기반 모델</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="llm_model" value="alibaba-qwen-max">
+                                <div>
+                                    <div class="model-name">Alibaba Qwen-Max</div>
+                                    <div class="model-desc">최고 성능 모델</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="llm_model" value="alibaba-qwen-vl-plus">
+                                <div>
+                                    <div class="model-name">Alibaba Qwen-VL-Plus</div>
+                                    <div class="model-desc">비전-언어 모델</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 문서 유형 선택 (LLM용) -->
+            <div class="model-selection" id="documentTypeSelection" style="display: none;">
+                <h3>문서 유형 선택</h3>
+                <div class="model-options">
+                    <label class="model-option selected">
+                        <input type="radio" name="document_type" value="기타문서" checked>
+                        <div>
+                            <div class="model-name">기타문서</div>
+                            <div class="model-desc">일반적인 문서</div>
+                        </div>
+                    </label>
+                    <label class="model-option">
+                        <input type="radio" name="document_type" value="계약서">
+                        <div>
+                            <div class="model-name">계약서</div>
+                            <div class="model-desc">계약 관련 문서</div>
+                        </div>
+                    </label>
+                    <label class="model-option">
+                        <input type="radio" name="document_type" value="동의서">
+                        <div>
+                            <div class="model-name">동의서</div>
+                            <div class="model-desc">동의 관련 문서</div>
+                        </div>
+                    </label>
+                    <label class="model-option">
+                        <input type="radio" name="document_type" value="저작재산권 양도동의서">
+                        <div>
+                            <div class="model-name">저작재산권 양도동의서</div>
+                            <div class="model-desc">저작권 양도 관련 문서</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- NER 모델 선택 (LLM용) -->
+            <div class="model-selection" id="nerModelSelection" style="display: none;">
+                <h3>NER 모델 선택</h3>
+                <div class="model-options">
+                    <label class="model-option selected">
+                        <input type="radio" name="ner_model" value="klue-roberta-large" checked>
+                        <div>
+                            <div class="model-name">KLUE RoBERTa Large</div>
+                            <div class="model-desc">다국어 특화 모델 (최고 정확도)</div>
+                        </div>
+                    </label>
+                    <label class="model-option">
+                        <input type="radio" name="ner_model" value="google-bert">
+                        <div>
+                            <div class="model-name">Google mBERT</div>
+                            <div class="model-desc">제일 가벼운 모델 (빠른 속도)</div>
+                        </div>
+                    </label>
+                    <label class="model-option">
+                        <input type="radio" name="ner_model" value="xlm-roberta">
+                        <div>
+                            <div class="model-name">XLM-RoBERTa Large</div>
+                            <div class="model-desc">한국어 특화 모델</div>
+                        </div>
+                    </label>
                 </div>
             </div>
 
@@ -647,7 +879,9 @@
                 <ul class="progress-steps">
                     <li class="progress-step" id="step1">파일 변환 중...</li>
                     <li class="progress-step" id="step2">OCR 텍스트 추출 중...</li>
-                    <li class="progress-step" id="step3">처리 완료 중...</li>
+                    <li class="progress-step" id="step3" style="display: none;">LLM 메타데이터 추출 중...</li>
+                    <li class="progress-step" id="step4" style="display: none;">NER 엔티티 추출 중...</li>
+                    <li class="progress-step" id="step5" style="display: none;">처리 완료 중...</li>
                 </ul>
                 <div class="spinner show"></div>
             </div>
@@ -734,13 +968,13 @@
 
         // Universal OCR 제공자 선택 UI
         document.querySelectorAll('input[name="universal_provider"]').forEach(radio => {
-            radio.parentElement.addEventListener('click', function() {
+                radio.parentElement.addEventListener('click', function() {
                 document.querySelectorAll('input[name="universal_provider"]').forEach(r => {
-                    r.parentElement.classList.remove('selected');
-                });
-                this.classList.add('selected');
-                this.querySelector('input[type="radio"]').checked = true;
-                
+                            r.parentElement.classList.remove('selected');
+                        });
+                        this.classList.add('selected');
+                        this.querySelector('input[type="radio"]').checked = true;
+                        
                 // Alibaba 모델 선택 표시/숨김
                 const alibabaModelSelection = document.getElementById('alibabaModelSelection');
                 if (this.querySelector('input[type="radio"]').value === 'alibaba') {
@@ -819,10 +1053,38 @@
             });
         }
 
+        // 처리 방식 선택 이벤트
+        document.querySelectorAll('input[name="processing_type"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const nerModelSelection = document.getElementById('nerModelSelection');
+                const llmModelSelection = document.getElementById('llmModelSelection');
+                const documentTypeSelection = document.getElementById('documentTypeSelection');
+                const universalOcrSettings = document.getElementById('universalOcrSettings');
+                
+                if (this.value === 'ner') {
+                    nerModelSelection.style.display = 'block';
+                    llmModelSelection.style.display = 'none';
+                    documentTypeSelection.style.display = 'none';
+                    universalOcrSettings.style.display = 'block';
+                } else if (this.value === 'llm') {
+                    llmModelSelection.style.display = 'block';
+                    documentTypeSelection.style.display = 'block';
+                    nerModelSelection.style.display = 'block';
+                    universalOcrSettings.style.display = 'block';
+                }
+            });
+        });
+
         // 페이지 로드 시 이전 선택 복원
         window.addEventListener('DOMContentLoaded', function() {
             loadPreviousSelections();
             addNerModelIcons();
+            
+            // 초기 상태 설정
+            const processingType = document.querySelector('input[name="processing_type"]:checked');
+            if (processingType) {
+                processingType.dispatchEvent(new Event('change'));
+            }
         });
 
         // 파일 업로드 영역 설정
@@ -888,101 +1150,413 @@
                 return;
             }
 
-            const selectedModelRadio = document.querySelector('input[name="model"]:checked');
-            
+            const selectedProcessingType = document.querySelector('input[name="processing_type"]:checked');
+
             // UI 초기화
             document.getElementById('uploadBtn').disabled = true;
             document.getElementById('progressSection').classList.add('show');
             document.getElementById('resultSection').classList.remove('show');
             document.getElementById('errorMessage').classList.remove('show');
             
-            updateProgress(0, 1);
+            // Determine workflow type and set max steps + labels
+            const workflowType = selectedProcessingType.value;
+            let maxSteps = 4; // Default for NER
+            if (workflowType === 'llm') {
+                maxSteps = 5; // LLM workflow: 파일 변환 → OCR → LLM 추출 → NER 추출 → 완료
+                // Set labels for LLM workflow
+                document.getElementById('step3').textContent = 'LLM 메타데이터 추출 중...';
+                document.getElementById('step4').textContent = 'NER 엔티티 추출 중...';
+                document.getElementById('step5').textContent = '처리 완료 중...';
+            } else if (workflowType === 'ner') {
+                maxSteps = 4; // NER workflow: 파일 변환 → OCR → NER 추출 → 완료
+                // Set labels for NER workflow - use step4 for NER, step5 for completion
+                document.getElementById('step3').textContent = 'LLM 메타데이터 추출 중...'; // Hidden but keep text
+                document.getElementById('step4').textContent = 'NER 엔티티 추출 중...';
+                document.getElementById('step5').textContent = '처리 완료 중...';
+            }
+            
+            updateProgress(0, 1, false, maxSteps, workflowType);
 
             try {
                 const formData = new FormData();
                 formData.append('file', selectedFile);
-                formData.append('model', selectedModelRadio.value);
 
-                // Universal OCR 처리
+                if (selectedProcessingType.value === 'ner') {
+                    // NER 처리 - 올바른 엔드포인트 사용
+                    const selectedModelRadio = document.querySelector('input[name="model"]:checked');
                     const selectedProviderRadio = document.querySelector('input[name="universal_provider"]:checked');
-                    const selectedAlibabaModelRadio = document.querySelector('input[name="alibaba_model"]:checked');
-                    const streamingModeCheckbox = document.getElementById('streamingMode');
+                    
+                    if (!selectedModelRadio) {
+                        alert('NER 모델을 선택해주세요');
+                        return;
+                    }
                     
                     if (!selectedProviderRadio) {
-                        alert('Universal OCR 제공자를 선택해주세요');
+                        alert('OCR 제공자를 선택해주세요');
                         return;
                     }
 
-                    formData.append('provider', selectedProviderRadio.value);
+                    // NER 파라미터 설정
+                    formData.append('model', selectedModelRadio.value);
+                    formData.append('ocr_provider', selectedProviderRadio.value);
+                    
+                    // Alibaba 모델이 선택된 경우 모델 정보 추가
+                    const selectedAlibabaModelRadio = document.querySelector('input[name="alibaba_model"]:checked');
                     if (selectedAlibabaModelRadio) {
-                        formData.append('model', selectedAlibabaModelRadio.value);
-                    }
-                    if (streamingModeCheckbox.checked) {
-                        formData.append('stream', 'true');
+                        formData.append('ocr_model', selectedAlibabaModelRadio.value);
                     }
 
-                    updateProgress(33, 2);
+                updateProgress(33, 2, false, 4, 'ner');
 
-                    const response = await fetch('/api/ocr-universal', {
+                    const response = await fetch('/api/ner-extract', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                    // Handle NER response (no streaming for NER)
+                const result = await response.json();
+
+                if (result.success) {
+                    updateProgress(66, 3, false, 4, 'ner');
+                    updateProgress(100, 4, true, 4, 'ner');
+                    
+                    setTimeout(() => {
+                            showNerResults(result);
+                        document.getElementById('progressSection').classList.remove('show');
+                    }, 500);
+                } else {
+                        showError(result.error || 'NER 처리 중 오류가 발생했습니다');
+                    }
+                } else if (selectedProcessingType.value === 'llm') {
+                    // LLM 처리
+                    const selectedLlmModelRadio = document.querySelector('input[name="llm_model"]:checked');
+                    const selectedDocumentTypeRadio = document.querySelector('input[name="document_type"]:checked');
+                    const selectedOcrProviderRadio = document.querySelector('input[name="universal_provider"]:checked');
+                    const selectedAlibabaModelRadio = document.querySelector('input[name="alibaba_model"]:checked');
+                    const selectedNerModelRadio = document.querySelector('input[name="ner_model"]:checked');
+                    
+                    if (!selectedLlmModelRadio) {
+                        alert('LLM 모델을 선택해주세요');
+                        return;
+                    }
+                    
+                    if (!selectedOcrProviderRadio) {
+                        alert('OCR 제공자를 선택해주세요');
+                        return;
+                    }
+                    
+                    if (!selectedNerModelRadio) {
+                        alert('NER 모델을 선택해주세요');
+                        return;
+                    }
+                    
+                    formData.append('model_name', selectedLlmModelRadio.value);
+                    formData.append('document_type', selectedDocumentTypeRadio.value);
+                    formData.append('ocr_provider', selectedOcrProviderRadio.value);
+                    formData.append('ner_model', selectedNerModelRadio.value);
+                    
+                    // Alibaba 모델이 선택된 경우 모델 정보 추가
+                    if (selectedAlibabaModelRadio) {
+                        formData.append('ocr_model', selectedAlibabaModelRadio.value);
+                    }
+
+                    // Enable streaming for real-time progress
+                    formData.append('stream', 'true');
+                    
+                    updateProgress(10, 1, false, 5, 'llm');
+
+                    const response = await fetch('/api/llm-extract', {
                         method: 'POST',
                         body: formData
                     });
 
-                    // Check if this is a streaming response
-                    if (streamingModeCheckbox.checked) {
-                        // Show result section for streaming
-                        document.getElementById('resultSection').classList.add('show');
-                        
-                        // Handle streaming response
-                        const reader = response.body.getReader();
-                        const decoder = new TextDecoder();
-                        let streamingText = '';
-                        
-                        // Create streaming result display
-                        const streamingDiv = document.createElement('div');
-                        streamingDiv.className = 'streaming-result';
-                        streamingDiv.innerHTML = '<h3>실시간 OCR 결과</h3><div class="streaming-content"></div>';
-                        document.getElementById('resultSection').appendChild(streamingDiv);
-                        
-                        const contentDiv = streamingDiv.querySelector('.streaming-content');
-                        
-                        try {
-                            while (true) {
-                                const { done, value } = await reader.read();
-                                if (done) break;
-                                
-                                const chunk = decoder.decode(value, { stream: true });
-                                streamingText += chunk;
-                                contentDiv.textContent = streamingText;
-                                contentDiv.scrollTop = contentDiv.scrollHeight;
-                            }
-                            
-                            // Update statistics for streaming results
-                            updateStreamingStats(streamingText, selectedProviderRadio.value, selectedAlibabaModelRadio ? selectedAlibabaModelRadio.value : null);
-                            
-                            updateProgress(100, 3, true);
-                            setTimeout(() => {
-                                document.getElementById('progressSection').classList.remove('show');
-                            }, 500);
-                            
-                        } catch (error) {
-                            showError('스트리밍 처리 중 오류가 발생했습니다: ' + error.message);
-                        }
-                    } else {
-                        // Handle regular JSON response
-                        const result = await response.json();
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
 
-                        if (result.success) {
-                            updateProgress(100, 3, true);
-                            
-                            setTimeout(() => {
-                                showUniversalOcrResults(result);
-                                document.getElementById('progressSection').classList.remove('show');
-                            }, 500);
-                        } else {
-                            showError(result.error || 'Universal OCR 처리 중 오류가 발생했습니다');
+                    // Handle SSE stream
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    let finalResult = null;
+                    let hasError = false;
+                    let errorMessage = null;
+                    let allMessages = []; // Debug: track all messages
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        
+                        if (done) {
+                            // Process remaining buffer
+                            if (buffer.trim()) {
+                                const lines = buffer.split('\n');
+                                for (const line of lines) {
+                                    if (line.trim() && line.startsWith('data: ')) {
+                                        try {
+                                            const data = JSON.parse(line.slice(6));
+                                            allMessages.push(data); // Debug
+                                            
+                                            // Update progress based on step and percent
+                                            if (data.step !== undefined && data.percent !== undefined) {
+                                                updateProgress(data.percent, data.step, false, 5, 'llm');
+                                            }
+                                            
+                                            // Check for final result
+                                            if (data.result) {
+                                                console.log('Received final result:', data.result);
+                                                finalResult = data.result;
+                                                updateProgress(100, 5, true, 5, 'llm');
+                                            }
+                                            
+                                            // Check for errors
+                                            if (data.error) {
+                                                console.error('Error in SSE stream:', data.error);
+                                                hasError = true;
+                                                errorMessage = data.error;
+                                                // Still check if there's a result in the error response
+                                                if (data.result) {
+                                                    finalResult = data.result;
+                                                }
+                                            }
+                                        } catch (e) {
+                                            if (e instanceof Error && e.message !== 'Unexpected end of JSON input') {
+                                                console.error('Error parsing SSE data:', e, 'Line:', line);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                        
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+                        
+                        for (const line of lines) {
+                            if (line.trim() && line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    
+                                    // Update progress based on step and percent
+                                    if (data.step !== undefined && data.percent !== undefined) {
+                                        updateProgress(data.percent, data.step, false, 5, 'llm');
+                                    }
+                                    
+                                    // Check for final result
+                                    if (data.result) {
+                                        finalResult = data.result;
+                                        updateProgress(100, 5, true, 5, 'llm');
+                                    }
+                                    
+                                    // Check for errors
+                                    if (data.error) {
+                                        hasError = true;
+                                        errorMessage = data.error;
+                                        // Still check if there's a result in the error response
+                                        if (data.result) {
+                                            finalResult = data.result;
+                                        }
+                                    }
+                                } catch (e) {
+                                    if (e instanceof Error && e.message !== 'Unexpected end of JSON input') {
+                                        console.error('Error parsing SSE data:', e);
+                                    }
+                                }
+                            }
                         }
                     }
+
+                    const result = finalResult;
+                    
+                    // Debug: log all messages received
+                    console.log('All SSE messages received:', allMessages);
+                    console.log('Final result:', finalResult);
+                    
+                    if (hasError && !result) {
+                        throw new Error(errorMessage || '처리 중 오류가 발생했습니다');
+                    }
+                    
+                    if (!result) {
+                        console.error('No result received. Total messages:', allMessages.length);
+                        console.error('Last message:', allMessages[allMessages.length - 1]);
+                        throw new Error('No result received from server');
+                    }
+                    
+                    if (!result.success) {
+                        throw new Error(result.error || 'LLM 처리 중 오류가 발생했습니다');
+                    }
+
+                    // 결과 표시
+                    document.getElementById('resultSection').classList.add('show');
+                    
+                    // LLM 결과 표시
+                    const resultDiv = document.getElementById('resultSection');
+                    resultDiv.innerHTML = `
+                        <div class="result-content">
+                            <h3>LLM 메타데이터 추출 결과</h3>
+                            <div class="result-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">파일명:</span>
+                                    <span class="stat-value">${result.filename}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">사용 모델:</span>
+                                    <span class="stat-value">${result.model_used}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">문서 유형:</span>
+                                    <span class="stat-value">${result.document_type}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">OCR 제공자:</span>
+                                    <span class="stat-value">${result.ocr_provider}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">NER 모델:</span>
+                                    <span class="stat-value">${result.ner_model || 'N/A'}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">추출된 엔티티:</span>
+                                    <span class="stat-value">${result.entity_count || 0}개</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">신뢰도:</span>
+                                    <span class="stat-value">${(result.confidence * 100).toFixed(1)}%</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">처리 시간:</span>
+                                    <span class="stat-value">${result.extraction_time.toFixed(2)}초</span>
+                                </div>
+                            </div>
+                            
+                            <div class="metadata-section">
+                                <h4>추출된 메타데이터</h4>
+                                <div class="metadata-content">
+                                    <pre>${JSON.stringify(result.metadata, null, 2)}</pre>
+                                </div>
+                            </div>
+                            
+                            ${result.entities && Object.keys(result.entities).length > 0 ? `
+                            <div class="entities-section">
+                                <h4>추출된 엔티티 (${result.entity_count}개)</h4>
+                                <div class="entities-grid">
+                                    ${Object.entries(result.entities).map(([type, count]) => `
+                                        <div class="entity-card">
+                                            <div class="entity-type">${type}</div>
+                                            <div class="entity-count">${count}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                ${result.ner_error ? `<div class="warning">NER 처리 중 오류: ${result.ner_error}</div>` : ''}
+                            </div>
+                            ` : ''}
+                            
+                            <div class="ocr-text-section">
+                                <h4>OCR 텍스트</h4>
+                                <div class="ocr-text-content">
+                                    <pre>${result.ocr_text}</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="download-buttons">
+                                <button class="btn" id="downloadMetadataBtn">메타데이터 다운로드</button>
+                                <button class="btn" id="downloadNerBtn">NER 엔티티 다운로드</button>
+                                <button class="btn" id="downloadOcrTextBtn">OCR 텍스트 다운로드</button>
+                                <button class="btn" id="downloadFullResultBtn">전체 결과 다운로드</button>
+                            </div>
+                        </div>
+                    `;
+
+                    // 다운로드 버튼 설정 (서버에서 다운로드)
+                    const metadataBtn = document.getElementById('downloadMetadataBtn');
+                    metadataBtn.onclick = () => {
+                        window.location.href = `/download/${result.request_id}?type=llm`;
+                    };
+
+                    const nerBtn = document.getElementById('downloadNerBtn');
+                    nerBtn.onclick = () => {
+                        window.location.href = `/download/${result.request_id}?type=entities`;
+                    };
+
+                    const ocrTextBtn = document.getElementById('downloadOcrTextBtn');
+                    ocrTextBtn.onclick = () => {
+                        const blob = new Blob([result.ocr_text], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${result.filename}_ocr_text.txt`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    };
+
+                    const fullResultBtn = document.getElementById('downloadFullResultBtn');
+                    fullResultBtn.onclick = async () => {
+                        try {
+                            // Create a zip file with all result files
+                            const JSZip = window.JSZip || (await import('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js')).default;
+                            const zip = new JSZip();
+                            
+                            // Add LLM metadata
+                            zip.file('llm_metadata.json', JSON.stringify(result, null, 2));
+                            
+                            // Fetch and add summary.json if it exists
+                            try {
+                                const summaryResponse = await fetch(`/download/${result.request_id}?type=stats`);
+                                if (summaryResponse.ok) {
+                                    const summaryData = await summaryResponse.text();
+                                    zip.file('summary.json', summaryData);
+                                }
+                            } catch (e) {
+                                console.log('Summary file not found, skipping...');
+                            }
+                            
+                            // Fetch and add OCR result files
+                            try {
+                                // Look for OCR result files in the result directory
+                                const ocrResponse = await fetch(`/api/list-files/${result.request_id}`);
+                                if (ocrResponse.ok) {
+                                    const files = await ocrResponse.json();
+                                    for (const file of files) {
+                                        if (file.includes('_ocr_result.json')) {
+                                            const fileResponse = await fetch(`/download/${result.request_id}/${file}`);
+                                            if (fileResponse.ok) {
+                                                const fileData = await fileResponse.text();
+                                                zip.file(file, fileData);
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                console.log('OCR result files not found, skipping...');
+                            }
+                            
+                            // Generate and download zip
+                            const zipBlob = await zip.generateAsync({type: 'blob'});
+                            const url = URL.createObjectURL(zipBlob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${result.filename}_complete_results.zip`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            
+                        } catch (error) {
+                            console.error('Error creating zip file:', error);
+                            // Fallback to single file download
+                            const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${result.filename}_llm_result.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }
+                    };
+
+                    setTimeout(() => {
+                        document.getElementById('progressSection').classList.remove('show');
+                    }, 500);
+                }
 
             } catch (error) {
                 console.error('Upload error:', error);
@@ -992,18 +1566,43 @@
             }
         }
 
-        function updateProgress(percent, step, completed = false) {
+        function updateProgress(percent, step, completed = false, maxSteps = 3, workflowType = 'ner') {
             document.getElementById('progressBar').style.width = percent + '%';
             document.getElementById('progressBar').textContent = percent + '%';
 
-            for (let i = 1; i <= 3; i++) {
+            // Map logical steps to DOM step IDs based on workflow type
+            // stepMapping[logicalStep - 1] = DOM step ID
+            let stepMapping = [];
+            if (workflowType === 'llm') {
+                // LLM: logical step 1→DOM step1, 2→2, 3→3, 4→4, 5→5
+                stepMapping = [1, 2, 3, 4, 5];
+            } else {
+                // NER: logical step 1→DOM step1, 2→2, 3→4 (skip 3), 4→5
+                stepMapping = [1, 2, 4, 5];
+            }
+
+            // Show/hide and update steps
+            for (let i = 1; i <= 5; i++) {
                 const stepEl = document.getElementById(`step${i}`);
-                stepEl.classList.remove('active', 'completed');
-                
-                if (i < step || completed) {
-                    stepEl.classList.add('completed');
-                } else if (i === step) {
-                    stepEl.classList.add('active');
+                if (stepEl) {
+                    // Find which logical step this DOM step represents
+                    const logicalStep = stepMapping.indexOf(i) + 1;
+                    const isInWorkflow = stepMapping.includes(i);
+                    const isVisible = isInWorkflow && logicalStep <= maxSteps;
+                    
+                    if (isVisible) {
+                        stepEl.style.display = '';
+                        stepEl.classList.remove('active', 'completed');
+                        
+                        if (logicalStep < step || completed) {
+                            stepEl.classList.add('completed');
+                        } else if (logicalStep === step) {
+                            stepEl.classList.add('active');
+                        }
+                    } else {
+                        stepEl.style.display = 'none';
+                        stepEl.classList.remove('active', 'completed');
+                    }
                 }
             }
         }
@@ -1110,6 +1709,58 @@
             document.getElementById('processingTime').textContent = result.processing_time + 's';
             document.getElementById('ocrEngine').textContent = result.ocr_engine.split(' ')[0];
             document.getElementById('modelUsed').textContent = result.model.split(' ')[0];
+
+            // 엔티티 타입별 카드 생성
+            const entitiesGrid = document.getElementById('entitiesGrid');
+            entitiesGrid.innerHTML = '';
+
+            const entities = result.entities;
+            const entityTypes = {
+                'NAME': '이름',
+                'DATE': '날짜',
+                'COMPANY': '회사/기관',
+                'LOCATION': '장소',
+                'ADDRESS': '주소',
+                'PHONE': '전화번호',
+                'EMAIL': '이메일',
+                'MONEY': '금액',
+                'OTHER': '기타'
+            };
+
+            for (const [type, koreanName] of Object.entries(entityTypes)) {
+                const count = entities[type] || 0;
+                if (count > 0) {
+                    const card = document.createElement('div');
+                    card.className = 'entity-card';
+                    card.innerHTML = `
+                        <div class="entity-type">${koreanName}</div>
+                        <div class="entity-count">${count}</div>
+                    `;
+                    entitiesGrid.appendChild(card);
+                }
+            }
+
+            // 결과 영역 표시
+            document.getElementById('resultSection').classList.add('show');
+
+            // 다운로드 버튼 설정
+            document.getElementById('downloadEntitiesBtn').onclick = () => {
+                window.location.href = `/download/${currentRequestId}?type=entities`;
+            };
+            
+            document.getElementById('downloadStatsBtn').onclick = () => {
+                window.location.href = `/download/${currentRequestId}?type=stats`;
+            };
+        }
+
+        function showNerResults(result) {
+            currentRequestId = result.request_id;
+
+            // 통계 표시
+            document.getElementById('entityCount').textContent = result.entity_count;
+            document.getElementById('processingTime').textContent = result.processing_time + 's';
+            document.getElementById('ocrEngine').textContent = result.ocr_engine_key;
+            document.getElementById('modelUsed').textContent = result.model_key;
 
             // 엔티티 타입별 카드 생성
             const entitiesGrid = document.getElementById('entitiesGrid');

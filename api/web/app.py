@@ -23,11 +23,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import asyncio
+import json
 
 # 상위 디렉토리(api)를 경로에 추가
 current_dir = Path(__file__).parent
@@ -39,6 +41,9 @@ from api import pdf_to_image, ner_predict
 
 # 새로운 OCR 모듈 import
 from module.ocr import UniversalOCRProcessor
+
+# LLM extraction 모듈 import
+from module.llm_extraction import LLMExtractionProcessor
 
 # FastAPI 앱 초기화
 app = FastAPI(
@@ -112,12 +117,39 @@ def check_ocr_availability() -> Dict[str, bool]:
             available['alibaba'] = True
         
         return available
-        
+            
     except Exception as e:
         logger.error(f"OCR 설정 확인 중 오류: {e}")
-        return available
+    return available
 
 OCR_AVAILABILITY = check_ocr_availability()
+
+# OCR 엔진 정보 정의
+AVAILABLE_OCR_ENGINES = {
+    'google': {
+        'name': 'Google Cloud Vision API',
+        'available': OCR_AVAILABILITY['google'],
+        'setup_guide': 'Google Cloud credentials JSON 파일을 설정하세요'
+    },
+    'mistral': {
+        'name': 'Mistral OCR API',
+        'available': OCR_AVAILABILITY['mistral'],
+        'setup_guide': 'MISTRAL_API_KEY 환경변수를 설정하세요'
+    },
+    'naver': {
+        'name': 'Naver CLOVA OCR API',
+        'available': OCR_AVAILABILITY['naver'],
+        'setup_guide': 'NAVER_OCR_API_URL과 NAVER_OCR_SECRET_KEY 환경변수를 설정하세요'
+    },
+    'alibaba': {
+        'name': 'Alibaba Cloud Qwen3-VL',
+        'available': OCR_AVAILABILITY['alibaba'],
+        'setup_guide': 'DASHSCOPE_API_KEY 또는 ALIBABA_API_KEY 환경변수를 설정하세요'
+    }
+}
+
+# LLM extraction processor 초기화
+llm_processor = LLMExtractionProcessor(output_dir=str(Path(__file__).parent / "results"))
 
 # 사용 가능한 NER 모델
 AVAILABLE_MODELS = {
@@ -284,7 +316,9 @@ async def process_document(file_path: Path, output_dir: Path, model_name: str, o
             
             # 결과 수집
             result['success'] = True
-            result['entities'] = ner_result.get('entity_types', {})
+            # Extract entity_types_count from statistics
+            statistics = ner_result.get('statistics', {})
+            result['entities'] = statistics.get('entity_types_count', {})
             result['entity_count'] = ner_result.get('total_entities', 0)
             result['output_files'] = ner_result.get('output_files', [])
             
@@ -299,6 +333,137 @@ async def process_document(file_path: Path, output_dir: Path, model_name: str, o
         logger.error(f"처리 중 예상치 못한 오류: {e}", exc_info=True)
         result['error'] = f'처리 중 오류 발생: {str(e)}'
         return result
+
+async def process_document_with_universal_ocr(file_path: Path, output_dir: Path, model_name: str, ocr_provider: str, ocr_model: str = None) -> Dict[str, Any]:
+    """
+    Universal OCR을 사용한 문서 처리 파이프라인
+    
+    1. Universal OCR 처리 (PDF → 이미지 변환 포함)
+    2. NER 엔티티 추출
+    """
+    result = {
+        'success': False,
+        'steps': {},
+        'entities': [],
+        'entity_count': 0,
+        'model_name': model_name,
+        'ocr_provider': ocr_provider,
+        'ocr_model': ocr_model
+    }
+    
+    try:
+        # 1단계: Universal OCR 처리 (PDF 변환 포함)
+        logger.info(f"Step 1: Universal OCR 처리 (제공자: {ocr_provider}, 모델: {ocr_model})")
+        ocr_dir = output_dir / "ocr"
+        
+        try:
+            # Universal OCR Processor 사용
+            processor = UniversalOCRProcessor(provider=ocr_provider, output_dir=str(ocr_dir), model=ocr_model)
+            
+            # OCR 처리 실행 (PDF → 이미지 변환 자동 처리)
+            ocr_result = processor.process_single_file(str(file_path))
+            
+            result['steps']['ocr'] = {
+                'success': ocr_result.get('status') == 'success',
+                'files_processed': ocr_result.get('total_pages', 0),
+                'time': ocr_result.get('processing_time', 0),
+                'provider': ocr_provider,
+                'model': ocr_model
+            }
+            
+            if ocr_result.get('status') != 'success':
+                error_msg = ocr_result.get('error', 'OCR 처리 실패')
+                result['error'] = f'OCR 처리 실패: {error_msg}'
+                return result
+            
+            # OCR 텍스트 추출
+            ocr_text = ocr_result.get('full_text', '')
+            if not ocr_text:
+                result['error'] = 'OCR에서 텍스트를 추출할 수 없습니다'
+                return result
+            
+            logger.info(f"OCR 텍스트 추출 완료: {len(ocr_text)} 문자")
+            
+        except Exception as e:
+            error_str = str(e)
+            result['error'] = f'OCR 처리 오류: {error_str}'
+            result['steps']['ocr'] = {'success': False, 'error': str(e)}
+            return result
+        
+        # 2단계: NER 엔티티 추출
+        logger.info(f"Step 2: NER 엔티티 추출 (모델: {model_name})")
+        ner_dir = output_dir / "ner"
+        
+        try:
+            # OCR 텍스트를 임시 파일로 저장
+            temp_text_file = ocr_dir / "temp_ocr_text.txt"
+            with open(temp_text_file, 'w', encoding='utf-8') as f:
+                f.write(ocr_text)
+            
+            ner_result = ner_predict(
+                str(ocr_dir),  # OCR 결과 디렉토리
+                str(ner_dir),
+                model_name=model_name,
+                debug=False
+            )
+            
+            result['steps']['ner'] = {
+                'success': ner_result.get('success', False),
+                'entity_count': ner_result.get('total_entities', 0),
+                'time': ner_result.get('processing_time', 0)
+            }
+            
+            if not ner_result.get('success'):
+                result['error'] = 'NER 처리 실패: ' + ner_result.get('error', '알 수 없는 오류')
+                return result
+            
+            # 결과 수집
+            result['success'] = True
+            # Extract entity_types_count from statistics
+            statistics = ner_result.get('statistics', {})
+            result['entities'] = statistics.get('entity_types_count', {})
+            result['entity_count'] = ner_result.get('total_entities', 0)
+            result['output_files'] = ner_result.get('output_files', [])
+            
+        except Exception as e:
+            result['error'] = f'NER 처리 오류: {str(e)}'
+            result['steps']['ner'] = {'success': False, 'error': str(e)}
+            return result
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"처리 중 예상치 못한 오류: {e}", exc_info=True)
+        result['error'] = f'처리 중 오류 발생: {str(e)}'
+        return result
+
+def _format_ner_entities(ner_result: Dict[str, Any]) -> Dict[str, int]:
+    """NER 결과에서 엔티티 타입별 개수를 추출"""
+    # Try to get entity_types_count from statistics first (new format)
+    statistics = ner_result.get('statistics', {})
+    if statistics and 'entity_types_count' in statistics:
+        return statistics.get('entity_types_count', {})
+    
+    # Fallback to old format (entities dict)
+    entities_data = ner_result.get('entities', {})
+    entity_types_count = {}
+    
+    for entity_type, entity_list in entities_data.items():
+        if isinstance(entity_list, list):
+            entity_types_count[entity_type] = len(entity_list)
+    
+    return entity_types_count
+
+def _count_ner_entities(ner_result: Dict[str, Any]) -> int:
+    """NER 결과에서 총 엔티티 개수를 계산"""
+    entities_data = ner_result.get('entities', {})
+    total_entities = 0
+    
+    for entity_type, entity_list in entities_data.items():
+        if isinstance(entity_list, list):
+            total_entities += len(entity_list)
+    
+    return total_entities
 
 # ============================================================================
 # 라우트 정의
@@ -414,7 +579,7 @@ async def download_result(request_id: str, type: str = "entities"):
     
     Args:
         request_id: 요청 ID
-        type: 다운로드 타입 ("entities" 또는 "stats")
+        type: 다운로드 타입 ("entities", "stats", "llm")
     """
     try:
         result_dir = RESULTS_DIR / request_id
@@ -431,6 +596,16 @@ async def download_result(request_id: str, type: str = "entities"):
             
             # 첫 번째 엔티티 파일 사용 (원본 파일명 유지)
             file_path = entities_files[0]
+            filename = file_path.name
+        elif type == "llm":
+            # LLM 메타데이터 파일 찾기 (llm_metadata.json)
+            llm_files = list(result_dir.rglob("llm_metadata.json"))
+            
+            if not llm_files:
+                raise HTTPException(status_code=404, detail="LLM 메타데이터 파일을 찾을 수 없습니다")
+            
+            # 첫 번째 LLM 파일 사용
+            file_path = llm_files[0]
             filename = file_path.name
         else:
             # 통계 리포트 파일 찾기 (summary.json)
@@ -589,8 +764,456 @@ async def api_info():
         'version': '2.0.0',
         'framework': 'FastAPI',
         'models': AVAILABLE_MODELS,
-        'universal_ocr_providers': [k for k, v in OCR_AVAILABILITY.items() if v]
+        'universal_ocr_providers': [k for k, v in OCR_AVAILABILITY.items() if v],
+        'llm_models': llm_processor.get_available_models()
     }
+
+def _send_progress_update(message: str, step: int, percent: int, data: Dict = None):
+    """Helper function to format SSE progress update"""
+    update = {
+        "message": message,
+        "step": step,
+        "percent": percent,
+        "timestamp": datetime.now().isoformat()
+    }
+    if data:
+        update.update(data)
+    sse_message = f"data: {json.dumps(update, ensure_ascii=False)}\n\n"
+    logger.debug(f"SSE update: step={step}, percent={percent}, has_result={'result' in update}")
+    return sse_message
+
+@app.post("/api/llm-extract")
+async def llm_extract_metadata(
+    file: UploadFile = File(...),
+    model_name: str = Form(default="solar-ko"),
+    document_type: str = Form(default="기타문서"),
+    ocr_provider: str = Form(default="google"),
+    ocr_model: str = Form(default=None),
+    ner_model: str = Form(default="klue-roberta-large"),
+    stream: bool = Form(default=False)
+):
+    """LLM을 사용한 메타데이터 추출 (SSE 지원)"""
+    
+    # CRITICAL: Read file content BEFORE creating the async generator
+    # FastAPI closes the file handle after the request handler starts,
+    # so we must read it synchronously here
+    try:
+        file_content = await file.read()
+        filename = file.filename
+    except Exception as e:
+        logger.error(f"파일 읽기 오류: {e}")
+        error_response = {
+            "success": False,
+            "error": f"파일 읽기 오류: {str(e)}"
+        }
+        if stream:
+            async def error_stream():
+                yield _send_progress_update(f"파일 읽기 오류: {str(e)}", 0, 0, {"error": f"파일 읽기 오류: {str(e)}", "result": error_response})
+            return StreamingResponse(
+                error_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no"
+                }
+            )
+        else:
+            return JSONResponse(content=error_response, status_code=400)
+    
+    async def process_with_progress():
+        """Process LLM extraction with progress updates"""
+        # Capture outer scope variables
+        captured_filename = filename
+        
+        try:
+            # 파일 검증
+            if not captured_filename:
+                yield _send_progress_update("파일명이 비어있습니다", 0, 0, {"error": "파일명이 비어있습니다"})
+                return
+            
+            if not allowed_file(captured_filename):
+                error_msg = f'지원하지 않는 파일 형식입니다. 허용: {", ".join(ALLOWED_EXTENSIONS)}'
+                yield _send_progress_update(error_msg, 0, 0, {"error": error_msg})
+                return
+            
+            # NER 모델 검증
+            if ner_model not in AVAILABLE_MODELS:
+                yield _send_progress_update("잘못된 NER 모델 선택", 0, 0, {"error": "잘못된 NER 모델 선택"})
+                return
+            
+            # 파일 저장
+            sanitized_filename = secure_filename(captured_filename)
+            request_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            
+            upload_path = UPLOAD_DIR / request_id / sanitized_filename
+            upload_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(upload_path, 'wb') as f:
+                f.write(file_content)
+            
+            file_size_mb = len(file_content) / (1024 * 1024)
+            logger.info(f"LLM 처리 시작: {sanitized_filename} ({file_size_mb:.2f}MB), 모델: {model_name}, OCR: {ocr_provider}")
+            
+            yield _send_progress_update("파일 업로드 완료", 1, 10, {"request_id": request_id})
+            
+            # 결과 디렉토리
+            result_dir = RESULTS_DIR / request_id
+            result_dir.mkdir(parents=True, exist_ok=True)
+            
+            # OCR 처리 (Universal OCR 사용)
+            yield _send_progress_update("OCR 텍스트 추출 중...", 2, 20)
+            logger.info(f"LLM 추출을 위한 OCR 처리 시작: provider={ocr_provider}, model={ocr_model}")
+            
+            # Provider name mapping
+            provider_mapping = {
+                "google": "google",
+                "mistral": "mistral", 
+                "alibaba": "alibaba"
+            }
+            mapped_provider = provider_mapping.get(ocr_provider, ocr_provider)
+            
+            # Universal OCR Processor 사용
+            ocr_dir = result_dir / "ocr"
+            ocr_dir.mkdir(parents=True, exist_ok=True)
+            
+            try:
+                processor = UniversalOCRProcessor(provider=mapped_provider, output_dir=str(ocr_dir), model=ocr_model)
+                logger.info(f"OCR 처리 시작: {upload_path}")
+                
+                # OCR 처리 실행
+                ocr_result = processor.process_single_file(str(upload_path))
+                
+                if ocr_result.get('status') != 'success':
+                    logger.warning(f"OCR 처리 실패, 샘플 텍스트 사용: {ocr_result.get('error', 'Unknown error')}")
+                    ocr_text = "샘플 텍스트: OCR 처리 실패"
+                    yield _send_progress_update("OCR 처리 실패 (샘플 텍스트 사용)", 2, 40, {"warning": "OCR 처리 실패"})
+                else:
+                    ocr_text = ocr_result.get('full_text', '')
+                    if not ocr_text:
+                        logger.warning("OCR 텍스트가 비어있음, 샘플 텍스트 사용")
+                        ocr_text = "샘플 텍스트: OCR에서 텍스트를 추출할 수 없습니다."
+                    
+                    logger.info(f"OCR 텍스트 추출 완료: {len(ocr_text)} 문자")
+                    yield _send_progress_update(f"OCR 텍스트 추출 완료 ({len(ocr_text)} 문자)", 2, 40)
+                    
+            except Exception as e:
+                logger.warning(f"OCR 처리 중 오류 발생, 샘플 텍스트 사용: {e}")
+                ocr_text = "샘플 텍스트: OCR 처리 중 오류 발생"
+                yield _send_progress_update("OCR 처리 중 오류 발생 (샘플 텍스트 사용)", 2, 40, {"warning": str(e)})
+            
+            # LLM 메타데이터 추출
+            yield _send_progress_update("LLM 메타데이터 추출 중...", 3, 50)
+            logger.info("LLM 메타데이터 추출 시작")
+            
+            llm_result = llm_processor.extract_metadata_from_text(
+                text=ocr_text,
+                document_type=document_type,
+                document_name=sanitized_filename,
+                model_name=model_name
+            )
+            
+            yield _send_progress_update("LLM 메타데이터 추출 완료", 3, 70)
+            
+            # NER 엔티티 추출
+            yield _send_progress_update("NER 엔티티 추출 중...", 4, 80)
+            logger.info("NER 엔티티 추출 시작 (LLM과 함께)")
+            
+            ner_dir = result_dir / "ner"
+            ner_result = None
+            
+            try:
+                # OCR 텍스트를 임시 파일로 저장
+                temp_text_file = ocr_dir / "temp_ocr_text.txt"
+                with open(temp_text_file, 'w', encoding='utf-8') as f:
+                    f.write(ocr_text)
+                
+                # 사용자가 선택한 NER 모델 사용
+                ner_model_name = AVAILABLE_MODELS[ner_model]['name']
+                ner_result = ner_predict(
+                    str(ocr_dir),
+                    str(ner_dir),
+                    model_name=ner_model_name,
+                    debug=False
+                )
+                
+                logger.info(f"NER 처리 완료: {ner_result.get('total_entities', 0)}개 엔티티 추출")
+                yield _send_progress_update(f"NER 엔티티 추출 완료 ({ner_result.get('total_entities', 0)}개)", 4, 90)
+                
+            except Exception as e:
+                logger.warning(f"NER 처리 중 오류 발생: {e}")
+                ner_result = {
+                    'success': False,
+                    'error': str(e),
+                    'entity_types': {},
+                    'total_entities': 0
+                }
+                yield _send_progress_update(f"NER 처리 중 오류 발생: {str(e)}", 4, 90, {"warning": str(e)})
+            
+            # 응답 구성
+            response = {
+                "success": llm_result.get('success', False),
+                "request_id": request_id,
+                "filename": sanitized_filename,
+                "file_size_mb": round(file_size_mb, 2),
+                "model_used": llm_result.get('model_used', model_name),
+                "document_type": document_type,
+                "metadata": llm_result.get('metadata', {}),
+                "confidence": llm_result.get('confidence', 0.0),
+                "extraction_time": llm_result.get('extraction_time', 0.0),
+                "ocr_text": ocr_text,
+                "ocr_provider": ocr_provider,
+                "ocr_model": ocr_model,
+                "error": llm_result.get('error'),
+                "ner_model": AVAILABLE_MODELS[ner_model]['display_name'],
+                "ner_model_key": ner_model,
+                "entities": _format_ner_entities(ner_result) if ner_result else {},
+                "entity_count": _count_ner_entities(ner_result) if ner_result else 0,
+                "ner_success": ner_result.get('success', False) if ner_result else False,
+                "ner_error": ner_result.get('error') if ner_result and not ner_result.get('success', False) else None
+            }
+            
+            # LLM 결과 JSON 저장
+            llm_result_path = result_dir / 'llm_metadata.json'
+            with open(llm_result_path, 'w', encoding='utf-8') as f:
+                json.dump(response, f, ensure_ascii=False, indent=2)
+            
+            # Final progress update with complete result
+            logger.info(f"Sending final result for request_id: {request_id}")
+            yield _send_progress_update("처리 완료", 5, 100, {"result": response})
+            logger.info(f"Final result sent successfully for request_id: {request_id}")
+            
+        except Exception as e:
+            logger.error(f"LLM 메타데이터 추출 오류: {e}", exc_info=True)
+            error_response = {
+                "success": False,
+                "error": f"LLM 메타데이터 추출 오류: {str(e)}",
+                "request_id": request_id if 'request_id' in locals() else None,
+                "filename": sanitized_filename if 'sanitized_filename' in locals() else captured_filename if 'captured_filename' in locals() else "unknown"
+            }
+            yield _send_progress_update(f"오류 발생: {str(e)}", 0, 0, {"error": f"LLM 메타데이터 추출 오류: {str(e)}", "result": error_response})
+    
+    if stream:
+        # Return SSE stream
+        return StreamingResponse(
+            process_with_progress(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
+    else:
+        # Original synchronous behavior - collect all updates and return final result
+        # We still use streaming internally but collect all updates
+        final_result = None
+        error_result = None
+        
+        async def collect_updates():
+            async for update in process_with_progress():
+                yield update
+        
+        # Collect all SSE updates
+        updates = []
+        async for update in collect_updates():
+            updates.append(update)
+            
+        # Parse the last update that contains the result
+        for update in reversed(updates):
+            if update.startswith("data: "):
+                data_str = update.replace("data: ", "").strip()
+                try:
+                    data = json.loads(data_str)
+                    if "result" in data:
+                        final_result = data["result"]
+                        break
+                    elif "error" in data:
+                        error_result = data["error"]
+                        break
+                except:
+                    continue
+        
+        if error_result:
+            return JSONResponse(
+                content={"error": error_result},
+                status_code=500
+            )
+        elif final_result:
+            status_code = 200 if final_result.get('success', False) else 500
+            return JSONResponse(content=final_result, status_code=status_code)
+        else:
+            return JSONResponse(
+                content={"error": "처리 중 오류가 발생했습니다"},
+                status_code=500
+            )
+
+@app.get("/api/llm-models")
+async def get_llm_models():
+    """사용 가능한 LLM 모델 목록"""
+    return llm_processor.get_available_models()
+
+@app.get("/api/list-files/{request_id}")
+async def list_result_files(request_id: str):
+    """결과 디렉토리의 파일 목록 반환"""
+    try:
+        result_dir = RESULTS_DIR / request_id
+        
+        if not result_dir.exists():
+            raise HTTPException(status_code=404, detail="결과를 찾을 수 없습니다")
+        
+        # 모든 파일 찾기 (재귀적으로)
+        all_files = []
+        for file_path in result_dir.rglob("*"):
+            if file_path.is_file():
+                # 상대 경로로 변환
+                relative_path = file_path.relative_to(result_dir)
+                all_files.append(str(relative_path))
+        
+        return {"files": all_files}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"파일 목록 조회 오류: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/download/{request_id}/{file_path:path}")
+async def download_specific_file(request_id: str, file_path: str):
+    """결과 디렉토리에서 특정 파일 다운로드"""
+    try:
+        result_dir = RESULTS_DIR / request_id
+        
+        if not result_dir.exists():
+            raise HTTPException(status_code=404, detail="결과를 찾을 수 없습니다")
+        
+        # 파일 경로 보안 검사
+        target_file = result_dir / file_path
+        
+        # 경로 조작 공격 방지
+        try:
+            target_file.resolve().relative_to(result_dir.resolve())
+        except ValueError:
+            raise HTTPException(status_code=400, detail="잘못된 파일 경로입니다")
+        
+        if not target_file.exists() or not target_file.is_file():
+            raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
+        
+        return FileResponse(
+            path=target_file,
+            filename=target_file.name
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"파일 다운로드 오류: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ner-extract")
+async def ner_extract_entities(
+    file: UploadFile = File(...),
+    model: str = Form("klue-roberta-large"),
+    ocr_provider: str = Form("google"),
+    ocr_model: str = Form(None)
+):
+    """NER 엔티티 추출 전용 엔드포인트"""
+    try:
+        # 파일 검증
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="파일명이 비어있습니다")
+        
+        if not allowed_file(file.filename):
+            raise HTTPException(
+                status_code=400,
+                detail=f'지원하지 않는 파일 형식입니다. 허용: {", ".join(ALLOWED_EXTENSIONS)}'
+            )
+        
+        # 모델 검증
+        if model not in AVAILABLE_MODELS:
+            raise HTTPException(status_code=400, detail="잘못된 모델 선택")
+        
+        model_name = AVAILABLE_MODELS[model]['name']
+        
+        # OCR 제공자 검증
+        if ocr_provider not in AVAILABLE_OCR_ENGINES:
+            raise HTTPException(status_code=400, detail="잘못된 OCR 제공자 선택")
+        
+        if not AVAILABLE_OCR_ENGINES[ocr_provider]['available']:
+            setup_guide = AVAILABLE_OCR_ENGINES[ocr_provider]['setup_guide']
+            raise HTTPException(
+                status_code=400,
+                detail=f'{AVAILABLE_OCR_ENGINES[ocr_provider]["name"]} 설정이 필요합니다. {setup_guide}'
+            )
+        
+        # 파일 저장
+        filename = secure_filename(file.filename)
+        request_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        
+        upload_path = UPLOAD_DIR / request_id / filename
+        upload_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        content = await file.read()
+        with open(upload_path, 'wb') as f:
+            f.write(content)
+        
+        file_size_mb = len(content) / (1024 * 1024)
+        logger.info(f"NER 처리 시작: {filename} ({file_size_mb:.2f}MB), 모델: {model_name}, OCR: {ocr_provider}")
+        
+        # 결과 디렉토리
+        result_dir = RESULTS_DIR / request_id
+        result_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 처리 시작
+        start_time = datetime.now()
+        result = await process_document_with_universal_ocr(upload_path, result_dir, model_name, ocr_provider, ocr_model)
+        processing_time = (datetime.now() - start_time).total_seconds()
+        
+        # 응답 생성
+        response = {
+            'success': result['success'],
+            'request_id': request_id,
+            'filename': filename,
+            'file_size_mb': round(file_size_mb, 2),
+            'model': AVAILABLE_MODELS[model]['display_name'],
+            'model_key': model,
+            'ocr_engine': AVAILABLE_OCR_ENGINES[ocr_provider]['name'],
+            'ocr_engine_key': ocr_provider,
+            'entities': result.get('entities', {}),
+            'entity_count': result.get('entity_count', 0),
+            'steps': result.get('steps', {}),
+            'processing_time': round(processing_time, 2)
+        }
+        
+        if not result['success']:
+            response['error'] = result.get('error', '알 수 없는 오류')
+        
+        # 결과 JSON 저장
+        result_json_path = result_dir / 'ner_result.json'
+        with open(result_json_path, 'w', encoding='utf-8') as f:
+            json.dump(response, f, ensure_ascii=False, indent=2)
+        
+        status_code = 200 if result['success'] else 500
+        return JSONResponse(content=response, status_code=status_code)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"NER 처리 오류: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/llm-test")
+async def test_llm_extraction(model_name: str = Form(default="solar-ko")):
+    """LLM 추출 테스트"""
+    try:
+        result = llm_processor.test_extraction(model_name)
+        return JSONResponse(content=result, status_code=200)
+    except Exception as e:
+        logger.error(f"LLM 테스트 오류: {e}", exc_info=True)
+        return JSONResponse(
+            content={"error": f"LLM 테스트 오류: {str(e)}"},
+            status_code=500
+        )
 
 if __name__ == '__main__':
     print("=" * 80)
@@ -614,6 +1237,12 @@ if __name__ == '__main__':
     print(f"\n사용 가능한 NER 모델:")
     for key, info in AVAILABLE_MODELS.items():
         print(f"  - {info['display_name']}: {info['description']}")
+    
+    print(f"\n사용 가능한 LLM 모델:")
+    llm_models = llm_processor.get_available_models()
+    for key, info in llm_models.items():
+        model_type = "로컬" if info['type'] == 'local' else "클라우드"
+        print(f"  - {info['name']}: {info['description']} ({model_type})")
     
     print("\n" + "=" * 80)
     print("서버 시작: http://localhost:5000")

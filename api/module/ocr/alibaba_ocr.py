@@ -141,12 +141,43 @@ class AlibabaCloudOCRProvider:
             }
             
         except Exception as e:
-            logger.error(f"Alibaba Cloud OCR processing error: {e}")
+            # Extract detailed error information
+            error_str = str(e)
+            error_details = error_str
+            
+            # Check for common Alibaba Cloud error codes and provide user-friendly messages
+            if 'Arrearage' in error_str or 'arrearage' in error_str.lower():
+                error_details = "Alibaba Cloud account billing issue: Access denied due to outstanding payment. Please check your account billing status in the Alibaba Cloud console."
+            elif 'InvalidApiKey' in error_str or 'invalid' in error_str.lower() and 'key' in error_str.lower():
+                error_details = "Invalid Alibaba Cloud API key. Please verify your DASHSCOPE_API_KEY or ALIBABA_API_KEY environment variable."
+            elif 'QuotaExceeded' in error_str or 'quota' in error_str.lower():
+                error_details = "Alibaba Cloud API quota exceeded. Please check your usage limits."
+            elif 'code' in error_str.lower() and ('400' in error_str or '401' in error_str or '403' in error_str):
+                # Try to extract error details from string representation
+                try:
+                    import ast
+                    # Look for dictionary in error string
+                    if "'error':" in error_str or '"error":' in error_str:
+                        # Extract error message from string
+                        if "'message':" in error_str:
+                            # Find the message part
+                            msg_start = error_str.find("'message':") + len("'message':")
+                            msg_end = error_str.find(",", msg_start)
+                            if msg_end == -1:
+                                msg_end = error_str.find("}", msg_start)
+                            if msg_end > msg_start:
+                                msg = error_str[msg_start:msg_end].strip().strip("'\"")
+                                if msg:
+                                    error_details = f"Alibaba Cloud API Error: {msg}"
+                except:
+                    pass
+            
+            logger.error(f"Alibaba Cloud OCR processing error: {error_details}")
             return {
                 'extracted_text': '',
                 'metadata': {
                     'provider': 'alibaba_cloud',
-                    'error': str(e),
+                    'error': error_details,
                     'confidence': 0.0
                 }
             }

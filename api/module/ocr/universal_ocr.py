@@ -277,23 +277,50 @@ class UniversalOCRProcessor:
             all_text = []
             page_results = []
             
+            failed_pages = 0
+            total_errors = []
+            
             for i, image_path in enumerate(image_paths):
                 try:
                     result = self.ocr_provider.process_image(image_path)
                     page_text = result.get('extracted_text', '')
-                    all_text.append(page_text)
+                    metadata = result.get('metadata', {})
                     
-                    page_results.append({
-                        'page_number': i + 1,
-                        'image_path': image_path,
-                        'extracted_text': page_text,
-                        'text_length': len(page_text),
-                        'status': 'success',
-                        'metadata': result.get('metadata', {})
-                    })
+                    # Check if there's an error in metadata (common for Alibaba, Mistral)
+                    has_error = 'error' in metadata or (not page_text and metadata.get('confidence', 1.0) == 0.0)
+                    
+                    if has_error and not page_text:
+                        # OCR failed for this page
+                        error_msg = metadata.get('error', 'OCR processing failed')
+                        failed_pages += 1
+                        total_errors.append(f"Page {i+1}: {error_msg}")
+                        
+                        page_results.append({
+                            'page_number': i + 1,
+                            'image_path': image_path,
+                            'extracted_text': '',
+                            'text_length': 0,
+                            'status': 'failed',
+                            'error': error_msg,
+                            'metadata': metadata
+                        })
+                        logger.warning(f"OCR failed for page {i+1}: {error_msg}")
+                    else:
+                        # OCR succeeded
+                        all_text.append(page_text)
+                        page_results.append({
+                            'page_number': i + 1,
+                            'image_path': image_path,
+                            'extracted_text': page_text,
+                            'text_length': len(page_text),
+                            'status': 'success',
+                            'metadata': metadata
+                        })
                     
                 except Exception as e:
                     logger.error(f"Error processing page {i+1}: {e}")
+                    failed_pages += 1
+                    total_errors.append(f"Page {i+1}: {str(e)}")
                     page_results.append({
                         'page_number': i + 1,
                         'image_path': image_path,
@@ -305,7 +332,22 @@ class UniversalOCRProcessor:
             
             full_text = '\n\n'.join(all_text)
             
-            # Save extracted text
+            # Determine overall status
+            if failed_pages == len(image_paths):
+                # All pages failed
+                overall_status = 'failed'
+                error_message = f"OCR processing failed for all {len(image_paths)} page(s). Errors: {'; '.join(total_errors)}"
+            elif failed_pages > 0:
+                # Some pages failed
+                overall_status = 'partial'
+                error_message = f"OCR processing partially failed: {failed_pages}/{len(image_paths)} page(s) failed. Errors: {'; '.join(total_errors)}"
+                logger.warning(error_message)
+            else:
+                # All pages succeeded
+                overall_status = 'success'
+                error_message = None
+            
+            # Save extracted text (even if partial)
             with open(output_paths['text_file'], 'w', encoding='utf-8') as f:
                 f.write(full_text)
             
@@ -318,8 +360,13 @@ class UniversalOCRProcessor:
                 'pages': page_results,
                 'full_text': full_text,
                 'ocr_provider': self.ocr_provider.get_provider_name(),
-                'status': 'success'
+                'status': overall_status,
+                'failed_pages': failed_pages,
+                'successful_pages': len(image_paths) - failed_pages
             }
+            
+            if error_message:
+                result_data['error'] = error_message
             
             # Save result JSON
             with open(output_paths['result_file'], 'w', encoding='utf-8') as f:

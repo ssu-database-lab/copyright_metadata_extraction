@@ -35,9 +35,10 @@ def get_ocr_provider():
     print("2. Mistral OCR API")
     print("3. Naver Clova OCR API")
     print("4. Alibaba Cloud Model Studio (Qwen3-VL models)")
+    print("5. DeepSeek-OCR (Local model, requires GPU)")
     
     while True:
-        choice = input("Select provider (1-4): ").strip()
+        choice = input("Select provider (1-5): ").strip()
         if choice == "1":
             return "google_cloud", None
         elif choice == "2":
@@ -46,8 +47,10 @@ def get_ocr_provider():
             return "naver", None
         elif choice == "4":
             return "alibaba", get_alibaba_model()
+        elif choice == "5":
+            return "deepseek", get_deepseek_mode()
         else:
-            print("❌ Invalid choice. Please select 1-4.")
+            print("❌ Invalid choice. Please select 1-5.")
 
 def get_alibaba_model():
     """Get Alibaba model choice from user."""
@@ -69,6 +72,30 @@ def get_alibaba_model():
             return "qwen3-vl-235b-a22b-instruct"
         else:
             print("❌ Invalid choice. Please select 1-4.")
+
+def get_deepseek_mode():
+    """Get DeepSeek-OCR mode choice from user."""
+    print("\n🤖 Choose DeepSeek-OCR Mode:")
+    print("1. Tiny (512×512, 64 vision tokens) - Fastest")
+    print("2. Small (640×640, 100 vision tokens) - Fast")
+    print("3. Base (1024×1024, 256 vision tokens) - Balanced (recommended)")
+    print("4. Large (1280×1280, 400 vision tokens) - High quality")
+    print("5. Gundam (Dynamic resolution) - Best quality")
+    
+    while True:
+        choice = input("Select mode (1-5): ").strip()
+        if choice == "1":
+            return "tiny"
+        elif choice == "2":
+            return "small"
+        elif choice == "3":
+            return "base"
+        elif choice == "4":
+            return "large"
+        elif choice == "5":
+            return "gundam"
+        else:
+            print("❌ Invalid choice. Please select 1-5.")
 
 def get_processing_mode():
     """Get processing mode choice from user."""
@@ -99,11 +126,21 @@ def process_single_file():
         print(f"❌ Error: File {file_path} not found!")
         return False
     
+    # Show file size for user information
+    file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+    print(f"📊 File size: {file_size_mb:.2f} MB")
+    
     provider, model = get_ocr_provider()
     
     # Ask for processing mode only for Alibaba provider (multiple processing options)
     if provider == "alibaba":
         processing_mode = get_processing_mode()
+        # Note: Large files will be automatically compressed during processing
+        if file_size_mb > 10:
+            print(f"💡 Large file detected - will be automatically compressed if needed")
+    elif provider == "deepseek":
+        processing_mode = "batch"  # DeepSeek-OCR only supports batch processing
+        print(f"💡 DeepSeek-OCR will process the file locally (requires GPU)")
     else:
         processing_mode = "batch"  # Other providers only support batch processing
     
@@ -156,6 +193,13 @@ def process_single_file():
                 print(f"🔍 Provider: {result['ocr_provider']}")
                 print(f"⚙️ Processing Mode: {result['processing_mode']}")
                 
+                # Check if no text was extracted
+                if result['total_text_length'] == 0:
+                    print(f"\n⚠️  WARNING: No text was extracted!")
+                    if provider == "alibaba":
+                        print(f"💡 Large files are automatically compressed, but OCR may have failed.")
+                        print(f"💡 Try using Google Cloud Vision API for better compatibility.")
+                
                 # Show sample text
                 if result['full_text']:
                     sample_text = result['full_text'][:300]
@@ -166,6 +210,11 @@ def process_single_file():
             
             elif result['status'] == 'failed':
                 print(f"❌ Error: {result.get('error', 'Unknown error')}")
+                # Show file size info if available
+                if 'file_size_info' in result:
+                    fs_info = result['file_size_info']
+                    print(f"📊 File size: {fs_info.get('file_size_mb', 0)} MB")
+                    print(f"💡 Recommendation: {fs_info.get('recommendation', 'No recommendation available')}")
                 
         else:  # processing_mode == "batch"
             # DashScope SDK batch processing
@@ -184,6 +233,13 @@ def process_single_file():
                 print(f"📖 Pages: {result['total_pages']}")
                 print(f"🔍 Provider: {result['ocr_provider']}")
                 
+                # Check if no text was extracted
+                if result['total_text_length'] == 0:
+                    print(f"\n⚠️  WARNING: No text was extracted!")
+                    if provider == "alibaba":
+                        print(f"💡 Large files are automatically compressed, but OCR may have failed.")
+                        print(f"💡 Try using Google Cloud Vision API for better compatibility.")
+                
                 # Show sample text
                 if result['full_text']:
                     sample_text = result['full_text'][:300]
@@ -194,6 +250,11 @@ def process_single_file():
             
             elif result['status'] == 'failed':
                 print(f"❌ Error: {result.get('error', 'Unknown error')}")
+                # Show file size info if available
+                if 'file_size_info' in result:
+                    fs_info = result['file_size_info']
+                    print(f"📊 File size: {fs_info.get('file_size_mb', 0)} MB")
+                    print(f"💡 Recommendation: {fs_info.get('recommendation', 'No recommendation available')}")
         
         return True
         

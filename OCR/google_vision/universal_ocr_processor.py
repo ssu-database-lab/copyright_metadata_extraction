@@ -258,8 +258,13 @@ class AlibabaCloudOCRProvider(OCRProvider):
         "qwen3-vl-235b-a22b-instruct": "Qwen/Qwen3-VL-235B-A22B-Instruct"
     }
     
+    # File size limits according to Alibaba Cloud documentation
+    MAX_FILE_SIZE_MB = 10  # Maximum file size in MB
+    MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024  # Convert to bytes
+    
     def __init__(self, api_key: str, model: str = "qwen-vl-ocr", region: str = "singapore", 
-                 temperature: float = 1.0, top_p: float = 0.8, top_k: int = None):
+                 temperature: float = 1.0, top_p: float = 0.8, top_k: int = None,
+                 min_pixels: int = None, max_pixels: int = None):
         """
         Initialize the Alibaba Cloud Model Studio OCR client.
         
@@ -274,6 +279,8 @@ class AlibabaCloudOCRProvider(OCRProvider):
             temperature: Controls randomness (0.0-2.0, default: 1.0)
             top_p: Controls nucleus sampling (0.0-1.0, default: 0.8)
             top_k: Controls candidate set size (optional)
+            min_pixels: Minimum pixel threshold for image scaling (default: 28*28*4 = 3136)
+            max_pixels: Maximum pixel threshold for image scaling (default: 28*28*8192 = 6422528)
         """
         try:
             import dashscope
@@ -292,6 +299,11 @@ class AlibabaCloudOCRProvider(OCRProvider):
         self.temperature = temperature
         self.top_p = top_p
         self.top_k = top_k
+        
+        # Set default pixel thresholds according to Alibaba Cloud documentation
+        # Alibaba Cloud requires min_pixels >= 65536 (256*256)
+        self.min_pixels = min_pixels or (256 * 256)  # Default: 65536 pixels
+        self.max_pixels = max_pixels or (28 * 28 * 8192)  # Default: 6422528 pixels
         
         # Map model names to actual DashScope model IDs
         self.model_mapping = {
@@ -508,11 +520,145 @@ class AlibabaCloudOCRProvider(OCRProvider):
         
         return text
     
+    def _check_file_size(self, image_path: str) -> Dict[str, any]:
+        """
+        Check if the image file meets Alibaba Cloud size requirements.
+        
+        Args:
+            image_path: Path to the image file
+            
+        Returns:
+            Dictionary with file size information and recommendations
+        """
+        try:
+            file_size = os.path.getsize(image_path)
+            file_size_mb = file_size / (1024 * 1024)
+            
+            result = {
+                "file_size_bytes": file_size,
+                "file_size_mb": round(file_size_mb, 2),
+                "within_limit": file_size <= self.MAX_FILE_SIZE_BYTES,
+                "recommendation": ""
+            }
+            
+            if file_size > self.MAX_FILE_SIZE_BYTES:
+                result["recommendation"] = f"File size ({file_size_mb:.2f}MB) exceeds the 10MB limit. Consider compressing the image or splitting it into smaller parts."
+                logger.warning(f"File {image_path} is {file_size_mb:.2f}MB, exceeding the 10MB limit")
+            else:
+                result["recommendation"] = "File size is within acceptable limits."
+                logger.info(f"File {image_path} is {file_size_mb:.2f}MB, within the 10MB limit")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error checking file size for {image_path}: {e}")
+            return {
+                "file_size_bytes": 0,
+                "file_size_mb": 0,
+                "within_limit": False,
+                "recommendation": f"Error checking file size: {e}"
+            }
+    
+    def _get_image_dimensions(self, image_path: str) -> Dict[str, any]:
+        """
+        Get image dimensions to help with pixel calculations.
+        
+        Args:
+            image_path: Path to the image file
+            
+        Returns:
+            Dictionary with image dimension information
+        """
+        try:
+            from PIL import Image
+            
+            with Image.open(image_path) as img:
+                width, height = img.size
+                total_pixels = width * height
+                
+                return {
+                    "width": width,
+                    "height": height,
+                    "total_pixels": total_pixels,
+                    "aspect_ratio": round(width / height, 2) if height > 0 else 0,
+                    "within_pixel_limits": self.min_pixels <= total_pixels <= self.max_pixels,
+                    "recommendation": ""
+                }
+                
+        except ImportError:
+            logger.warning("PIL (Pillow) not available for image dimension checking")
+            return {
+                "width": 0,
+                "height": 0,
+                "total_pixels": 0,
+                "aspect_ratio": 0,
+                "within_pixel_limits": True,
+                "recommendation": "PIL not available for dimension checking"
+            }
+        except Exception as e:
+            logger.error(f"Error getting image dimensions for {image_path}: {e}")
+            return {
+                "width": 0,
+                "height": 0,
+                "total_pixels": 0,
+                "aspect_ratio": 0,
+                "within_pixel_limits": True,
+                "recommendation": f"Error getting dimensions: {e}"
+            }
+    
     def process_image(self, image_path: str) -> Dict:
         """Process image using Alibaba Cloud Qwen-OCR model with DashScope SDK."""
         try:
+            # Check file size before processing
+            file_size_info = self._check_file_size(image_path)
+            processed_image_path = image_path
+            
+            # If file exceeds size limit, automatically compress it
+            if not file_size_info["within_limit"]:
+                logger.info(f"File size ({file_size_info['file_size_mb']}MB) exceeds 10MB limit. Automatically compressing...")
+                
+                try:
+                    # Import compression utility
+                    from compress_images import ImageCompressor
+                    
+                    # Create temporary compressed file
+                    temp_dir = Path(image_path).parent / "temp_compressed"
+                    temp_dir.mkdir(exist_ok=True)
+                    compressed_path = temp_dir / f"{Path(image_path).stem}_auto_compressed.jpg"
+                    
+                    # Compress the image
+                    compressor = ImageCompressor(str(temp_dir))
+                    processed_image_path = compressor.compress_image(image_path, str(compressed_path))
+                    
+                    # Update file size info for compressed file
+                    file_size_info = self._check_file_size(processed_image_path)
+                    logger.info(f"Auto-compression complete: {processed_image_path} ({file_size_info['file_size_mb']}MB)")
+                    
+                except Exception as e:
+                    error_msg = f"Auto-compression failed: {e}"
+                    logger.error(error_msg)
+                    return {
+                        "provider": "alibaba_cloud",
+                        "extracted_text": "",
+                        "text_length": 0,
+                        "error": error_msg,
+                        "file_size_info": file_size_info,
+                        "status": "error"
+                    }
+            
+            # Get image dimensions for better processing
+            dimension_info = self._get_image_dimensions(processed_image_path)
+            
             # Convert image path to file:// format for local file upload
-            image_file_path = f"file://{os.path.abspath(image_path)}"
+            image_file_path = f"file://{os.path.abspath(processed_image_path)}"
+            
+            # Prepare image content with proper pixel parameters
+            image_content = {
+                "image": image_file_path,
+                "min_pixels": self.min_pixels,
+                "max_pixels": self.max_pixels,
+                "enable_rotate": True
+            }
             
             # Prepare messages for DashScope SDK
             messages = [
@@ -522,18 +668,14 @@ class AlibabaCloudOCRProvider(OCRProvider):
                 },
                 {
                     "role": "user",
-                    "content": [{
-                            "image": image_file_path,
-                            # Minimum pixel threshold for the input image
-                            # "min_pixels": 28 * 28 * 4,
-                            # Maximum pixel threshold for the input image
-                            # "max_pixels": 28 * 28 * 8192,
-                            "enable_rotate": True},
-                        {"text": "Extract all the text from the uploaded document. Output only the raw text content without any markdown formatting, code blocks, or special formatting."}]
+                    "content": [
+                        image_content,
+                        {"text": "Extract all the text from the uploaded document. Output only the raw text content without any markdown formatting, code blocks, or special formatting."}
+                    ]
                 }
             ]
             
-            logger.info(f"Making Alibaba Cloud Qwen-OCR request using DashScope SDK for {image_path}")
+            logger.info(f"Making Alibaba Cloud Qwen-OCR request using DashScope SDK for {processed_image_path}")
             
             # Prepare generation parameters
             generation_params = {
@@ -572,24 +714,44 @@ class AlibabaCloudOCRProvider(OCRProvider):
                         elif isinstance(content, str):
                             extracted_text = content
             
-            logger.info(f"Alibaba Cloud Qwen-OCR processed {image_path} - {len(extracted_text)} characters")
+            logger.info(f"Alibaba Cloud Qwen-OCR processed {processed_image_path} - {len(extracted_text)} characters")
             
             return {
                 "provider": "alibaba_cloud",
                 "extracted_text": extracted_text.strip(),
                 "text_length": len(extracted_text.strip()),
                 "raw_response": response,
+                "file_size_info": file_size_info,
+                "dimension_info": dimension_info,
+                "processing_params": {
+                    "min_pixels": self.min_pixels,
+                    "max_pixels": self.max_pixels,
+                    "temperature": self.temperature,
+                    "top_p": self.top_p,
+                    "model": self.dashscope_model_id
+                },
                 "status": "success"
             }
                 
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Alibaba Cloud Qwen-OCR error: {error_msg}")
+            
+            # Try to get file size info even if processing failed
+            try:
+                file_size_info = self._check_file_size(processed_image_path)
+                dimension_info = self._get_image_dimensions(processed_image_path)
+            except:
+                file_size_info = {"file_size_mb": 0, "within_limit": False}
+                dimension_info = {"total_pixels": 0, "within_pixel_limits": False}
+            
             return {
                 "provider": "alibaba_cloud",
                 "extracted_text": "",
                 "text_length": 0,
                 "error": error_msg,
+                "file_size_info": file_size_info,
+                "dimension_info": dimension_info,
                 "status": "error"
             }
     
@@ -600,6 +762,155 @@ class AlibabaCloudOCRProvider(OCRProvider):
     def list_available_models(cls) -> Dict[str, str]:
         """Return dictionary of available models."""
         return cls.AVAILABLE_MODELS.copy()
+
+class DeepSeekOCRProvider(OCRProvider):
+    """DeepSeek-OCR provider using Hugging Face transformers."""
+    
+    # Available DeepSeek-OCR modes
+    AVAILABLE_MODES = {
+        "tiny": "Tiny (512×512, 64 vision tokens)",
+        "small": "Small (640×640, 100 vision tokens)", 
+        "base": "Base (1024×1024, 256 vision tokens)",
+        "large": "Large (1280×1280, 400 vision tokens)",
+        "gundam": "Gundam (Dynamic resolution: n×640×640 + 1×1024×1024)"
+    }
+    
+    def __init__(self, mode: str = "base", device: str = "cuda", 
+                 prompt: str = "<image>\n<|grounding|>Convert the document to markdown."):
+        """
+        Initialize DeepSeek-OCR provider.
+        
+        Args:
+            mode: Processing mode - "tiny", "small", "base", "large", or "gundam"
+            device: Device to run on - "cuda" or "cpu"
+            prompt: OCR prompt template
+        """
+        try:
+            from transformers import AutoModel, AutoTokenizer
+            import torch
+        except ImportError:
+            raise ImportError("transformers and torch packages not found. Install with: pip install transformers torch")
+        
+        self.mode = mode
+        self.device = device
+        self.prompt = prompt
+        self.model_name = 'deepseek-ai/DeepSeek-OCR'
+        
+        # Set CUDA device if available
+        if device == "cuda" and torch.cuda.is_available():
+            os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+            self.device = "cuda"
+        else:
+            self.device = "cpu"
+            logger.warning("CUDA not available, using CPU (slower)")
+        
+        # Initialize model and tokenizer
+        try:
+            logger.info(f"Loading DeepSeek-OCR model: {self.model_name}")
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
+            self.model = AutoModel.from_pretrained(
+                self.model_name, 
+                _attn_implementation='flash_attention_2', 
+                trust_remote_code=True, 
+                use_safetensors=True
+            )
+            
+            if self.device == "cuda":
+                self.model = self.model.eval().cuda().to(torch.bfloat16)
+            else:
+                self.model = self.model.eval().to(torch.float32)
+                
+            logger.info(f"DeepSeek-OCR model loaded successfully on {self.device}")
+            
+        except Exception as e:
+            logger.error(f"Failed to load DeepSeek-OCR model: {e}")
+            raise
+    
+    def _get_mode_params(self) -> Dict[str, int]:
+        """Get processing parameters based on mode."""
+        mode_params = {
+            "tiny": {"base_size": 512, "image_size": 512, "crop_mode": False},
+            "small": {"base_size": 640, "image_size": 640, "crop_mode": False},
+            "base": {"base_size": 1024, "image_size": 1024, "crop_mode": False},
+            "large": {"base_size": 1280, "image_size": 1280, "crop_mode": False},
+            "gundam": {"base_size": 1024, "image_size": 640, "crop_mode": True}
+        }
+        return mode_params.get(self.mode, mode_params["base"])
+    
+    def process_image(self, image_path: str) -> Dict:
+        """Process an image using DeepSeek-OCR."""
+        try:
+            logger.info(f"Processing image with DeepSeek-OCR: {image_path}")
+            
+            # Get mode parameters
+            params = self._get_mode_params()
+            
+            # Create temporary output directory
+            temp_output_dir = Path(image_path).parent / "deepseek_temp"
+            temp_output_dir.mkdir(exist_ok=True)
+            
+            # Run inference
+            result = self.model.infer(
+                tokenizer=self.tokenizer,
+                prompt=self.prompt,
+                image_file=image_path,
+                output_path=str(temp_output_dir),
+                base_size=params["base_size"],
+                image_size=params["image_size"],
+                crop_mode=params["crop_mode"],
+                save_results=True,
+                test_compress=False
+            )
+            
+            # Extract text from result
+            extracted_text = ""
+            if isinstance(result, str):
+                extracted_text = result
+            elif isinstance(result, dict) and "text" in result:
+                extracted_text = result["text"]
+            elif hasattr(result, 'text'):
+                extracted_text = result.text
+            
+            # Clean up temporary files
+            try:
+                import shutil
+                shutil.rmtree(temp_output_dir)
+            except:
+                pass  # Ignore cleanup errors
+            
+            logger.info(f"DeepSeek-OCR processed {image_path} - {len(extracted_text)} characters")
+            
+            return {
+                "provider": "deepseek_ocr",
+                "extracted_text": extracted_text.strip(),
+                "text_length": len(extracted_text.strip()),
+                "model": self.model_name,
+                "mode": self.mode,
+                "device": self.device,
+                "prompt": self.prompt,
+                "processing_params": params,
+                "status": "success"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing {image_path} with DeepSeek-OCR: {e}")
+            return {
+                "provider": "deepseek_ocr",
+                "extracted_text": "",
+                "text_length": 0,
+                "error": str(e),
+                "model": self.model_name,
+                "mode": self.mode,
+                "status": "error"
+            }
+    
+    def get_provider_name(self) -> str:
+        return "deepseek_ocr"
+    
+    @classmethod
+    def list_available_modes(cls) -> Dict[str, str]:
+        """Return dictionary of available processing modes."""
+        return cls.AVAILABLE_MODES.copy()
 
 class FileProcessor:
     """Handles different file types and converts them to images for OCR."""
@@ -722,22 +1033,50 @@ class UniversalOCRProcessor:
             if top_k:
                 top_k = int(top_k)
             
+            # Get pixel parameters from environment or use defaults
+            min_pixels = os.getenv('ALIBABA_MIN_PIXELS')
+            if min_pixels:
+                min_pixels = int(min_pixels)
+            
+            max_pixels = os.getenv('ALIBABA_MAX_PIXELS')
+            if max_pixels:
+                max_pixels = int(max_pixels)
+            
             self.ocr_provider = AlibabaCloudOCRProvider(
                 api_key, 
                 model=alibaba_model, 
                 region=region,
                 temperature=temperature,
                 top_p=top_p,
-                top_k=top_k
+                top_k=top_k,
+                min_pixels=min_pixels,
+                max_pixels=max_pixels
+            )
+        elif self.provider_name == "deepseek":
+            # Get DeepSeek-OCR mode from environment or use provided model parameter
+            deepseek_mode = model or os.getenv('DEEPSEEK_MODE', 'base')
+            # Get device preference from environment
+            device = os.getenv('DEEPSEEK_DEVICE', 'cuda')
+            # Get custom prompt from environment
+            prompt = os.getenv('DEEPSEEK_PROMPT', '<image>\n<|grounding|>Convert the document to markdown.')
+            
+            self.ocr_provider = DeepSeekOCRProvider(
+                mode=deepseek_mode,
+                device=device,
+                prompt=prompt
             )
         else:
             raise ValueError(f"Unsupported OCR provider: {provider}")
         
-        # Create provider-specific output directory with model subdirectory for Alibaba
+        # Create provider-specific output directory with model subdirectory for Alibaba and DeepSeek
         if self.provider_name == "alibaba" and hasattr(self.ocr_provider, 'model'):
             # Create model-specific subdirectory for Alibaba Qwen3-VL models
             model_name = self.ocr_provider.model.replace('-', '_')
             self.provider_output_dir = self.base_output_dir / f"{self.provider_name}_ocr" / model_name
+        elif self.provider_name == "deepseek" and hasattr(self.ocr_provider, 'mode'):
+            # Create mode-specific subdirectory for DeepSeek-OCR
+            mode_name = self.ocr_provider.mode.replace('-', '_')
+            self.provider_output_dir = self.base_output_dir / f"{self.provider_name}_ocr" / mode_name
         else:
             self.provider_output_dir = self.base_output_dir / f"{self.provider_name}_ocr"
         
@@ -753,6 +1092,14 @@ class UniversalOCRProcessor:
             logger.info(f"Top-p: {self.ocr_provider.top_p}")
             if self.ocr_provider.top_k is not None:
                 logger.info(f"Top-k: {self.ocr_provider.top_k}")
+            logger.info(f"Min pixels: {self.ocr_provider.min_pixels}")
+            logger.info(f"Max pixels: {self.ocr_provider.max_pixels}")
+            logger.info(f"Max file size: {self.ocr_provider.MAX_FILE_SIZE_MB}MB")
+        elif self.provider_name == "deepseek" and hasattr(self.ocr_provider, 'mode'):
+            logger.info(f"Model: {self.ocr_provider.model_name}")
+            logger.info(f"Mode: {self.ocr_provider.mode}")
+            logger.info(f"Device: {self.ocr_provider.device}")
+            logger.info(f"Prompt: {self.ocr_provider.prompt}")
         logger.info(f"Provider output directory: {self.provider_output_dir}")
     
     def process_single_file_streaming(self, file_path: str):
@@ -1193,7 +1540,7 @@ def main():
     """Main function with command line interface."""
     parser = argparse.ArgumentParser(description="Universal OCR Processor")
     parser.add_argument("path", help="Path to file or directory to process")
-    parser.add_argument("--provider", "-p", choices=["google_cloud", "mistral", "naver", "alibaba"], 
+    parser.add_argument("--provider", "-p", choices=["google_cloud", "mistral", "naver", "alibaba", "deepseek"], 
                        default="mistral", help="OCR provider to use")
     parser.add_argument("--output", "-o", default="universal_ocr_results", 
                        help="Output directory for results")
@@ -1202,7 +1549,7 @@ def main():
     parser.add_argument("--single-file", "-f", action="store_true", 
                        help="Process as single file (not directory)")
     parser.add_argument("--model", "-m", 
-                       help="Model name for providers that support multiple models (e.g., alibaba: qwen-vl-ocr, qwen-vl-plus, qwen-vl-30b, qwen-vl-235b)")
+                       help="Model name for providers that support multiple models (e.g., alibaba: qwen-vl-ocr, qwen-vl-plus, qwen-vl-30b, qwen-vl-235b; deepseek: tiny, small, base, large, gundam)")
     parser.add_argument("--stream", "-s", action="store_true",
                        help="Enable streaming output (real-time processing)")
     
