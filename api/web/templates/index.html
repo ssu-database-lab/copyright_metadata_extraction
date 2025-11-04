@@ -681,8 +681,8 @@
             <div class="model-selection">
                 <h3>처리 방식 선택</h3>
                 <div class="model-options">
-                    <label class="model-option selected">
-                        <input type="radio" name="processing_type" value="ner" checked>
+                    <label class="model-option">
+                        <input type="radio" name="processing_type" value="ner">
                         <div>
                             <div class="model-name">NER 엔티티 추출</div>
                             <div class="model-desc">기존 NER 모델을 사용한 엔티티 추출</div>
@@ -724,8 +724,8 @@
                     <div class="model-category">
                         <h4>로컬 모델</h4>
                         <div class="model-options">
-                            <label class="model-option selected">
-                                <input type="radio" name="llm_model" value="solar-ko" checked>
+                            <label class="model-option">
+                                <input type="radio" name="llm_model" value="solar-ko">
                                 <div>
                                     <div class="model-name">SOLAR-Ko-10.7B</div>
                                     <div class="model-desc">한국어 특화 모델 (권장)</div>
@@ -789,8 +789,8 @@
             <div class="model-selection" id="documentTypeSelection" style="display: none;">
                 <h3>문서 유형 선택</h3>
                 <div class="model-options">
-                    <label class="model-option selected">
-                        <input type="radio" name="document_type" value="기타문서" checked>
+                    <label class="model-option">
+                        <input type="radio" name="document_type" value="기타문서">
                         <div>
                             <div class="model-name">기타문서</div>
                             <div class="model-desc">일반적인 문서</div>
@@ -825,7 +825,7 @@
                 <h3>NER 모델 선택</h3>
                 <div class="model-options">
                     <label class="model-option selected">
-                        <input type="radio" name="ner_model" value="klue-roberta-large" checked>
+                        <input type="radio" name="ner_model" value="klue-roberta-large">
                         <div>
                             <div class="model-name">KLUE RoBERTa Large</div>
                             <div class="model-desc">다국어 특화 모델 (최고 정확도)</div>
@@ -1298,6 +1298,7 @@
                                             
                                             // Update progress based on step and percent
                                             if (data.step !== undefined && data.percent !== undefined) {
+                                                console.log(`Progress update (done): step=${data.step}, percent=${data.percent}, message=${data.message}`);
                                                 updateProgress(data.percent, data.step, false, 5, 'llm');
                                             }
                                             
@@ -1337,9 +1338,11 @@
                             if (line.trim() && line.startsWith('data: ')) {
                                 try {
                                     const data = JSON.parse(line.slice(6));
+                                    allMessages.push(data); // Debug: track all messages
                                     
                                     // Update progress based on step and percent
                                     if (data.step !== undefined && data.percent !== undefined) {
+                                        console.log(`Progress update: step=${data.step}, percent=${data.percent}, message=${data.message}`);
                                         updateProgress(data.percent, data.step, false, 5, 'llm');
                                     }
                                     
@@ -1511,17 +1514,39 @@
                                 console.log('Summary file not found, skipping...');
                             }
                             
+                            // Fetch and add NER entities files
+                            try {
+                                const entitiesResponse = await fetch(`/download/${result.request_id}?type=entities`);
+                                if (entitiesResponse.ok) {
+                                    const entitiesData = await entitiesResponse.text();
+                                    zip.file('entities.json', entitiesData);
+                                }
+                            } catch (e) {
+                                console.log('NER entities file not found, skipping...');
+                            }
+                            
                             // Fetch and add OCR result files
                             try {
                                 // Look for OCR result files in the result directory
                                 const ocrResponse = await fetch(`/api/list-files/${result.request_id}`);
                                 if (ocrResponse.ok) {
                                     const files = await ocrResponse.json();
-                                    for (const file of files) {
+                                    for (const file of files.files) {
+                                        // Include OCR result JSON files
                                         if (file.includes('_ocr_result.json')) {
                                             const fileResponse = await fetch(`/download/${result.request_id}/${file}`);
                                             if (fileResponse.ok) {
                                                 const fileData = await fileResponse.text();
+                                                // Preserve directory structure in zip
+                                                zip.file(file, fileData);
+                                            }
+                                        }
+                                        // Include OCR extracted text files
+                                        if (file.includes('_extracted_text.txt')) {
+                                            const fileResponse = await fetch(`/download/${result.request_id}/${file}`);
+                                            if (fileResponse.ok) {
+                                                const fileData = await fileResponse.text();
+                                                // Preserve directory structure in zip
                                                 zip.file(file, fileData);
                                             }
                                         }
@@ -1592,12 +1617,12 @@
                     
                     if (isVisible) {
                         stepEl.style.display = '';
-                        stepEl.classList.remove('active', 'completed');
-                        
+                stepEl.classList.remove('active', 'completed');
+                
                         if (logicalStep < step || completed) {
-                            stepEl.classList.add('completed');
+                    stepEl.classList.add('completed');
                         } else if (logicalStep === step) {
-                            stepEl.classList.add('active');
+                    stepEl.classList.add('active');
                         }
                     } else {
                         stepEl.style.display = 'none';

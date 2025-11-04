@@ -1106,6 +1106,8 @@ def ner_predict(
         
         if debug:
             print(f"처리할 파일 수: {len(files_to_process)}")
+            print(f"처리할 파일: {files_to_process}")
+            print("-"*100)
         
         # 5. 모델 확인 (없으면 에러)
         model_path = get_model_path(model_name)

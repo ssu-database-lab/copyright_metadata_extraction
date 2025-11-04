@@ -103,13 +103,64 @@ hf_models/
 api/web/results/
 api/data/out/
 
-# Large archive files
+# Large archive files and compressed formats
 *.zip
 *.7z
 *.alz
 *.tar
 *.egg
 *.rar
+*.gz
+*.gzip
+*.bz2
+*.bzip2
+*.xz
+*.z
+*.Z
+*.tar.gz
+*.tgz
+*.tar.bz2
+*.tbz2
+*.tar.xz
+*.txz
+*.tar.Z
+*.tar.lz
+*.tar.lzma
+*.lz
+*.lzma
+*.zst
+*.zstd
+*.lzh
+*.lha
+*.cab
+*.ace
+*.arj
+*.deb
+*.rpm
+*.pkg
+*.dmg
+*.iso
+*.img
+*.vhd
+*.vhdx
+*.vmdk
+*.ova
+*.ovf
+*.wim
+*.sit
+*.sitx
+*.sea
+*.bin
+*.pak
+*.dz
+*.dzip
+*.bz
+*.cpio
+*.shar
+*.war
+*.jar
+*.ear
+*.sar
 
 # Large document files
 *.hwp

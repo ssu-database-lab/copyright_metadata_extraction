@@ -362,7 +362,10 @@ class UniversalOCRProcessor:
                 'ocr_provider': self.ocr_provider.get_provider_name(),
                 'status': overall_status,
                 'failed_pages': failed_pages,
-                'successful_pages': len(image_paths) - failed_pages
+                'successful_pages': len(image_paths) - failed_pages,
+                'output_directory': str(output_paths['doc_dir']),  # Document-specific output directory
+                'text_file_path': str(output_paths['text_file']),  # Path to extracted text file
+                'result_file_path': str(output_paths['result_file'])  # Path to OCR result JSON
             }
             
             if error_message:
@@ -386,7 +389,10 @@ class UniversalOCRProcessor:
                 'total_text_length': 0,
                 'pages': [],
                 'full_text': '',
-                'ocr_provider': self.ocr_provider.get_provider_name()
+                'ocr_provider': self.ocr_provider.get_provider_name(),
+                'output_directory': None,
+                'text_file_path': None,
+                'result_file_path': None
             }
     
     def process_directory(self, directory_path: str) -> Dict:

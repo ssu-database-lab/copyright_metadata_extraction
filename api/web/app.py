@@ -856,6 +856,7 @@ async def llm_extract_metadata(
             logger.info(f"LLM 처리 시작: {sanitized_filename} ({file_size_mb:.2f}MB), 모델: {model_name}, OCR: {ocr_provider}")
             
             yield _send_progress_update("파일 업로드 완료", 1, 10, {"request_id": request_id})
+            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
             
             # 결과 디렉토리
             result_dir = RESULTS_DIR / request_id
@@ -863,6 +864,7 @@ async def llm_extract_metadata(
             
             # OCR 처리 (Universal OCR 사용)
             yield _send_progress_update("OCR 텍스트 추출 중...", 2, 20)
+            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
             logger.info(f"LLM 추출을 위한 OCR 처리 시작: provider={ocr_provider}, model={ocr_model}")
             
             # Provider name mapping
@@ -896,6 +898,7 @@ async def llm_extract_metadata(
                     
                     logger.info(f"OCR 텍스트 추출 완료: {len(ocr_text)} 문자")
                     yield _send_progress_update(f"OCR 텍스트 추출 완료 ({len(ocr_text)} 문자)", 2, 40)
+                    await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
                     
             except Exception as e:
                 logger.warning(f"OCR 처리 중 오류 발생, 샘플 텍스트 사용: {e}")
@@ -904,6 +907,7 @@ async def llm_extract_metadata(
             
             # LLM 메타데이터 추출
             yield _send_progress_update("LLM 메타데이터 추출 중...", 3, 50)
+            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
             logger.info("LLM 메타데이터 추출 시작")
             
             llm_result = llm_processor.extract_metadata_from_text(
@@ -914,24 +918,39 @@ async def llm_extract_metadata(
             )
             
             yield _send_progress_update("LLM 메타데이터 추출 완료", 3, 70)
+            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
             
             # NER 엔티티 추출
             yield _send_progress_update("NER 엔티티 추출 중...", 4, 80)
+            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
             logger.info("NER 엔티티 추출 시작 (LLM과 함께)")
             
             ner_dir = result_dir / "ner"
             ner_result = None
             
             try:
-                # OCR 텍스트를 임시 파일로 저장
-                temp_text_file = ocr_dir / "temp_ocr_text.txt"
-                with open(temp_text_file, 'w', encoding='utf-8') as f:
-                    f.write(ocr_text)
+                # Use the OCR output directory from UniversalOCRProcessor result
+                # UniversalOCRProcessor now includes 'output_directory' in its result
+                ocr_output_dir = ocr_result.get('output_directory')
+                
+                if not ocr_output_dir or ocr_result.get('status') != 'success':
+                    # Fallback: use ocr_dir if output_directory not available
+                    ocr_output_dir = ocr_dir
+                    logger.warning(f"OCR output directory not available, using ocr_dir: {ocr_dir}")
+                    # Create temp file as fallback
+                    temp_text_file = ocr_dir / "temp_ocr_text.txt"
+                    with open(temp_text_file, 'w', encoding='utf-8') as f:
+                        f.write(ocr_text)
+                else:
+                    logger.info(f"Using OCR output directory from UniversalOCRProcessor: {ocr_output_dir}")
                 
                 # 사용자가 선택한 NER 모델 사용
                 ner_model_name = AVAILABLE_MODELS[ner_model]['name']
+                print(f"NER 모델 이름: {ner_model_name}")
+                print(f"OCR 출력 디렉토리: {ocr_output_dir}")
+                print("-"*100)
                 ner_result = ner_predict(
-                    str(ocr_dir),
+                    str(ocr_output_dir),
                     str(ner_dir),
                     model_name=ner_model_name,
                     debug=False
@@ -939,6 +958,7 @@ async def llm_extract_metadata(
                 
                 logger.info(f"NER 처리 완료: {ner_result.get('total_entities', 0)}개 엔티티 추출")
                 yield _send_progress_update(f"NER 엔티티 추출 완료 ({ner_result.get('total_entities', 0)}개)", 4, 90)
+                await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
                 
             except Exception as e:
                 logger.warning(f"NER 처리 중 오류 발생: {e}")
