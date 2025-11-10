@@ -227,20 +227,20 @@
             border-left: 3px solid #4299e1;
         }
 
-        .metadata-section, .ocr-text-section {
+        .metadata-section, .ocr-text-section, .consolidation-section {
             margin: 20px 0;
             padding: 15px;
             background: #f8f9fa;
             border-radius: 8px;
         }
 
-        .metadata-section h4, .ocr-text-section h4 {
+        .metadata-section h4, .ocr-text-section h4, .consolidation-section h4 {
             margin: 0 0 10px 0;
             color: #2d3748;
             font-size: 1.1rem;
         }
 
-        .metadata-content, .ocr-text-content {
+        .metadata-content, .ocr-text-content, .consolidation-content {
             background: white;
             padding: 15px;
             border-radius: 6px;
@@ -249,13 +249,250 @@
             overflow-y: auto;
         }
 
-        .metadata-content pre, .ocr-text-content pre {
+        .metadata-content pre, .ocr-text-content pre, .consolidation-content pre {
             margin: 0;
             white-space: pre-wrap;
             word-wrap: break-word;
             font-family: 'Courier New', monospace;
             font-size: 0.9rem;
             line-height: 1.4;
+        }
+
+        /* Consolidation UI Styles */
+        .consolidation-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .consolidation-badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .consolidation-badge.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .consolidation-badge.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .consolidation-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .consolidation-stat-card {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .consolidation-stat-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .consolidation-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4299e1;
+        }
+
+        .consolidation-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .consolidation-tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .consolidation-tab.active {
+            color: #4299e1;
+            border-bottom-color: #4299e1;
+            font-weight: 600;
+        }
+
+        .consolidation-tab:hover {
+            color: #4299e1;
+        }
+
+        .consolidation-tab-content {
+            display: none;
+        }
+
+        .consolidation-tab-content.active {
+            display: block;
+        }
+
+        .decision-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 10px;
+        }
+
+        .decision-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .decision-header:hover {
+            background: #e9ecef;
+        }
+
+        .decision-field {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .decision-type {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .decision-type.AGREED {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .decision-type.CONFLICT {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .decision-type.LLM_ONLY {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .decision-type.NER_ONLY {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .decision-type.MISSING {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .decision-details {
+            display: none;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .decision-details.expanded {
+            display: block;
+        }
+
+        .decision-values {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .decision-value-item {
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            border-left: 3px solid #4299e1;
+        }
+
+        .decision-value-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .decision-value-content {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .decision-evidence {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border-left: 3px solid #10b981;
+        }
+
+        .decision-evidence-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #10b981;
+            margin-bottom: 5px;
+        }
+
+        .decision-evidence-content {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .comparison-view {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .comparison-panel {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .comparison-panel h5 {
+            margin: 0 0 10px 0;
+            color: #2d3748;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .comparison-panel pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .download-buttons {
@@ -672,6 +909,16 @@
                                     <div class="model-desc">실시간 결과 출력</div>
                                 </div>
                             </label>
+                            <label class="model-option checkbox-option selected" id="consolidationOption">
+                                <input type="checkbox" name="consolidate" id="consolidateCheckbox" checked>
+                                <div>
+                                    <div class="model-name">
+                                        <img class="model-icon" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="메타데이터 통합">
+                                        메타데이터 통합
+                                    </div>
+                                    <div class="model-desc">LLM과 NER 결과를 통합하여 검증 (하이브리드 모드: Qwen3-Next-80B → Qwen-Max)</div>
+                                </div>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -771,6 +1018,13 @@
                                 <div>
                                     <div class="model-name">Alibaba Qwen-Max</div>
                                     <div class="model-desc">최고 성능 모델</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="llm_model" value="alibaba-qwen3-next-80b-a3b-instruct">
+                                <div>
+                                    <div class="model-name">Alibaba Qwen3-Next-80B</div>
+                                    <div class="model-desc">초효율 MoE 모델 (통합용 권장)</div>
                                 </div>
                             </label>
                             <label class="model-option">
@@ -1005,6 +1259,11 @@
                     this.parentElement.classList.remove('selected');
                 }
             });
+            
+            // Initialize selected state for checked checkboxes
+            if (checkbox.checked) {
+                checkbox.parentElement.classList.add('selected');
+            }
         });
 
         // 모델 선택 UI
@@ -1360,6 +1619,14 @@
                         formData.append('ocr_model', selectedAlibabaModelRadio.value);
                     }
 
+                    // Consolidation 옵션 추가
+                    const consolidateCheckbox = document.getElementById('consolidateCheckbox');
+                    if (consolidateCheckbox) {
+                        formData.append('consolidate', consolidateCheckbox.checked ? 'true' : 'false');
+                    } else {
+                        formData.append('consolidate', 'true'); // Default to true
+                    }
+
                     // Enable streaming for real-time progress
                     formData.append('stream', 'true');
                     
@@ -1495,9 +1762,130 @@
                     
                     // LLM 결과 표시
                     const resultDiv = document.getElementById('resultSection');
+                    
+                    // Consolidation status badge
+                    let consolidationBadge = '';
+                    if (result.consolidate) {
+                        if (result.consolidation_success) {
+                            consolidationBadge = '<span class="consolidation-badge success">✓ 통합 완료</span>';
+                        } else if (result.consolidation_error) {
+                            consolidationBadge = '<span class="consolidation-badge warning">⚠ 통합 실패 (원본 사용)</span>';
+                        } else {
+                            consolidationBadge = '<span class="consolidation-badge error">✗ 통합 미실행</span>';
+                        }
+                    }
+                    
+                    // Consolidation summary HTML
+                    let consolidationSummaryHtml = '';
+                    if (result.consolidation_summary) {
+                        const summary = result.consolidation_summary;
+                        consolidationSummaryHtml = `
+                            <div class="consolidation-section">
+                                <h4>메타데이터 통합 요약 ${consolidationBadge}</h4>
+                                <div class="consolidation-summary">
+                                    <div class="consolidation-stat-card">
+                                        <div class="consolidation-stat-label">전체 필드</div>
+                                        <div class="consolidation-stat-value">${summary.total_fields || 0}</div>
+                                    </div>
+                                    <div class="consolidation-stat-card">
+                                        <div class="consolidation-stat-label">일치 필드</div>
+                                        <div class="consolidation-stat-value" style="color: #10b981;">${summary.agreed_fields || 0}</div>
+                                    </div>
+                                    <div class="consolidation-stat-card">
+                                        <div class="consolidation-stat-label">충돌 필드</div>
+                                        <div class="consolidation-stat-value" style="color: #ef4444;">${summary.conflicted_fields || 0}</div>
+                                    </div>
+                                    <div class="consolidation-stat-card">
+                                        <div class="consolidation-stat-label">LLM 전용</div>
+                                        <div class="consolidation-stat-value" style="color: #3b82f6;">${summary.llm_only_fields || 0}</div>
+                                    </div>
+                                    <div class="consolidation-stat-card">
+                                        <div class="consolidation-stat-label">NER 전용</div>
+                                        <div class="consolidation-stat-value" style="color: #f59e0b;">${summary.ner_only_fields || 0}</div>
+                                    </div>
+                                    <div class="consolidation-stat-card">
+                                        <div class="consolidation-stat-label">통합 신뢰도</div>
+                                        <div class="consolidation-stat-value" style="color: #8b5cf6;">${((result.consolidation_confidence || 0) * 100).toFixed(1)}%</div>
+                                    </div>
+                                </div>
+                                ${result.consolidation_error ? `<div class="warning" style="margin-top: 10px;">통합 오류: ${result.consolidation_error}</div>` : ''}
+                            </div>
+                        `;
+                    }
+                    
+                    // Consolidation decisions HTML
+                    let consolidationDecisionsHtml = '';
+                    if (result.consolidation_decisions && result.consolidation_decisions.length > 0) {
+                        const decisionsHtml = result.consolidation_decisions.map((decision, index) => {
+                            const decisionTypeLabels = {
+                                'AGREED': '일치',
+                                'CONFLICT': '충돌',
+                                'LLM_ONLY': 'LLM 전용',
+                                'NER_ONLY': 'NER 전용',
+                                'MISSING': '누락'
+                            };
+                            
+                            return `
+                                <div class="decision-item">
+                                    <div class="decision-header" onclick="toggleDecision(${index})">
+                                        <span class="decision-field">${decision.field || '알 수 없음'}</span>
+                                        <span class="decision-type ${decision.decision || 'MISSING'}">${decisionTypeLabels[decision.decision] || decision.decision || '알 수 없음'}</span>
+                                    </div>
+                                    <div class="decision-details" id="decision-${index}">
+                                        <div class="decision-values">
+                                            <div class="decision-value-item">
+                                                <div class="decision-value-label">LLM 값</div>
+                                                <div class="decision-value-content">${decision.llm_value !== null && decision.llm_value !== undefined ? JSON.stringify(decision.llm_value) : '없음'}</div>
+                                            </div>
+                                            <div class="decision-value-item">
+                                                <div class="decision-value-label">NER 값</div>
+                                                <div class="decision-value-content">${decision.ner_value !== null && decision.ner_value !== undefined ? JSON.stringify(decision.ner_value) : '없음'}</div>
+                                            </div>
+                                            <div class="decision-value-item">
+                                                <div class="decision-value-label">최종 값</div>
+                                                <div class="decision-value-content" style="color: #10b981; font-weight: 700;">${decision.final_value !== null && decision.final_value !== undefined ? JSON.stringify(decision.final_value) : '없음'}</div>
+                                            </div>
+                                            <div class="decision-value-item">
+                                                <div class="decision-value-label">신뢰도</div>
+                                                <div class="decision-value-content">${((decision.confidence || 0) * 100).toFixed(1)}%</div>
+                                            </div>
+                                        </div>
+                                        ${decision.explanation ? `
+                                            <div class="decision-evidence">
+                                                <div class="decision-evidence-label">설명</div>
+                                                <div class="decision-evidence-content">${decision.explanation}</div>
+                                            </div>
+                                        ` : ''}
+                                        ${decision.evidence && decision.evidence.ocr_excerpt ? `
+                                            <div class="decision-evidence">
+                                                <div class="decision-evidence-label">OCR 증거</div>
+                                                <div class="decision-evidence-content">${decision.evidence.ocr_excerpt}</div>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        consolidationDecisionsHtml = `
+                            <div class="consolidation-section">
+                                <h4>필드별 통합 결정 (${result.consolidation_decisions.length}개)</h4>
+                                <div style="max-height: 500px; overflow-y: auto;">
+                                    ${decisionsHtml}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Determine which metadata to show (consolidated if available, otherwise original)
+                    const displayMetadata = result.consolidated_metadata && Object.keys(result.consolidated_metadata).length > 0 
+                        ? result.consolidated_metadata 
+                        : result.metadata;
+                    const hasConsolidated = result.consolidated_metadata && Object.keys(result.consolidated_metadata).length > 0;
+                    
                     resultDiv.innerHTML = `
                         <div class="result-content">
-                            <h3>LLM 메타데이터 추출 결과</h3>
+                            <h3>LLM 메타데이터 추출 결과 ${consolidationBadge}</h3>
                             <div class="result-stats">
                                 <div class="stat-item">
                                     <span class="stat-label">파일명:</span>
@@ -1527,18 +1915,45 @@
                                     <span class="stat-label">신뢰도:</span>
                                     <span class="stat-value">${(result.confidence * 100).toFixed(1)}%</span>
                                 </div>
+                                ${result.consolidation_confidence ? `
+                                <div class="stat-item">
+                                    <span class="stat-label">통합 신뢰도:</span>
+                                    <span class="stat-value">${(result.consolidation_confidence * 100).toFixed(1)}%</span>
+                                </div>
+                                ` : ''}
                                 <div class="stat-item">
                                     <span class="stat-label">처리 시간:</span>
                                     <span class="stat-value">${(result.processing_time || result.extraction_time || 0).toFixed(2)}초</span>
                                 </div>
                             </div>
                             
+                            ${consolidationSummaryHtml}
+                            
                             <div class="metadata-section">
-                                <h4>추출된 메타데이터</h4>
-                                <div class="metadata-content">
-                                    <pre>${JSON.stringify(result.metadata, null, 2)}</pre>
-                                </div>
+                                <h4>${hasConsolidated ? '통합된 메타데이터 (최종 결과)' : '추출된 메타데이터'}</h4>
+                                ${hasConsolidated && result.metadata ? `
+                                    <div class="consolidation-tabs">
+                                        <button class="consolidation-tab active" onclick="switchMetadataTab('consolidated')">통합된 메타데이터</button>
+                                        <button class="consolidation-tab" onclick="switchMetadataTab('original')">원본 메타데이터</button>
+                                    </div>
+                                    <div class="consolidation-tab-content active" id="metadata-consolidated">
+                                        <div class="metadata-content">
+                                            <pre>${JSON.stringify(result.consolidated_metadata, null, 2)}</pre>
+                                        </div>
+                                    </div>
+                                    <div class="consolidation-tab-content" id="metadata-original">
+                                        <div class="metadata-content">
+                                            <pre>${JSON.stringify(result.metadata, null, 2)}</pre>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="metadata-content">
+                                        <pre>${JSON.stringify(displayMetadata, null, 2)}</pre>
+                                    </div>
+                                `}
                             </div>
+                            
+                            ${consolidationDecisionsHtml}
                             
                             ${result.entities && Object.keys(result.entities).length > 0 ? `
                             <div class="entities-section">
@@ -1563,9 +1978,11 @@
                             </div>
                             
                             <div class="download-buttons">
-                                <button class="btn" id="downloadMetadataBtn">메타데이터 다운로드</button>
+                                <button class="btn" id="downloadMetadataBtn">${hasConsolidated ? '통합 메타데이터 다운로드' : '메타데이터 다운로드'}</button>
+                                ${hasConsolidated ? `<button class="btn" id="downloadOriginalMetadataBtn" style="background: #6b7280;">원본 메타데이터 다운로드</button>` : ''}
                                 <button class="btn" id="downloadNerBtn">NER 엔티티 다운로드</button>
                                 <button class="btn" id="downloadOcrTextBtn">OCR 텍스트 다운로드</button>
+                                ${hasConsolidated ? `<button class="btn" id="downloadConsolidationBtn" style="background: #10b981;">통합 결과 다운로드</button>` : ''}
                                 <button class="btn" id="downloadFullResultBtn">전체 결과 다운로드</button>
                             </div>
                         </div>
@@ -1573,25 +1990,79 @@
 
                     // 다운로드 버튼 설정 (서버에서 다운로드)
                     const metadataBtn = document.getElementById('downloadMetadataBtn');
-                    metadataBtn.onclick = () => {
-                        window.location.href = `/download/${result.request_id}?type=llm`;
-                    };
+                    if (metadataBtn) {
+                        if (result.consolidated_metadata && Object.keys(result.consolidated_metadata).length > 0) {
+                            // Download consolidated metadata
+                            metadataBtn.onclick = () => {
+                                const consolidatedData = {
+                                    metadata: result.consolidated_metadata,
+                                    consolidation_summary: result.consolidation_summary,
+                                    consolidation_confidence: result.consolidation_confidence,
+                                    consolidation_decisions: result.consolidation_decisions
+                                };
+                                const blob = new Blob([JSON.stringify(consolidatedData, null, 2)], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `${result.filename}_consolidated_metadata.json`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                            };
+                        } else {
+                            metadataBtn.onclick = () => {
+                                window.location.href = `/download/${result.request_id}?type=llm`;
+                            };
+                        }
+                    }
+
+                    // Original metadata download button (if consolidated exists)
+                    const originalMetadataBtn = document.getElementById('downloadOriginalMetadataBtn');
+                    if (originalMetadataBtn) {
+                        originalMetadataBtn.onclick = () => {
+                            window.location.href = `/download/${result.request_id}?type=llm`;
+                        };
+                    }
+
+                    // Consolidation results download button
+                    const consolidationBtn = document.getElementById('downloadConsolidationBtn');
+                    if (consolidationBtn) {
+                        consolidationBtn.onclick = () => {
+                            const consolidationData = {
+                                consolidated_metadata: result.consolidated_metadata,
+                                consolidation_summary: result.consolidation_summary,
+                                consolidation_decisions: result.consolidation_decisions,
+                                consolidation_confidence: result.consolidation_confidence,
+                                original_metadata: result.metadata
+                            };
+                            const blob = new Blob([JSON.stringify(consolidationData, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${result.filename}_consolidation_results.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        };
+                    }
 
                     const nerBtn = document.getElementById('downloadNerBtn');
-                    nerBtn.onclick = () => {
-                        window.location.href = `/download/${result.request_id}?type=entities`;
-                    };
+                    if (nerBtn) {
+                        nerBtn.onclick = () => {
+                            window.location.href = `/download/${result.request_id}?type=entities`;
+                        };
+                    }
 
                     const ocrTextBtn = document.getElementById('downloadOcrTextBtn');
-                    ocrTextBtn.onclick = () => {
-                        const blob = new Blob([result.ocr_text], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `${result.filename}_ocr_text.txt`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    };
+                    if (ocrTextBtn) {
+                        ocrTextBtn.onclick = () => {
+                            const blob = new Blob([result.ocr_text], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${result.filename}_ocr_text.txt`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        };
+                    }
 
                     const fullResultBtn = document.getElementById('downloadFullResultBtn');
                     fullResultBtn.onclick = async () => {
@@ -1942,6 +2413,40 @@
             errorEl.textContent = '❌ ' + message;
             errorEl.classList.add('show');
             document.getElementById('progressSection').classList.remove('show');
+        }
+
+        // Consolidation UI helper functions
+        function toggleDecision(index) {
+            const detailsEl = document.getElementById(`decision-${index}`);
+            if (detailsEl) {
+                detailsEl.classList.toggle('expanded');
+            }
+        }
+
+        function switchMetadataTab(tabName) {
+            // Update tab buttons
+            const tabs = document.querySelectorAll('.consolidation-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            if (tabName === 'consolidated') {
+                document.querySelector('.consolidation-tab[onclick="switchMetadataTab(\'consolidated\')"]')?.classList.add('active');
+            } else {
+                document.querySelector('.consolidation-tab[onclick="switchMetadataTab(\'original\')"]')?.classList.add('active');
+            }
+            
+            // Update tab content
+            const consolidatedContent = document.getElementById('metadata-consolidated');
+            const originalContent = document.getElementById('metadata-original');
+            
+            if (consolidatedContent && originalContent) {
+                if (tabName === 'consolidated') {
+                    consolidatedContent.classList.add('active');
+                    originalContent.classList.remove('active');
+                } else {
+                    consolidatedContent.classList.remove('active');
+                    originalContent.classList.add('active');
+                }
+            }
         }
     </script>
 </body>

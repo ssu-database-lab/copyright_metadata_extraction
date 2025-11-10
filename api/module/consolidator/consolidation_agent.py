@@ -10,6 +10,7 @@ import json
 import logging
 from typing import Dict, List, Any, Optional
 from pathlib import Path
+from datetime import datetime
 import sys
 
 # Add parent directory to path for imports
@@ -36,16 +37,22 @@ class ConsolidationAgent:
     def __init__(
         self, 
         model_name: str = "alibaba-qwen3-next-80b-a3b-instruct",
-        output_dir: Optional[str] = None
+        output_dir: Optional[str] = None,
+        fallback_model: Optional[str] = "alibaba-qwen-max",
+        enable_hybrid: bool = True
     ):
         """
         Initialize consolidation agent
         
         Args:
-            model_name: LLM model to use (default: Qwen3-Next-80B)
+            model_name: Primary LLM model to use (default: Qwen3-Next-80B)
             output_dir: Output directory for results
+            fallback_model: Fallback model if primary fails (default: Qwen-Max)
+            enable_hybrid: Enable hybrid approach with automatic fallback
         """
         self.model_name = model_name
+        self.fallback_model = fallback_model
+        self.enable_hybrid = enable_hybrid
         self.output_dir = Path(output_dir) if output_dir else None
         
         # Initialize components
@@ -54,11 +61,13 @@ class ConsolidationAgent:
         self.validator = ValidationEngine()
         self.reasoner = ReasoningGenerator()
         
-        # Initialize LLM model
+        # Initialize primary LLM model
         if not self.llm_processor.initialize_model(model_name):
             raise RuntimeError(f"Failed to initialize model: {model_name}")
         
         logger.info(f"ConsolidationAgent initialized with model: {model_name}")
+        if enable_hybrid and fallback_model:
+            logger.info(f"Hybrid mode enabled - fallback model: {fallback_model}")
     
     def consolidate(
         self,
@@ -108,8 +117,8 @@ class ConsolidationAgent:
                 document_type=document_type
             )
             
-            # Step 3: LLM-based consolidation (Qwen3-Next-80B)
-            logger.info("Step 3: LLM consolidation with Qwen3-Next-80B")
+            # Step 3: LLM-based consolidation (with hybrid fallback)
+            logger.info("Step 3: LLM consolidation (hybrid mode enabled)")
             consolidated_result = self._llm_consolidate(
                 llm_metadata=llm_metadata,
                 ner_entities=ner_entities,
@@ -128,6 +137,13 @@ class ConsolidationAgent:
                 validation_errors=validation_errors
             )
             
+            # Add model usage info to final result
+            if consolidated_result.get('model_used'):
+                final_result['model_used'] = consolidated_result['model_used']
+                final_result['fallback_used'] = consolidated_result.get('fallback_used', False)
+                if consolidated_result.get('primary_model_failed'):
+                    final_result['primary_model_error'] = consolidated_result.get('primary_model_error')
+            
             logger.info("Consolidation completed successfully")
             return final_result
             
@@ -144,31 +160,113 @@ class ConsolidationAgent:
         document_type: str
     ) -> Dict[str, Any]:
         """
-        Use Qwen3-Next-80B to consolidate metadata
+        Use LLM to consolidate metadata with hybrid fallback approach
         
-        This is where the LLM model is invoked via the LLM processor
+        Tries primary model first, falls back to Qwen-Max if JSON parsing fails
         """
+        # Create consolidation prompt text
+        prompt_text = self._create_consolidation_prompt(
+            llm_metadata=llm_metadata,
+            ner_entities=ner_entities,
+            field_mappings=field_mappings,
+            ocr_text=ocr_text,
+            document_type=document_type
+        )
+        
+        # Get consolidation schema
+        schema = ConsolidationSchemas.get_consolidation_schema()
+        
+        # Try primary model first
+        logger.info(f"Attempting consolidation with primary model: {self.model_name}")
         try:
-            # Create consolidation prompt text
-            prompt_text = self._create_consolidation_prompt(
-                llm_metadata=llm_metadata,
-                ner_entities=ner_entities,
-                field_mappings=field_mappings,
-                ocr_text=ocr_text,
+            result = self._call_model_for_consolidation(
+                model_name=self.model_name,
+                prompt_text=prompt_text,
+                schema=schema,
                 document_type=document_type
             )
             
-            # Get consolidation schema
-            schema = ConsolidationSchemas.get_consolidation_schema()
+            # Validate JSON was parsed successfully
+            if result and result.get('consolidated_metadata') is not None:
+                result['model_used'] = self.model_name
+                result['fallback_used'] = False
+                logger.info(f"✅ Successfully consolidated with {self.model_name}")
+                return result
+            else:
+                raise ValueError("Failed to parse JSON from primary model response")
+                
+        except (ValueError, json.JSONDecodeError, Exception) as e:
+            logger.warning(f"Primary model ({self.model_name}) failed: {e}")
             
-            # Use the extractor directly with consolidation schema
-            # For cloud models (like Qwen3-Next-80B), we need to handle it specially
-            logger.info("Calling Qwen3-Next-80B for consolidation...")
-            
-            # Get the extractor from the processor
-            extractor = self.llm_processor.extractor
-            if not extractor:
-                raise RuntimeError("LLM extractor not initialized")
+            # Try fallback model if hybrid mode is enabled
+            if self.enable_hybrid and self.fallback_model:
+                logger.info(f"🔄 Falling back to {self.fallback_model} for better JSON quality")
+                try:
+                    # Initialize fallback model
+                    fallback_processor = LLMExtractionProcessor(
+                        output_dir=str(self.output_dir) if self.output_dir else None
+                    )
+                    if not fallback_processor.initialize_model(self.fallback_model):
+                        raise RuntimeError(f"Failed to initialize fallback model: {self.fallback_model}")
+                    
+                    result = self._call_model_for_consolidation(
+                        model_name=self.fallback_model,
+                        prompt_text=prompt_text,
+                        schema=schema,
+                        document_type=document_type,
+                        extractor=fallback_processor.extractor
+                    )
+                    
+                    if result and result.get('consolidated_metadata') is not None:
+                        result['model_used'] = self.fallback_model
+                        result['fallback_used'] = True
+                        result['primary_model_failed'] = True
+                        result['primary_model_error'] = str(e)
+                        logger.info(f"✅ Successfully consolidated with fallback model: {self.fallback_model}")
+                        return result
+                    else:
+                        raise ValueError("Failed to parse JSON from fallback model response")
+                        
+                except Exception as fallback_error:
+                    logger.error(f"Fallback model ({self.fallback_model}) also failed: {fallback_error}")
+                    # Both models failed, use basic fallback
+                    return self._fallback_consolidate(
+                        llm_metadata, ner_entities, field_mappings
+                    )
+            else:
+                # Hybrid mode disabled or no fallback model, use basic fallback
+                logger.warning("Hybrid mode disabled or no fallback model, using basic consolidation")
+                return self._fallback_consolidate(
+                    llm_metadata, ner_entities, field_mappings
+                )
+    
+    def _call_model_for_consolidation(
+        self,
+        model_name: str,
+        prompt_text: str,
+        schema: Dict[str, Any],
+        document_type: str,
+        extractor=None
+    ) -> Dict[str, Any]:
+        """
+        Call a specific model for consolidation
+        
+        Args:
+            model_name: Model to use
+            prompt_text: Consolidation prompt
+            schema: Consolidation schema
+            document_type: Document type
+            extractor: Optional extractor (if None, uses self.llm_processor.extractor)
+        
+        Returns:
+            Dict with consolidated_metadata, decisions, summary, etc.
+        """
+        try:
+            # Use provided extractor or get from processor
+            if extractor is None:
+                extractor = self.llm_processor.extractor
+                if not extractor:
+                    raise RuntimeError("LLM extractor not initialized")
             
             # Store raw response for debugging
             raw_response_text = None
@@ -185,7 +283,14 @@ class ConsolidationAgent:
                 messages = [
                     {
                         "role": "system",
-                        "content": "당신은 한국어 문서 메타데이터 추출 전문가입니다. 두 가지 다른 추출 방법(LLM 추출과 NER 추출)의 결과를 비교하고 통합하는 것이 임무입니다. 반드시 유효한 JSON만 출력하세요."
+                        "content": """당신은 한국어 문서 메타데이터 추출 전문가입니다. 두 가지 다른 추출 방법(LLM 추출과 NER 추출)의 결과를 비교하고 통합하는 것이 임무입니다.
+
+중요한 지시사항:
+1. 반드시 유효한 JSON만 출력하세요. 마크다운 코드 블록(```json) 사용 금지.
+2. JSON 형식이 완전하고 올바르게 닫혀있어야 합니다 (모든 중괄호, 대괄호, 따옴표가 닫혀있어야 함).
+3. 문자열 내부의 특수 문자는 반드시 이스케이프 처리하세요 (예: \\", \\n).
+4. 응답은 순수 JSON 객체여야 하며, 추가 설명이나 주석을 포함하지 마세요.
+5. 응답이 길 경우에도 JSON 구조를 완전히 유지하세요."""
                     },
                     {
                         "role": "user",
@@ -204,50 +309,176 @@ class ConsolidationAgent:
                             messages=messages,
                             temperature=0.7,  # Slightly higher for consolidation reasoning
                             top_p=0.8,
-                            max_tokens=4096  # More tokens for detailed decisions
+                            max_tokens=8192  # Increased for large consolidation responses
                         )
                         
                         extracted_text = response.choices[0].message.content
+                        raw_response_text = extracted_text
                         
-                        # Parse JSON response
+                        # Check if response was truncated
+                        finish_reason = response.choices[0].finish_reason if hasattr(response.choices[0], 'finish_reason') else None
+                        if finish_reason == 'length':
+                            logger.warning(f"Response was truncated (finish_reason: {finish_reason}). Consider increasing max_tokens.")
+                            # Try to extract what we have, but note it may be incomplete
+                        
+                        # Parse JSON response with improved error handling
                         cleaned_text = cloud_extractor._clean_markdown_formatting(extracted_text) if hasattr(cloud_extractor, '_clean_markdown_formatting') else extracted_text
                         
+                        consolidated_metadata = None
+                        json_parse_errors = []
+                        
+                        # Strategy 1: Try direct JSON parse
                         try:
                             consolidated_metadata = json.loads(cleaned_text)
-                            raw_response_text = extracted_text
+                            logger.info("Successfully parsed JSON directly")
                         except json.JSONDecodeError as json_err:
-                            logger.warning(f"JSON parse error, trying to extract JSON from response: {json_err}")
-                            # Try to extract JSON from markdown or text
+                            json_parse_errors.append(f"Direct parse failed: {json_err}")
+                            logger.warning(f"JSON parse error, trying alternative methods: {json_err}")
+                            
+                            # Strategy 2: Try to extract JSON from markdown code blocks
                             import re
-                            json_match = re.search(r'\{.*\}', cleaned_text, re.DOTALL)
-                            if json_match:
-                                consolidated_metadata = json.loads(json_match.group())
-                                raw_response_text = extracted_text
-                            else:
-                                raise ValueError(f"Could not parse JSON from response: {cleaned_text[:200]}")
+                            # Look for JSON in code blocks first
+                            json_block_pattern = r'```(?:json)?\s*(\{.*?\})\s*```'
+                            json_block_match = re.search(json_block_pattern, cleaned_text, re.DOTALL)
+                            if json_block_match:
+                                try:
+                                    consolidated_metadata = json.loads(json_block_match.group(1))
+                                    logger.info("Successfully parsed JSON from code block")
+                                except json.JSONDecodeError as e:
+                                    json_parse_errors.append(f"Code block parse failed: {e}")
+                            
+                            # Strategy 3: Try to find JSON object boundaries more carefully
+                            if consolidated_metadata is None:
+                                # Find the first { and try to match braces
+                                start_idx = cleaned_text.find('{')
+                                if start_idx != -1:
+                                    brace_count = 0
+                                    in_string = False
+                                    escape_next = False
+                                    end_idx = start_idx
+                                    
+                                    for i in range(start_idx, len(cleaned_text)):
+                                        char = cleaned_text[i]
+                                        
+                                        if escape_next:
+                                            escape_next = False
+                                            continue
+                                        
+                                        if char == '\\':
+                                            escape_next = True
+                                            continue
+                                        
+                                        if char == '"' and not escape_next:
+                                            in_string = not in_string
+                                            continue
+                                        
+                                        if not in_string:
+                                            if char == '{':
+                                                brace_count += 1
+                                            elif char == '}':
+                                                brace_count -= 1
+                                                if brace_count == 0:
+                                                    end_idx = i + 1
+                                                    break
+                                    
+                                    if brace_count == 0 and end_idx > start_idx:
+                                        json_str = cleaned_text[start_idx:end_idx]
+                                        try:
+                                            consolidated_metadata = json.loads(json_str)
+                                            logger.info("Successfully parsed JSON using brace matching")
+                                        except json.JSONDecodeError as e:
+                                            json_parse_errors.append(f"Brace matching parse failed: {e}")
+                            
+                            # Strategy 4: Try to repair incomplete JSON (if cut off)
+                            if consolidated_metadata is None:
+                                # Try to find the last complete JSON object
+                                last_brace = cleaned_text.rfind('}')
+                                if last_brace != -1:
+                                    # Try to extract up to the last complete brace
+                                    potential_json = cleaned_text[:last_brace + 1]
+                                    # Try to close any unclosed strings or structures
+                                    try:
+                                        # Simple repair: close unclosed strings
+                                        if potential_json.count('"') % 2 != 0:
+                                            potential_json += '"'
+                                        if potential_json.count('{') > potential_json.count('}'):
+                                            potential_json += '}' * (potential_json.count('{') - potential_json.count('}'))
+                                        
+                                        consolidated_metadata = json.loads(potential_json)
+                                        logger.info("Successfully parsed JSON after repair attempt")
+                                    except json.JSONDecodeError as e:
+                                        json_parse_errors.append(f"Repair attempt failed: {e}")
+                            
+                            # Strategy 5: Last resort - try regex extraction (non-greedy)
+                            if consolidated_metadata is None:
+                                # Use non-greedy matching to find the first complete JSON object
+                                json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', cleaned_text, re.DOTALL)
+                                if json_match:
+                                    try:
+                                        consolidated_metadata = json.loads(json_match.group())
+                                        logger.info("Successfully parsed JSON using regex extraction")
+                                    except json.JSONDecodeError as e:
+                                        json_parse_errors.append(f"Regex extraction failed: {e}")
+                            
+                            # If all strategies failed, raise error with details
+                            if consolidated_metadata is None:
+                                error_msg = f"Could not parse JSON from response after {len(json_parse_errors)} attempts.\n"
+                                error_msg += f"Errors: {'; '.join(json_parse_errors)}\n"
+                                error_msg += f"Response preview (first 500 chars): {cleaned_text[:500]}\n"
+                                error_msg += f"Response length: {len(cleaned_text)} chars"
+                                
+                                # Save raw response for debugging
+                                if self.output_dir:
+                                    debug_file = self.output_dir / f"consolidation_debug_response_{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                                    with open(debug_file, 'w', encoding='utf-8') as f:
+                                        f.write(f"Model: {model_name}\n")
+                                        f.write(f"Raw Response:\n{raw_response_text}\n\n")
+                                        f.write(f"Cleaned Text:\n{cleaned_text}\n\n")
+                                        f.write(f"Parse Errors:\n{chr(10).join(json_parse_errors)}")
+                                    logger.error(f"Saved debug response to: {debug_file}")
+                                
+                                raise ValueError(error_msg)
+                        
+                        # Extract decisions from consolidated metadata
+                        # Handle both nested and flat structures
+                        if isinstance(consolidated_metadata, dict):
+                            decisions = consolidated_metadata.get('decisions', [])
+                            summary = consolidated_metadata.get('summary', {})
+                            final_metadata = consolidated_metadata.get('consolidated_metadata', {})
+                        else:
+                            # If response is flat, try to extract from root
+                            decisions = consolidated_metadata.get('decisions', []) if isinstance(consolidated_metadata, dict) else []
+                            summary = consolidated_metadata.get('summary', {}) if isinstance(consolidated_metadata, dict) else {}
+                            final_metadata = consolidated_metadata if isinstance(consolidated_metadata, dict) else {}
+                        
+                        logger.info(f"Consolidation complete: {len(decisions)} decisions made")
+                        
+                        # Calculate confidence from decisions if summary doesn't have it
+                        if summary and 'overall_confidence' in summary:
+                            llm_confidence = summary['overall_confidence']
+                        elif decisions:
+                            # Calculate average confidence from decisions
+                            confidences = [d.get('confidence', 0.0) for d in decisions if d.get('confidence')]
+                            llm_confidence = sum(confidences) / len(confidences) if confidences else 0.7
+                        else:
+                            llm_confidence = 0.7
+                        
+                        return {
+                            "consolidated_metadata": final_metadata,
+                            "decisions": decisions,
+                            "summary": summary,
+                            "status": "completed",
+                            "llm_confidence": llm_confidence,
+                            "raw_response": raw_response_text
+                        }
                         
                     except Exception as e:
-                        logger.error(f"Cloud API call failed: {e}")
-                        # Fallback to basic consolidation
-                        return self._fallback_consolidate(
-                            llm_metadata, ner_entities, field_mappings
-                        )
-                else:
-                    # Fallback to standard extract_metadata
-                    result = extractor.extract_metadata(
-                        text=prompt_text[:2000],  # Truncate if too long
-                        schema=schema,
-                        document_type=f"{document_type}_consolidation"
-                    )
-                    from module.llm_extraction.models.base_extractor import ExtractionResult
-                    if isinstance(result, ExtractionResult):
-                        consolidated_metadata = result.metadata
-                    else:
-                        consolidated_metadata = result
+                        logger.error(f"Cloud API call failed for {model_name}: {e}")
+                        raise  # Re-raise to trigger fallback
             else:
-                # For local models, use standard extraction
+                # Not a cloud extractor, use standard extract_metadata
                 result = extractor.extract_metadata(
-                    text=prompt_text[:2000],
+                    text=prompt_text[:2000],  # Truncate if too long
                     schema=schema,
                     document_type=f"{document_type}_consolidation"
                 )
@@ -256,46 +487,37 @@ class ConsolidationAgent:
                     consolidated_metadata = result.metadata
                 else:
                     consolidated_metadata = result
-            
-            # Extract decisions from consolidated metadata
-            # Handle both nested and flat structures
-            if isinstance(consolidated_metadata, dict):
-                decisions = consolidated_metadata.get('decisions', [])
-                summary = consolidated_metadata.get('summary', {})
-                final_metadata = consolidated_metadata.get('consolidated_metadata', llm_metadata)
-            else:
-                # If response is flat, try to extract from root
-                decisions = consolidated_metadata.get('decisions', []) if isinstance(consolidated_metadata, dict) else []
-                summary = consolidated_metadata.get('summary', {}) if isinstance(consolidated_metadata, dict) else {}
-                final_metadata = consolidated_metadata if isinstance(consolidated_metadata, dict) else llm_metadata
-            
-            logger.info(f"Consolidation complete: {len(decisions)} decisions made")
-            
-            # Calculate confidence from decisions if summary doesn't have it
-            if summary and 'overall_confidence' in summary:
-                llm_confidence = summary['overall_confidence']
-            elif decisions:
-                # Calculate average confidence from decisions
-                confidences = [d.get('confidence', 0.0) for d in decisions if d.get('confidence')]
-                llm_confidence = sum(confidences) / len(confidences) if confidences else 0.7
-            else:
-                llm_confidence = 0.7
-            
-            return {
-                "consolidated_metadata": final_metadata,
-                "decisions": decisions,
-                "summary": summary,
-                "status": "completed",
-                "llm_confidence": llm_confidence,
-                "raw_response": raw_response_text
-            }
-            
+                
+                # Extract decisions from consolidated metadata
+                if isinstance(consolidated_metadata, dict):
+                    decisions = consolidated_metadata.get('decisions', [])
+                    summary = consolidated_metadata.get('summary', {})
+                    final_metadata = consolidated_metadata.get('consolidated_metadata', {})
+                else:
+                    decisions = []
+                    summary = {}
+                    final_metadata = {}
+                
+                # Calculate confidence
+                if summary and 'overall_confidence' in summary:
+                    llm_confidence = summary['overall_confidence']
+                elif decisions:
+                    confidences = [d.get('confidence', 0.0) for d in decisions if d.get('confidence')]
+                    llm_confidence = sum(confidences) / len(confidences) if confidences else 0.7
+                else:
+                    llm_confidence = 0.7
+                
+                return {
+                    "consolidated_metadata": final_metadata,
+                    "decisions": decisions,
+                    "summary": summary,
+                    "status": "completed",
+                    "llm_confidence": llm_confidence,
+                    "raw_response": None
+                }
         except Exception as e:
-            logger.error(f"Error in LLM consolidation: {e}", exc_info=True)
-            # Fallback to basic consolidation
-            return self._fallback_consolidate(
-                llm_metadata, ner_entities, field_mappings
-            )
+            logger.error(f"Error calling model {model_name} for consolidation: {e}", exc_info=True)
+            raise  # Re-raise to allow fallback handling
     
     def _create_consolidation_prompt(
         self,

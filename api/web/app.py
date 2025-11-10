@@ -45,6 +45,9 @@ from module.ocr import UniversalOCRProcessor
 # LLM extraction 모듈 import
 from module.llm_extraction import LLMExtractionProcessor
 
+# Consolidation 모듈 import
+from module.consolidator import ConsolidationAgent
+
 # FastAPI 앱 초기화
 app = FastAPI(
     title="NER 엔티티 추출 API",
@@ -809,9 +812,11 @@ async def llm_extract_metadata(
     ocr_provider: str = Form(default="google"),
     ocr_model: str = Form(default=None),
     ner_model: str = Form(default="klue-roberta-large"),
+    consolidate: bool = Form(default=True),
+    consolidation_model: str = Form(default="alibaba-qwen3-next-80b-a3b-instruct"),
     stream: bool = Form(default=False)
 ):
-    """LLM을 사용한 메타데이터 추출 (SSE 지원)"""
+    """LLM을 사용한 메타데이터 추출 (SSE 지원, 통합 기능 포함)"""
     
     # CRITICAL: Read file content BEFORE creating the async generator
     # FastAPI closes the file handle after the request handler starts,
@@ -986,9 +991,80 @@ async def llm_extract_metadata(
                     'success': False,
                     'error': str(e),
                     'entity_types': {},
-                    'total_entities': 0
+                    'total_entities': 0,
+                    'extracted_entities': []
                 }
                 yield _send_progress_update(f"NER 처리 중 오류 발생: {str(e)}", 4, 90, {"warning": str(e)})
+            
+            # Consolidation 처리 (if enabled)
+            consolidation_result = None
+            consolidation_success = False
+            consolidation_error = None
+            
+            if consolidate:
+                try:
+                    yield _send_progress_update("메타데이터 통합 중...", 5, 95)
+                    await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
+                    logger.info("Consolidation 시작")
+                    
+                    # Ensure ner_result has extracted_entities
+                    if ner_result and 'extracted_entities' not in ner_result:
+                        # Extract entities from statistics if available
+                        statistics = ner_result.get('statistics', {})
+                        entities_data = ner_result.get('entities', {})
+                        extracted_entities = []
+                        
+                        # Convert entities dict to list of tuples (text, type)
+                        if isinstance(entities_data, dict):
+                            for entity_type, entity_list in entities_data.items():
+                                if isinstance(entity_list, list):
+                                    for entity in entity_list:
+                                        if isinstance(entity, dict):
+                                            text = entity.get('text', entity.get('entity', ''))
+                                            extracted_entities.append((text, entity_type))
+                                        elif isinstance(entity, str):
+                                            extracted_entities.append((entity, entity_type))
+                        
+                        ner_result['extracted_entities'] = extracted_entities
+                    
+                    # Ensure llm_result has ocr_text (needed for ConsolidationAgent's _post_process)
+                    llm_result_with_ocr = llm_result.copy()
+                    llm_result_with_ocr['ocr_text'] = ocr_text
+                    
+                    # Initialize ConsolidationAgent with hybrid approach
+                    # Primary: Qwen3-Next-80B (cost-effective), Fallback: Qwen-Max (better JSON quality)
+                    fallback_model = "alibaba-qwen-max" if consolidation_model == "alibaba-qwen3-next-80b-a3b-instruct" else None
+                    consolidation_agent = ConsolidationAgent(
+                        model_name=consolidation_model,
+                        output_dir=str(result_dir),
+                        fallback_model=fallback_model,
+                        enable_hybrid=True  # Enable automatic fallback on JSON parsing errors
+                    )
+                    
+                    # Run consolidation
+                    consolidation_result = consolidation_agent.consolidate(
+                        llm_result=llm_result_with_ocr,
+                        ner_result=ner_result,
+                        ocr_text=ocr_text,
+                        document_type=document_type
+                    )
+                    
+                    if consolidation_result.get('success', False):
+                        consolidation_success = True
+                        logger.info("Consolidation 완료")
+                        yield _send_progress_update("메타데이터 통합 완료", 5, 98)
+                        await asyncio.sleep(0.01)
+                    else:
+                        consolidation_error = consolidation_result.get('error', 'Consolidation 실패')
+                        logger.warning(f"Consolidation 실패: {consolidation_error}")
+                        yield _send_progress_update(f"메타데이터 통합 실패 (원본 메타데이터 사용): {consolidation_error}", 5, 98, {"warning": consolidation_error})
+                        await asyncio.sleep(0.01)
+                        
+                except Exception as e:
+                    consolidation_error = str(e)
+                    logger.error(f"Consolidation 처리 중 오류: {e}", exc_info=True)
+                    yield _send_progress_update(f"메타데이터 통합 중 오류 발생 (원본 메타데이터 사용): {str(e)}", 5, 98, {"warning": str(e)})
+                    await asyncio.sleep(0.01)
             
             # 응답 구성
             total_processing_time = (datetime.now() - process_start_time).total_seconds()
@@ -1000,7 +1076,7 @@ async def llm_extract_metadata(
                 "file_size_mb": round(file_size_mb, 2),
                 "model_used": llm_result.get('model_used', model_name),
                 "document_type": document_type,
-                "metadata": llm_result.get('metadata', {}),
+                "metadata": llm_result.get('metadata', {}),  # Original LLM result
                 "confidence": llm_result.get('confidence', 0.0),
                 "extraction_time": llm_result.get('extraction_time', 0.0),
                 "ocr_text": ocr_text,
@@ -1013,7 +1089,18 @@ async def llm_extract_metadata(
                 "entity_count": _count_ner_entities(ner_result) if ner_result else 0,
                 "ner_success": ner_result.get('success', False) if ner_result else False,
                 "ner_error": ner_result.get('error') if ner_result and not ner_result.get('success', False) else None,
-                "processing_time": round(total_processing_time, 2)
+                "processing_time": round(total_processing_time, 2),
+                # Consolidation fields
+                "consolidate": consolidate,
+                "consolidation_model": consolidation_model if consolidate else None,
+                "consolidation_success": consolidation_success,
+                "consolidation_error": consolidation_error,
+                "consolidated_metadata": consolidation_result.get('consolidated_metadata', {}) if consolidation_result else None,
+                "consolidation_decisions": consolidation_result.get('validation_report', {}).get('decisions', []) if consolidation_result else None,
+                "consolidation_summary": consolidation_result.get('validation_report', {}).get('summary', {}) if consolidation_result else None,
+                "consolidation_confidence": consolidation_result.get('validation_report', {}).get('confidence_score', 0.0) if consolidation_result else None,
+                "consolidation_model_used": consolidation_result.get('model_used', consolidation_model) if consolidation_result else None,
+                "consolidation_fallback_used": consolidation_result.get('fallback_used', False) if consolidation_result else False
             }
             
             # Debug logging
@@ -1024,6 +1111,13 @@ async def llm_extract_metadata(
             llm_result_path = result_dir / 'llm_metadata.json'
             with open(llm_result_path, 'w', encoding='utf-8') as f:
                 json.dump(response, f, ensure_ascii=False, indent=2)
+            
+            # Consolidation 결과 별도 저장 (if available)
+            if consolidation_result and consolidation_success:
+                consolidation_result_path = result_dir / 'consolidated_metadata.json'
+                with open(consolidation_result_path, 'w', encoding='utf-8') as f:
+                    json.dump(consolidation_result, f, ensure_ascii=False, indent=2)
+                logger.info(f"Consolidation 결과 저장: {consolidation_result_path}")
             
             # Final progress update with complete result
             logger.info(f"Sending final result for request_id: {request_id}")
