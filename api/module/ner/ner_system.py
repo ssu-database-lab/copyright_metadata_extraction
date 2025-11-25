@@ -208,25 +208,91 @@ def load_model_and_tokenizer(model_path: Path, verbose: bool = True):
     # BERT-CRF 커스텀 모델 로드
     model_pt_path = model_path / "model.pt"
     if model_pt_path.exists():
-        # 커스텀 BERT-CRF 모델 사용
-        from .ner_train import BertCrfForNER
-        
-        # config.json에서 모델 이름 확인
-        config_path = model_path / "config.json"
-        if config_path.exists():
-            with open(config_path, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-            model_name = config.get('_name_or_path', 'google-bert/bert-base-multilingual-cased')
-        else:
-            model_name = 'google-bert/bert-base-multilingual-cased'
-        
-        num_labels = len(id2label)
-        model = BertCrfForNER(model_name=model_name, num_labels=num_labels)
-        
-        # 훈련된 가중치 로드
-        model.load_state_dict(torch.load(model_pt_path, map_location='cpu'))
-        if verbose:
-            print(f"   BERT-CRF 모델 로드 완료: {num_labels}개 라벨")
+        # 커스텀 BERT-CRF 모델 사용 시도
+        try:
+            from .ner_train import BertCrfForNER
+            
+            # model_architecture.json에서 모델 설정 로드 (있으면)
+            arch_path = model_path / "model_architecture.json"
+            if arch_path.exists():
+                with open(arch_path, 'r', encoding='utf-8') as f:
+                    arch_config = json.load(f)
+                model_name = arch_config.get('model_name', 'google-bert/bert-base-multilingual-cased')
+                use_lstm = arch_config.get('use_lstm', True)
+                lstm_hidden_dim = arch_config.get('lstm_hidden_dim', 256)
+                lstm_layers = arch_config.get('lstm_layers', 3)
+                dropout = arch_config.get('dropout', 0.1)
+            else:
+                # config.json에서 모델 이름만 확인
+                config_path = model_path / "config.json"
+                if config_path.exists():
+                    with open(config_path, 'r', encoding='utf-8') as f:
+                        config = json.load(f)
+                    model_name = config.get('_name_or_path', 'google-bert/bert-base-multilingual-cased')
+                else:
+                    model_name = 'google-bert/bert-base-multilingual-cased'
+                # 기본값 사용
+                use_lstm = True
+                lstm_hidden_dim = 256
+                lstm_layers = 3
+                dropout = 0.1
+            
+            num_labels = len(id2label)
+            model = BertCrfForNER(
+                model_name=model_name, 
+                num_labels=num_labels,
+                dropout=dropout,
+                use_lstm=use_lstm,
+                lstm_hidden_dim=lstm_hidden_dim,
+                lstm_layers=lstm_layers
+            )
+            
+            # 훈련된 가중치 로드 시도
+            state_dict = torch.load(model_pt_path, map_location='cpu')
+            # 차원 불일치 체크: 첫 번째 레이어의 embedding 차원 확인
+            if 'bert.embeddings.word_embeddings.weight' in state_dict:
+                checkpoint_dim = state_dict['bert.embeddings.word_embeddings.weight'].shape[1]
+                # 모델의 실제 embedding 차원 확인
+                model_dim = model.bert.config.hidden_size
+                if checkpoint_dim != model_dim:
+                    raise ValueError(f"차원 불일치: checkpoint={checkpoint_dim}, model={model_dim}")
+            
+            model.load_state_dict(state_dict, strict=False)
+            if verbose:
+                print(f"   BERT-CRF 모델 로드 완료: {num_labels}개 라벨")
+        except Exception as e:
+            # BERT-CRF 모델 로드 실패 시 HuggingFace 표준 모델로 fallback
+            if verbose:
+                error_msg = str(e)
+                if len(error_msg) > 200:
+                    error_msg = error_msg[:200] + "..."
+                print(f"   경고: BERT-CRF 모델 로드 실패, HuggingFace 표준 모델 사용")
+                print(f"         오류: {error_msg}")
+            try:
+                model = AutoModelForTokenClassification.from_pretrained(str(model_path))
+                if verbose:
+                    print(f"   HuggingFace 모델 로드 완료")
+            except Exception as e2:
+                # HuggingFace 모델도 실패하면 원본 모델 이름으로 직접 로드 시도
+                if verbose:
+                    print(f"   경고: 로컬 모델 로드 실패, 원본 모델 다운로드 시도")
+                # config에서 원본 모델 이름 가져오기
+                config_path = model_path / "config.json"
+                if config_path.exists():
+                    with open(config_path, 'r', encoding='utf-8') as f:
+                        config = json.load(f)
+                    original_model_name = config.get('_name_or_path', 'google-bert/bert-base-multilingual-cased')
+                else:
+                    original_model_name = 'google-bert/bert-base-multilingual-cased'
+                
+                num_labels = len(id2label)
+                model = AutoModelForTokenClassification.from_pretrained(
+                    original_model_name,
+                    num_labels=num_labels,
+                    ignore_mismatched_sizes=True
+                )
+                if verbose:
+                    print(f"   원본 모델({original_model_name}) 로드 완료")
     else:
         # 표준 HuggingFace 모델
         model = AutoModelForTokenClassification.from_pretrained(str(model_path))
@@ -356,7 +422,11 @@ def extract_entities_by_bio_tagging(text: str, tokenizer, model, id2label: dict,
             
             # 모델 예측
             with torch.no_grad():
-                outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+                try:
+                    outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+                except Exception as e:
+                    print(f"WARNING: 모델 예측 오류: {e}")
+                    continue
                 
                 # BERT-CRF 모델인지 표준 모델인지 확인
                 if hasattr(outputs, 'logits'):
@@ -389,11 +459,26 @@ def extract_entities_by_bio_tagging(text: str, tokenizer, model, id2label: dict,
             current_start = -1
             current_confidence = 0.0
             
+            # 배열 길이 일치 확인 및 조정
+            min_len = min(len(predicted_labels), len(confidence_scores), len(offset_mapping))
+            predicted_labels = predicted_labels[:min_len]
+            confidence_scores = confidence_scores[:min_len]
+            offset_mapping = offset_mapping[:min_len]
+            
             for token_idx, (pred_id, confidence, (start, end)) in enumerate(zip(predicted_labels, confidence_scores, offset_mapping)):
                 if start == 0 and end == 0:  # 특수 토큰 건너뛰기
                     continue
                 
+                # 인덱스 범위 체크
+                if pred_id not in id2label:
+                    continue
+                
                 pred_label = id2label.get(pred_id, 'O')
+                
+                # offset_mapping 범위 체크
+                if start >= len(sentence) or end > len(sentence):
+                    continue
+                
                 token_text = sentence[start:end]
                 
                 # === 문맥 기반 능동적 보정 (모든 엔티티) ===
@@ -406,18 +491,24 @@ def extract_entities_by_bio_tagging(text: str, tokenizer, model, id2label: dict,
                 )
                 
                 if detected_type and all_probs is not None:
-                    # 감지된 타입의 B-, I- 라벨 확률 체크
-                    for label_id, label_name in id2label.items():
-                        if label_name.endswith(f'-{detected_type}'):
-                            type_prob = all_probs[token_idx][label_id].item()
-                            # 패턴 매칭 + 모델 확률 조합
-                            combined_confidence = max(type_prob, pattern_confidence * type_prob)
-                            
-                            # 낮은 확률이라도 패턴이 강하면 승격 (0.1 이상)
-                            if combined_confidence > 0.1 or (pattern_confidence > 0.7 and type_prob > 0.05):
-                                pred_label = label_name
-                                confidence = max(confidence, combined_confidence)
-                                break
+                    # 인덱스 범위 체크
+                    if token_idx < all_probs.shape[0]:
+                        # 감지된 타입의 B-, I- 라벨 확률 체크
+                        for label_id, label_name in id2label.items():
+                            if label_id < all_probs.shape[1] and label_name.endswith(f'-{detected_type}'):
+                                try:
+                                    type_prob = all_probs[token_idx][label_id].item()
+                                    # 패턴 매칭 + 모델 확률 조합
+                                    combined_confidence = max(type_prob, pattern_confidence * type_prob)
+                                    
+                                    # 낮은 확률이라도 패턴이 강하면 승격 (0.1 이상)
+                                    if combined_confidence > 0.1 or (pattern_confidence > 0.7 and type_prob > 0.05):
+                                        pred_label = label_name
+                                        confidence = max(confidence, combined_confidence)
+                                        break
+                                except (IndexError, RuntimeError):
+                                    # 인덱스 오류 무시하고 계속
+                                    continue
                 
                 # 기존 threshold 체크 (완화: CRF 기반 모델용)
                 if confidence < 1.0 and confidence < 0.10:

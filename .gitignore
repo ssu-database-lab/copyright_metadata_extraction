@@ -139,3 +139,5 @@ project-deployment.bundle
 /api/module/ner
 /api/model_downloaded
 /api/module/ner/training
+/metadata/models
+metadata/data/in/csv/원문DB 메타데이터_20251119.csv

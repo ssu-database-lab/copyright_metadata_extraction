@@ -1,0 +1,27 @@
+# -------------------- library.py --------------------
+tldextract>=3.4.0
+pandas>=1.5.0
+numpy>=1.21.0
+
+# -------------------- extractor --------------------
+# YAML 설정
+PyYAML>=6.0
+
+# 날짜·수량 등 정규 추출
+python-dateutil>=2.8.0
+dateparser>=1.1.8
+flashtext>=2.7
+urlextract>=1.8.0
+spacy>=3.7.0
+
+# NER (mBERT, XLM, Bi-LSTM+CRF)
+transformers>=4.30.0
+torch>=2.0.0
+seqeval>=1.2.2
+matplotlib>=3.5.0
+
+# LLM (Qwen)
+# transformers, torch는 위에서 이미 포함
+huggingface_hub[hf_xet]>=0.16.4
+blingfire>=0.1.1
+kiwipiepy>=0.10.0

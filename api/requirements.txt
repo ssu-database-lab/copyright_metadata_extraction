@@ -31,6 +31,7 @@ accelerate>=0.20.0              # 모델 가속화
 datasets>=2.14.0                # 데이터셋 처리
 seqeval>=1.2.2                  # NER 평가 메트릭
 pytorch-crf>=0.7.2              # CRF 레이어 (BERT-CRF 모델)
+torchcrf>=1.0.0                 # CRF 레이어 (시스템 모델용)
 
 # -------------------- Data Processing --------------------
 numpy>=1.21.0                   # 수치 연산
