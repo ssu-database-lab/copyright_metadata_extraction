@@ -4,18 +4,11 @@
 # ============================================
 
 # -------------------- Web Framework --------------------
-# FastAPI 웹 프레임워크 (web/app.py)
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-python-multipart==0.0.6
-jinja2==3.1.3
-
-# Flask API 서버 (call.py - 레거시)
-flask>=3.0.0
+# flask>=3.0.0
 werkzeug>=3.0.0
 
 # -------------------- PDF Processing --------------------
-PyMuPDF>=1.23.0                 # PDF  이미지 변환
+PyMuPDF>=1.23.0                 # PDF 이미지 변환
 
 # -------------------- OCR Libraries --------------------
 google-cloud-vision>=3.4.0      # Google Vision API
@@ -26,24 +19,21 @@ protobuf>=4.21.0                # Protocol Buffers (Google API)
 # -------------------- NER and ML --------------------
 torch>=2.0.0                    # PyTorch 딥러닝 프레임워크
 transformers>=4.40.0            # Hugging Face Transformers (NER 모델)
-sentencepiece>=0.1.99           # 토크나이저
+sentencepiece>=0.1.99           # 토크나이저 (XLM-R 등 필요)
 accelerate>=0.20.0              # 모델 가속화
 datasets>=2.14.0                # 데이터셋 처리
-seqeval>=1.2.2                  # NER 평가 메트릭
-pytorch-crf>=0.7.2              # CRF 레이어 (BERT-CRF 모델)
-torchcrf>=1.0.0                 # CRF 레이어 (시스템 모델용)
+seqeval>=1.2.2                  # NER 평가 메트릭 (필수)
+pytorch-crf>=0.7.2              # CRF 레이어
+torchcrf>=1.0.0                 # CRF (코드에서 사용하는 이름)
 
-# -------------------- Data Processing --------------------
+# -------------------- Data Processing & Viz --------------------
 numpy>=1.21.0                   # 수치 연산
-pandas>=1.5.0                   # 데이터 처리 및 CSV 생성
-scikit-learn>=1.3.0             # 머신러닝 유틸리티
-matplotlib>=3.5.0               # 시각화 (학습 그래프)
+pandas>=1.5.0                   # 데이터 처리
+scikit-learn>=1.3.0             # 머신러닝 (Confusion Matrix 등)
+matplotlib>=3.5.0               # 시각화 (필수)
+seaborn>=0.12.0                 # 시각화 (히트맵 등)
 
 # -------------------- Utilities --------------------
 tqdm>=4.64.0                    # 진행률 표시
 python-dotenv>=1.0.0            # 환경 변수 관리
 pathlib2>=2.3.7                 # 경로 처리
-
-# -------------------- Optional --------------------
-# Pillow>=9.0.0                 # 이미지 처리 (필요시)
-# opencv-python>=4.8.0          # 이미지 전처리 (필요시)
