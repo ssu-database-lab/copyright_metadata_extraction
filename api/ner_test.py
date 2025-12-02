@@ -614,6 +614,7 @@ def save_comprehensive_dashboard(
     ax1.set_title("Training Loss", fontsize=14)
     ax1.set_xlabel(x_label)
     ax1.set_ylabel("Loss")
+    ax1.set_ylim(0, 2.0) # Fixed Y-axis for Loss
     ax1.grid(True, linestyle='--', alpha=0.5)
     ax1.legend()
 
@@ -626,7 +627,7 @@ def save_comprehensive_dashboard(
     ax2.set_title("F1 Score (Span-level)", fontsize=14)
     ax2.set_xlabel(x_label)
     ax2.set_ylabel("F1 Score")
-    ax2.set_ylim(0, 1.05)
+    ax2.set_ylim(0, 1.05) # Fixed Y-axis
     ax2.grid(True, linestyle='--', alpha=0.5)
     ax2.legend()
 
@@ -694,6 +695,7 @@ def save_comprehensive_dashboard(
     ax6.set_title("Convergence Analysis (F1 Derivative)", fontsize=14)
     ax6.set_xlabel(x_label)
     ax6.set_ylabel("F1 Improvement Rate")
+    ax6.set_ylim(-0.05, 0.05) # Fixed Y-axis for Convergence
     ax6.grid(True, linestyle='--', alpha=0.5)
 
     # 7. Final Evaluation Results (Text Box)
@@ -1189,7 +1191,7 @@ def run_six_model_benchmark(
         print(f"[RUN] Training model: {tag} ({real_model_path}, type={model_type})")
         print("=" * 80)
 
-        batch_size = 20 # Fixed batch size as requested to align with 400-sample evaluation intervals
+        batch_size = 64 # Fixed batch size as requested to align with 400-sample evaluation intervals
         
         # Separate paths
         out_dir = output_root / tag  # For plots/logs
@@ -1360,8 +1362,10 @@ def run_kfold_benchmark(
             fold_train_file = model_out_dir / f"fold_{fold_idx+1}_train.txt"
             fold_val_file = model_out_dir / f"fold_{fold_idx+1}_val.txt"
             
+            # [CRF Experiment] Apply noise to Validation set as well to simulate real-world OCR conditions.
+            # This makes the task harder and highlights the structural advantage of CRF.
             write_bio_word_level(train_fold, fold_train_file, apply_noise=True)
-            write_bio_word_level(val_fold, fold_val_file, apply_noise=False)
+            write_bio_word_level(val_fold, fold_val_file, apply_noise=True)
             
             # Train
             # Only save weights for the first fold to save space/time, or last? 
@@ -1385,13 +1389,28 @@ def run_kfold_benchmark(
                 save_weights=save_weights
             )
             
+            # Check for error
+            if "error" in res:
+                print(f"[Error] Fold {fold_idx+1} failed: {res['error']}")
+                # Append dummy data to avoid crash
+                fold_metrics.append(0.0)
+                fold_histories.append({
+                    "train_loss": [], "eval_f1": [], "eval_precision": [], "eval_recall": [],
+                    "summary": {"best_f1": 0.0, "final_f1": 0.0, "final_precision": 0.0, "final_recall": 0.0, "ap_score": 0.0}
+                })
+                continue
+
             # Collect results
             # We use the best dev f1 from history or the final one?
             # Usually CV reports the score on the validation set.
             # train_one_model returns 'dev_metrics' (last step) and 'test_metrics' (if test_file provided).
             # Since we didn't provide test_file, we use the best F1 from history or the last one.
             # Let's use the BEST F1 achieved during the fold.
-            best_f1 = max(res["history"]["eval_f1"])
+            if res.get("history") and res["history"].get("eval_f1"):
+                best_f1 = max(res["history"]["eval_f1"])
+            else:
+                best_f1 = 0.0
+                
             fold_metrics.append(best_f1)
             
             # Calculate per-fold AP and other stats
@@ -1403,15 +1422,20 @@ def run_kfold_benchmark(
                     fold_ap = 0.0
             
             # Inject summary stats into history
-            res["history"]["summary"] = {
-                "best_f1": best_f1,
-                "final_f1": res["history"]["eval_f1"][-1] if res["history"]["eval_f1"] else 0.0,
-                "final_precision": res["history"]["eval_precision"][-1] if res["history"]["eval_precision"] else 0.0,
-                "final_recall": res["history"]["eval_recall"][-1] if res["history"]["eval_recall"] else 0.0,
-                "ap_score": fold_ap
-            }
-            
-            fold_histories.append(res["history"])
+            if "history" in res:
+                res["history"]["summary"] = {
+                    "best_f1": best_f1,
+                    "final_f1": res["history"]["eval_f1"][-1] if res["history"].get("eval_f1") else 0.0,
+                    "final_precision": res["history"]["eval_precision"][-1] if res["history"].get("eval_precision") else 0.0,
+                    "final_recall": res["history"]["eval_recall"][-1] if res["history"].get("eval_recall") else 0.0,
+                    "ap_score": fold_ap
+                }
+                fold_histories.append(res["history"])
+            else:
+                 fold_histories.append({
+                    "train_loss": [], "eval_f1": [], "eval_precision": [], "eval_recall": [],
+                    "summary": {"best_f1": 0.0, "final_f1": 0.0, "final_precision": 0.0, "final_recall": 0.0, "ap_score": 0.0}
+                })
             
             # Collect probability data for aggregated PR curve
             if res.get("prob_data"):
@@ -1434,20 +1458,32 @@ def run_kfold_benchmark(
         print(f"\n[Result] {tag} {k_folds}-Fold CV: Mean F1 = {mean_f1:.4f} (+/- {std_f1:.4f})")
         
         # Average History for Graph
-        # Assuming all folds have same number of steps (they should, as data size is constant)
-        # history['eval_f1'] is a list of floats.
-        avg_history = copy.deepcopy(fold_histories[0])
+        # Filter out failed folds (empty history)
+        valid_histories = [h for h in fold_histories if h.get("eval_f1")]
         
-        # Average the lists
-        for key in ["train_loss", "eval_f1", "eval_precision", "eval_recall"]:
-            # Stack lists: (K, num_steps)
-            values = [h[key] for h in fold_histories]
-            # Compute mean along axis 0
-            # Note: lengths must match. If not (due to slight batch rounding?), truncate to min length.
-            min_len = min(len(v) for v in values)
-            truncated_values = [v[:min_len] for v in values]
-            avg_values = np.mean(truncated_values, axis=0).tolist()
-            avg_history[key] = avg_values
+        if not valid_histories:
+            print("[Warning] No valid fold histories found. Graphs will be empty.")
+            avg_history = copy.deepcopy(fold_histories[0])
+        else:
+            # Use the first valid history as template
+            avg_history = copy.deepcopy(valid_histories[0])
+            
+            # Average the lists over VALID folds only
+            for key in ["train_loss", "eval_f1", "eval_precision", "eval_recall"]:
+                # Stack lists: (K, num_steps)
+                values = [h[key] for h in valid_histories]
+                # Compute mean along axis 0
+                # Note: lengths must match. If not (due to slight batch rounding?), truncate to min length.
+                if values:
+                    min_len = min(len(v) for v in values)
+                    if min_len > 0:
+                        truncated_values = [v[:min_len] for v in values]
+                        avg_values = np.mean(truncated_values, axis=0).tolist()
+                        avg_history[key] = avg_values
+                    else:
+                        avg_history[key] = []
+                else:
+                    avg_history[key] = []
 
         # Calculate Convergence (F1 Derivative) for JSON
         if "eval_f1" in avg_history and len(avg_history["eval_f1"]) > 1:
@@ -1531,8 +1567,8 @@ def parse_args() -> argparse.Namespace:
         help="Directory to store trained models (weights)",
     )
     p.add_argument("--num_epochs", type=int, default=20)
-    p.add_argument("--batch_size_pure", type=int, default=160)
-    p.add_argument("--batch_size_crf", type=int, default=160)
+    p.add_argument("--batch_size_pure", type=int, default=64)
+    p.add_argument("--batch_size_crf", type=int, default=64)
     p.add_argument("--max_length", type=int, default=128)
     p.add_argument("--learning_rate", type=float, default=2e-5)
     p.add_argument("--eval_steps", type=int, default=100, help="Evaluate every N steps (dynamic if not set)")
@@ -1549,7 +1585,7 @@ def main() -> None:
         print(">>> Starting Data Scaling Benchmark (25%, 50%, 75%, 100%) <<<")
         
         ratios = [0.25, 0.50, 0.75, 1.00]
-        base_samples = 10000
+        base_samples = 30000
         
         for ratio in ratios:
             num_samples = int(base_samples * ratio)
@@ -1578,7 +1614,7 @@ def main() -> None:
         # Dynamic Generation (Separate Train/Dev)
         # Generate data in output_root (results dir) so it can be downloaded/checked
         print("[setup] Generating independent Train/Dev datasets...")
-        train_file, dev_file = generate_dynamic_dataset(output_root, num_samples=10000)
+        train_file, dev_file = generate_dynamic_dataset(output_root, num_samples=30000)
         
     test_file = Path(args.test_file) if args.test_file is not None else None
 
