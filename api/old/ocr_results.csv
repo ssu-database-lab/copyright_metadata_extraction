@@ -1,0 +1,31 @@
+﻿image,gt,pred,CER,WER,char_accuracy(%),angle,blur,noise
+ocr_testset\sample_000.png,공공저작물 수정정정 정확도,Fo,1.0,1.0,0.0,0,0.0,0
+ocr_testset\sample_001.png,공공저작물 수정정정 정확도,— roll 0 KO 20 <b 매 KT ~ ro Fo,2.0,2.0,-100.0,2,0.0,0
+ocr_testset\sample_002.png,공공저작물 수정정정 정확도,에 KO RO KO KO + 매 KT ~ Fo Fo,1.8571428571428572,1.8571428571428572,-85.71428571428572,-2,0.0,0
+ocr_testset\sample_003.png,공공저작물 수정정정 정확도,,1.0,1.0,0.0,0,1.2,0
+ocr_testset\sample_004.png,공공저작물 수정정정 정확도,0,1.0,1.0,0.0,0,0.0,1200
+ocr_testset\sample_005.png,시험 방법 및 결과,더 Au tl 110 100,1.2,1.2,-19.999999999999996,0,0.0,0
+ocr_testset\sample_006.png,시험 방법 및 결과,,1.0,1.0,0.0,2,0.0,0
+ocr_testset\sample_007.png,시험 방법 및 결과,Rl ok [기 _ m0 100,1.4,1.4,-39.99999999999999,-2,0.0,0
+ocr_testset\sample_008.png,시험 방법 및 결과,,1.0,1.0,0.0,0,1.2,0
+ocr_testset\sample_009.png,시험 방법 및 결과,더 Ru 71 710 100,1.2,1.2,-19.999999999999996,0,0.0,1200
+ocr_testset\sample_010.png,OCR 정확도 목표: 80% 이상,OCR 정확도 목표: 80% 이상,0.0,0.0,100.0,0,0.0,0
+ocr_testset\sample_011.png,OCR 정확도 목표: 80% 이상,OCR 정확도 목표: 80% 이상,0.0,0.0,100.0,2,0.0,0
+ocr_testset\sample_012.png,OCR 정확도 목표: 80% 이상,OCR 정확도 목표: 80% 이상,0.0,0.0,100.0,-2,0.0,0
+ocr_testset\sample_013.png,OCR 정확도 목표: 80% 이상,OCR 정확도 목표: 80% 이상,0.0,0.0,100.0,0,1.2,0
+ocr_testset\sample_014.png,OCR 정확도 목표: 80% 이상,OCR 정확도 목표: 80% 이상,0.0,0.0,100.0,0,0.0,1200
+ocr_testset\sample_015.png,노이즈/기울기/블러 조건 테스트,노이즈/기울기/블러 조건 테스트,0.0,0.0,100.0,0,0.0,0
+ocr_testset\sample_016.png,노이즈/기울기/블러 조건 테스트,노이즈/기울기/블러 조건 테스트,0.0,0.0,100.0,2,0.0,0
+ocr_testset\sample_017.png,노이즈/기울기/블러 조건 테스트,노이즈/기울기/블러 조건 테스트,0.0,0.0,100.0,-2,0.0,0
+ocr_testset\sample_018.png,노이즈/기울기/블러 조건 테스트,노이즈/기울기/블러 조건 테스트,0.0,0.0,100.0,0,1.2,0
+ocr_testset\sample_019.png,노이즈/기울기/블러 조건 테스트,노이즈/기울기/블러 조건 테스트,0.0,0.0,100.0,0,0.0,1200
+ocr_testset\sample_020.png,2025-12-01 연구실,2025-12-01 연구실,0.0,0.0,100.0,0,0.0,0
+ocr_testset\sample_021.png,2025-12-01 연구실,2025-12-01 연구실,0.0,0.0,100.0,2,0.0,0
+ocr_testset\sample_022.png,2025-12-01 연구실,2025-12-01 연구실,0.0,0.0,100.0,-2,0.0,0
+ocr_testset\sample_023.png,2025-12-01 연구실,2025-12-01 연구실,0.0,0.0,100.0,0,1.2,0
+ocr_testset\sample_024.png,2025-12-01 연구실,2025-12-01 연구실,0.0,0.0,100.0,0,0.0,1200
+ocr_testset\sample_025.png,CPU: i5 / RAM: 64GB / OS: Windows 11,CPU: 15 / RAM: 64GB / OS: Windows 11,0.027777777777777776,0.027777777777777776,97.22222222222221,0,0.0,0
+ocr_testset\sample_026.png,CPU: i5 / RAM: 64GB / OS: Windows 11,CPU: 15 / RAM: 64GB / OS: Windows 11,0.027777777777777776,0.027777777777777776,97.22222222222221,2,0.0,0
+ocr_testset\sample_027.png,CPU: i5 / RAM: 64GB / OS: Windows 11,CPU: 15 / RAM: 64GB / OS: Windows 11,0.027777777777777776,0.027777777777777776,97.22222222222221,-2,0.0,0
+ocr_testset\sample_028.png,CPU: i5 / RAM: 64GB / OS: Windows 11,CPU: 15 / RAM: 64GB / OS: Windows 11,0.027777777777777776,0.027777777777777776,97.22222222222221,0,1.2,0
+ocr_testset\sample_029.png,CPU: i5 / RAM: 64GB / OS: Windows 11,CPU: 15 / RAM: 64GB / OS: Windows 11,0.027777777777777776,0.027777777777777776,97.22222222222221,0,0.0,1200

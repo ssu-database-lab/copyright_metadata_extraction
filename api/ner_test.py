@@ -1,137 +1,213 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 """
-Simple 6-model NER benchmark using the new BERT+BiLSTM+CRF pipeline.
+Stable NER Training/Eval/Inference (PyTorch + Transformers)
+- mBERT(local path supported) + BiLSTM + token classifier
+- BIO scheme for 23 entity types
+- Synthetic data generation with entity pools + templates
+- Deterministic, cacheable, robust token/label alignment (Fast tokenizer only)
 
-Models:
-  1) google-bert/bert-base-multilingual-cased         (pure token classification head)
-  2) klue/roberta-large                               (pure)
-  3) FacebookAI/xlm-roberta-large                     (pure)
-  4) google-bert/bert-base-multilingual-cased         (BiLSTM+CRF)
-  5) klue/roberta-large                               (BiLSTM+CRF)
-  6) FacebookAI/xlm-roberta-large                     (BiLSTM+CRF)
+CLI:
+  python ner_test.py --mode train
+  python ner_test.py --mode eval
+  python ner_test.py --mode both
 
-Assumes:
-  - module/ner/ner_data.py    provides read_conll, build_label_map, NERDataset
-  - module/ner/ner_model.py   provides BertBiLstmCrf, NERConfig
+Env vars:
+  MODE=both|train|eval
+  CONTINUE_TRAINING=true|false
+  BERT_DIR=/path/to/pretrained_bert
+  STRICT_LOCAL_BERT=1   (if set, do NOT fallback to HF; error out instead)
+  TRANSFORMERS_OFFLINE=1 / HF_HUB_OFFLINE=1  (offline mode)
 """
 
-from __future__ import annotations
-
-import argparse
-import json
-import random
-import math
-import gc
-import sys
 import os
-import warnings
-from sklearn.exceptions import UndefinedMetricWarning
-from sklearn.model_selection import KFold, GroupKFold
-import copy
-
-# Suppress tokenizer parallelism warning
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
-
-# Add current directory to sys.path to resolve 'module' package issues
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from dataclasses import asdict
+import re
+import json
+import time
+import random
+import hashlib
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple, Literal, Any
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
-from torch.nn.utils import clip_grad_norm_
-from transformers import (
-    AutoTokenizer,
-    AutoModelForTokenClassification,
-    AutoConfig,
-    get_linear_schedule_with_warmup,
-)
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
+from torch.optim import AdamW
+from transformers import AutoTokenizer, AutoModel
 
-# Import data generation logic from ner_train.py
-try:
-    from src.ner.ner_train import generate_training_samples
-    HAS_DATA_GEN = True
-except ImportError as e:
-    HAS_DATA_GEN = False
-    print(f"[FATAL] Could not import data generation module from src.ner.ner_train: {e}")
-    print("Please ensure src/ner/ner_train.py exists and has no syntax errors.")
-    # Fail hard to avoid generating garbage graphs with dummy data
-    sys.exit(1)
+# Simple stopwords and heuristics for post-processing
+NAME_STOPWORDS = {"나", "인력", "사업", "가", "동의", "양도자", "양수자", "본", "대표자", "이름", "성명", "양도인", "양수인", "대표자명"}
 
-# Visualization libraries (optional)
-try:
-    import matplotlib
-    # Set backend to 'Agg' for server/headless environments before importing pyplot
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    import matplotlib.gridspec as gridspec
-    import matplotlib.font_manager as fm
-    import seaborn as sns
-    from sklearn.metrics import confusion_matrix, precision_recall_curve, average_precision_score, auc
-    HAS_VISUALIZATION = True
+def is_korean_name(s: str) -> bool:
+    """Check if string is a valid Korean name (2-5 Hangul chars)"""
+    s = s.strip().replace(" ", "").replace("\n", "")
+    return 2 <= len(s) <= 5 and re.fullmatch(r"[가-힣]+", s) is not None
+
+def extract_names_with_regex(text: str) -> List[str]:
+    """Extract names using multiple regex patterns and heuristics"""
+    # Normalize text: remove excessive whitespace/newlines for matching
+    norm_text = re.sub(r'\s+', ' ', text)
     
-    # Korean Font Setup
-    try:
-        available_fonts = [f.name for f in fm.fontManager.ttflist]
-        korean_fonts = ['Malgun Gothic', 'NanumGothic', 'NanumBarunGothic', 'AppleGothic', 'Gulim']
-        font_found = False
-        for font_name in korean_fonts:
-            if font_name in available_fonts:
-                plt.rcParams['font.family'] = font_name
-                plt.rcParams['axes.unicode_minus'] = False
-                print(f"[Viz] Set Korean font: {font_name}")
-                font_found = True
-                break
-        if not font_found:
-            print("[Viz] No Korean font found. Text may appear broken.")
-    except Exception as e:
-        print(f"[Viz] Font setup failed: {e}")
+    found: List[str] = []
+    
+    # Pattern 1: "성명: NAME" or "성명 NAME" (with flexible whitespace)
+    for m in re.finditer(r"성명[:\s]+([가-힣]{2,5})", norm_text, re.IGNORECASE):
+        found.append(m.group(1))
+    
+    # Pattern 2: "대표자명: NAME"
+    for m in re.finditer(r"대표자명[:\s]+([가-힣]{2,5})", norm_text, re.IGNORECASE):
+        found.append(m.group(1))
+    
+    # Pattern 3: "양도인" block - NAME appears after "양도인" within 10 chars
+    for m in re.finditer(r"양도인[:\s\(]*([가-힣]{2,5})?", norm_text):
+        if m.group(1):
+            found.append(m.group(1))
+        else:
+            # Try to get next word after "양도인"
+            start = m.end()
+            rest = norm_text[start:start+20]
+            name_match = re.search(r"[^\s]*([가-힣]{2,5})[^\s]*", rest)
+            if name_match:
+                found.append(name_match.group(1))
+    
+    # Pattern 4: "이름: NAME" or "이름 NAME"
+    for m in re.finditer(r"이름[:\s]+([가-힣]{2,5})", norm_text, re.IGNORECASE):
+        found.append(m.group(1))
+    
+    # Pattern 5: "동의자: NAME"
+    for m in re.finditer(r"동의자[:\s]+([가-힣]{2,5})", norm_text, re.IGNORECASE):
+        found.append(m.group(1))
+    
+    # Pattern 6: Repeated name "NAME NAME" (일반적 패턴)
+    for m in re.finditer(r"([가-힣]{2,5})\s+\1", norm_text):
+        found.append(m.group(1))
+    
+    # Pattern 7: "대표자" 다음에 오는 2-5글자 한글
+    for m in re.finditer(r"대표자[:\s]*([가-힣]{2,5})", norm_text):
+        found.append(m.group(1))
+    
+    # Pattern 8: "(서명)" 앞 한글 (서명 직전 이름)
+    for m in re.finditer(r"([가-힣]{2,5})\s*\(서명\)", norm_text):
+        found.append(m.group(1))
+    
+    # 기관명과 붙어있는 회사명 앞의 이름 제거 (나라지식정 같은 것)
+    found = [f.strip() for f in found]
+    found = [f for f in found if is_korean_name(f) and f not in NAME_STOPWORDS and len(f) <= 5]
+    
+    return sorted(set(found))
 
-except ImportError:
-    HAS_VISUALIZATION = False
-    plt = None
-    sns = None
-    confusion_matrix = None
-    gridspec = None
-    precision_recall_curve = None
-    average_precision_score = None
-    auc = None
+def cleanup_entities(all_entities: Dict[str, List[str]], text: str) -> Dict[str, List[str]]:
+    """
+    추출된 엔티티를 정제하고 검증합니다.
+    """
+    # Normalize text for pattern matching
+    norm_text = re.sub(r'\s+', ' ', text)
+    
+    # NAME cleanup + regex union
+    names = []
+    for n in all_entities.get("NAME", []):
+        n_clean = n.replace(".", "").strip()
+        # 한글 이름 검증
+        if is_korean_name(n_clean) and n_clean not in NAME_STOPWORDS:
+            names.append(n_clean)
+    
+    # Regex로 이름 추출 (보조 수단)
+    regex_names = extract_names_with_regex(text)
+    names = sorted(set(names) | set(regex_names))
+    all_entities["NAME"] = names if names else ["N/A"]
 
-from seqeval.metrics import (
-    classification_report,
-    f1_score,
-    precision_score,
-    recall_score,
-)
+    # COMPANY cleanup
+    comp = []
+    comp_stop = {"기관명", "대표자", "1층", "본", "주", "이름", "대표자명", "연락처", "주소", "소속"}
+    for c in all_entities.get("COMPANY", []):
+        c_clean = c.strip()
+        if len(c_clean) < 2:
+            continue
+        # 조사 제거 (는, 은, 이, 가, 에, 에서, 에게, 의 등)
+        c_clean = re.sub(r'[는은이가에에서에게의과와]$', '', c_clean).strip()
+        if c_clean in comp_stop:
+            continue
+        if not re.search(r"[가-힣]", c_clean):
+            continue
+        if re.match(r"^[가-힣]$", c_clean):
+            continue
+        comp.append(c_clean)
+    
+    # Regex for company names
+    regex_comps: List[str] = []
+    
+    # Pattern 1: "기관명 : COMPANY" 또는 "기관명: COMPANY"
+    for m in re.finditer(r"기관명\s*[:：]\s*(?:\(주\))?\s*([가-힣A-Za-z0-9()]{2,})", norm_text):
+        comp_name = m.group(1).strip()
+        if comp_name not in comp_stop:
+            regex_comps.append(comp_name)
+    
+    # Pattern 2: "소속 : COMPANY"
+    for m in re.finditer(r"소속\s*[:：]\s*([가-힣A-Za-z0-9()]{2,})", norm_text):
+        comp_name = m.group(1).strip()
+        if comp_name not in comp_stop:
+            regex_comps.append(comp_name)
+    
+    # Pattern 3: "(주)..." 형태
+    for m in re.finditer(r"\(주\)\s*([가-힣A-Za-z0-9]{2,})", norm_text):
+        regex_comps.append(m.group(1).strip())
+    
+    all_comp = sorted(set(comp) | set(regex_comps))
+    all_comp = [c for c in all_comp if len(c.strip()) > 1 and c not in comp_stop]
+    all_entities["COMPANY"] = all_comp if all_comp else ["N/A"]
 
-# our modules
-from src.ner.ner_data import read_conll, build_label_map, NERDataset
-from src.ner.ner_model import BertBiLstmCrf, NERConfig
+    # PHONE cleanup
+    phones = []
+    phone_pattern = re.compile(r'^0\d{1,2}-?\d{3,4}-?\d{4}$|^\d{2,3}-?\d{3,4}-?\d{4}$')
+    for p in all_entities.get("PHONE", []):
+        p_clean = re.sub(r'[^\d-]', '', p.strip())
+        if phone_pattern.match(p_clean) or (p_clean.replace('-', '').isdigit() and 10 <= len(p_clean.replace('-', '')) <= 11):
+            phones.append(p_clean)
+    all_entities["PHONE"] = sorted(set(phones)) if phones else ["N/A"]
+
+    # ADDRESS cleanup - 주소 형식 검증
+    addresses = []
+    for addr in all_entities.get("ADDRESS", []):
+        addr_clean = addr.strip()
+        # 최소 길이 및 한글 포함 검증
+        if len(addr_clean) >= 5 and re.search(r"[가-힣]", addr_clean):
+            # 시/도, 시/군/구 등이 포함되어야 함
+            if re.search(r'(시|도|구|군|읍|면|동|리)', addr_clean):
+                addresses.append(addr_clean)
+    all_entities["ADDRESS"] = sorted(set(addresses)) if addresses else ["N/A"]
+
+    # CONSENT_TYPE cleanup - 너무 짧거나 이상한 것 제거
+    consent_types = []
+    for ct in all_entities.get("CONSENT_TYPE", []):
+        ct_clean = ct.strip()
+        # 최소 길이 및 의미 있는 단어 포함
+        if len(ct_clean) >= 3 and re.search(r'[가-힣]', ct_clean):
+            # 너무 긴 것 제거 (OCR 오류 가능성)
+            if len(ct_clean) <= 50:
+                consent_types.append(ct_clean)
+    all_entities["CONSENT_TYPE"] = sorted(set(consent_types)) if consent_types else ["N/A"]
+
+    # DESCRIPTION cleanup
+    descriptions = []
+    for desc in all_entities.get("DESCRIPTION", []):
+        desc_clean = desc.strip()
+        # 최소 길이 및 의미 있는 내용
+        if len(desc_clean) >= 3:
+            # 너무 긴 것 제거
+            if len(desc_clean) <= 100:
+                descriptions.append(desc_clean)
+    all_entities["DESCRIPTION"] = sorted(set(descriptions)) if descriptions else ["N/A"]
+
+    return all_entities
 
 
-def make_serializable(obj: Any) -> Any:
-    """Recursively convert numpy types and tensors to standard python types for JSON serialization."""
-    if isinstance(obj, (np.integer, np.int64, np.int32)):
-        return int(obj)
-    if isinstance(obj, (np.floating, np.float32, np.float64)):
-        return float(obj)
-    if isinstance(obj, np.ndarray):
-        return make_serializable(obj.tolist())
-    if isinstance(obj, torch.Tensor):
-        return make_serializable(obj.detach().cpu().numpy())
-    if isinstance(obj, dict):
-        return {k: make_serializable(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [make_serializable(v) for v in obj]
-    return obj
-
-
-def set_seed(seed: int = 42) -> None:
+# -----------------------------
+# 0) Repro / GPU setup
+# -----------------------------
+def set_global_seed(seed: int = 42) -> None:
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -139,1509 +215,1405 @@ def set_seed(seed: int = 42) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
-def build_dataloaders(
-    model_name: str,
-    train_file: Path,
-    dev_file: Path | None,
-    test_file: Path | None,
-    max_length: int,
-    batch_size: int,
-) -> Tuple[
-    Dict[str, int],
-    Dict[int, str],
-    AutoTokenizer,
-    DataLoader,
-    DataLoader,
-    DataLoader | None,
-]:
-    """Load data files, split if necessary, and build DataLoaders."""
-    print(f"[data] Loading train data from {train_file}")
-    train_sentences = read_conll(str(train_file))
+def setup_gpu() -> torch.device:
+    """
+    GPU 전용 모드. CUDA를 사용할 수 없으면 에러 발생.
+    """
+    if not torch.cuda.is_available():
+        raise RuntimeError("[ERROR] CUDA를 사용할 수 없습니다. GPU가 필요합니다.")
+    
+    device = torch.device("cuda")
+    gpu_name = torch.cuda.get_device_name(0)
+    print(f"[INFO] ✅ GPU 사용 모드: {gpu_name}", flush=True)
+    print(f"[INFO] CUDA version: {torch.version.cuda}", flush=True)
+    print(f"[INFO] PyTorch version: {torch.__version__}", flush=True)
+    return device
 
-    if dev_file is not None:
-        print(f"[data] Loading dev data from {dev_file}")
-        dev_sentences = read_conll(str(dev_file))
-    else:
-        # Fallback split if dev_file not provided (e.g. user supplied only train_file)
-        print("[data] No dev_file provided. Splitting train data 8:2...")
-        random.seed(42) 
-        random.shuffle(train_sentences)
-        split_idx = int(len(train_sentences) * 0.8)
-        dev_sentences = train_sentences[split_idx:]
-        train_sentences = train_sentences[:split_idx]
-        print(f"[data] Split result: Train={len(train_sentences)}, Dev={len(dev_sentences)}")
 
-    test_sentences = None
-    if test_file is not None:
-        print(f"[data] Loading test data from {test_file}")
-        test_sentences = read_conll(str(test_file))
+def gpu_warmup(device: torch.device) -> None:
+    """Warmup GPU to ensure everything is initialized."""
+    try:
+        a = torch.randn(1024, 1024, device=device)
+        b = torch.matmul(a, a)
+        _ = b.cpu()
+        print("[INFO] GPU warmup OK", flush=True)
+    except Exception as e:
+        raise RuntimeError(f"[ERROR] GPU warmup failed: {e}")
 
-    # label mapping from TRAIN only (to avoid leakage)
-    _, label2id, id2label = build_label_map(train_sentences)
-    print(f"[data] Labels ({len(label2id)}): {sorted(label2id.keys())}")
 
-    # tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+# -----------------------------
+# 1) Config
+# -----------------------------
+@dataclass
+class Config:
+    root_dir: Path = Path(__file__).resolve().parent
 
-    train_dataset = NERDataset(train_sentences, tokenizer, label2id, max_length)
-    dev_dataset = NERDataset(dev_sentences, tokenizer, label2id, max_length)
-    test_dataset = (
-        NERDataset(test_sentences, tokenizer, label2id, max_length)
-        if test_sentences is not None
-        else None
-    )
+    # Data
+    # Data - 대폭 증강
+    num_samples: int = 50000  # 10,000 → 50,000
+    min_entities_per_type: int = 200  # 100 → 200
+    max_len: int = 128
+    train_ratio: float = 0.85
+    seed: int = 42
 
-    # Optimize DataLoader for GPU utilization
-    # num_workers: parallel data loading (CPU -> RAM)
-    # pin_memory: faster transfer (RAM -> VRAM)
-    num_workers = min(4, os.cpu_count() or 1)
-    print(f"[data] DataLoader config: batch_size={batch_size}, num_workers={num_workers}, pin_memory=True")
+    # Model
+    lr: float = 3e-5
+    epochs: int = 15  # 10 → 15 (더 많은 학습)
+    batch_size: int = 32
+    lstm_units: int = 256
+    dropout: float = 0.2
 
-    train_loader = DataLoader(
-        train_dataset, 
-        batch_size=batch_size, 
-        shuffle=True,
-        num_workers=num_workers,
-        pin_memory=True,
-        persistent_workers=(num_workers > 0)
-    )
-    dev_loader = DataLoader(
-        dev_dataset, 
-        batch_size=batch_size, 
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=True,
-        persistent_workers=(num_workers > 0)
-    )
-    test_loader = (
-        DataLoader(
-            test_dataset, 
-            batch_size=batch_size, 
-            shuffle=False,
-            num_workers=num_workers,
-            pin_memory=True,
-            persistent_workers=(num_workers > 0)
+    # Paths
+    model_dir: Path = root_dir / "models/ner_bilstm_pytorch"
+    cache_dir: Path = root_dir / "data/cache_ner"
+    ocr_dir: Path = root_dir / "data/out/ocr/naver"
+    out_dir: Path = root_dir / "conc/final"
+
+    # BERT local priority
+    container_bert: Path = Path("/app/models/pretrained_bert")
+    volume_bert: Path = root_dir / "models/pretrained_bert"
+    hf_fallback: str = "bert-base-multilingual-cased"
+
+
+CFG = Config()
+
+ENTITY_TYPES = [
+    "NAME","PHONE","ADDRESS","DATE","COMPANY","EMAIL","POSITION","CONTRACT_TYPE","CONSENT_TYPE",
+    "RIGHT_INFO","MONEY","PERIOD","PROJECT_NAME","LAW_REFERENCE","ID_NUM","TITLE","URL",
+    "DESCRIPTION","TYPE","STATUS","DEPARTMENT","LANGUAGE","QUANTITY"
+]
+
+BIO_LABELS = ["O"]
+for t in ENTITY_TYPES:
+    BIO_LABELS.append(f"B-{t}")
+    BIO_LABELS.append(f"I-{t}")
+
+LABEL2ID = {l: i for i, l in enumerate(BIO_LABELS)}
+ID2LABEL = {i: l for l, i in LABEL2ID.items()}
+IGNORE_INDEX = -100
+
+
+# -----------------------------
+# 2) Utilities
+# -----------------------------
+def ensure_dir(p: Path) -> Path:
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def sha1_text(s: str) -> str:
+    return hashlib.sha1(s.encode("utf-8")).hexdigest()
+
+
+def _is_valid_bert_dir(p: Path) -> bool:
+    if not p.exists() or not p.is_dir():
+        return False
+    has_cfg = (p / "config.json").exists()
+    has_tok = (p / "vocab.txt").exists() or (p / "tokenizer.json").exists()
+    return has_cfg and has_tok
+
+
+def pick_bert_path(override: Optional[str] = None) -> str:
+    if override:
+        p = Path(override).expanduser()
+        if _is_valid_bert_dir(p):
+            print(f"[INFO] ✅ --bert-dir 사용: {p}", flush=True)
+            return str(p)
+        raise RuntimeError(f"--bert-dir is set but invalid: {p}")
+
+    env_dir = os.getenv("BERT_DIR")
+    if env_dir:
+        p = Path(env_dir).expanduser()
+        if _is_valid_bert_dir(p):
+            print(f"[INFO] ✅ BERT_DIR 사용: {p}", flush=True)
+            return str(p)
+        raise RuntimeError(f"BERT_DIR is set but invalid: {p}")
+
+    candidates = [CFG.container_bert, CFG.volume_bert]
+    for c in candidates:
+        if _is_valid_bert_dir(Path(c)):
+            print(f"[INFO] ✅ 로컬 BERT 발견: {c}", flush=True)
+            return str(c)
+
+    strict = os.getenv("STRICT_LOCAL_BERT", "").strip().lower() in ("1", "true", "yes", "y", "on")
+    if strict:
+        raise RuntimeError(
+            "STRICT_LOCAL_BERT=1 이지만 로컬 BERT를 찾지 못했습니다.\n"
+            f"후보 경로: {candidates}\n"
+            "해결: BERT_DIR=/path/to/pretrained_bert 를 지정하거나 models/pretrained_bert를 준비하세요."
         )
-        if test_dataset is not None
-        else None
+
+    print(f"[INFO] 로컬 BERT 없음. HuggingFace에서 모델 다운로드/사용: {CFG.hf_fallback}", flush=True)
+    return CFG.hf_fallback
+
+
+def warn_if_running_on_mntc() -> None:
+    p = str(CFG.root_dir).replace("\\", "/")
+    if p.startswith("/mnt/"):
+        print("[WARN] WSL에서 /mnt/*(Windows 드라이브)에서 실행 중입니다. "
+              "데이터 생성/캐시/저장 속도가 느려 '멈춘 것처럼' 보일 수 있습니다.\n"
+              "가능하면 프로젝트를 ~/work/... 같은 리눅스 홈으로 복사해서 실행하세요.", flush=True)
+
+
+# -----------------------------
+# 3) Entity pools (synthetic)
+# -----------------------------
+KOR_SYLLABLES = list("가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허")
+KOR_SURNAMES = ["김","이","박","최","정","강","조","윤","장","임","오","한","신","서","권","황","안","송","류","전","홍"]
+
+
+def rnd_kor_name(rng: np.random.RandomState) -> str:
+    surname = rng.choice(KOR_SURNAMES)
+    given_len = 2 if rng.rand() < 0.6 else 3
+    given = "".join(rng.choice(KOR_SYLLABLES) for _ in range(given_len))
+    return surname + given
+
+
+def rnd_phone(rng: np.random.RandomState) -> str:
+    if rng.rand() < 0.7:
+        return f"010-{rng.randint(1000,9999)}-{rng.randint(1000,9999)}"
+    area = rng.choice(["02","031","032","051","053","062","064","070"])
+    mid = rng.randint(100,9999)
+    last = rng.randint(1000,9999)
+    if mid < 1000:
+        return f"{area}-{mid:03d}-{last:04d}"
+    return f"{area}-{mid:04d}-{last:04d}"
+
+
+def rnd_date(rng: np.random.RandomState) -> str:
+    y = rng.randint(2018, 2027)
+    m = rng.randint(1, 13)
+    d = rng.randint(1, 29)
+    if rng.rand() < 0.5:
+        return f"{y}년 {m}월 {d}일"
+    return f"{y}-{m:02d}-{d:02d}"
+
+
+def rnd_email(rng: np.random.RandomState) -> str:
+    user = "".join(rng.choice(list("abcdefghijklmnopqrstuvwxyz0123456789"), size=rng.randint(6,12)))
+    dom = rng.choice(["gmail.com","naver.com","daum.net","company.co.kr","example.com"])
+    return f"{user}@{dom}"
+
+
+def rnd_url(rng: np.random.RandomState) -> str:
+    dom = rng.choice(["example.com","company.com","service.kr","my-page.net"])
+    path = "".join(rng.choice(list("abcdefghijklmnopqrstuvwxyz0123456789"), size=rng.randint(4,10)))
+    if rng.rand() < 0.5:
+        return f"https://{dom}/{path}"
+    return f"http://{dom}/{path}"
+
+
+def rnd_money(rng: np.random.RandomState) -> str:
+    v = rng.randint(1_000, 500_000_000)
+    if rng.rand() < 0.5:
+        return f"{v:,}원"
+    return f"₩{v:,}"
+
+
+def rnd_quantity(rng: np.random.RandomState) -> str:
+    n = rng.randint(1, 5000)
+    unit = rng.choice(["건","명","개","회","페이지","GB","MB","TB"])
+    return f"{n}{unit}"
+
+
+def rnd_address(rng: np.random.RandomState) -> str:
+    si = rng.choice([
+        "서울특별시","부산광역시","대구광역시","인천광역시","광주광역시","대전광역시","울산광역시",
+        "경기도","강원도","충청북도","충청남도","전라북도","전라남도","경상북도","경상남도","제주특별자치도"
+    ])
+    gu = rng.choice(["중구","서구","남구","북구","동구","수성구","해운대구","마포구","강남구","은평구","수원시","성남시","고양시","창원시","청주시","전주시","포항시"])
+    road = rng.choice(["테헤란로","세종대로","충정로","월드컵북로","성미산로","중앙로","산업로","학동로","강변북로"])
+    num1 = rng.randint(1, 300)
+    num2 = rng.randint(1, 50)
+    if rng.rand() < 0.5:
+        return f"{si} {gu} {road} {num1}-{num2}"
+    return f"{si} {gu} {road} {num1}"
+
+
+FIXED_POOLS = {
+    "NAME": [
+        # 실제 문서에서 발견된 이름들
+        "강희주","손동수","이긴구","이진구","이한울","서필원","남광호","김진성","김주완",
+        # 추가 한국 이름 (다양성)
+        "김민준","이서연","박지훈","최수빈","정예린","조민서","윤하준","장서영","임도윤","오채원",
+        "한지우","신유진","권준혁","황서현","안민우","송지민","류하윤","전준서","홍서아","노예준",
+        "배지호","곽시우","성서우","구민재","방하은","표지안","탁소율","석우진","선다인","진아윤",
+    ],
+    "COMPANY": [
+        # 실제 문서에서 발견된 회사들
+        "(주)스튜디오수집","한국문화정보원","에이드미디어","제주콘텐츠진흥원","충남문화관광재단","국가유산청",
+        # 추가 회사명
+        "(주)데이터랩","(주)테크놀로지","네이버","카카오","삼성전자","LG전자","현대자동차","SK텔레콤",
+        "한국저작권위원회","문화체육관광부","한국콘텐츠진흥원","한국저작권보호원",
+        "(주)디지털큐브","(주)아트컴퍼니","(주)미디어랩","(주)크리에이티브","(주)비전소프트",
+        "서울시청","경기도청","부산시청","대전시청","광주시청","인천시청",
+    ],
+    "ADDRESS": [
+        # 실제 문서 기반 주소
+        "서울특별시 마포구 월드컵북로 400, 6층","서울시 마포구 월드컵북로 400, 8층",
+        "경기도 고양시 덕양구 청초로 66, B동 1006호","경기도 남양주시 천마산로 65-2",
+        "경기도 고양시 품질보증, 1384번길 29","서울시 은평구 증산로9길 36-5",
+        "서울시 마포구 성미산로89","청주시 흥덕구 복대동 충북 영조2차 아파트 203-1204",
+        "경기도 안양시 동안구 달안로 153","서울 마포구 망원로6길 14",
+        "제주특별자치도 제주시 정실3길 104 민포레 1층","제주특별자치도 제주시 구산서길 29",
+        # 추가 주소
+        "서울특별시 강남구 테헤란로 152","서울특별시 서초구 서초대로 398",
+        "부산광역시 해운대구 센텀중앙로 79","대전광역시 유성구 대학로 99",
+        "경기도 성남시 분당구 판교역로 235","경기도 수원시 영통구 광교중앙로 140",
+    ],
+    "PHONE": [
+        "010-4560-5825","010-1234-5678","010-9876-5432","010-5555-1234","010-7890-4567",
+        "02-1234-5678","031-123-4567","051-890-1234","053-456-7890","062-789-0123",
+        "064-123-0456","070-1234-5678","032-567-8901","042-234-5678","052-345-6789",
+    ],
+    "EMAIL": [
+        "contact@studio.co.kr","info@culture.or.kr","admin@media.com","support@company.kr",
+        "manager@project.com","team@digital.co.kr","director@agency.kr","staff@creative.com",
+    ],
+    "POSITION": [
+        "대표","이사","팀장","부장","과장","차장","연구원","주임","매니저","법무담당",
+        "책임자","대표자","사업관리","메타관리","품질보증","사진영상촬영","사진촬영","영상촬영",
+        "항공영상촬영","사진스캔","복원","총괄","담당자","실장","본부장","센터장",
+    ],
+    "CONTRACT_TYPE": [
+        "양도","위탁","도급","용역","자문","라이선스","사용허락","계약","합의","협약","위임",
+        "저작재산권양도","저작권양도","사용권허락","2차저작물작성권허락",
+    ],
+    "CONSENT_TYPE": [
+        "개인정보 수집·이용 동의","제3자 제공 동의","처리위탁 동의","마케팅 수신 동의",
+        "국외이전 동의","보유·이용기간 동의","저작권 양도 동의","초상권 사용 동의",
+        "참여 동의","사업 참여 동의","계약 동의","협력 동의",
+    ],
+    "RIGHT_INFO": [
+        "저작권","저작재산권","저작인격권","사용권","2차적저작물작성권","복제권","배포권",
+        "공중송신권","전시권","공연권","대여권","공표권","성명표시권","동일성유지권",
+        "초상권","퍼블리시티권","상표권","특허권","디자인권",
+    ],
+    "MONEY": [
+        "10,000,000원","5,000,000원","3,000,000원","1,500,000원","500,000원",
+        "₩10,000,000","₩5,000,000","₩3,000,000","₩1,000,000","₩500,000",
+    ],
+    "PERIOD": [
+        "1년","2년","3년","6개월","3개월","1개월","계약기간 내","사업종료시까지",
+        "2024년","2025년","2026년","2024년 말까지","2025년 12월 31일까지",
+        "영구","무기한","5년","10년",
+    ],
+    "PROJECT_NAME": [
+        "공공저작물 디지털 전환 구축 사업","공공저작물 디지털전환구축 사업","공공저작물디지털전환구축사업",
+        "2024년 공공저작물 디지털 전환 사업","저작권 메타데이터 추출","문서 NER 고도화",
+        "OCR 파이프라인 개선","계약서 분석 자동화","권리정보 정규화",
+        "디지털 아카이브 구축","문화유산 디지털화","콘텐츠 메타데이터 관리",
+    ],
+    "LAW_REFERENCE": [
+        "저작권법","저작권법 제24조","저작권법 제101조","개인정보 보호법","정보통신망법",
+        "민법","상법","전자문서 및 전자거래 기본법","공공데이터의 제공 및 이용 활성화에 관한 법률",
+        "문화예술진흥법","문화재보호법",
+    ],
+    "ID_NUM": [
+        "ID-123456","ID-789012","ID-345678","DOC-2024-001","DOC-2024-002",
+        "CONTRACT-2024-001","AGREEMENT-2024-001","REF-2024-001",
+    ],
+    "TITLE": [
+        "계약서","양도계약서","저작재산권 양도 계약서","동의서","합의서","확약서",
+        "요청서","신청서","위임장","보고서","사업계획서","제안서","협약서",
+    ],
+    "URL": [
+        "https://www.culture.go.kr","http://www.copyright.or.kr","https://example.com/project",
+        "http://company.co.kr/contract","https://portal.kr/document",
+    ],
+    "DESCRIPTION": [
+        "사업의 사업관리 총괄","사업의 메타관리 품질보증","사업의 사진영상 촬영",
+        "사업의 사진 촬영","사업의 사진스캔 복원","사업의 영상촬영","사업의 항공영상 촬영",
+        "본 계약은 당사자 간의 권리·의무를 규정한다","세부 내용은 별첨을 따른다",
+        "분쟁 발생 시 관할은 서울중앙지방법원으로 한다","저작재산권의 전부를 양도한다",
+        "개인정보를 안전하게 보관한다","프로젝트 수행 및 관리","기술 자문 및 지원",
+    ],
+    "TYPE": [
+        "문서","이미지","영상","음원","데이터","소프트웨어","소스코드",
+        "사진저작물","영상저작물","음악저작물","어문저작물","미술저작물",
+        "산출물","결과물","보고서","계약서","동의서",
+    ],
+    "STATUS": [
+        "유효","만료","해지","갱신","진행중","완료","보류","승인","반려","검토중",
+        "대기","처리완료","제출완료","확인중",
+    ],
+    "DEPARTMENT": [
+        "기획팀","개발팀","연구팀","법무팀","인사팀","재무팀","영업팀","운영팀",
+        "사업팀","관리팀","디자인팀","마케팅팀","총무팀","홍보팀",
+    ],
+    "LANGUAGE": [
+        "한국어","영어","일본어","중국어","스페인어","프랑스어","독일어","러시아어",
+        "한글","영문","일문","중문",
+    ],
+    "QUANTITY": [
+        "1건","5건","10건","50건","100건","1,000건","10,000건",
+        "1명","5명","10명","50명","100명",
+        "1개","10개","100개","1,000개",
+        "1GB","10GB","100GB","1TB","10TB",
+        "1페이지","10페이지","100페이지","500페이지",
+    ],
+}
+
+
+def build_entity_pool(rng: np.random.RandomState) -> Dict[str, List[str]]:
+    """
+    엔티티 풀을 효율적으로 구축합니다.
+    FIXED_POOLS가 충분하면 그대로 사용하고, 부족한 경우에만 생성합니다.
+    """
+    pool: Dict[str, List[str]] = {}
+    print(f"[INFO] 엔티티 풀 구축 중... (각 타입당 최소 {CFG.min_entities_per_type}개)", flush=True)
+    
+    # 생성 함수 매핑
+    generators = {
+        "NAME": lambda: rnd_kor_name(rng),
+        "PHONE": lambda: rnd_phone(rng),
+        "ADDRESS": lambda: rnd_address(rng),
+        "DATE": lambda: rnd_date(rng),
+        "EMAIL": lambda: rnd_email(rng),
+        "URL": lambda: rnd_url(rng),
+        "MONEY": lambda: rnd_money(rng),
+        "QUANTITY": lambda: rnd_quantity(rng),
+        "ID_NUM": lambda: f"ID-{rng.randint(100000,999999)}",
+    }
+    
+    for idx, t in enumerate(ENTITY_TYPES, 1):
+        n = CFG.min_entities_per_type
+        vals = set()
+        
+        # FIXED_POOLS에 있으면 우선 사용
+        if t in FIXED_POOLS:
+            base = FIXED_POOLS[t]
+            vals.update(base)
+            
+            # 부족하면 벡터화된 생성으로 빠르게 채움
+            if len(vals) < n:
+                needed = n - len(vals)
+                # 한 번에 필요한 만큼 + 여유분 생성 (중복 고려)
+                batch_size = min(needed * 3, 1000)  # 최대 1000개까지 한 번에 생성
+                
+                # 생성 함수 선택
+                if t in generators:
+                    gen_func = generators[t]
+                else:
+                    gen_func = lambda: f"{t}_{rng.randint(1, 999999)}"
+                
+                # 벡터화된 생성
+                generated = [gen_func() for _ in range(batch_size)]
+                
+                # 중복 제거하면서 추가
+                for g in generated:
+                    if len(vals) >= n:
+                        break
+                    vals.add(g)
+                
+                # 여전히 부족하면 추가 생성 (최대 100회 시도)
+                attempts = 0
+                while len(vals) < n and attempts < 100:
+                    vals.add(gen_func())
+                    attempts += 1
+            
+            print(f"[INFO] {idx}/{len(ENTITY_TYPES)} {t}: {len(vals)}개 (고정풀 + 생성)", flush=True)
+        
+        # FIXED_POOLS에 없으면 벡터화된 생성
+        else:
+            # 생성 함수 선택
+            if t in generators:
+                gen_func = generators[t]
+            else:
+                gen_func = lambda: f"{t}_{rng.randint(1, 999999)}"
+            
+            # 한 번에 필요한 만큼 + 여유분 생성
+            batch_size = min(n * 3, 1000)  # 최대 1000개까지 한 번에 생성
+            
+            # 벡터화된 생성
+            generated = [gen_func() for _ in range(batch_size)]
+            
+            # 중복 제거하면서 추가
+            for g in generated:
+                if len(vals) >= n:
+                    break
+                vals.add(g)
+            
+            # 여전히 부족하면 추가 생성 (최대 100회 시도)
+            attempts = 0
+            while len(vals) < n and attempts < 100:
+                vals.add(gen_func())
+                attempts += 1
+            
+            print(f"[INFO] {idx}/{len(ENTITY_TYPES)} {t}: {len(vals)}개 (생성)", flush=True)
+        
+        pool[t] = list(vals)
+    
+    print(f"[INFO] ✅ 엔티티 풀 구축 완료", flush=True)
+    return pool
+
+
+# -----------------------------
+# 4) Template-based sentence synthesis + BIO tagging (대폭 확장)
+# -----------------------------
+TEMPLATES = [
+    # 기본 문장 (15개)
+    "{NAME}은 {COMPANY}에서 {PHONE} 번호를 사용한다.",
+    "{NAME}님의 이메일은 {EMAIL}이고 연락처는 {PHONE}입니다.",
+    "본 {TITLE}는 {COMPANY}와 {NAME} 간 {CONTRACT_TYPE} 계약입니다.",
+    "{DATE}에 {NAME}이 {COMPANY}에서 {PROJECT_NAME} 프로젝트를 시작했다.",
+    "담당자 {NAME}({POSITION})의 연락처는 {PHONE}이며 주소는 {ADDRESS}입니다.",
+    "{COMPANY} {DEPARTMENT} {POSITION} {NAME}이 {DATE}에 계약금 {MONEY}을 지불했다.",
+    "{NAME}은 {COMPANY}에 {TYPE} 자료 {QUANTITY}를 {LANGUAGE}로 제공한다.",
+    "참조 URL은 {URL}이고 문서번호는 {ID_NUM}이다.",
+    "{CONTRACT_TYPE} 계약서에 따라 {NAME}이 {RIGHT_INFO}를 {COMPANY}에 양도한다.",
+    "{DATE}부터 {PERIOD} 동안 {NAME}은 {COMPANY}에서 {POSITION}으로 근무한다.",
+    "{CONSENT_TYPE}에 동의한 {NAME}의 개인정보는 {COMPANY}가 {PERIOD} 보관한다.",
+    "관련 법령 {LAW_REFERENCE}에 따라 {COMPANY}는 {NAME}에게 {MONEY}를 지급한다.",
+    "{COMPANY}의 {DEPARTMENT}는 {PROJECT_NAME}에 대해 {STATUS} 상태로 보고했다.",
+    "{NAME}이 작성한 {TYPE} 문서는 {DATE}에 {COMPANY}에 제출되었다.",
+    "주소 {ADDRESS}에 위치한 {COMPANY}는 {PHONE}로 연락 가능하다.",
+    
+    # 법률 문서 스타일 (30개)
+    "책임자(대표자) {POSITION} {NAME} (인)",
+    "기관(개인)명 : {NAME} (인) {COMPANY} 소속 : ○",
+    "{NAME} {COMPANY} {ADDRESS} {PHONE} 사업의 {DESCRIPTION}",
+    "이름 {NAME} 소속 {COMPANY} 주소 {ADDRESS} 주요 업무 {DESCRIPTION}",
+    "{NAME}은 {COMPANY}의 {PROJECT_NAME}에 참여하여 {DESCRIPTION}를 수행한다.",
+    "저작재산권을 {NAME}으로부터 {COMPANY}에게 {CONTRACT_TYPE}한다.",
+    "{NAME}이 {COMPANY}에 {RIGHT_INFO}를 {CONTRACT_TYPE}하기로 합의하였다.",
+    "{DATE}부터 {PERIOD}까지 {NAME}은 {PROJECT_NAME} 프로젝트 {POSITION}으로 활동한다.",
+    "{COMPANY} {DEPARTMENT} {NAME}({PHONE})이 {DATE}에 {TYPE} 문서를 제출했다.",
+    "연락처 {PHONE} {NAME} {POSITION} {COMPANY} {ADDRESS}",
+    "{NAME} {COMPANY} 본 {PROJECT_NAME} {POSITION} {DESCRIPTION}",
+    "참여인력 {NAME} {COMPANY} {ADDRESS} {PHONE} 주요업무 {DESCRIPTION}",
+    "{NAME}은(는) {DATE}에 {COMPANY}와 {CONTRACT_TYPE} 계약을 체결하였다.",
+    "{CONSENT_TYPE} 동의서에 {NAME}이 {DATE}에 서명하였다.",
+    "{NAME}의 {RIGHT_INFO}는 {COMPANY}가 {PERIOD} 동안 보유한다.",
+    "{LAW_REFERENCE}에 의거하여 {NAME}은 {COMPANY}에 {MONEY}를 지급한다.",
+    "{PROJECT_NAME} 사업 {POSITION} {NAME} {COMPANY} {PHONE}",
+    "대표자 {NAME} 주소 {ADDRESS} 연락처 {PHONE} 소속 {COMPANY}",
+    "{NAME}이 {COMPANY}의 {POSITION}으로 {DATE}부터 근무한다.",
+    "{COMPANY} 소속 {NAME}은 {PROJECT_NAME}의 {POSITION}을 담당한다.",
+    
+    # 표 형식 스타일 (20개)
+    "번호 이름 {NAME} 소속 {COMPANY} 연락처 {PHONE}",
+    "{NAME} {COMPANY} {PHONE} {ADDRESS} {POSITION}",
+    "성명 {NAME} 생년월일 {DATE} 전화번호 {PHONE}",
+    "{NAME} (인) {COMPANY} {DATE} {CONTRACT_TYPE}",
+    "참여자 {NAME} 기관 {COMPANY} 업무 {DESCRIPTION}",
+    "{POSITION} {NAME} {PHONE} {EMAIL} {ADDRESS}",
+    "{NAME} | {COMPANY} | {PHONE} | {POSITION}",
+    "이름: {NAME} 회사: {COMPANY} 연락처: {PHONE}",
+    "{NAME} - {POSITION} - {COMPANY} - {PHONE}",
+    "담당 {NAME} 부서 {DEPARTMENT} 직책 {POSITION}",
+    
+    # OCR 오류 시뮬레이션 (띄어쓰기 없음/이상한 띄어쓰기) (20개)
+    "{NAME}은{COMPANY}에서{POSITION}으로근무한다.",
+    "{NAME} 님 의 연 락 처 는 {PHONE} 입 니 다.",
+    "{COMPANY}{NAME}{PHONE}{ADDRESS}",
+    "기관명:{COMPANY}담당자:{NAME}전화:{PHONE}",
+    "{NAME}이{DATE}에{COMPANY}와계약체결하였다.",
+    "{PROJECT_NAME}사업{NAME}{COMPANY}{POSITION}",
+    "{NAME} ( {POSITION} ) {COMPANY} {PHONE}",
+    "성 명{NAME}소 속{COMPANY}연락처{PHONE}",
+    "{NAME}은 {COMPANY} 의{PROJECT_NAME}에 참 여한다.",
+    "{CONTRACT_TYPE}계약서 {NAME} {COMPANY} {DATE}",
+    
+    # 복잡한 복합 문장 (30개)
+    "{NAME}은 {COMPANY}의 {DEPARTMENT} {POSITION}으로서 {PROJECT_NAME} 프로젝트를 {DATE}부터 {PERIOD}까지 수행하며, 연락처는 {PHONE}이고 이메일은 {EMAIL}이다.",
+    "{DATE}에 {NAME}({POSITION})은 {COMPANY}와 {CONTRACT_TYPE} 계약을 체결하였으며, {RIGHT_INFO}에 대한 권리를 {PERIOD} 동안 양도하기로 합의하였다.",
+    "{COMPANY} 소속 {NAME}은 {ADDRESS}에 거주하며, {PHONE}로 연락 가능하고, {PROJECT_NAME}의 {POSITION}을 맡고 있다.",
+    "{CONSENT_TYPE}에 동의한 {NAME}은 {COMPANY}에 {DATE}부터 {PERIOD}까지 개인정보 활용을 허가하였으며, 연락처는 {PHONE}이다.",
+    "{LAW_REFERENCE}에 따라 {COMPANY}는 {NAME}에게 {MONEY}를 {DATE}까지 지급해야 하며, 주소는 {ADDRESS}이다.",
+    "{NAME}이 {DATE}에 제출한 {TYPE} 문서는 {COMPANY}의 {DEPARTMENT}에서 {STATUS} 상태로 검토 중이다.",
+    "{PROJECT_NAME} 사업의 참여자 {NAME}은 {COMPANY} {POSITION}으로 {DESCRIPTION}를 담당하며, {PHONE}로 연락 가능하다.",
+    "{COMPANY}와 {NAME} 간 {CONTRACT_TYPE} 계약에 따라 {RIGHT_INFO}가 {DATE}부터 {PERIOD} 동안 양도되었다.",
+    "{NAME}({PHONE})은 {COMPANY}의 {PROJECT_NAME}에서 {POSITION}으로 활동하며, 주소는 {ADDRESS}이다.",
+    "{DATE}에 {NAME}이 {COMPANY}에 제출한 {CONSENT_TYPE} 동의서는 {DEPARTMENT}에서 {STATUS} 처리되었다.",
+    
+    # 불완전한 문장 / 단편적 표현 (20개)
+    "{NAME} {COMPANY} {POSITION}",
+    "담당: {NAME} ({PHONE})",
+    "{NAME}, {COMPANY}, {DATE}",
+    "연락처 {PHONE} 담당자 {NAME}",
+    "{COMPANY} {NAME} {ADDRESS}",
+    "{PROJECT_NAME} - {NAME} - {POSITION}",
+    "{NAME} (인) {DATE}",
+    "{COMPANY} 소속: {NAME}",
+    "{POSITION} {NAME} 연락 {PHONE}",
+    "{NAME} / {COMPANY} / {PHONE}",
+    "책임자 {NAME} {COMPANY}",
+    "{NAME} 주소 {ADDRESS}",
+    "{PHONE} {EMAIL} {NAME}",
+    "{NAME} ({COMPANY}) {POSITION}",
+    "{DATE} {NAME} {CONTRACT_TYPE}",
+    "{PROJECT_NAME} 담당 {NAME}",
+    "{NAME} | {POSITION} | {PHONE}",
+    "대표 {NAME} {COMPANY}",
+    "{NAME} 이메일: {EMAIL}",
+    "{COMPANY} {NAME} 참여",
+
+    # 서명/양도인/양수인/대표자 블록 (실제 양식 대응)
+    "양도인 {NAME} (서명) 성명: {NAME} 주소: {ADDRESS} 전화번호: {PHONE}",
+    "양수인 {COMPANY} 대표자명: {NAME} 기관명: {COMPANY} 주소: {ADDRESS} 연락처: {PHONE}",
+    "양도인 {NAME} 주소 {ADDRESS} 연락처 {PHONE} 양수인 {COMPANY} 대표 {NAME}",
+    "대표자명: {NAME} 기관명: {COMPANY} 주소: {ADDRESS} 전화: {PHONE}",
+    "성명 {NAME} 연락처 {PHONE} 주소 {ADDRESS} 양도인 서명",
+    "성명: {NAME} (인) 전화번호: {PHONE} 주소: {ADDRESS}",
+    "대표자 {NAME} (인) 회사 {COMPANY} 전화 {PHONE} 주소 {ADDRESS}",
+    "양도자 {NAME} 양수자 {COMPANY} 대표 {NAME} 연락처 {PHONE}",
+    "양도인 이름 {NAME} 전화 {PHONE} 주소 {ADDRESS}",
+    "양수인 {COMPANY} 대표자 {NAME} 전화번호 {PHONE} 주소 {ADDRESS}",
+    "서명: {NAME} / 소속: {COMPANY} / 주소: {ADDRESS} / 연락처: {PHONE}",
+    "서명자 {NAME} ({PHONE}) {ADDRESS} 소속 {COMPANY}",
+
+    # 개인정보/동의 양식 문장 (실제 문서 패턴)
+    "개인정보 항목 성명: {NAME}, 주소: {ADDRESS}, 전화번호: {PHONE}",
+    "개인정보 수집 및 제공에 동의합니다. 성명 {NAME} 연락처 {PHONE}",
+    "제3자 제공 대상: {COMPANY}, 제공 항목: 성명 {NAME}, 연락처 {PHONE}, 주소 {ADDRESS}",
+    "개인정보 보유기간: {PERIOD}, 담당자: {NAME}, 연락처: {PHONE}",
+    "동의자: {NAME} 서명(인) 연락처: {PHONE}",
+    "본 동의서는 {DATE}에 작성되었으며, 작성자 {NAME}, 연락처 {PHONE}",
+    "본인은 {COMPANY}에 개인정보 제공(성명 {NAME}, 연락처 {PHONE}, 주소 {ADDRESS})에 동의합니다.",
+
+    # Entity 없는 일반 문장 추가 (O 태그 비율 확대)
+    "본 동의서는 개인정보 처리에 관한 일반적인 내용을 담고 있습니다.",
+    "아래 빈칸에 필요한 내용을 기입하십시오.",
+    "상기 사항을 확인하였으며 별도의 문의사항은 없습니다.",
+    "첨부된 서류를 확인하시고 서명해 주세요.",
+    "계약 조건 및 조항을 숙지하였습니다.",
+    "관련 법령에 따라 처리됩니다.",
+    "본 문서는 참고용으로 제공됩니다.",
+    "필요 시 추가 정보를 요청할 수 있습니다.",
+    "작성일자를 기입하고 서명하십시오.",
+    "본 문서의 일부는 생략되었습니다.",
+    "서명란에 자필 서명을 해 주세요.",
+    
+    # Entity 없는 일반 문장 (10개 - 중요!)
+    "저작재산권 양도 계약서",
+    "참여 인력 명단",
+    "아래와 같이 계약을 체결한다.",
+    "본 사업의 목적은 다음과 같다.",
+    "관련 법령에 따라 처리한다.",
+    "상기 내용에 동의합니다.",
+    "주요 업무 내용",
+    "사업 개요",
+    "계약 조건",
+    "첨부 서류 목록",
+]
+
+def simple_word_tokenize(text: str) -> List[str]:
+    """
+    공백 기반 단어 분리 - BERT tokenizer가 내부적으로 subword 처리
+    한국어는 형태소 단위가 아닌 어절(공백 단위) 분리
+    """
+    # 공백으로 분리
+    tokens = text.split()
+    # 빈 토큰 제거
+    return [t for t in tokens if t.strip()]
+
+
+def render_template(template: str, pool: Dict[str, List[str]], rng: np.random.RandomState) -> Tuple[List[str], List[str]]:
+    """
+    템플릿을 렌더링하고 BIO 태그를 생성합니다.
+    OCR 오류를 시뮬레이션하기 위해 일부 템플릿에서는 띄어쓰기를 제거합니다.
+    """
+    used: Dict[str, str] = {}
+    text = template
+    for t in ENTITY_TYPES:
+        key = "{" + t + "}"
+        if key in text:
+            used[t] = rng.choice(pool[t])
+            text = text.replace(key, used[t])
+
+    # OCR 오류 시뮬레이션: 일부 템플릿에서 띄어쓰기 제거 (30% 확률)
+    if rng.rand() < 0.3:
+        # 엔티티 사이의 띄어쓰기만 제거 (엔티티 내부는 유지)
+        for ent_type, ent_text in used.items():
+            # 엔티티 앞뒤의 띄어쓰기 제거
+            text = text.replace(f" {ent_text} ", f"{ent_text}")
+            text = text.replace(f" {ent_text}", f"{ent_text}")
+            text = text.replace(f"{ent_text} ", f"{ent_text}")
+
+    words = simple_word_tokenize(text)
+    labels = ["O"] * len(words)
+
+    # 엔티티 매칭: 정확한 매칭과 부분 매칭 모두 시도
+    for ent_type, ent_text in used.items():
+        ent_words = simple_word_tokenize(ent_text)
+        if not ent_words:
+            continue
+        
+        # 정확한 매칭 시도
+        i = 0
+        matched = False
+        while i <= len(words) - len(ent_words):
+            if words[i:i+len(ent_words)] == ent_words:
+                labels[i] = f"B-{ent_type}"
+                for j in range(1, len(ent_words)):
+                    labels[i+j] = f"I-{ent_type}"
+                i += len(ent_words)
+                matched = True
+            else:
+                i += 1
+        
+        # 정확한 매칭 실패 시, 엔티티가 하나의 단어로 합쳐진 경우 찾기
+        if not matched and len(ent_text.replace(" ", "")) > 0:
+            ent_combined = ent_text.replace(" ", "")
+            for i, word in enumerate(words):
+                if ent_combined in word or word in ent_combined:
+                    # 부분 매칭: 단어가 엔티티를 포함하거나 그 반대인 경우
+                    if len(ent_combined) >= len(word) * 0.7:  # 70% 이상 일치
+                        labels[i] = f"B-{ent_type}"
+                        matched = True
+                        break
+
+    return words, labels
+
+
+def generate_bio_samples(num_samples: int, seed: int) -> List[Dict]:
+    rng = np.random.RandomState(seed)
+    pool = build_entity_pool(rng)
+    print(f"[INFO] 샘플 생성 시작: {num_samples}개", flush=True)
+    samples: List[Dict] = []
+
+    initial_count = min(500, num_samples // 2)
+    print(f"[INFO] 초기 샘플 생성: {initial_count}개", flush=True)
+    for i in range(initial_count):
+        tmpl = rng.choice(TEMPLATES)
+        w, y = render_template(tmpl, pool, rng)
+        samples.append({"tokens": w, "labels": y})
+        if (i + 1) % 100 == 0:
+            print(f"[INFO] 초기 샘플 진행: {i+1}/{initial_count}", flush=True)
+
+    print(f"[INFO] 추가 샘플 생성: {num_samples - len(samples)}개", flush=True)
+    last = time.time()
+    while len(samples) < num_samples:
+        tmpl = rng.choice(TEMPLATES)
+        w, y = render_template(tmpl, pool, rng)
+        samples.append({"tokens": w, "labels": y})
+
+        if len(samples) % 500 == 0:
+            now = time.time()
+            dt = now - last
+            last = now
+            print(f"[INFO] 샘플 진행: {len(samples)}/{num_samples} (+500 in {dt:.1f}s)", flush=True)
+
+    print(f"[INFO] ✅ 샘플 생성 완료: {len(samples)}개", flush=True)
+    return samples[:num_samples]
+
+
+# -----------------------------
+# 5) Tokenization + label alignment
+# -----------------------------
+def load_tokenizer(bert_path: str):
+    tok = AutoTokenizer.from_pretrained(bert_path, use_fast=True)
+    if not getattr(tok, "is_fast", False):
+        raise RuntimeError("Tokenizer must be a Fast tokenizer (use_fast=True).")
+    return tok
+
+
+def align_labels_with_word_ids(encodings, word_labels: List[List[int]], max_len: int) -> np.ndarray:
+    out = []
+    for i in range(len(word_labels)):
+        word_ids = encodings.word_ids(batch_index=i)
+        aligned = np.full((max_len,), IGNORE_INDEX, dtype=np.int64)
+        prev_wid = None
+        for j, wid in enumerate(word_ids):
+            if j >= max_len:
+                break
+            if wid is None:
+                continue
+            if wid != prev_wid:
+                if wid < len(word_labels[i]):
+                    aligned[j] = int(word_labels[i][wid])
+            prev_wid = wid
+        out.append(aligned)
+    return np.stack(out, axis=0)
+
+
+def tokenize_bio_samples(samples: List[Dict], tokenizer, max_len: int):
+    tokens_batch = [s["tokens"] for s in samples]
+    labels_batch = [[LABEL2ID.get(l, 0) for l in s["labels"]] for s in samples]
+
+    enc = tokenizer(
+        tokens_batch,
+            is_split_into_words=True,
+            truncation=True,
+        padding="max_length",
+        max_length=max_len,
+        return_tensors="np",
     )
 
-    return label2id, id2label, tokenizer, train_loader, dev_loader, test_loader
+    input_ids = enc["input_ids"].astype(np.int64)
+    attention_mask = enc["attention_mask"].astype(np.int64)
+    labels = align_labels_with_word_ids(enc, labels_batch, max_len)
+
+    supervised = (labels != IGNORE_INDEX).sum(axis=1)
+    keep = supervised > 0
+
+    input_ids = input_ids[keep]
+    attention_mask = attention_mask[keep]
+    labels = labels[keep]
+    return input_ids, attention_mask, labels
 
 
-def collect_seqeval_inputs_from_crf_batch(
-    pred_paths: List[List[int]],
-    labels: torch.Tensor,
-    attention_mask: torch.Tensor,
-    id2label: Dict[int, str],
-) -> Tuple[List[List[str]], List[List[str]]]:
-    """Convert CRF decode outputs + labels into seqeval input format."""
-    all_true: List[List[str]] = []
-    all_pred: List[List[str]] = []
-
-    batch_size = labels.size(0)
-
-    for i in range(batch_size):
-        true_labels = []
-        pred_labels = []
-        
-        # pred_paths[i]는 attention_mask가 1인 토큰에 대한 예측
-        pred_idx = 0
-        
-        for j in range(len(labels[i])):
-            # Skip padded tokens
-            if attention_mask[i][j] == 0:
-                continue
-                
-            # Skip ignored tokens (-100) but consume prediction
-            if labels[i][j] != -100:
-                true_labels.append(id2label[labels[i][j].item()])
-                if pred_idx < len(pred_paths[i]):
-                    pred_labels.append(id2label[pred_paths[i][pred_idx]])
-                else:
-                    pred_labels.append("O")  # fallback
-            
-            pred_idx += 1
-
-        all_true.append(true_labels)
-        all_pred.append(pred_labels)
-
-    return all_true, all_pred
-
-
-def collect_seqeval_inputs_from_logits_batch(
-    logits: torch.Tensor,
-    labels: torch.Tensor,
-    attention_mask: torch.Tensor,
-    id2label: Dict[int, str],
-) -> Tuple[List[List[str]], List[List[str]]]:
-    """Convert softmax logits + labels into seqeval input format."""
-    all_true: List[List[str]] = []
-    all_pred: List[List[str]] = []
-
-    # (B, L, num_labels) -> (B, L)
-    preds = logits.argmax(dim=-1)
-
-    batch_size = labels.size(0)
-    for i in range(batch_size):
-        true_labels = []
-        pred_labels = []
-        
-        for j, label_id in enumerate(labels[i]):
-            # Skip padded tokens
-            if attention_mask[i][j] == 0:
-                continue
-                
-            # Skip ignored tokens
-            if label_id == -100:
-                continue
-            
-            true_labels.append(id2label[label_id.item()])
-            pred_labels.append(id2label[preds[i][j].item()])
-
-        all_true.append(true_labels)
-        all_pred.append(pred_labels)
-
-    return all_true, all_pred
-
-
-def apply_token_noise(token: str) -> str:
-    """Apply simple OCR-like noise to a token."""
-    # Increased noise probability from 10% to 30% to make training harder/more realistic
-    if len(token) < 2 or random.random() > 0.3: 
-        return token
-    
-    noise_type = random.choice(['jamo', 'typo', 'space'])
-    if noise_type == 'space':
-        # Insert random space
-        split_idx = random.randint(1, len(token)-1)
-        return token[:split_idx] + " " + token[split_idx:]
-    elif noise_type == 'typo':
-        # Replace a char with similar looking one (dummy)
-        idx = random.randint(0, len(token)-1)
-        char = token[idx]
-        # Simple mutation
-        return token[:idx] + "?" + token[idx+1:]
-    return token
-
-def write_bio_word_level(samples: List[Dict], filepath: Path, apply_noise: bool = False) -> None:
+def compute_label_weights(labels: np.ndarray) -> torch.Tensor:
+    """Compute inverse-frequency class weights for CrossEntropyLoss.
+    labels: (N, max_len) with label IDs and IGNORE_INDEX for padding.
     """
-    Save samples to BIO format (Word/Token Level).
-    Compatible with NERDataset which expects space-separated tokens.
+    flat = labels.reshape(-1)
+    mask = flat != IGNORE_INDEX
+    vals = flat[mask]
+    counts = np.bincount(vals, minlength=len(BIO_LABELS)).astype(np.float64)
+    counts[counts == 0] = 1.0
+    weights = 1.0 / counts
+    weights = weights / weights.mean()
+    return torch.tensor(weights, dtype=torch.float32)
+
+
+# -----------------------------
+# 6) Balanced split
+# -----------------------------
+def sample_signature(labels_row: np.ndarray) -> Tuple[int, ...]:
+    present = set()
+    for lid in labels_row:
+        if lid == IGNORE_INDEX:
+            continue
+        lab = ID2LABEL.get(int(lid), "O")
+        if lab.startswith(("B-", "I-")):
+            ent = lab[2:]
+            if ent in ENTITY_TYPES:
+                present.add(ENTITY_TYPES.index(ent))
+    return tuple(sorted(present))
+
+
+def split_train_val(input_ids, attention_mask, labels, train_ratio: float, seed: int):
+    rng = np.random.RandomState(seed)
+    n = labels.shape[0]
+    idx = np.arange(n)
+    rng.shuffle(idx)
+
+    sigs = [sample_signature(labels[i]) for i in idx]
+    want_val = max(1, int((1.0 - train_ratio) * n))
+
+    val_idx = []
+    covered = set()
+    for i, s in zip(idx, sigs):
+        if len(val_idx) >= want_val:
+            break
+        new = set(s) - covered
+        if new:
+            val_idx.append(i)
+            covered |= set(s)
+
+    remaining = [i for i in idx if i not in set(val_idx)]
+    rng.shuffle(remaining)
+    for i in remaining:
+        if len(val_idx) >= want_val:
+            break
+        val_idx.append(i)
+
+    val_set = set(val_idx)
+    train_idx = [i for i in idx if i not in val_set]
+
+    train_idx = np.array(train_idx, dtype=np.int64)
+    val_idx = np.array(val_idx, dtype=np.int64)
+    
+    return (
+        input_ids[train_idx], attention_mask[train_idx], labels[train_idx],
+        input_ids[val_idx], attention_mask[val_idx], labels[val_idx],
+    )
+
+
+# -----------------------------
+# 7) PyTorch Dataset
+# -----------------------------
+class NERDataset(Dataset):
+    def __init__(self, input_ids, attention_mask, labels):
+        self.input_ids = torch.tensor(input_ids, dtype=torch.long)
+        self.attention_mask = torch.tensor(attention_mask, dtype=torch.long)
+        self.labels = torch.tensor(labels, dtype=torch.long)
+
+    def __len__(self):
+        return len(self.input_ids)
+
+    def __getitem__(self, idx):
+        return {
+            'input_ids': self.input_ids[idx],
+            'attention_mask': self.attention_mask[idx],
+            'labels': self.labels[idx]
+        }
+
+
+# -----------------------------
+# 8) PyTorch Model (mBERT + BiLSTM)
+# -----------------------------
+class BertBiLSTMNER(nn.Module):
+    def __init__(self, bert_path: str, num_labels: int, lstm_units: int, dropout: float):
+        super().__init__()
+        self.bert = AutoModel.from_pretrained(bert_path)
+        self.dropout = nn.Dropout(dropout)
+        self.lstm = nn.LSTM(
+            self.bert.config.hidden_size,
+            lstm_units,
+            num_layers=1,
+            bidirectional=True,
+            batch_first=True
+        )
+        self.classifier = nn.Linear(lstm_units * 2, num_labels)
+        
+    def forward(self, input_ids, attention_mask):
+        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+        sequence_output = outputs.last_hidden_state  # (batch, seq_len, hidden)
+        sequence_output = self.dropout(sequence_output)
+        lstm_output, _ = self.lstm(sequence_output)  # (batch, seq_len, lstm_units*2)
+        lstm_output = self.dropout(lstm_output)
+        logits = self.classifier(lstm_output)  # (batch, seq_len, num_labels)
+        return logits
+
+
+# -----------------------------
+# 9) Metrics (entity-level F1)
+# -----------------------------
+def decode_bio(label_ids: torch.Tensor, attention_mask: torch.Tensor) -> List[str]:
+    out = []
+    label_ids = label_ids.cpu().numpy()
+    attention_mask = attention_mask.cpu().numpy()
+    for lid, m in zip(label_ids.tolist(), attention_mask.tolist()):
+        if m == 0:
+            break
+        if lid == IGNORE_INDEX:
+            out.append("O")
+    else:
+            out.append(ID2LABEL.get(int(lid), "O"))
+    return out
+
+
+def bio_to_entities(seq: List[str]) -> List[Tuple[str, int, int]]:
+    ents = []
+    i = 0
+    while i < len(seq):
+        tag = seq[i]
+        if tag.startswith("B-"):
+            t = tag[2:]
+            j = i + 1
+            while j < len(seq) and seq[j] == f"I-{t}":
+                j += 1
+            ents.append((t, i, j))
+            i = j
+        else:
+            i += 1
+    return ents
+
+
+def entity_f1(y_true_seqs: List[List[str]], y_pred_seqs: List[List[str]]) -> Dict[str, float]:
     """
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-    with open(filepath, 'w', encoding='utf-8') as f:
-        for sample in samples:
-            text = sample.get('text', '')
-            entities = sample.get('entities', []) or []
-            
-            # Simple Word Tokenization (Space split)
-            tokens = text.split()
-            if not tokens:
-                continue
-                
-            # Initialize all labels as 'O'
-            labels = ['O'] * len(tokens)
-            
-            # Create character-level label array
-            char_labels = ['O'] * len(text)
-            
-            # First, mark all entity positions at character level
-            # Use a list of (start, end, type) to handle duplicates correctly
-            entity_spans = []
-            search_start_pos = 0
-            
-            current_search_pos = 0
-            for entity_text, entity_type in entities:
-                entity_start = text.find(entity_text, current_search_pos)
-                if entity_start == -1:
-                    # Try searching from beginning if not found
-                    entity_start = text.find(entity_text)
-                    
-                if entity_start != -1:
-                    entity_end = entity_start + len(entity_text)
-                    entity_spans.append((entity_start, entity_end, entity_type))
-                    if entity_start >= current_search_pos:
-                        current_search_pos = entity_end
-            
-            for start, end, etype in entity_spans:
-                char_labels[start] = f"B-{etype}"
-                for i in range(start + 1, end):
-                    char_labels[i] = f"I-{etype}"
-            
-            # Now map character labels to token labels
-            char_pos = 0
-            for token_idx, token in enumerate(tokens):
-                # Find token position in text
-                token_start = text.find(token, char_pos)
-                if token_start == -1:
-                    char_pos += len(token) + 1
-                    continue
-                    
-                token_end = token_start + len(token)
-                
-                # Check if this token contains any entity label
-                for i in range(token_start, token_end):
-                    if i < len(char_labels) and char_labels[i] != 'O':
-                        labels[token_idx] = char_labels[i]
-                        break
-                
-                char_pos = token_end
-            
-            # Write to file
-            for token, label in zip(tokens, labels):
-                final_token = token
-                # Apply noise to ALL tokens (including entities) if requested
-                # This makes the task much harder and more realistic (OCR errors affect names too!)
-                if apply_noise:
-                    final_token = apply_token_noise(token)
-                f.write(f"{final_token}\t{label}\n")
-            f.write("\n")
-
-
-def generate_dynamic_dataset(output_root: Path, num_samples: int = 10000) -> Tuple[Path, Path]:
-    """Generate separate Train (8000) and Dev (2000) datasets."""
-    train_file = output_root / "dynamic_train.txt"
-    dev_file = output_root / "dynamic_dev.txt"
-    
-    if not HAS_DATA_GEN:
-        print("[Error] Data generation module missing.")
-        # Dummy
-        train_file.write_text("Hello O\n", encoding="utf-8")
-        dev_file.write_text("Hello O\n", encoding="utf-8")
-        return train_file, dev_file
-
-    # Fixed split as requested: 8000 Train, 2000 Dev
-    num_train = 8000
-    num_dev = 2000
-    
-    print(f"[DataGen] Generating {num_train:,} Train samples (with OCR noise)...")
-    train_samples = generate_training_samples(num_train, balanced=True, dataset_type='train')
-    write_bio_word_level(train_samples, train_file, apply_noise=True)
-    
-    print(f"[DataGen] Generating {num_dev:,} Dev samples (Clean)...")
-    dev_samples = generate_training_samples(num_dev, balanced=True, dataset_type='dev')
-    write_bio_word_level(dev_samples, dev_file, apply_noise=False)
-            
-    return train_file, dev_file
-
-
-def compute_seqeval_metrics(
-    all_true: List[List[str]],
-    all_pred: List[List[str]],
-) -> Dict[str, float | str]:
-    """Return precision, recall, f1 and report string."""
-    p = precision_score(all_true, all_pred, zero_division=0)
-    r = recall_score(all_true, all_pred, zero_division=0)
-    f = f1_score(all_true, all_pred, zero_division=0)
-    rep = classification_report(all_true, all_pred, digits=4, zero_division=0)
-    return {"precision": float(p), "recall": float(r), "f1": float(f), "report": rep}
-
-
-def evaluate_model(
-    model: torch.nn.Module,
-    dataloader: DataLoader,
-    id2label: Dict[int, str],
-    device: torch.device,
-    model_type: Literal["pure", "crf"],
-    return_probs: bool = False,
-) -> Tuple[Dict[str, float | str], List[List[str]], List[List[str]], Dict[str, List[float]] | None]:
+    엔티티 레벨 F1 - 타입과 위치가 정확히 일치하는 엔티티만 TP로 계산
+    (타입, 시작위치, 끝위치) 튜플이 완전히 일치해야 정확한 매칭으로 간주
     """
-    Evaluate a model.
-    Returns: (metrics, all_true_labels, all_pred_labels, prob_data)
-    prob_data is None unless return_probs=True.
+    tp = fp = fn = 0
+    
+    for yt, yp in zip(y_true_seqs, y_pred_seqs):
+        # 엔티티를 (타입, 시작위치, 끝위치) 튜플로 추출
+        true_entities = set(bio_to_entities(yt))
+        pred_entities = set(bio_to_entities(yp))
+        
+        # 정확히 일치하는 것만 TP (타입과 위치가 모두 일치)
+        tp += len(true_entities & pred_entities)
+        # 예측했지만 실제로는 없는 것 = FP
+        fp += len(pred_entities - true_entities)
+        # 실제로는 있지만 예측하지 못한 것 = FN
+        fn += len(true_entities - pred_entities)
+    
+    prec = tp / (tp + fp + 1e-9)
+    rec = tp / (tp + fn + 1e-9)
+    f1 = 2 * prec * rec / (prec + rec + 1e-9)
+    return {"precision": prec, "recall": rec, "f1": f1}
+
+
+# -----------------------------
+# 10) Save / Load
+# -----------------------------
+def save_artifacts(model: nn.Module, tokenizer, cfg: Config):
+    ensure_dir(cfg.model_dir)
+    torch.save(model.state_dict(), cfg.model_dir / "model.pt")
+    tokenizer.save_pretrained(cfg.model_dir / "tokenizer")
+    (cfg.model_dir / "labels.json").write_text(
+        json.dumps(
+            {"BIO_LABELS": BIO_LABELS, "ENTITY_TYPES": ENTITY_TYPES, "max_len": cfg.max_len},
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    print(f"\n[INFO] ✅ 모델 저장 완료: {cfg.model_dir}", flush=True)
+
+
+def load_artifacts(cfg: Config, bert_path: str, device: torch.device):
+    model_path = cfg.model_dir / "model.pt"
+    tok_dir = cfg.model_dir / "tokenizer"
+    labels_path = cfg.model_dir / "labels.json"
+    if not model_path.exists() or not tok_dir.exists() or not labels_path.exists():
+        return None, None
+
+    meta = json.loads(labels_path.read_text(encoding="utf-8"))
+    if meta.get("BIO_LABELS") != BIO_LABELS or meta.get("max_len") != cfg.max_len:
+        print("[WARN] Saved label schema/max_len differs. Refusing to continue-training.", flush=True)
+        return None, None
+
+    model = BertBiLSTMNER(bert_path, len(BIO_LABELS), cfg.lstm_units, cfg.dropout)
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.to(device)
+    tokenizer = AutoTokenizer.from_pretrained(tok_dir, use_fast=True)
+    return model, tokenizer
+
+
+# -----------------------------
+# 11) Cache
+# -----------------------------
+def cache_key(cfg: Config, bert_path: str) -> str:
+    s = f"{cfg.num_samples}|{cfg.min_entities_per_type}|{cfg.max_len}|{cfg.seed}|{bert_path}|pytorch_v1"
+    return sha1_text(s)[:16]
+
+
+def load_cached_dataset(cfg: Config, key: str):
+    p = cfg.cache_dir / f"dataset_{key}.npz"
+    if not p.exists():
+        return None
+    data = np.load(p)
+    return data["input_ids"], data["attention_mask"], data["labels"]
+
+
+def save_cached_dataset(cfg: Config, key: str, input_ids, attention_mask, labels):
+    ensure_dir(cfg.cache_dir)
+    p = cfg.cache_dir / f"dataset_{key}.npz"
+    np.savez_compressed(p, input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+    print(f"[INFO] ✅ Cached dataset: {p}", flush=True)
+
+
+# -----------------------------
+# 12) Train
+# -----------------------------
+def train(continue_from_existing: bool, bert_dir_override: Optional[str] = None, do_warmup: bool = True):
+    print("\n[INFO] 훈련 모드 시작...", flush=True)
+    set_global_seed(CFG.seed)
+    warn_if_running_on_mntc()
+    device = setup_gpu()
+    if do_warmup:
+        gpu_warmup(device)
+
+    bert_path = pick_bert_path(override=bert_dir_override)
+    key = cache_key(CFG, bert_path)
+
+    model = None
+    tokenizer = None
+
+    if continue_from_existing:
+        print(f"[INFO] 기존 모델 확인 중...", flush=True)
+        model, tokenizer = load_artifacts(CFG, bert_path, device)
+        if model is not None:
+            print(f"[INFO] ✅ 기존 모델을 계속 학습합니다.", flush=True)
+
+    if tokenizer is None:
+        print(f"[INFO] 토큰라이저 로드 중...", flush=True)
+        tokenizer = load_tokenizer(bert_path)
+
+    cached = load_cached_dataset(CFG, key)
+    if cached is None:
+        print(f"\n[INFO] 학습 데이터 생성 중... (23개 라벨, {CFG.num_samples}개 샘플)", flush=True)
+        samples = generate_bio_samples(CFG.num_samples, seed=CFG.seed)
+        print("[INFO] 토큰화 및 라벨 정렬 중...", flush=True)
+        input_ids, attention_mask, labels = tokenize_bio_samples(samples, tokenizer, CFG.max_len)
+        print(f"[INFO] ✅ 유효한 샘플: {labels.shape[0]}개", flush=True)
+        save_cached_dataset(CFG, key, input_ids, attention_mask, labels)
+    else:
+        input_ids, attention_mask, labels = cached
+        print(f"[INFO] ✅ 캠시된 데이터 로드완료: {labels.shape[0]}개", flush=True)
+
+    tr_ids, tr_mask, tr_y, va_ids, va_mask, va_y = split_train_val(
+        input_ids, attention_mask, labels, CFG.train_ratio, CFG.seed
+    )
+    print(f"[INFO] Train={len(tr_ids)}, Val={len(va_ids)}", flush=True)
+
+    train_dataset = NERDataset(tr_ids, tr_mask, tr_y)
+    val_dataset = NERDataset(va_ids, va_mask, va_y)
+    
+    train_loader = DataLoader(train_dataset, batch_size=CFG.batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=CFG.batch_size, shuffle=False)
+
+    if model is None:
+        print(f"[INFO] Building model...", flush=True)
+        model = BertBiLSTMNER(bert_path, len(BIO_LABELS), CFG.lstm_units, CFG.dropout)
+        print(f"[INFO] 모델을 GPU로 이동 중...", flush=True)
+        model.to(device)
+        print(f"[INFO] ✅ Model moved to {device}", flush=True)
+
+    optimizer = AdamW(model.parameters(), lr=CFG.lr)
+    # Compute class weights to improve minority label learning
+    weights = compute_label_weights(tr_y)
+    criterion = nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX, weight=weights.to(device))
+
+    print(f"\n{'='*70}", flush=True)
+    print(f"[INFO] 훈련 시작: {CFG.epochs} 에포크, 배치={CFG.batch_size}", flush=True)
+    print(f"[INFO] 훈련 배치: {len(train_loader)}/에포크 | 검증 배치: {len(val_loader)}", flush=True)
+    print(f"{'='*70}\n", flush=True)
+    
+    for epoch in range(CFG.epochs):
+        model.train()
+        total_loss = 0
+        batch_count = 0
+        
+        print(f"\n{'='*70}", flush=True)
+        print(f"[EPOCH {epoch+1}/{CFG.epochs}] 학습 시작...", flush=True)
+        print(f"{'='*70}", flush=True)
+        
+        for batch in train_loader:
+            input_ids = batch['input_ids'].to(device)
+            attention_mask = batch['attention_mask'].to(device)
+            labels = batch['labels'].to(device)
+
+            optimizer.zero_grad()
+            logits = model(input_ids, attention_mask)
+            
+            # Reshape for loss calculation
+            loss = criterion(logits.view(-1, len(BIO_LABELS)), labels.view(-1))
+            loss.backward()
+            optimizer.step()
+            
+            total_loss += loss.item()
+            batch_count += 1
+            
+            # 10개 배치마다 진행 상황 출력
+            if batch_count % 10 == 0:
+                avg_loss = total_loss / batch_count
+                progress = (batch_count / len(train_loader)) * 100
+                print(f"  [{epoch+1}/{CFG.epochs}] Batch {batch_count:3d}/{len(train_loader)} ({progress:5.1f}%) | Loss: {avg_loss:.4f}", flush=True)
+        
+        avg_train_loss = total_loss / len(train_loader)
+        print(f"\n[EPOCH {epoch+1}/{CFG.epochs}] 훈련 완료 - Train Loss: {avg_train_loss:.4f}", flush=True)
+        
+        # Validation with metrics
+        print(f"\n[EPOCH {epoch+1}/{CFG.epochs}] 검증 시작...", flush=True)
+        model.eval()
+        val_loss = 0.0
+        y_true_seqs, y_pred_seqs = [], []
+        
+        with torch.no_grad():
+            for batch in val_loader:
+                input_ids = batch['input_ids'].to(device)
+                attention_mask = batch['attention_mask'].to(device)
+                labels = batch['labels'].to(device)
+                
+                logits = model(input_ids, attention_mask)
+                loss = criterion(logits.view(-1, len(BIO_LABELS)), labels.view(-1))
+                val_loss += loss.item()
+                
+                pred = torch.argmax(logits, dim=-1)
+                for i in range(pred.shape[0]):
+                    yt = decode_bio(labels[i].cpu(), attention_mask[i].cpu())
+                    yp = decode_bio(pred[i].cpu(), attention_mask[i].cpu())
+                    y_true_seqs.append(yt)
+                    y_pred_seqs.append(yp)
+        
+        avg_val_loss = val_loss / len(val_loader)
+        metrics = entity_f1(y_true_seqs, y_pred_seqs)
+        
+        print(f"\n{'='*70}", flush=True)
+        print(f"[EPOCH {epoch+1}/{CFG.epochs}] 검증 완료", flush=True)
+        print(f"  Train Loss: {avg_train_loss:.4f}", flush=True)
+        print(f"  Val Loss:   {avg_val_loss:.4f}", flush=True)
+        print(f"  Precision:  {metrics['precision']:.4f}", flush=True)
+        print(f"  Recall:     {metrics['recall']:.4f}", flush=True)
+        print(f"  F1 Score:   {metrics['f1']:.4f}", flush=True)
+        print(f"{'='*70}\n", flush=True)
+
+    # Save final model
+    save_artifacts(model, tokenizer, CFG)
+
+
+# -----------------------------
+# 13) Inference
+# -----------------------------
+def predict_text(model: nn.Module, tokenizer, text: str, device: torch.device) -> Dict[str, List[str]]:
+    """
+    텍스트에서 엔티티를 추출합니다.
+    원본 텍스트에서 직접 추출하여 띄어쓰기를 보존합니다.
     """
     model.eval()
-    all_true: List[List[str]] = []
-    all_pred: List[List[str]] = []
+    all_entities: Dict[str, List[str]] = {t: [] for t in ENTITY_TYPES}
     
-    # For PR curve (binary classification: Entity vs O)
-    # We collect "probability of being an entity" and "is actually entity"
-    y_scores_entity = []  # Probability of NOT being 'O'
-    y_true_entity = []    # 1 if not 'O', else 0
-
-    # Find 'O' label ID
-    label2id = {v: k for k, v in id2label.items()}
-    o_label_id = label2id.get("O")
-    
-    if return_probs:
-        if o_label_id is None:
-            print("[Debug] 'O' label not found in label2id keys:", list(label2id.keys())[:10])
-            # Fallback
-            for k, v in id2label.items():
-                if v == 'O':
-                    o_label_id = k
-                    break
-            if o_label_id is None:
-                o_label_id = 0
-                print("[Warning] Still could not find 'O'. Using 0.")
-        # print(f"[Debug] Using O label ID: {o_label_id}")
+    # 텍스트를 청크로 나누기 (max_len을 고려하여)
+    max_chunk_chars = (CFG.max_len - 16) * 10
+    text_chunks = []
+    chunk_offsets = []  # 각 청크의 원본 텍스트에서의 시작 위치
+    for i in range(0, len(text), max_chunk_chars):
+        chunk = text[i:i + max_chunk_chars]
+        text_chunks.append(chunk)
+        chunk_offsets.append(i)
 
     with torch.no_grad():
-        for batch in dataloader:
-            input_ids = batch["input_ids"].to(device)
-            attention_mask = batch["attention_mask"].to(device)
-            labels = batch["labels"].to(device)
-
-            # Calculate Logits & Preds
-            if model_type == "crf":
-                # For CRF, we can't easily get token-level probabilities for PR curve
-                # So we just use decode output.
-                # If we really needed probs, we'd need marginal probabilities from CRF, 
-                # which torchcrf doesn't provide easily.
-                # We skip prob collection for CRF for now or use dummy.
-                pred_paths = model(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                )
-                bt_true, bt_pred = collect_seqeval_inputs_from_crf_batch(
-                    pred_paths, labels, attention_mask, id2label
-                )
-                
-                # Dummy probs for CRF (since hard preds only)
-                # This will make PR curve look like steps, which is expected for hard predictions.
-                if return_probs:
-                     # Reconstruct flattened binary arrays from bt_true/bt_pred
-                    for t_seq, p_seq in zip(bt_true, bt_pred):
-                        for t, p in zip(t_seq, p_seq):
-                            # 1 if Entity, 0 if O
-                            y_true_entity.append(0.0 if t == 'O' else 1.0)
-                            y_scores_entity.append(0.0 if p == 'O' else 1.0)
-
-            else:
-                outputs = model(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    labels=labels,
-                )
-                logits = outputs.logits
-                bt_true, bt_pred = collect_seqeval_inputs_from_logits_batch(
-                    logits, labels, attention_mask, id2label
-                )
-                
-                if return_probs:
-                    # Softmax for probabilities
-                    probs = torch.softmax(logits, dim=-1) # (B, L, C)
-                    
-                    # Probability of O
-                    # Ensure o_label_id is valid
-                    if o_label_id is None:
-                        # Fallback: Assume 0 is O
-                        o_idx = 0
-                    else:
-                        o_idx = o_label_id
-                        
-                    probs_o = probs[:, :, o_idx] # (B, L)
-                    # Probability of Entity = 1 - Prob(O)
-                    probs_entity = 1.0 - probs_o
-                    
-                    # Collect valid tokens (matching bt_true logic)
-                    mask = attention_mask.bool()
-                    
-                    for i in range(labels.size(0)):
-                        seq_len = int(mask[i].sum())
-                        # Get valid labels from original tensor (exclude padding)
-                        valid_labels_tensor = labels[i][:seq_len]
-                        valid_probs_tensor = probs_entity[i][:seq_len]
-                        
-                        # Filter out -100 (ignored tokens)
-                        # This must match exactly what collect_seqeval_inputs does
-                        active_indices = (valid_labels_tensor != -100)
-                        
-                        # Convert to list
-                        final_probs = valid_probs_tensor[active_indices].cpu().tolist()
-                        final_labels_cpu = valid_labels_tensor[active_indices].cpu().tolist()
-                        
-                        # Collect data directly from tensors
-                        if len(final_probs) > 0:
-                            # 1 if Entity (not O), 0 if O
-                            is_entity = [(1.0 if lid != o_label_id else 0.0) for lid in final_labels_cpu]
-                            y_true_entity.extend(is_entity)
-                            y_scores_entity.extend(final_probs)
-
-            all_true.extend(bt_true)
-            all_pred.extend(bt_pred)
-
-    metrics = compute_seqeval_metrics(all_true, all_pred)
-    
-    prob_data = None
-    if return_probs:
-        if not y_true_entity:
-            print("[Warning] No entity probability data collected! (Lists are empty)")
-        else:
-            # Check if we have enough data for PR curve (at least one positive and one negative ideally, but sklearn handles it)
-            pass
+        for chunk_idx, chunk_text in enumerate(text_chunks):
+            chunk_offset = chunk_offsets[chunk_idx]
             
-        prob_data = {
-            "y_true": y_true_entity,
-            "y_scores": y_scores_entity
-        }
-        
-    return metrics, all_true, all_pred, prob_data
-
-
-def save_comprehensive_dashboard(
-    history: Dict,
-    test_metrics: Dict | None,
-    prob_data: Dict | None,
-    output_dir: Path,
-    model_name: str,
-    model_type: str,
-    best_epoch: int
-):
-    """Generate the 8-panel dashboard as requested."""
-    if not HAS_VISUALIZATION:
-        return
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Use evaluation index for x-axis (simpler and consistent)
-    x_label = "Epoch"
-    steps = history.get("steps", range(1, len(history["eval_f1"]) + 1))
-    
-    # Setup Figure with GridSpec
-    fig = plt.figure(figsize=(24, 18))
-    gs = gridspec.GridSpec(3, 3, height_ratios=[1, 1, 0.6], hspace=0.4, wspace=0.3)
-    
-    plt.suptitle(f"NER Training Results - {model_name} ({model_type})", fontsize=20, y=0.95)
-
-    # 1. Training/Validation Loss
-    ax1 = plt.subplot(gs[0, 0])
-    if history["train_loss"]:
-        # Ensure steps length matches data length
-        curr_steps = steps[:len(history["train_loss"])]
-        ax1.plot(curr_steps, history["train_loss"], 'b-', label='Train Loss', alpha=0.7)
-    ax1.set_title("Training Loss", fontsize=14)
-    ax1.set_xlabel(x_label)
-    ax1.set_ylabel("Loss")
-    ax1.set_ylim(0, 2.0) # Fixed Y-axis for Loss
-    ax1.grid(True, linestyle='--', alpha=0.5)
-    ax1.legend()
-
-    # 2. F1 Score (Span-level)
-    ax2 = plt.subplot(gs[0, 1])
-    if "eval_f1" in history and history["eval_f1"]:
-        curr_steps = steps[:len(history["eval_f1"])]
-        ax2.plot(curr_steps, history["eval_f1"], 'g-o', label='F1 Score', markersize=3)
-        ax2.axhline(y=max(history["eval_f1"]), color='r', linestyle='--', alpha=0.5, label='Max F1')
-    ax2.set_title("F1 Score (Span-level)", fontsize=14)
-    ax2.set_xlabel(x_label)
-    ax2.set_ylabel("F1 Score")
-    ax2.set_ylim(0, 1.05) # Fixed Y-axis
-    ax2.grid(True, linestyle='--', alpha=0.5)
-    ax2.legend()
-
-    # 3. Precision-Recall Curve (No change needed for x-axis)
-    ax3 = plt.subplot(gs[0, 2])
-    ap_score = 0.0
-    if prob_data and prob_data["y_true"] and prob_data["y_scores"]:
-        y_true = prob_data["y_true"]
-        y_scores = prob_data["y_scores"]
-        precision, recall, _ = precision_recall_curve(y_true, y_scores)
-        ap_score = average_precision_score(y_true, y_scores)
-        
-        ax3.plot(recall, precision, 'b-', label=f'Model (AP={ap_score:.4f})')
-        ax3.plot(1, 1, 'bo') # End point
-    else:
-        ax3.text(0.5, 0.5, "No Probability Data\n(N/A for CRF or Missing)", ha='center', va='center', fontsize=12)
-    
-    ax3.set_title(f"Precision-Recall Curve (AP={ap_score:.4f})", fontsize=14)
-    ax3.set_xlabel("Recall")
-    ax3.set_ylabel("Precision")
-    ax3.set_xlim(0, 1.05)
-    ax3.set_ylim(0, 1.05)
-    ax3.grid(True, linestyle='--', alpha=0.5)
-    ax3.legend(loc='lower left')
-
-    # 4. Precision & Recall History
-    ax4 = plt.subplot(gs[1, 0])
-    if "eval_precision" in history and history["eval_precision"]:
-        curr_steps = steps[:len(history["eval_precision"])]
-        ax4.plot(curr_steps, history["eval_precision"], 's-', label='Precision', color='blue', markersize=3)
-    if "eval_recall" in history and history["eval_recall"]:
-        curr_steps = steps[:len(history["eval_recall"])]
-        ax4.plot(curr_steps, history["eval_recall"], '^-', label='Recall', color='red', markersize=3)
-    ax4.set_title("Precision & Recall", fontsize=14)
-    ax4.set_xlabel(x_label)
-    ax4.set_ylabel("Score")
-    ax4.set_ylim(0, 1.05)
-    ax4.grid(True, linestyle='--', alpha=0.5)
-    ax4.legend()
-
-    # 5. F1 Progress (Best-so-far)
-    ax5 = plt.subplot(gs[1, 1])
-    if "eval_f1" in history and history["eval_f1"]:
-        f1s = history["eval_f1"]
-        curr_steps = steps[:len(f1s)]
-        best_so_far = [max(f1s[:i+1]) for i in range(len(f1s))]
-        ax5.plot(curr_steps, f1s, 'g-o', label='F1 Score', alpha=0.5, markersize=3)
-        ax5.plot(curr_steps, best_so_far, 'r-', label='Best-so-far', linewidth=2)
-    ax5.set_title("F1 Progress (Best-so-far)", fontsize=14)
-    ax5.set_xlabel(x_label)
-    ax5.set_ylabel("F1 Score")
-    ax5.set_ylim(0, 1.05)
-    ax5.grid(True, linestyle='--', alpha=0.5)
-    ax5.legend()
-
-    # 6. Convergence Analysis (F1 Derivative)
-    ax6 = plt.subplot(gs[1, 2])
-    if "eval_f1" in history and len(history["eval_f1"]) > 1:
-        f1s = np.array(history["eval_f1"])
-        curr_steps = steps[:len(f1s)]
-        # Calculate derivative (change per step)
-        derivative = np.gradient(f1s)
-        ax6.plot(curr_steps, derivative, 'b-')
-        ax6.axhline(y=0, color='r', linestyle='--', alpha=0.5)
-    ax6.set_title("Convergence Analysis (F1 Derivative)", fontsize=14)
-    ax6.set_xlabel(x_label)
-    ax6.set_ylabel("F1 Improvement Rate")
-    ax6.set_ylim(-0.05, 0.05) # Fixed Y-axis for Convergence
-    ax6.grid(True, linestyle='--', alpha=0.5)
-
-    # 7. Final Evaluation Results (Text Box)
-    ax7 = plt.subplot(gs[2, 0])
-    ax7.axis('off')
-    
-    final_f1 = test_metrics['f1'] if test_metrics and 'f1' in test_metrics else (history["eval_f1"][-1] if history["eval_f1"] else 0.0)
-    
-    # Use history as fallback if test_metrics is zero or missing
-    if test_metrics and test_metrics.get('precision', 0.0) > 0:
-        final_prec = test_metrics['precision']
-    else:
-        final_prec = history["eval_precision"][-1] if history["eval_precision"] else 0.0
-        
-    if test_metrics and test_metrics.get('recall', 0.0) > 0:
-        final_rec = test_metrics['recall']
-    else:
-        final_rec = history["eval_recall"][-1] if history["eval_recall"] else 0.0
-        
-    best_f1 = max(history["eval_f1"]) if history["eval_f1"] else 0.0
-    
-    result_text = (
-        "============================================\n"
-        "          Final Evaluation Results\n"
-        "============================================\n\n"
-        f"F1 Score...................: {final_f1:.4f}\n"
-        f"Precision..................: {final_prec:.4f}\n"
-        f"Recall.....................: {final_rec:.4f}\n"
-        f"Best F1 (Dev)..............: {best_f1:.4f}\n"
-        f"Average Precision (AP).....: {ap_score:.4f}\n\n"
-        f"Total Evaluations: {len(history['eval_f1']) if history['eval_f1'] else 0}\n"
-        f"Model: {model_name}\n"
-        "============================================"
-    )
-    
-    # Create a fancy box
-    props = dict(boxstyle='round', facecolor='aliceblue', alpha=0.5)
-    ax7.text(0.05, 0.5, result_text, transform=ax7.transAxes, fontsize=12,
-            verticalalignment='center', fontfamily='monospace', bbox=props)
-
-    # 8. Training Information (Text Box)
-    ax8 = plt.subplot(gs[2, 1:]) # Span 2 columns
-    ax8.axis('off')
-    
-    info_text = (
-        "===============================================================\n"
-        "                   Training Information\n"
-        "===============================================================\n\n"
-        f"Model: {model_name}\n"
-        f"Type: {model_type}\n\n"
-        f"Evaluation with Best F1: {best_epoch}\n"
-        f"Best F1 Score: {best_f1:.4f}\n\n"
-        "Note:\n"
-        "- PR Curve shows Precision vs Recall (Entity vs O)\n"
-        "- AP (Average Precision) is the area under PR curve\n"
-        "- Convergence shows F1 improvement rate\n"
-        "==============================================================="
-    )
-    
-    props2 = dict(boxstyle='round', facecolor='floralwhite', alpha=0.5)
-    ax8.text(0.05, 0.5, info_text, transform=ax8.transAxes, fontsize=12,
-            verticalalignment='center', fontfamily='monospace', bbox=props2)
-
-    plt.savefig(output_dir / f"{model_name.replace('/', '-')}_dashboard.png", dpi=150, bbox_inches='tight')
-    plt.close()
-
-
-def save_confusion_matrix(
-    all_true: List[List[str]], 
-    all_pred: List[List[str]], 
-    output_dir: Path, 
-    model_name: str
-):
-    """Generate and save confusion matrix heatmap."""
-    if not HAS_VISUALIZATION:
-        return
-
-    # Flatten lists
-    y_true = [tag for sentence in all_true for tag in sentence]
-    y_pred = [tag for sentence in all_pred for tag in sentence]
-    
-    # Get unique labels sorted
-    labels = sorted(list(set(y_true + y_pred)))
-    # Remove 'O' to focus on entities if too many labels
-    if 'O' in labels and len(labels) > 10:
-        labels_no_o = [l for l in labels if l != 'O']
-        # If we still have labels, use them. Otherwise keep O.
-        if labels_no_o:
-             # This filters out 'O' from the confusion matrix visualization
-             # We need to filter y_true/y_pred as well or just let sklearn handle it (it will count 'O' as misclassification if not in labels)
-             pass 
-
-    try:
-        cm = confusion_matrix(y_true, y_pred, labels=labels)
-        
-        plt.figure(figsize=(12, 10))
-        sns.heatmap(cm, annot=False, fmt='d', cmap='Blues', xticklabels=labels, yticklabels=labels)
-        plt.title(f'{model_name} - Confusion Matrix')
-        plt.ylabel('True Label')
-        plt.xlabel('Predicted Label')
-        plt.xticks(rotation=45, ha='right')
-        plt.tight_layout()
-        plt.savefig(output_dir / "confusion_matrix.png")
-        plt.close()
-    except Exception as e:
-        print(f"[Visualization] Failed to plot confusion matrix: {e}")
-
-
-def save_comparison_plots(summary: Dict, output_root: Path):
-    """Save comparison bar charts for all models."""
-    if not HAS_VISUALIZATION:
-        return
-        
-    output_root.mkdir(parents=True, exist_ok=True)
-    
-    model_names = list(summary.keys())
-    dev_f1s = [info['dev_f1'] for info in summary.values()]
-    test_f1s = [info['test_f1'] if info['test_f1'] is not None and not math.isnan(info['test_f1']) else 0.0 for info in summary.values()]
-    
-    x = np.arange(len(model_names))
-    width = 0.35
-    
-    plt.figure(figsize=(12, 6))
-    plt.bar(x - width/2, dev_f1s, width, label='Dev F1')
-    plt.bar(x + width/2, test_f1s, width, label='Test F1')
-    
-    plt.ylabel('F1 Score')
-    plt.title('Model Performance Comparison')
-    plt.xticks(x, model_names, rotation=45, ha='right')
-    plt.legend()
-    plt.grid(True, axis='y', linestyle='--', alpha=0.7)
-    plt.tight_layout()
-    plt.savefig(output_root / "model_comparison.png")
-    plt.close()
-
-
-def resolve_model_path(model_name: str) -> str:
-    """
-    Check if a local version of the model exists in 'model_downloaded'.
-    If so, return the local path. Otherwise, return the HF Hub name.
-    """
-    # Map HF names to directory names (usually hyphens instead of slashes)
-    dir_name = model_name.replace("/", "-")
-    local_path = Path("model_downloaded") / dir_name
-    
-    if local_path.exists() and local_path.is_dir():
-        print(f"[setup] Found local model for {model_name} at {local_path}")
-        return str(local_path)
-    return model_name
-
-
-def train_one_model(
-    *,
-    model_name: str,
-    model_type: Literal["pure", "crf"],
-    train_file: Path,
-    dev_file: Path | None,
-    test_file: Path | None,
-    output_dir: Path,
-    model_dir: Path,
-    max_length: int = 128,
-    batch_size: int = 16,
-    num_epochs: int = 5,
-    learning_rate: float = 5e-5,
-    weight_decay: float = 0.01,
-    warmup_ratio: float = 0.1,
-    num_evaluations: int = 20,
-    seed: int = 42,
-    save_weights: bool = True,
-) -> Dict:
-    """Train a single model (pure or CRF) and evaluate on dev/test."""
-
-    set_seed(seed)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"[train] Device: {device}")
-    if device.type == 'cuda':
-        print(f"[train] GPU: {torch.cuda.get_device_name(0)}")
-        print(f"[train] Initial VRAM: {torch.cuda.memory_allocated(0)/1024**2:.2f} MB")
-        
-    print(f"[train] Output Dir (Plots): {output_dir}")
-    if save_weights:
-        print(f"[train] Model Dir (Weights): {model_dir}")
-    else:
-        print(f"[train] Model weights will NOT be saved (save_weights=False)")
-
-    label2id, id2label, tokenizer, train_loader, dev_loader, test_loader = (
-        build_dataloaders(
-            model_name=model_name,
-            train_file=train_file,
-            dev_file=dev_file,
-            test_file=test_file,
-            max_length=max_length,
-            batch_size=batch_size,
-        )
-    )
-
-    # Total steps for 1 epoch
-    total_steps = num_epochs * len(train_loader)
-    print(f"[train] Total steps: {total_steps}, Epochs: {num_epochs}")
-
-    num_labels = len(label2id)
-    print(f"[train] num_labels determined from data: {num_labels}")
-    if num_labels < 3:
-        print(f"[WARNING] num_labels is very small ({num_labels}). Check if data is loaded correctly.")
-        print(f"[Debug] label2id keys: {list(label2id.keys())}")
-
-    # build model
-    cfg = None  # Initialize cfg variable
-    if model_type == "pure":
-        print(f"[train] Building pure token classification model: {model_name}")
-        # Load config explicitly to ensure num_labels is applied
-        config = AutoConfig.from_pretrained(
-            model_name, 
-            num_labels=num_labels,
-            id2label={i: l for l, i in label2id.items()},
-            label2id=label2id,
-        )
-        model = AutoModelForTokenClassification.from_pretrained(
-            model_name,
-            config=config,
-            ignore_mismatched_sizes=True  # Re-added to fix size mismatch error
-        )
-    else:
-        print(f"[train] Building BiLSTM+CRF model on top of: {model_name}")
-        cfg = NERConfig(
-            model_name_or_path=model_name,
-            lstm_hidden_size=256,
-            lstm_num_layers=1,
-            dropout=0.1,
-            max_length=max_length,
-        )
-        model = BertBiLstmCrf(cfg, num_labels=num_labels)
-
-    model.to(device)
-
-    # Optimizer & scheduler
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=learning_rate,
-        weight_decay=weight_decay,
-    )
-    total_steps = num_epochs * len(train_loader)
-    warmup_steps = int(total_steps * warmup_ratio)
-    scheduler = get_linear_schedule_with_warmup(
-        optimizer,
-        num_warmup_steps=warmup_steps,
-        num_training_steps=total_steps,
-    )
-
-    history = {
-        "train_loss": [],
-        "steps": [],  # Track global steps for x-axis
-        "eval_f1": [],
-        "eval_precision": [],
-        "eval_recall": [],
-    }
-
-    dev_metrics = {"precision": 0.0, "recall": 0.0, "f1": 0.0, "report": ""}
-    global_step = 0
-
-    # Enable TF32 for faster math on Ampere+ GPUs (like H200)
-    torch.backends.cuda.matmul.allow_tf32 = True
-    torch.backends.cudnn.allow_tf32 = True
-    
-    # Initialize GradScaler for AMP
-    # Handle deprecation warning for newer PyTorch versions
-    if hasattr(torch, "amp") and hasattr(torch.amp, "GradScaler"):
-        scaler = torch.amp.GradScaler('cuda')
-    else:
-        scaler = torch.cuda.amp.GradScaler()
-
-    # training loop
-    for epoch in range(1, num_epochs + 1):
-        model.train()
-        total_loss = 0.0
-
-        print(f"\n===== [{model_type.upper()}] Epoch {epoch}/{num_epochs} =====")
-        for step, batch in enumerate(train_loader, start=1):
-            global_step += 1
-            optimizer.zero_grad()
-
-            input_ids = batch["input_ids"].to(device)
-            attention_mask = batch["attention_mask"].to(device)
-            labels = batch["labels"].to(device)
-
-            # Use AMP for mixed precision training
-            with torch.cuda.amp.autocast():
-                if model_type == "crf":
-                    # CRF model forward handles label preprocessing (converting -100 to 0) internally
-                    loss = model(
-                        input_ids=input_ids,
-                        attention_mask=attention_mask,
-                        labels=labels,
-                    )
-                else:
-                    outputs = model(
-                        input_ids=input_ids,
-                        attention_mask=attention_mask,
-                        labels=labels,
-                    )
-                    loss = outputs.loss
-
-            # Scale loss and backward
-            scaler.scale(loss).backward()
-            
-            # Unscale and step
-            scaler.unscale_(optimizer)
-            clip_grad_norm_(model.parameters(), max_norm=1.0)
-            scaler.step(optimizer)
-            scaler.update()
-            
-            scheduler.step()
-
-            loss_val = loss.item()
-            if math.isnan(loss_val):
-                print(f"[FATAL] NaN loss detected at epoch {epoch}, step {step}. Stopping training for this model.")
-                return {
-                    "error": "NaN loss detected",
-                    "model_name": model_name,
-                    "last_epoch": epoch,
-                    "last_step": step,
-                }
-
-            total_loss += loss_val
-
-            if step % 100 == 0 or step == len(train_loader):
-                avg_loss = total_loss / step
-                print(
-                    f"[epoch {epoch}] step {step:4d}/{len(train_loader):4d} "
-                    f"loss = {avg_loss:.4f}"
-                )
-
-        avg_epoch_loss = total_loss / max(len(train_loader), 1)
-        print(f"[train] Epoch {epoch} average loss: {avg_epoch_loss:.4f}")
-        
-        # Epoch-wise Evaluation
-        print(f"\n[Epoch {epoch}] Evaluating...")
-        dev_metrics, _, _, _ = evaluate_model(
-            model=model,
-            dataloader=dev_loader,
-            id2label=id2label,
-            device=device,
-            model_type=model_type,
-        )
-        
-        # Record metrics
-        history["steps"].append(epoch)
-        history["eval_f1"].append(dev_metrics["f1"])
-        history["eval_precision"].append(dev_metrics["precision"])
-        history["eval_recall"].append(dev_metrics["recall"])
-        history["train_loss"].append(avg_epoch_loss)
-        
-        print(
-            f"[Epoch {epoch}] loss={avg_epoch_loss:.4f} "
-            f"f1={dev_metrics['f1']:.4f} "
-            f"prec={dev_metrics['precision']:.4f} "
-            f"rec={dev_metrics['recall']:.4f}"
-        )
-
-    # final evaluation on test set (if provided) or dev set (fallback for PR curve)
-    test_metrics = None
-    prob_data = None
-    
-    if test_loader is not None:
-        print("\n[test] Evaluating on test set...")
-        test_metrics, test_true, test_pred, prob_data = evaluate_model(
-            model=model,
-            dataloader=test_loader,
-            id2label=id2label,
-            device=device,
-            model_type=model_type,
-            return_probs=True,
-        )
-        print(
-            f"[test] precision={test_metrics['precision']:.4f} "
-            f"recall={test_metrics['recall']:.4f} "
-            f"f1={test_metrics['f1']:.4f}"
-        )
-        
-        # Save confusion matrix for test set
-        save_confusion_matrix(test_true, test_pred, output_dir, model_name=model_name)
-    else:
-        # No test set, use dev set for prob_data collection (PR Curve)
-        print("\n[Fallback] No test set. Using dev set for PR Curve...")
-        test_metrics, test_true, test_pred, prob_data = evaluate_model(
-            model=model,
-            dataloader=dev_loader,
-            id2label=id2label,
-            device=device,
-            model_type=model_type,
-            return_probs=True,
-        )
-        save_confusion_matrix(test_true, test_pred, output_dir, model_name=model_name)
-
-    # save comprehensive dashboard
-    save_comprehensive_dashboard(
-        history=history,
-        test_metrics=test_metrics,
-        prob_data=prob_data,
-        output_dir=output_dir,
-        model_name=model_name,
-        model_type=model_type,
-        best_epoch=history["eval_f1"].index(max(history["eval_f1"])) + 1 if history["eval_f1"] else 0
-    )
-
-    # save model (weights to model_dir)
-    if save_weights:
-        model_dir.mkdir(parents=True, exist_ok=True)
-        print(f"[save] Saving model to {model_dir}")
-        if model_type == "pure":
-            model.save_pretrained(model_dir)
-            tokenizer.save_pretrained(model_dir)
-            with (model_dir / "label_map.json").open("w", encoding="utf-8") as f:
-                json.dump(
-                    {
-                        "label2id": label2id,
-                        "id2label": {int(v): k for k, v in label2id.items()},
-                    },
-                    f,
-                    ensure_ascii=False,
-                    indent=2,
-                )
-        else:
-            # simple saving: state dict + config + label map
-            torch.save(model.state_dict(), model_dir / "pytorch_model.bin")
-            # Ensure cfg is available here (it is defined in else block above)
-            if cfg is None:
-                 raise ValueError("CRF configuration missing")
-
-            with (model_dir / "ner_config.json").open("w", encoding="utf-8") as f:
-                json.dump(
-                    {
-                        "ner_config": asdict(cfg),
-                        "label2id": label2id,
-                        "id2label": {int(v): k for k, v in label2id.items()},
-                    },
-                    f,
-                    ensure_ascii=False,
-                    indent=2,
-                )
-            tokenizer.save_pretrained(model_dir)
-    else:
-        print("[save] Skipping model weight save (save_weights=False)")
-
-    result = {
-        "model_name": model_name,
-        "model_type": model_type,
-        "num_epochs": num_epochs,
-        "batch_size": batch_size,
-        "max_length": max_length,
-        "learning_rate": learning_rate,
-        "dev_metrics": dev_metrics,
-        "test_metrics": test_metrics,
-        "history": history,
-        "prob_data": prob_data, # Added prob_data for K-Fold aggregation
-        "output_dir": str(output_dir),
-        "model_dir": str(model_dir),
-    }
-    return result
-
-
-def run_six_model_benchmark(
-    train_file: Path,
-    dev_file: Path | None,
-    test_file: Path | None,
-    output_root: Path,
-    model_root: Path,
-    num_epochs: int = 5,
-    batch_size_pure: int = 16,
-    batch_size_crf: int = 12,
-    max_length: int = 128,
-    learning_rate: float = 5e-5,
-) -> Dict:
-    """Train + evaluate the 6 models described above."""
-    output_root.mkdir(parents=True, exist_ok=True)
-    model_root.mkdir(parents=True, exist_ok=True)
-
-    # (model_type, hf_name, short_tag)
-    model_specs = [
-        ("pure", "google-bert/bert-base-multilingual-cased", "pure_bert"),
-        ("pure", "klue/roberta-large", "pure_roberta"),
-        ("pure", "FacebookAI/xlm-roberta-large", "pure_xlm"),
-        ("crf", "google-bert/bert-base-multilingual-cased", "crf_bert"),
-        ("crf", "klue/roberta-large", "crf_roberta"),
-        ("crf", "FacebookAI/xlm-roberta-large", "crf_xlm"),
-    ]
-
-    all_results: Dict[str, Dict] = {}
-    for model_type, hf_name, tag in model_specs:
-        print("\n" + "=" * 80)
-        # Check for local model
-        real_model_path = resolve_model_path(hf_name)
-        print(f"[RUN] Training model: {tag} ({real_model_path}, type={model_type})")
-        print("=" * 80)
-
-        batch_size = 64 # Fixed batch size as requested to align with 400-sample evaluation intervals
-        
-        # Separate paths
-        out_dir = output_root / tag  # For plots/logs
-        model_dir = model_root / tag # For model weights
-
-        res = train_one_model(
-            model_name=real_model_path,
-            model_type=model_type,  # type: ignore[arg-type]
-            train_file=train_file,
-            dev_file=dev_file,
-            test_file=test_file,
-            output_dir=out_dir,
-            model_dir=model_dir,
-            max_length=max_length,
-            batch_size=batch_size,
-            num_epochs=1, # Fixed to 1 epoch as requested
-            learning_rate=learning_rate,
-            num_evaluations=20
-        )
-
-        all_results[tag] = res
-        
-        # Clear memory
-        del res
-        torch.cuda.empty_cache()
-        gc.collect()
-
-    # summary
-    summary = {
-        tag: {
-            "model_name": res["model_name"],
-            "model_type": res["model_type"],
-            "dev_f1": res["dev_metrics"]["f1"],
-            "test_f1": (res["test_metrics"] or {}).get("f1")
-            if res["test_metrics"] is not None
-            else None,
-        }
-        for tag, res in all_results.items()
-    }
-
-    print("\n" + "=" * 80)
-    print("Summary (dev F1 / test F1)")
-    print("=" * 80)
-    for tag, info in summary.items():
-        print(
-            f"{tag:12s} "
-            f"type={info['model_type']:4s} "
-            f"dev_f1={info['dev_f1']:.4f} "
-            f"test_f1={(info['test_f1'] if info['test_f1'] is not None else float('nan')):.4f}"
-        )
-
-    results = {"results": all_results, "summary": summary}
-    # save as JSON
-    # Ensure all data is JSON serializable (numpy floats, etc.)
-    results = make_serializable(results)
-    
-    json_path = output_root / "six_model_results.json"
-    with json_path.open("w", encoding="utf-8") as f:
-        json.dump(results, f, ensure_ascii=False, indent=2)
-    print(f"\n[save] Full results saved to {json_path}")
-    
-    # Save comparison plots
-    save_comparison_plots(summary, output_root)
-
-    return results
-
-
-def run_kfold_benchmark(
-    output_root: Path,
-    model_root: Path,
-    num_epochs: int = 1,
-    batch_size_pure: int = 20,
-    batch_size_crf: int = 20,
-    max_length: int = 128,
-    learning_rate: float = 5e-5,
-    k_folds: int = 5,
-    num_samples: int = 10000,
-    tag_prefix: str = "",
-) -> Dict:
-    """Run 5-Fold Cross Validation for all 6 models."""
-    output_root.mkdir(parents=True, exist_ok=True)
-    model_root.mkdir(parents=True, exist_ok=True)
-
-    # 1. Generate Full Dataset
-    # We combine 'train' and 'dev' templates to create a diverse pool for CV
-    print(f"[K-Fold] Generating {num_samples} samples for Cross Validation...")
-    
-    # Generate 50/50 'train' type and 'dev' type to mix patterns
-    half = num_samples // 2
-    samples_a = generate_training_samples(half, balanced=True, dataset_type='train')
-    samples_b = generate_training_samples(num_samples - half, balanced=True, dataset_type='dev')
-    all_samples = samples_a + samples_b
-    random.shuffle(all_samples)
-    
-    print(f"[K-Fold] Total samples: {len(all_samples)}")
-
-    # (model_type, hf_name, short_tag)
-    model_specs = [
-        ("pure", "google-bert/bert-base-multilingual-cased", "pure_bert"),
-        ("pure", "klue/roberta-large", "pure_roberta"),
-        ("pure", "FacebookAI/xlm-roberta-large", "pure_xlm"),
-        ("crf", "google-bert/bert-base-multilingual-cased", "crf_bert"),
-        ("crf", "klue/roberta-large", "crf_roberta"),
-        ("crf", "FacebookAI/xlm-roberta-large", "crf_xlm"),
-    ]
-
-    # Use GroupKFold to prevent template leakage
-    # Groups are the templates used to generate the samples
-    groups = [s.get('template', 'UNKNOWN') for s in all_samples]
-    
-    # Verify groups are sufficient
-    unique_groups = set(groups)
-    print(f"[K-Fold] Unique templates (groups): {len(unique_groups)}")
-    if len(unique_groups) < k_folds:
-        print(f"[Warning] Number of unique templates ({len(unique_groups)}) is less than k_folds ({k_folds}).")
-        print("Falling back to standard KFold (Leakage possible!)")
-        kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
-        split_generator = kf.split(all_samples)
-    else:
-        print(f"[K-Fold] Using GroupKFold to ensure NO TEMPLATE LEAKAGE between train and val.")
-        gkf = GroupKFold(n_splits=k_folds)
-        split_generator = gkf.split(all_samples, groups=groups)
-    
-    # We need to materialize the split generator because we iterate it multiple times (once per model? No, loop is outside)
-    # Wait, the loop is: For each model -> For each fold.
-    # So we need to regenerate the splits or save them.
-    # Let's save the indices.
-    splits = list(split_generator)
-
-    final_results = {}
-
-    for model_type, hf_name, base_tag in model_specs:
-        tag = f"{tag_prefix}_{base_tag}" if tag_prefix else base_tag
-        print("\n" + "=" * 80)
-        real_model_path = resolve_model_path(hf_name)
-        print(f"[K-Fold] Benchmarking model: {tag} ({k_folds} folds)")
-        print("=" * 80)
-
-        batch_size = batch_size_pure if model_type == "pure" else batch_size_crf
-        
-        fold_metrics = []
-        fold_histories = []
-        all_fold_y_true = []
-        all_fold_y_scores = []
-        
-        # Create directory for this model's folds
-        model_out_dir = output_root / tag
-        model_out_dir.mkdir(parents=True, exist_ok=True)
-
-        for fold_idx, (train_idx, val_idx) in enumerate(splits):
-            print(f"\n--- Fold {fold_idx + 1}/{k_folds} ---")
-            
-            # Split data
-            train_fold = [all_samples[i] for i in train_idx]
-            val_fold = [all_samples[i] for i in val_idx]
-            
-            # LEAKAGE CHECK
-            train_templates = set(s.get('template', 'A') for s in train_fold)
-            val_templates = set(s.get('template', 'B') for s in val_fold)
-            intersection = train_templates.intersection(val_templates)
-            if intersection:
-                print(f"[WARNING] Template Leakage Detected! {len(intersection)} templates shared.")
-                # print(f"Shared: {list(intersection)[:3]}...")
-            else:
-                print(f"[Check] No Template Leakage. Train/Val templates are disjoint.")
-            
-            # Write to temp files
-            fold_train_file = model_out_dir / f"fold_{fold_idx+1}_train.txt"
-            fold_val_file = model_out_dir / f"fold_{fold_idx+1}_val.txt"
-            
-            # [CRF Experiment] Apply noise to Validation set as well to simulate real-world OCR conditions.
-            # This makes the task harder and highlights the structural advantage of CRF.
-            write_bio_word_level(train_fold, fold_train_file, apply_noise=True)
-            write_bio_word_level(val_fold, fold_val_file, apply_noise=True)
-            
-            # Train
-            # Only save weights for the first fold to save space/time, or last? 
-            # User didn't specify, but saving 30 models is heavy. Let's save none or just best?
-            # Let's save weights for Fold 1 only as a representative artifact.
-            save_weights = (fold_idx == 0)
-            
-            res = train_one_model(
-                model_name=real_model_path,
-                model_type=model_type, # type: ignore
-                train_file=fold_train_file,
-                dev_file=fold_val_file,
-                test_file=None, # No separate test set in CV usually, or use val as test
-                output_dir=model_out_dir / f"fold_{fold_idx+1}",
-                model_dir=model_root / tag / f"fold_{fold_idx+1}",
-                max_length=max_length,
-                batch_size=batch_size,
-                num_epochs=num_epochs,
-                learning_rate=learning_rate,
-                num_evaluations=20,
-                save_weights=save_weights
+            # BERT tokenizer로 직접 인코딩 (offsets_mapping 포함)
+            enc = tokenizer(
+                chunk_text,
+                truncation=True,
+                padding="max_length",
+                max_length=CFG.max_len,
+                return_tensors="pt",
+                return_offsets_mapping=True,
             )
+            input_ids = enc["input_ids"].to(device)
+            attention_mask = enc["attention_mask"].to(device)
+            offsets = enc["offset_mapping"][0].cpu().numpy()  # (seq_len, 2) 형태: (start, end)
             
-            # Check for error
-            if "error" in res:
-                print(f"[Error] Fold {fold_idx+1} failed: {res['error']}")
-                # Append dummy data to avoid crash
-                fold_metrics.append(0.0)
-                fold_histories.append({
-                    "train_loss": [], "eval_f1": [], "eval_precision": [], "eval_recall": [],
-                    "summary": {"best_f1": 0.0, "final_f1": 0.0, "final_precision": 0.0, "final_recall": 0.0, "ap_score": 0.0}
-                })
-                continue
-
-            # Collect results
-            # We use the best dev f1 from history or the final one?
-            # Usually CV reports the score on the validation set.
-            # train_one_model returns 'dev_metrics' (last step) and 'test_metrics' (if test_file provided).
-            # Since we didn't provide test_file, we use the best F1 from history or the last one.
-            # Let's use the BEST F1 achieved during the fold.
-            if res.get("history") and res["history"].get("eval_f1"):
-                best_f1 = max(res["history"]["eval_f1"])
-            else:
-                best_f1 = 0.0
-                
-            fold_metrics.append(best_f1)
+            logits = model(input_ids, attention_mask)
+            pred = torch.argmax(logits, dim=-1)[0].cpu().numpy()
             
-            # Calculate per-fold AP and other stats
-            fold_ap = 0.0
-            if res.get("prob_data"):
-                try:
-                    fold_ap = average_precision_score(res["prob_data"]["y_true"], res["prob_data"]["y_scores"])
-                except:
-                    fold_ap = 0.0
-            
-            # Inject summary stats into history
-            if "history" in res:
-                res["history"]["summary"] = {
-                    "best_f1": best_f1,
-                    "final_f1": res["history"]["eval_f1"][-1] if res["history"].get("eval_f1") else 0.0,
-                    "final_precision": res["history"]["eval_precision"][-1] if res["history"].get("eval_precision") else 0.0,
-                    "final_recall": res["history"]["eval_recall"][-1] if res["history"].get("eval_recall") else 0.0,
-                    "ap_score": fold_ap
-                }
-                fold_histories.append(res["history"])
-            else:
-                 fold_histories.append({
-                    "train_loss": [], "eval_f1": [], "eval_precision": [], "eval_recall": [],
-                    "summary": {"best_f1": 0.0, "final_f1": 0.0, "final_precision": 0.0, "final_recall": 0.0, "ap_score": 0.0}
-                })
-            
-            # Collect probability data for aggregated PR curve
-            if res.get("prob_data"):
-                all_fold_y_true.extend(res["prob_data"]["y_true"])
-                all_fold_y_scores.extend(res["prob_data"]["y_scores"])
-            
-            # Cleanup
-            del res
-            torch.cuda.empty_cache()
-            gc.collect()
-            
-            # Remove temp files
-            if fold_train_file.exists(): fold_train_file.unlink()
-            if fold_val_file.exists(): fold_val_file.unlink()
-
-        # --- Aggregation ---
-        mean_f1 = np.mean(fold_metrics)
-        std_f1 = np.std(fold_metrics)
-        
-        print(f"\n[Result] {tag} {k_folds}-Fold CV: Mean F1 = {mean_f1:.4f} (+/- {std_f1:.4f})")
-        
-        # Average History for Graph
-        # Filter out failed folds (empty history)
-        valid_histories = [h for h in fold_histories if h.get("eval_f1")]
-        
-        if not valid_histories:
-            print("[Warning] No valid fold histories found. Graphs will be empty.")
-            avg_history = copy.deepcopy(fold_histories[0])
-        else:
-            # Use the first valid history as template
-            avg_history = copy.deepcopy(valid_histories[0])
-            
-            # Average the lists over VALID folds only
-            for key in ["train_loss", "eval_f1", "eval_precision", "eval_recall"]:
-                # Stack lists: (K, num_steps)
-                values = [h[key] for h in valid_histories]
-                # Compute mean along axis 0
-                # Note: lengths must match. If not (due to slight batch rounding?), truncate to min length.
-                if values:
-                    min_len = min(len(v) for v in values)
-                    if min_len > 0:
-                        truncated_values = [v[:min_len] for v in values]
-                        avg_values = np.mean(truncated_values, axis=0).tolist()
-                        avg_history[key] = avg_values
-                    else:
-                        avg_history[key] = []
-                else:
-                    avg_history[key] = []
-
-        # Calculate Convergence (F1 Derivative) for JSON
-        if "eval_f1" in avg_history and len(avg_history["eval_f1"]) > 1:
-            avg_history["f1_convergence"] = np.gradient(avg_history["eval_f1"]).tolist()
-
-        # Calculate Convergence for each individual fold as well
-        for fh in fold_histories:
-            if "eval_f1" in fh and len(fh["eval_f1"]) > 1:
-                fh["f1_convergence"] = np.gradient(fh["eval_f1"]).tolist()
-            
-        # Generate Averaged Dashboard
-        print(f"[Graph] Generating Averaged Dashboard for {tag}...")
-        
-        # Construct aggregated prob_data
-        agg_prob_data = None
-        ap_score = 0.0
-        if all_fold_y_true and all_fold_y_scores:
-            agg_prob_data = {
-                "y_true": all_fold_y_true,
-                "y_scores": all_fold_y_scores
-            }
+            # word_ids를 사용하여 subword를 word로 그룹화
             try:
-                ap_score = average_precision_score(all_fold_y_true, all_fold_y_scores)
+                word_ids = enc.word_ids(batch_index=0)
             except:
-                ap_score = 0.0
+                word_ids = None
             
-        save_comprehensive_dashboard(
-            history=avg_history,
-            test_metrics={"f1": mean_f1, "precision": 0.0, "recall": 0.0}, # Dummy prec/rec for text box
-            prob_data=agg_prob_data, 
-            output_dir=model_out_dir, # Save in model folder root
-            model_name=f"{tag} (Average of {k_folds} Folds)",
-            model_type=model_type,
-            best_epoch=1
-        )
+            # 엔티티 추출: word_ids를 사용하여 원본 텍스트에서 직접 추출
+            if word_ids is not None:
+                prev_wid = None
+                cur_type = None
+                cur_start = None
+                cur_end = None
+                
+                for j in range(len(pred)):
+                    if j >= len(attention_mask[0]) or attention_mask[0, j] == 0:
+                        break
+                    if j >= len(word_ids) or j >= len(offsets):
+                        break
+                    
+                    wid = word_ids[j]
+                    offset = offsets[j]
+                    label_id = pred[j]
+                    
+                    # Special tokens 스킵
+                    if wid is None or offset[0] == offset[1] == 0:
+                        if cur_type and cur_start is not None and cur_end is not None:
+                            # 이전 엔티티 저장
+                            entity_text = chunk_text[cur_start:cur_end].strip()
+                            if entity_text and len(entity_text) > 1:
+                                all_entities[cur_type].append(entity_text)
+                            cur_type = None
+                            cur_start = None
+                            cur_end = None
+                        continue
+                    
+                    lab = ID2LABEL.get(int(label_id), "O")
+                    
+                    # 같은 word의 첫 subword만 처리
+                    if wid == prev_wid:
+                        # 같은 word의 subword인 경우, end 위치만 업데이트
+                        if cur_type and cur_start is not None:
+                            cur_end = offset[1]
+                        continue
+                    prev_wid = wid
+                    
+                    if lab.startswith("B-"):
+                        # 이전 엔티티 저장
+                        if cur_type and cur_start is not None and cur_end is not None:
+                            entity_text = chunk_text[cur_start:cur_end].strip()
+                            if entity_text and len(entity_text) > 1:
+                                all_entities[cur_type].append(entity_text)
+                        cur_type = lab[2:]
+                        cur_start = offset[0]
+                        cur_end = offset[1]
+                    elif lab.startswith("I-") and cur_type == lab[2:]:
+                        # 연속된 엔티티: end 위치만 업데이트
+                        if cur_start is not None:
+                            cur_end = offset[1]
+                    else:
+                        # 이전 엔티티 저장
+                        if cur_type and cur_start is not None and cur_end is not None:
+                            entity_text = chunk_text[cur_start:cur_end].strip()
+                            if entity_text and len(entity_text) > 1:
+                                all_entities[cur_type].append(entity_text)
+                        cur_type = None
+                        cur_start = None
+                        cur_end = None
+                
+                # 마지막 엔티티 저장
+                if cur_type and cur_start is not None and cur_end is not None:
+                    entity_text = chunk_text[cur_start:cur_end].strip()
+                    if entity_text and len(entity_text) > 1:
+                        all_entities[cur_type].append(entity_text)
+            
+            else:
+                # word_ids가 없으면 offset을 사용하여 처리
+                cur_type = None
+                cur_start = None
+                cur_end = None
+                
+                for j in range(len(pred)):
+                    if j >= len(attention_mask[0]) or attention_mask[0, j] == 0:
+                        break
+                    if j >= len(offsets):
+                        break
+                    
+                    offset = offsets[j]
+                    label_id = pred[j]
+                    
+                    # Special tokens 스킵
+                    if offset[0] == offset[1] == 0:
+                        if cur_type and cur_start is not None and cur_end is not None:
+                            entity_text = chunk_text[cur_start:cur_end].strip()
+                            if entity_text and len(entity_text) > 1:
+                                all_entities[cur_type].append(entity_text)
+                            cur_type = None
+                            cur_start = None
+                            cur_end = None
+                        continue
+                    
+                    lab = ID2LABEL.get(int(label_id), "O")
+                    
+                    if lab.startswith("B-"):
+                        # 이전 엔티티 저장
+                        if cur_type and cur_start is not None and cur_end is not None:
+                            entity_text = chunk_text[cur_start:cur_end].strip()
+                            if entity_text and len(entity_text) > 1:
+                                all_entities[cur_type].append(entity_text)
+                        cur_type = lab[2:]
+                        cur_start = offset[0]
+                        cur_end = offset[1]
+                    elif lab.startswith("I-") and cur_type == lab[2:]:
+                        # 연속된 엔티티: end 위치만 업데이트
+                        if cur_start is not None:
+                            cur_end = offset[1]
+                    else:
+                        # 이전 엔티티 저장
+                        if cur_type and cur_start is not None and cur_end is not None:
+                            entity_text = chunk_text[cur_start:cur_end].strip()
+                            if entity_text and len(entity_text) > 1:
+                                all_entities[cur_type].append(entity_text)
+                        cur_type = None
+                        cur_start = None
+                        cur_end = None
+                
+                # 마지막 엔티티 저장
+                if cur_type and cur_start is not None and cur_end is not None:
+                    entity_text = chunk_text[cur_start:cur_end].strip()
+                    if entity_text and len(entity_text) > 1:
+                        all_entities[cur_type].append(entity_text)
+
+    # 중복 제거 및 필터링
+    for t in ENTITY_TYPES:
+        filtered = []
+        for e in all_entities[t]:
+            e_clean = e.strip()
+            if not e_clean or len(e_clean) < 2:
+                continue
+            # 숫자만 있는 경우 제거 (일부 타입 제외)
+            if t not in ["PHONE", "ID_NUM", "QUANTITY", "MONEY"] and e_clean.isdigit():
+                continue
+            # 파일 확장자 제거
+            if e_clean.endswith(('.png', '.jpg', '.jpeg', '.pdf', '.txt')):
+                continue
+            filtered.append(e_clean)
         
-        # Extract scalar metrics for easier reading
-        final_f1 = avg_history["eval_f1"][-1] if avg_history.get("eval_f1") else 0.0
-        best_f1 = max(avg_history["eval_f1"]) if avg_history.get("eval_f1") else 0.0
-        final_prec = avg_history["eval_precision"][-1] if avg_history.get("eval_precision") else 0.0
-        final_rec = avg_history["eval_recall"][-1] if avg_history.get("eval_recall") else 0.0
-
-        final_results[tag] = {
-            "mean_f1": mean_f1,
-            "std_f1": std_f1,
-            "fold_scores": fold_metrics,
-            "ap_score": ap_score, # Added AP Score
-            "best_f1": best_f1,   # Added Best F1
-            "final_f1": final_f1, # Added Final F1
-            "final_precision": final_prec, # Added Final Precision
-            "final_recall": final_rec,     # Added Final Recall
-            "avg_history": avg_history,  # Save detailed epoch-by-epoch stats (Average)
-            "fold_histories": fold_histories # Save detailed stats for EACH fold
-        }
-
-    # Save Summary
-    summary_filename = f"{tag_prefix}_kfold_summary.json" if tag_prefix else "kfold_summary.json"
-    summary_path = output_root / summary_filename
-    with open(summary_path, "w", encoding="utf-8") as f:
-        json.dump(make_serializable(final_results), f, indent=2)
-        
-    print(f"\n[Done] K-Fold Benchmark Complete. Summary saved to {summary_path}")
-    return final_results
-
-
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="6-model NER benchmark")
-    p.add_argument("--train_file", type=str, default=None, help="Train BIO file. If not provided, generated dynamically.")
-    p.add_argument("--dev_file", type=str, default=None, help="Dev BIO file (Optional. If not provided, splits train_file 8:2)")
-    p.add_argument("--test_file", type=str, default=None, help="Test BIO file (optional)")
-    p.add_argument(
-        "--output_root",
-        type=str,
-        default="data/out/ner_benchmark",
-        help="Directory to store results (logs, plots)",
-    )
-    p.add_argument(
-        "--model_dir",
-        type=str,
-        default="models/ner_benchmark",
-        help="Directory to store trained models (weights)",
-    )
-    p.add_argument("--num_epochs", type=int, default=20)
-    p.add_argument("--batch_size_pure", type=int, default=64)
-    p.add_argument("--batch_size_crf", type=int, default=64)
-    p.add_argument("--max_length", type=int, default=128)
-    p.add_argument("--learning_rate", type=float, default=2e-5)
-    p.add_argument("--eval_steps", type=int, default=100, help="Evaluate every N steps (dynamic if not set)")
-    p.add_argument("--single_run", action="store_true", help="Run single benchmark instead of 5-Fold CV")
-    return p.parse_args()
-
-
-def main() -> None:
-    args = parse_args()
-    output_root = Path(args.output_root)
-    model_dir = Path(args.model_dir)
+        dedup = sorted(set(filtered))
+        all_entities[t] = dedup if dedup else ["N/A"]
     
-    if not args.single_run:
-        print(">>> Starting Data Scaling Benchmark (25%, 50%, 75%, 100%) <<<")
-        
-        ratios = [0.25, 0.50, 0.75, 1.00]
-        base_samples = 30000
-        
-        for ratio in ratios:
-            num_samples = int(base_samples * ratio)
-            prefix = f"{ratio:.2f}" # e.g. "0.25"
-            
-            print(f"\n\n>>> Running Benchmark with {num_samples} samples ({int(ratio*100)}%) <<<")
-            
-            run_kfold_benchmark(
-                output_root=output_root,
-                model_root=model_dir,
-                num_epochs=args.num_epochs,
-                batch_size_pure=args.batch_size_pure,
-                batch_size_crf=args.batch_size_crf,
-                max_length=args.max_length,
-                learning_rate=args.learning_rate,
-                k_folds=5,
-                num_samples=num_samples,
-                tag_prefix=prefix
-            )
+    # Apply cleanup and regex-based enrichment
+    all_entities = cleanup_entities(all_entities, text)
+    return all_entities
+
+
+def run_prediction():
+    print("\n[INFO] 예측 모드 시작...", flush=True)
+    device = setup_gpu()
+    bert_path = pick_bert_path()
+    
+    print(f"[INFO] 모델 로드 중...", flush=True)
+    model, tokenizer = load_artifacts(CFG, bert_path, device)
+    if model is None or tokenizer is None:
+        print("\n[ERROR] 학습된 모델이 없습니다. 먼저 --mode train을 실행하세요.", flush=True)
+        return
+    
+    in_dir = CFG.ocr_dir
+    out_dir = CFG.out_dir
+    
+    if not in_dir.exists():
+        print(f"\n[ERROR] OCR 폴더를 찾을 수 없습니다: {in_dir}", flush=True)
         return
 
-    if args.train_file:
-        train_file = Path(args.train_file)
-        dev_file = Path(args.dev_file) if args.dev_file else None
-    else:
-        # Dynamic Generation (Separate Train/Dev)
-        # Generate data in output_root (results dir) so it can be downloaded/checked
-        print("[setup] Generating independent Train/Dev datasets...")
-        train_file, dev_file = generate_dynamic_dataset(output_root, num_samples=30000)
+    # 하위 디렉토리 포함 모든 txt 파일 검색
+    txts = sorted(in_dir.glob("**/*.txt"))
+    if not txts:
+        print(f"\n[WARN] {in_dir} 폴더(하위 포함)에 .txt 파일이 없습니다.", flush=True)
+        return
+
+    print(f"\n[INFO] {len(txts)}개의 텍스트 파일을 처리합니다...\n", flush=True)
+    
+    for idx, p in enumerate(txts, 1):
+        print(f"[{idx}/{len(txts)}] {p.name} 처리 중...", flush=True)
+        text = p.read_text(encoding="utf-8", errors="ignore")
+        ents = predict_text(model, tokenizer, text, device)
         
-    test_file = Path(args.test_file) if args.test_file is not None else None
+        # 파일명으로 폴더 생성 (확장자 제거)
+        folder_name = p.stem
+        
+        # conc/final이 없으면 생성 시도
+        try:
+            doc_out = ensure_dir(out_dir / folder_name)
+        except (PermissionError, OSError) as e:
+            # Windows 드라이브 권한 문제 시 임시 경로 사용
+            fallback_dir = CFG.root_dir / "data/out/ner_results"
+            doc_out = ensure_dir(fallback_dir / folder_name)
+            print(f"  ⚠️ 경로 변경: {fallback_dir.relative_to(CFG.root_dir)}", flush=True)
+        
+        (doc_out / "predicted_entities.json").write_text(
+            json.dumps(ents, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        (doc_out / "original_text.txt").write_text(text, encoding="utf-8")
+        
+        # 메타데이터 저장
+        metadata = {
+            "original_filename": p.name,
+            "original_path": str(p),
+            "source_directory": str(p.parent)
+        }
+        (doc_out / "metadata.json").write_text(
+            json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        print(f"  ✅ 저장됨: {folder_name}/", flush=True)
+    
+    print(f"\n[INFO] ✅ 예측 완료! 결과: {out_dir}", flush=True)
 
-    run_six_model_benchmark(
-        train_file=train_file,
-        dev_file=dev_file,
-        test_file=test_file,
-        output_root=output_root,
-        model_root=model_dir,
-        num_epochs=args.num_epochs,
-        batch_size_pure=args.batch_size_pure,
-        batch_size_crf=args.batch_size_crf,
-        max_length=args.max_length,
-        learning_rate=args.learning_rate,
-    )
 
-    # Uncomment to run K-Fold Benchmark
-    # run_kfold_benchmark(
-    #     output_root=output_root,
-    #     model_root=model_dir,
-    #     num_epochs=args.num_epochs,
-    #     batch_size_pure=args.batch_size_pure,
-    #     batch_size_crf=args.batch_size_crf,
-    #     max_length=args.max_length,
-    #     learning_rate=args.learning_rate,
-    #     k_folds=5,
-    # )
+# -----------------------------
+# 14) Main
+# -----------------------------
+def parse_bool_env(v: Optional[str]) -> bool:
+    if v is None:
+        return False
+    return v.strip().lower() in ("1", "true", "yes", "y", "on")
+
+
+def main():
+    import argparse
+
+    env_mode = os.getenv("MODE")
+    env_continue = parse_bool_env(os.getenv("CONTINUE_TRAINING"))
+
+    parser = argparse.ArgumentParser(description="Stable NER (mBERT+BiLSTM PyTorch) - synthetic BIO")
+    parser.add_argument("--mode", choices=["train", "predict"], default=env_mode or "predict")
+    parser.add_argument("--bert-dir", type=str, default=None, help="override local BERT dir (highest priority)")
+    args = parser.parse_args()
+    
+    print("=" * 80)
+    print(" NER: mBERT + BiLSTM")
+    print("=" * 80)
+    print(f"Mode: {args.mode}")
+    print("=" * 80, flush=True)
+
+    if args.mode == "train":
+        train(continue_from_existing=True, bert_dir_override=args.bert_dir, do_warmup=True)
+    elif args.mode == "predict":
+        run_prediction()
 
 
 if __name__ == "__main__":

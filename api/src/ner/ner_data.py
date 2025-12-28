@@ -163,17 +163,23 @@ class NERDataset(Dataset):
             self.labels.append(label_ids)
 
         print(f"[Dataset] Created {len(self.encodings)} samples.")
+        
+        # Optimization: Convert to tensors once at initialization
+        # This avoids repeated tensor creation overhead in __getitem__
+        print("[Dataset] Pre-converting to tensors for speed...")
+        self.input_ids_tensor = torch.tensor([e["input_ids"] for e in self.encodings], dtype=torch.long)
+        self.attention_mask_tensor = torch.tensor([e["attention_mask"] for e in self.encodings], dtype=torch.long)
+        self.labels_tensor = torch.tensor(self.labels, dtype=torch.long)
 
     def __len__(self):
         return len(self.encodings)
 
     def __getitem__(self, idx):
+        # Fast slicing from pre-allocated tensors
         item = {
-            "input_ids": torch.tensor(self.encodings[idx]["input_ids"], dtype=torch.long),
-            "attention_mask": torch.tensor(
-                self.encodings[idx]["attention_mask"], dtype=torch.long
-            ),
-            "labels": torch.tensor(self.labels[idx], dtype=torch.long),
+            "input_ids": self.input_ids_tensor[idx],
+            "attention_mask": self.attention_mask_tensor[idx],
+            "labels": self.labels_tensor[idx],
         }
         return item
 

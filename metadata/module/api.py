@@ -1,10 +1,15 @@
 """API 모듈: main.py에서 사용하는 함수만 노출"""
 import json
+import traceback
+
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
-from module.parts import text as text_module
+from module.parts import ocr
 from module.parts import directory
+from module.parts import schema
+from module.parts import csv
+from module.extractor import text as text_module
 from module.extractor import regular_extractor
 from module.extractor import ner_extractor
 from module.extractor import llm_extractor
@@ -57,8 +62,8 @@ def metadata_extract(
         final_decisions = merge_regular_ner(regular_decisions, ner_decisions)
 
     # 3. 최종 결과를 JSON으로 변환
-    schema = directory.load_schema_labels()
-    aggregated = {label: [] for label in schema}
+    labels_list = directory.load_schema_labels()
+    aggregated = {label: [] for label in labels_list}
 
     for decision in final_decisions:
         label = decision.label
@@ -119,26 +124,7 @@ def ner_train(
     plot_output_path: Optional[str] = None,
     **kwargs
 ) -> Dict[str, Any]:
-    """
-    NER 모델 학습
-    
-    Args:
-        model_type: 모델 타입 (ner, bilstm_crf)
-        model_name: 모델 이름 (기본: bert-base-multilingual-cased)
-        model_path: 모델 저장 경로 (기본: data/models/ner)
-        epochs: 학습 에포크 (기본 10)
-        batch_size: 배치 크기 (기본 32)
-        learning_rate: 학습률 (기본 2e-5)
-        train_data_path: 학습 데이터 경로 (기본: data/in/training_csv)
-        train_ratio: 학습 데이터 비율 (기본 0.8, 검증 0.2)
-        random_seed: 랜덤 시드 (기본 42)
-        dataset_size: 전체 데이터셋 크기 제한 (None이면 전체 사용)
-        samples_per_file: 각 CSV 파일에서 샘플링할 최대 문장 개수 (None이면 전체)
-        sample_ratio_per_file: 각 CSV 파일에서 샘플링할 비율 (0.0 ~ 1.0, None이면 전체)
-                              samples_per_file이 지정되면 무시됨
-        plot: 학습 곡선 시각화 여부 (기본 True)
-        plot_output_path: 시각화 저장 경로 (기본: data/out/results/ner_train_history.png)
-    """
+    """NER 모델 학습"""
     result = base.train(
         model_type=model_type,
         model_name=model_name,
@@ -175,16 +161,7 @@ def ner_validate(
     plot_output_path: Optional[str] = None,
     **kwargs
 ) -> Dict[str, Any]:
-    """
-    NER 모델 검증
-    
-    Args:
-        plot: 검증 메트릭 시각화 여부
-        plot_output_path: 시각화 저장 경로 (None이면 자동 생성)
-    
-    Returns:
-        검증 메트릭 딕셔너리
-    """
+    """NER 모델 검증"""
     metrics = base.validate(
         model_type=model_type,
         model_name=model_name,
@@ -201,3 +178,102 @@ def ner_validate(
         )
     
     return metrics
+
+
+# 코드 검사 완료
+def ocr_extract(
+    in_path: str,
+    out_path: str = "data/out/results",
+) -> None:
+    """
+    PaddleOCRVL
+    
+    Args:
+        in_path: 입력 파일 또는 디렉토리 경로
+        out_path: 출력 파일 또는 디렉토리 경로
+        - in_path가 파일일 때: 결과 텍스트가 저장될 파일 경로 (확장자 .txt)
+        - in_path가 디렉토리일 때: 결과가 저장될 루트 디렉토리 (구조 유지됨)
+    """
+    
+    input_p = Path(in_path)
+    output_p = Path(out_path)
+    
+    if not input_p.exists():
+        print(f"Error: Input path does not exist: {in_path}")
+        return
+
+    # 파일 여부 검사
+    if input_p.is_file():
+        print(f"OCR Processing : {input_p}")
+        
+        # 출력 경로 결정
+        if output_p.suffix:
+            save_file = output_p
+        else:
+            save_file = directory.get_mirror_output_path(input_p, input_p.parent, output_p)
+            
+        ocr.extract_text_from_file(str(input_p), save_path=str(save_file))
+
+        print(f"Saved to: {save_file}")
+    else :
+        print(f"OCR Processing(directory): {input_p}")
+        
+        files = list(directory.iter_document_files(input_p))
+
+        if not files:
+            print("No supported document files found.")
+            return
+            
+        print(f"Found {len(files)} files.")
+        
+        for file in files:
+            # 구조 유지 경로 계산
+            save_file = directory.get_mirror_output_path(file, input_p, output_p)
+            
+            print(f"Processing: {file.relative_to(input_p)}")
+
+            try:
+                ocr.extract_text_from_file(str(file), save_path=str(save_file))
+            except Exception as e:
+                traceback.print_exc()
+                print(f"Failed : {e}")
+                
+    print("OCR extraction completed.")
+
+
+def file_metadata_extract(
+    input_dir: str = "data/in/text",
+    out_dir: str = "data/out/results",
+) -> None:
+    """
+    입력 디렉터리 내 모든 텍스트 파일에 대해 metadata_extract 실행.
+    """
+    input_path = Path(input_dir)
+    
+    # directory 모듈의 iter_text_files 사용
+    files = list(directory.iter_text_files(input_path))
+    
+    if not files:
+        print(f"처리할 텍스트 파일이 없습니다: {input_path}")
+        return
+
+    for file_path in files:
+        print(f"Processing: {file_path}")
+        metadata_extract(file_path=str(file_path), out_dir=out_dir)
+
+
+# ---------- CSV/Excel Utility Functions ----------
+
+def convert_excel_dataset(
+    input_dir: str = 'data/in/excel',
+    output_dir: str = 'data/in/csv'
+) -> None:
+    """Excel 데이터셋을 CSV로 일괄 변환"""
+    csv.convert_excel_to_csv(input_dir, output_dir)
+
+def preprocess_csv_dataset(
+    input_dir: str = 'data/in/csv',
+    output_dir: str = 'data/in/training_csv'
+) -> None:
+    """CSV 데이터셋 전처리 (학습 데이터 생성)"""
+    csv.preprocess_csv_dataset(input_dir, output_dir)

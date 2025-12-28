@@ -1,0 +1,48 @@
+가격은	O
+1431만원입니다.	B-MONEY
+
+허오의	B-NAME
+전화번호는	O
+010-4820-4172입니다.	B-PHONE
+
+이메일	O
+user757@example.com로	B-EMAIL
+보내주세요.	O
+
+주민번호:	O
+210419-1******	B-ID_NUM
+
+심기은입니다.	B-NAME
+
+주식회사	B-COMPANY
+성누는	I-COMPANY
+7447만원를	B-MONEY
+2010년	B-DATE
+10월	I-DATE
+9일에	I-DATE
+지급한다.	O
+
+배다강(711028-2******)	B-NAME
+확인되었습니다.	O
+
+2020년	B-DATE
+3월	I-DATE
+1일에	I-DATE
+만나요.	O
+
+주식회사	B-COMPANY
+남기의	I-COMPANY
+주소는	O
+서울시	B-ADDRESS
+왕라구	I-ADDRESS
+곽제로	I-ADDRESS
+995입니다.	I-ADDRESS
+
+주식회사	B-COMPANY
+옥완는	I-COMPANY
+1199만원를	B-MONEY
+2003년	B-DATE
+4월	I-DATE
+9일에	I-DATE
+지급한다.	O
+

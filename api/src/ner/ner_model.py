@@ -59,7 +59,13 @@ class BertBiLstmCrf(nn.Module):
         self.classifier = nn.Linear(config.lstm_hidden_size, num_labels)
 
         # CRF layer
-        self.crf = CRF(num_labels, batch_first=True)
+        # Handle older torchcrf versions that don't support batch_first in init
+        try:
+            self.crf = CRF(num_labels, batch_first=True)
+            self.batch_first = True
+        except TypeError:
+            self.crf = CRF(num_labels)
+            self.batch_first = False
 
     def forward(self, input_ids, attention_mask, labels=None):
         """
@@ -76,17 +82,52 @@ class BertBiLstmCrf(nn.Module):
         emissions = self.classifier(lstm_output)  # (B, L, num_labels)
         mask = attention_mask.bool()
 
+        if not self.batch_first:
+            # Transpose to (L, B, ...)
+            emissions = emissions.transpose(0, 1)
+            mask = mask.transpose(0, 1)
+
         if labels is not None:
             # CRF는 -100을 처리할 수 없으므로 0("O")으로 치환하여 계산
             # 실제 평가 시에는 -100 부분을 제외하고 평가하므로 문제 없음
             labels_for_crf = labels.clone()
             labels_for_crf[labels_for_crf == -100] = 0
             
-            loss = -self.crf(emissions, labels_for_crf, mask=mask, reduction="mean")
+            if not self.batch_first:
+                labels_for_crf = labels_for_crf.transpose(0, 1)
+            
+            # Handle CRF libraries that don't support 'reduction' arg
+            try:
+                loss = -self.crf(emissions, labels_for_crf, mask=mask, reduction="mean")
+            except TypeError:
+                # Fallback: returns sum of log-likelihoods OR vector of log-likelihoods
+                log_likelihood = self.crf(emissions, labels_for_crf, mask=mask)
+                
+                # If it returns a vector (batch_size,), we need to reduce it
+                if log_likelihood.dim() > 0:
+                    loss = -torch.mean(log_likelihood)
+                else:
+                    # It returned a scalar sum (but we want mean usually for optimization stability)
+                    # If it's already a scalar sum, we divide by batch size
+                    loss = -log_likelihood / input_ids.size(0)
+                
             return loss
 
         # decode: List[List[int]] 형태
-        predictions = self.crf.decode(emissions, mask=mask)
+        if hasattr(self.crf, 'decode'):
+            predictions = self.crf.decode(emissions, mask=mask)
+        else:
+            # Fallback or Debug
+            print(f"[Error] CRF object has no 'decode' method. Type: {type(self.crf)}")
+            print(f"[Error] Dir: {dir(self.crf)}")
+            # Try viterbi_decode if available (AllenNLP style)
+            if hasattr(self.crf, 'viterbi_tags'):
+                # AllenNLP returns List[Tuple[List[int], float]]
+                decoded = self.crf.viterbi_tags(emissions, mask=mask)
+                predictions = [tags for tags, score in decoded]
+            else:
+                raise AttributeError("CRF object has no decode method")
+                
         return predictions
 
 
