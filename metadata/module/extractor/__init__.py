@@ -5,16 +5,19 @@
 - regular_extractor
 - ner_extractor
 - llm_extractor
+- ocr (extract_text_from_file)
 """
 
-from .types import Decision
+from module.parts.types import Decision
 from .regular import regular_extractor
 from .ner import ner_extractor
 from .llm import llm_extractor
+from . import ocr
 
 __all__ = [
     "Decision",
     "regular_extractor",
     "ner_extractor",
     "llm_extractor",
+    "ocr",
 ]

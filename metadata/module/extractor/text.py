@@ -62,7 +62,13 @@ def _kiwi_split_sentences(s: str) -> List[str]:
         if isinstance(item, str):
             out.append(item)
         elif isinstance(item, (list, tuple)) and len(item) > 0:
-            out.append(item[0])
+            # item[0]이 Sentence 객체일 수 있으므로 문자열로 변환
+            first_item = item[0]
+            if isinstance(first_item, str):
+                out.append(first_item)
+            else:
+                # Sentence 객체인 경우 text 속성 또는 문자열 변환
+                out.append(str(first_item))
     return [s.strip() for s in out if s.strip()]
 
 def split_sentences(clean_text_all: str) -> List[str]:

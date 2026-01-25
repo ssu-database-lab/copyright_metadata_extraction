@@ -1,0 +1,3 @@
+{"id": "doc1_sent6", "tokens": ["웹사이트", ":", "https", ":", "//", "www.example.com"], "labels": ["O", "O", "B-url", "I-url", "I-url", "I-url"]}
+{"id": "doc2_sent6", "tokens": ["홈페이지", ":", "http", ":", "//", "blog.test.com"], "labels": ["O", "O", "B-url", "I-url", "I-url", "I-url"]}
+{"id": "doc3_sent6", "tokens": ["URL", ":", "https", ":", "//", "site.co.kr"], "labels": ["O", "O", "B-url", "I-url", "I-url", "I-url"]}

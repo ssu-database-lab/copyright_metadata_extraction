@@ -1,152 +1,67 @@
-# =============================
-# Label schema & routing config (5-stage, with ko comments)
-# =============================
+# ======================================
+# labels.yaml
+# 목적: 라벨 스키마와 각 과정에서 사용할 스키마 정의
+# 세부적인 라벨 분류는 ocr.py 등에서 처리
+# ======================================
 
-# ---- CSV 메타데이터 라벨 (English : 한국어) ----
 schema_labels:
-  [seq_number,          # 순번
-   site_name,           # 사이트명
-   agency_name,         # 기관명
-   board_name,          # 게시판명
-   board_path,          # 게시판 진입 과정
-   category,            # 카테고리
-   work_title,          # 저작물명
-   url,                 # URL
-   description,         # 설명
-   created_date,        # 작성일
-   registration_date,   # 등록일
-   production_date,     # 제작일
-   valid_period,        # 유효기간
-   attachment,          # 첨부파일
-   video_count,         # 영상
-   photo_count,         # 사진
-   document_count,      # 문서
-   quantity,            # 수량
-   view_count,          # 조회수
-   kogl_type,           # 공공누리유형
-   disclosure_type,     # 공개유형
-   copyrightability,    # 저작물성
-   unprotected_work,    # 비보호저작물
-   work_for_hire,       # 업무상저작물
-   copyright_holder,    # 저작권자
-   co_author,           # 공동저작자
-   neighboring_rights_holder, # 저작인접권자
-   co_author_consent,   # 공동저작자동의
-   third_party_rights,  # 제3자 권리
-   economic_rights,     # 저작재산권
-   commercial_use,      # 상업적이용허락
-   portrait_rights,     # 초상권
-   personal_info,       # 개인정보
-   contract,            # 계약서
-   review_impossible,   # 검토불가
-   work_type,           # 유형
-   digital_format,      # 디지털형태
-   keyword,             # 주제어
-   language,            # 언어
-   phone,               # 전화번호
-   memo]                # 비고
+  - text
+  - paragraph_title
+  - number
+  - image
+  - table
+  - doc_title
 
-# 1) REGEX (형식 고정)
+# --------------------------------------
+# 각 과정에서 사용할 스키마
+# --------------------------------------
+
+# OCR 단계에서 사용할 스키마
+ocr:
+  # OCR 결과에서 나오는 라벨들
+  labels:
+    - text              # 일반 텍스트 - 이게 제일 중요해보이네요
+    - paragraph_title   # 문단 제목 - 텍스트처럼 분류
+    - number            # 숫자
+    - image             # 이미지
+    - table             # 표
+    - doc_title         # 문서 제목 - 더 분류할 필요 없음
+
+# OCR를 수행한다면 doc_title은 분류 X
+# regular 단계는 OCR 결과에서 갖고와서 추가분류
+regular:
+
+# 정규식 추출에 사용할 라벨과 패턴 (라벨: 정규식 패턴)
+# regex_extractor에서 사용 (비어있으면 URL만 추출)
+# 각 라벨별로 {label}_extractor 함수로 분리하여 관리
 regex_labels:
-  phone: '\d{2,3}\s*[-]?\s*\d{3,4}\s*[-]?\s*\d{4}'  # phone : 전화번호 (유연한 띄어쓰기 허용)
+  phone: r'\d{2,3}-\d{3,4}-\d{4}|\d{3}-\d{4}-\d{4}|\(\d{2,3}\)\s*\d{3,4}-\d{4}'
+  email: r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+  url: r'https?://(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)'
+  date: r'\d{4}년\s*\d{1,2}월\s*\d{1,2}일|\d{4}-\d{1,2}-\d{1,2}|\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.|\d{4}\.\d{1,2}\.\d{1,2}|\d{4}/\d{1,2}/\d{1,2}'
 
-# 2) DATETIME (규칙+파서)
-datetime_labels:
-  [created_date,      # 작성일
-   registration_date, # 등록일
-   production_date,   # 제작일
-   valid_period]      # 유효기간
 
-# 3) NUMERIC (정수/카운트/순번)
-numeric_labels:
-  [seq_number,     # 순번
-   quantity,       # 수량
-   video_count,    # 영상
-   photo_count,    # 사진
-   document_count, # 문서
-   view_count]     # 조회수
+# NER 단계에서 사용할 스키마
+# NER 단계는 text로 처리된 라벨들과 paragraph_title로 처리된 라벨들 포함해서 추가분류
+ner:
+  labels:
+    # text 라벨 기반
+    - address           # 주소
+    - company_name      # 기관명
+    - person_name       # 이름
+    - phone_number      # 전화번호
+    - email             # 이메일
+    - url               # 웹사이트
+    # number 라벨 기반
+    - date              # 날짜
 
-# 4) NER (고유명사/실체명)
-ner_labels:
-  [site_name,                # 사이트명
-   agency_name,              # 기관명
-   board_name,               # 게시판명
-   copyright_holder,         # 저작권자
-   co_author,                # 공동저작자
-   neighboring_rights_holder, # 저작인접권자
-   work_title]               # 저작물명
+# LLM 단계에서 사용할 스키마
+# LLM 단계는 능동적인 구분이 가능할 수준의 LLM을 사용할 가능성이 높으므로 라벨 분류는 지금 고려하지 않음
+llm:
+  labels:
+    - doc_title
 
-# 5) TEXT (분류/상태/제목/설명 등)
-#  - 내부 엔진: short → Classic(LogReg), long → LLM
-text_labels:
-  [category,               # 카테고리
-   board_path,             # 게시판 진입 과정
-   attachment,             # 첨부파일
-   kogl_type,              # 공공누리유형
-   disclosure_type,        # 공개유형
-   copyrightability,       # 저작물성
-   unprotected_work,       # 비보호저작물
-   work_for_hire,          # 업무상저작물
-   co_author_consent,      # 공동저작자동의
-   third_party_rights,     # 제3자 권리
-   economic_rights,        # 저작재산권
-   commercial_use,         # 상업적이용허락
-   portrait_rights,        # 초상권
-   personal_info,          # 개인정보
-   contract,               # 계약서
-   review_impossible,      # 검토불가
-   work_type,              # 유형
-   digital_format,         # 디지털형태
-   keyword,                # 주제어
-   language,               # 언어
-   description,            # 설명
-   memo]                   # 비고
-
-# ---- CSV 헤더 별칭 매핑 (한국어 → 영문 라벨) ----
-header_aliases:
-  seq_number: [순번, RECOMMEND_IDX]
-  site_name: [사이트명]
-  agency_name: [기관명, 촬영원본]
-  board_name: [게시판명]
-  board_path: [게시판 진입 과정]
-  category: [카테고리, 대분류코드, 중분류코드, 소뷴류코드, 소분류코드]
-  work_title: [저작물명, 저작물제목]
-  url: [URL]
-  description: [설명]
-  created_date: [작성일]
-  registration_date: [등록일]
-  production_date: [제작일, 촬영년도]
-  valid_period: [유효기간]
-  attachment: [첨부파일, FILE_NAME, FILE_ORG_NAME, FILE_PATH, WEB_FILE_PATH]
-  video_count: [영상]
-  photo_count: [사진]
-  document_count: [문서]
-  quantity: [수량]
-  view_count: [조회수]
-  kogl_type: [공공누리유형]
-  disclosure_type: [공개유형]
-  copyrightability: [저작물성]
-  unprotected_work: [비보호저작물]
-  work_for_hire: [업무상저작물]
-  copyright_holder: [저작권자, 원본소유자]
-  co_author: [공동저작자]
-  neighboring_rights_holder: [저작인접권자]
-  co_author_consent: [공동저작자동의]
-  third_party_rights: [제3자 권리]
-  economic_rights: [저작재산권]
-  commercial_use: [상업적이용허락]
-  portrait_rights: [초상권]
-  personal_info: [개인정보]
-  contract: [계약서]
-  review_impossible: [검토불가]
-  work_type: [유형, 저작물유형, 저작물구분]
-  digital_format: [디지털형태, 저작물구분]
-  keyword: [주제어, HASHTAG]
-  language: [언어]
-  phone: [전화번호]
-  memo: [비고]
-
-routing:
-  sentence_min_chars: 40
-  reject_threshold: 0.6
-  priority: [regex, datetime, numeric, ner, text]
+# 이 주석 아래로 처리하지 않을 라벨만 모아놓음
+# 최종적으로 판단해야 할 때 아니면 사용하지 않을 예정
+# Category(대, 중, 소분류)는 처리하지 않음.
+# 

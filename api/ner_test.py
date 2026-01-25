@@ -250,29 +250,42 @@ class Config:
 
     # Data
     # Data - 대폭 증강
-    num_samples: int = 50000  # 10,000 → 50,000
-    min_entities_per_type: int = 200  # 100 → 200
+    num_samples: int = 30000  # 고정 30000개
+    min_entities_per_type: int = 300  # 200 → 300 (다양성 증가)
     max_len: int = 128
     train_ratio: float = 0.85
     seed: int = 42
 
     # Model
-    lr: float = 3e-5
-    epochs: int = 15  # 10 → 15 (더 많은 학습)
-    batch_size: int = 32
+    lr: float = 3e-5  # 5e-5 → 3e-5 (안정적 수렴)
+    epochs: int = 8  # 5 → 8 (더 많은 학습)
+    batch_size: int = 64  # 32 → 64 (배치 크기 증가)
     lstm_units: int = 256
-    dropout: float = 0.2
+    lstm_layers: int = 1  # 2 → 1 (간소화, 속도 개선)
+    dropout: float = 0.3  # 0.2 → 0.3 (과적합 방지)
+    warmup_ratio: float = 0.1  # 워밍업 추가
+    weight_decay: float = 0.01  # L2 정규화
+    use_mixed_precision: bool = True  # Mixed precision 활성화
 
     # Paths
-    model_dir: Path = root_dir / "models/ner_bilstm_pytorch"
+    # model_dir은 동적으로 결정됨 (bert_model_name 기반)
+    # 예: models/xlm-roberta-base/ (훈련 후 파인튜닝 모델로 덮어씌움)
     cache_dir: Path = root_dir / "data/cache_ner"
     ocr_dir: Path = root_dir / "data/out/ocr/naver"
     out_dir: Path = root_dir / "conc/final"
-
+    
+    # BERT 다운로드 및 저장 경로
+    model_downloaded: Path = root_dir / "model_downloaded"
+    
     # BERT local priority
     container_bert: Path = Path("/app/models/pretrained_bert")
-    volume_bert: Path = root_dir / "models/pretrained_bert"
-    hf_fallback: str = "bert-base-multilingual-cased"
+    # 동적으로 결정됨 (아래 pick_bert_path에서)
+    volume_bert: Path = None  # 초기값 None, 모델명으로 결정
+    hf_fallback: str = "google-bert/bert-base-multilingual-cased"
+    
+    def get_model_dir(self, bert_model_name: str) -> Path:
+        """훈련된 모델이 저장되는 디렉토리 (BERT와 동일)"""
+        return self.root_dir / "models" / bert_model_name
 
 
 CFG = Config()
@@ -329,22 +342,109 @@ def pick_bert_path(override: Optional[str] = None) -> str:
             return str(p)
         raise RuntimeError(f"BERT_DIR is set but invalid: {p}")
 
-    candidates = [CFG.container_bert, CFG.volume_bert]
-    for c in candidates:
-        if _is_valid_bert_dir(Path(c)):
-            print(f"[INFO] ✅ 로컬 BERT 발견: {c}", flush=True)
-            return str(c)
-
+    # 모델명 추출
+    model_name = CFG.hf_fallback.split("/")[-1]
+    bert_model_path = CFG.root_dir / "models" / model_name
+    downloaded_path = CFG.model_downloaded / model_name
+    
+    # 우선순위:
+    # 1. models/{model_name} (이미 복사된 BERT 기본 모델)
+    if _is_valid_bert_dir(bert_model_path):
+        print(f"[INFO] ✅ 로컬 BERT 발견: {bert_model_path}", flush=True)
+        CFG.volume_bert = bert_model_path
+        return str(bert_model_path)
+    
+    # 2. model_downloaded/{model_name}에서 복사
+    if _is_valid_bert_dir(downloaded_path):
+        print(f"[INFO] model_downloaded에서 models/{model_name}로 복사 중...", flush=True)
+        import shutil
+        if bert_model_path.exists():
+            shutil.rmtree(bert_model_path)
+        shutil.copytree(downloaded_path, bert_model_path)
+        print(f"[INFO] ✅ 복사 완료: {bert_model_path}", flush=True)
+        CFG.volume_bert = bert_model_path
+        return str(bert_model_path)
+    
+    # 3. 둘 다 없으면 HuggingFace에서 다운로드
     strict = os.getenv("STRICT_LOCAL_BERT", "").strip().lower() in ("1", "true", "yes", "y", "on")
     if strict:
         raise RuntimeError(
             "STRICT_LOCAL_BERT=1 이지만 로컬 BERT를 찾지 못했습니다.\n"
-            f"후보 경로: {candidates}\n"
-            "해결: BERT_DIR=/path/to/pretrained_bert 를 지정하거나 models/pretrained_bert를 준비하세요."
+            f"필요 경로: {bert_model_path}\n"
+            "해결: 해당 모델을 다운로드하거나 --bert-dir을 지정하세요."
         )
 
-    print(f"[INFO] 로컬 BERT 없음. HuggingFace에서 모델 다운로드/사용: {CFG.hf_fallback}", flush=True)
-    return CFG.hf_fallback
+    print(f"[INFO] 로컬 BERT 없음. HuggingFace에서 다운로드: {CFG.hf_fallback}", flush=True)
+    download_and_save_bert()
+    
+    # 다운로드 완료 후 models/{model_name} 사용
+    CFG.volume_bert = bert_model_path
+    if _is_valid_bert_dir(bert_model_path):
+        print(f"[INFO] ✅ 다운로드 완료. 로컬 BERT 사용: {bert_model_path}", flush=True)
+        return str(bert_model_path)
+    
+    # 복사 실패 시 에러
+    raise RuntimeError(f"BERT 모델 준비 실패: {bert_model_path}")
+
+
+def download_and_save_bert() -> None:
+    """
+    HuggingFace에서 BERT 모델을 다운로드하고 로컬에 저장합니다.
+    우선순위:
+    1. model_downloaded/{model_name}이 있으면 직접 복사 (중복 다운로드 방지)
+    2. 없으면 HuggingFace에서 다운로드하여 model_downloaded/{model_name} 저장
+    3. models/{model_name}으로 복사
+    """
+    import shutil
+    from transformers import AutoTokenizer, AutoModel
+    
+    # 모델명에서 마지막 부분만 추출
+    model_name = CFG.hf_fallback.split("/")[-1]
+    download_dir = CFG.model_downloaded / model_name
+    target_dir = CFG.root_dir / "models" / model_name
+    
+    print(f"[INFO] === BERT 모델 준비 ===", flush=True)
+    print(f"[INFO] 모델: {CFG.hf_fallback}", flush=True)
+    
+    # 1. 이미 model_downloaded/{model_name}에 있으면 스킵
+    if _is_valid_bert_dir(download_dir):
+        print(f"[INFO] ✅ model_downloaded에 이미 있음: {download_dir}", flush=True)
+    else:
+        # 2. HuggingFace에서 다운로드
+        print(f"[INFO] HuggingFace에서 다운로드 중...", flush=True)
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(
+                CFG.hf_fallback,
+                cache_dir=None,
+                force_download=False
+            )
+            model = AutoModel.from_pretrained(
+                CFG.hf_fallback,
+                cache_dir=None,
+                force_download=False
+            )
+            
+            # model_downloaded/{model_name}에 저장
+            ensure_dir(download_dir)
+            print(f"[INFO] 저장 중: {download_dir}", flush=True)
+            tokenizer.save_pretrained(str(download_dir))
+            model.save_pretrained(str(download_dir))
+            print(f"[INFO] ✅ 다운로드 완료", flush=True)
+            
+        except Exception as e:
+            print(f"[ERROR] 다운로드 실패: {e}", flush=True)
+            raise
+    
+    # 3. models/{model_name}으로 복사
+    print(f"[INFO] {target_dir}로 복사 중...", flush=True)
+    try:
+        if target_dir.exists():
+            shutil.rmtree(target_dir)
+        shutil.copytree(download_dir, target_dir)
+        print(f"[INFO] ✅ BERT 모델 준비 완료: {target_dir}", flush=True)
+    except Exception as e:
+        print(f"[ERROR] 복사 실패: {e}", flush=True)
+        raise
 
 
 def warn_if_running_on_mntc() -> None:
@@ -649,194 +749,362 @@ def build_entity_pool(rng: np.random.RandomState) -> Dict[str, List[str]]:
 
 
 # -----------------------------
-# 4) Template-based sentence synthesis + BIO tagging (대폭 확장)
+# 4) Template-based sentence synthesis + BIO tagging (현실적인 데이터)
+# 엔티티 비율을 낮추기 위해 엔티티 없는 문장을 대폭 추가
+# 목표: 엔티티 30-35%, 엔티티 없는 샘플 30-40%
 # -----------------------------
 TEMPLATES = [
-    # 기본 문장 (15개)
-    "{NAME}은 {COMPANY}에서 {PHONE} 번호를 사용한다.",
-    "{NAME}님의 이메일은 {EMAIL}이고 연락처는 {PHONE}입니다.",
-    "본 {TITLE}는 {COMPANY}와 {NAME} 간 {CONTRACT_TYPE} 계약입니다.",
-    "{DATE}에 {NAME}이 {COMPANY}에서 {PROJECT_NAME} 프로젝트를 시작했다.",
-    "담당자 {NAME}({POSITION})의 연락처는 {PHONE}이며 주소는 {ADDRESS}입니다.",
-    "{COMPANY} {DEPARTMENT} {POSITION} {NAME}이 {DATE}에 계약금 {MONEY}을 지불했다.",
-    "{NAME}은 {COMPANY}에 {TYPE} 자료 {QUANTITY}를 {LANGUAGE}로 제공한다.",
-    "참조 URL은 {URL}이고 문서번호는 {ID_NUM}이다.",
-    "{CONTRACT_TYPE} 계약서에 따라 {NAME}이 {RIGHT_INFO}를 {COMPANY}에 양도한다.",
-    "{DATE}부터 {PERIOD} 동안 {NAME}은 {COMPANY}에서 {POSITION}으로 근무한다.",
-    "{CONSENT_TYPE}에 동의한 {NAME}의 개인정보는 {COMPANY}가 {PERIOD} 보관한다.",
-    "관련 법령 {LAW_REFERENCE}에 따라 {COMPANY}는 {NAME}에게 {MONEY}를 지급한다.",
-    "{COMPANY}의 {DEPARTMENT}는 {PROJECT_NAME}에 대해 {STATUS} 상태로 보고했다.",
-    "{NAME}이 작성한 {TYPE} 문서는 {DATE}에 {COMPANY}에 제출되었다.",
-    "주소 {ADDRESS}에 위치한 {COMPANY}는 {PHONE}로 연락 가능하다.",
+    # =========== 엔티티 없는 일반 문장 (약 120개, 60% 타겟) ===========
+    # 계약서 섹션 제목 (10개)
+    "계약 개요",
+    "제1장 계약의 대상",
+    "제2장 계약금 및 지급 조건",
+    "제3장 저작재산권의 범위",
+    "제4장 계약 기간",
+    "제5장 양도인 및 양수인의 권리",
+    "제6장 계약 해제 및 해지",
+    "제7장 기타 특약사항",
+    "부칙",
+    "별지 참고",
     
-    # 법률 문서 스타일 (30개)
-    "책임자(대표자) {POSITION} {NAME} (인)",
-    "기관(개인)명 : {NAME} (인) {COMPANY} 소속 : ○",
-    "{NAME} {COMPANY} {ADDRESS} {PHONE} 사업의 {DESCRIPTION}",
-    "이름 {NAME} 소속 {COMPANY} 주소 {ADDRESS} 주요 업무 {DESCRIPTION}",
-    "{NAME}은 {COMPANY}의 {PROJECT_NAME}에 참여하여 {DESCRIPTION}를 수행한다.",
-    "저작재산권을 {NAME}으로부터 {COMPANY}에게 {CONTRACT_TYPE}한다.",
-    "{NAME}이 {COMPANY}에 {RIGHT_INFO}를 {CONTRACT_TYPE}하기로 합의하였다.",
-    "{DATE}부터 {PERIOD}까지 {NAME}은 {PROJECT_NAME} 프로젝트 {POSITION}으로 활동한다.",
-    "{COMPANY} {DEPARTMENT} {NAME}({PHONE})이 {DATE}에 {TYPE} 문서를 제출했다.",
-    "연락처 {PHONE} {NAME} {POSITION} {COMPANY} {ADDRESS}",
-    "{NAME} {COMPANY} 본 {PROJECT_NAME} {POSITION} {DESCRIPTION}",
-    "참여인력 {NAME} {COMPANY} {ADDRESS} {PHONE} 주요업무 {DESCRIPTION}",
-    "{NAME}은(는) {DATE}에 {COMPANY}와 {CONTRACT_TYPE} 계약을 체결하였다.",
-    "{CONSENT_TYPE} 동의서에 {NAME}이 {DATE}에 서명하였다.",
-    "{NAME}의 {RIGHT_INFO}는 {COMPANY}가 {PERIOD} 동안 보유한다.",
-    "{LAW_REFERENCE}에 의거하여 {NAME}은 {COMPANY}에 {MONEY}를 지급한다.",
-    "{PROJECT_NAME} 사업 {POSITION} {NAME} {COMPANY} {PHONE}",
-    "대표자 {NAME} 주소 {ADDRESS} 연락처 {PHONE} 소속 {COMPANY}",
-    "{NAME}이 {COMPANY}의 {POSITION}으로 {DATE}부터 근무한다.",
-    "{COMPANY} 소속 {NAME}은 {PROJECT_NAME}의 {POSITION}을 담당한다.",
-    
-    # 표 형식 스타일 (20개)
-    "번호 이름 {NAME} 소속 {COMPANY} 연락처 {PHONE}",
-    "{NAME} {COMPANY} {PHONE} {ADDRESS} {POSITION}",
-    "성명 {NAME} 생년월일 {DATE} 전화번호 {PHONE}",
-    "{NAME} (인) {COMPANY} {DATE} {CONTRACT_TYPE}",
-    "참여자 {NAME} 기관 {COMPANY} 업무 {DESCRIPTION}",
-    "{POSITION} {NAME} {PHONE} {EMAIL} {ADDRESS}",
-    "{NAME} | {COMPANY} | {PHONE} | {POSITION}",
-    "이름: {NAME} 회사: {COMPANY} 연락처: {PHONE}",
-    "{NAME} - {POSITION} - {COMPANY} - {PHONE}",
-    "담당 {NAME} 부서 {DEPARTMENT} 직책 {POSITION}",
-    
-    # OCR 오류 시뮬레이션 (띄어쓰기 없음/이상한 띄어쓰기) (20개)
-    "{NAME}은{COMPANY}에서{POSITION}으로근무한다.",
-    "{NAME} 님 의 연 락 처 는 {PHONE} 입 니 다.",
-    "{COMPANY}{NAME}{PHONE}{ADDRESS}",
-    "기관명:{COMPANY}담당자:{NAME}전화:{PHONE}",
-    "{NAME}이{DATE}에{COMPANY}와계약체결하였다.",
-    "{PROJECT_NAME}사업{NAME}{COMPANY}{POSITION}",
-    "{NAME} ( {POSITION} ) {COMPANY} {PHONE}",
-    "성 명{NAME}소 속{COMPANY}연락처{PHONE}",
-    "{NAME}은 {COMPANY} 의{PROJECT_NAME}에 참 여한다.",
-    "{CONTRACT_TYPE}계약서 {NAME} {COMPANY} {DATE}",
-    
-    # 복잡한 복합 문장 (30개)
-    "{NAME}은 {COMPANY}의 {DEPARTMENT} {POSITION}으로서 {PROJECT_NAME} 프로젝트를 {DATE}부터 {PERIOD}까지 수행하며, 연락처는 {PHONE}이고 이메일은 {EMAIL}이다.",
-    "{DATE}에 {NAME}({POSITION})은 {COMPANY}와 {CONTRACT_TYPE} 계약을 체결하였으며, {RIGHT_INFO}에 대한 권리를 {PERIOD} 동안 양도하기로 합의하였다.",
-    "{COMPANY} 소속 {NAME}은 {ADDRESS}에 거주하며, {PHONE}로 연락 가능하고, {PROJECT_NAME}의 {POSITION}을 맡고 있다.",
-    "{CONSENT_TYPE}에 동의한 {NAME}은 {COMPANY}에 {DATE}부터 {PERIOD}까지 개인정보 활용을 허가하였으며, 연락처는 {PHONE}이다.",
-    "{LAW_REFERENCE}에 따라 {COMPANY}는 {NAME}에게 {MONEY}를 {DATE}까지 지급해야 하며, 주소는 {ADDRESS}이다.",
-    "{NAME}이 {DATE}에 제출한 {TYPE} 문서는 {COMPANY}의 {DEPARTMENT}에서 {STATUS} 상태로 검토 중이다.",
-    "{PROJECT_NAME} 사업의 참여자 {NAME}은 {COMPANY} {POSITION}으로 {DESCRIPTION}를 담당하며, {PHONE}로 연락 가능하다.",
-    "{COMPANY}와 {NAME} 간 {CONTRACT_TYPE} 계약에 따라 {RIGHT_INFO}가 {DATE}부터 {PERIOD} 동안 양도되었다.",
-    "{NAME}({PHONE})은 {COMPANY}의 {PROJECT_NAME}에서 {POSITION}으로 활동하며, 주소는 {ADDRESS}이다.",
-    "{DATE}에 {NAME}이 {COMPANY}에 제출한 {CONSENT_TYPE} 동의서는 {DEPARTMENT}에서 {STATUS} 처리되었다.",
-    
-    # 불완전한 문장 / 단편적 표현 (20개)
-    "{NAME} {COMPANY} {POSITION}",
-    "담당: {NAME} ({PHONE})",
-    "{NAME}, {COMPANY}, {DATE}",
-    "연락처 {PHONE} 담당자 {NAME}",
-    "{COMPANY} {NAME} {ADDRESS}",
-    "{PROJECT_NAME} - {NAME} - {POSITION}",
-    "{NAME} (인) {DATE}",
-    "{COMPANY} 소속: {NAME}",
-    "{POSITION} {NAME} 연락 {PHONE}",
-    "{NAME} / {COMPANY} / {PHONE}",
-    "책임자 {NAME} {COMPANY}",
-    "{NAME} 주소 {ADDRESS}",
-    "{PHONE} {EMAIL} {NAME}",
-    "{NAME} ({COMPANY}) {POSITION}",
-    "{DATE} {NAME} {CONTRACT_TYPE}",
-    "{PROJECT_NAME} 담당 {NAME}",
-    "{NAME} | {POSITION} | {PHONE}",
-    "대표 {NAME} {COMPANY}",
-    "{NAME} 이메일: {EMAIL}",
-    "{COMPANY} {NAME} 참여",
-
-    # 서명/양도인/양수인/대표자 블록 (실제 양식 대응)
-    "양도인 {NAME} (서명) 성명: {NAME} 주소: {ADDRESS} 전화번호: {PHONE}",
-    "양수인 {COMPANY} 대표자명: {NAME} 기관명: {COMPANY} 주소: {ADDRESS} 연락처: {PHONE}",
-    "양도인 {NAME} 주소 {ADDRESS} 연락처 {PHONE} 양수인 {COMPANY} 대표 {NAME}",
-    "대표자명: {NAME} 기관명: {COMPANY} 주소: {ADDRESS} 전화: {PHONE}",
-    "성명 {NAME} 연락처 {PHONE} 주소 {ADDRESS} 양도인 서명",
-    "성명: {NAME} (인) 전화번호: {PHONE} 주소: {ADDRESS}",
-    "대표자 {NAME} (인) 회사 {COMPANY} 전화 {PHONE} 주소 {ADDRESS}",
-    "양도자 {NAME} 양수자 {COMPANY} 대표 {NAME} 연락처 {PHONE}",
-    "양도인 이름 {NAME} 전화 {PHONE} 주소 {ADDRESS}",
-    "양수인 {COMPANY} 대표자 {NAME} 전화번호 {PHONE} 주소 {ADDRESS}",
-    "서명: {NAME} / 소속: {COMPANY} / 주소: {ADDRESS} / 연락처: {PHONE}",
-    "서명자 {NAME} ({PHONE}) {ADDRESS} 소속 {COMPANY}",
-
-    # 개인정보/동의 양식 문장 (실제 문서 패턴)
-    "개인정보 항목 성명: {NAME}, 주소: {ADDRESS}, 전화번호: {PHONE}",
-    "개인정보 수집 및 제공에 동의합니다. 성명 {NAME} 연락처 {PHONE}",
-    "제3자 제공 대상: {COMPANY}, 제공 항목: 성명 {NAME}, 연락처 {PHONE}, 주소 {ADDRESS}",
-    "개인정보 보유기간: {PERIOD}, 담당자: {NAME}, 연락처: {PHONE}",
-    "동의자: {NAME} 서명(인) 연락처: {PHONE}",
-    "본 동의서는 {DATE}에 작성되었으며, 작성자 {NAME}, 연락처 {PHONE}",
-    "본인은 {COMPANY}에 개인정보 제공(성명 {NAME}, 연락처 {PHONE}, 주소 {ADDRESS})에 동의합니다.",
-
-    # Entity 없는 일반 문장 추가 (O 태그 비율 확대)
-    "본 동의서는 개인정보 처리에 관한 일반적인 내용을 담고 있습니다.",
-    "아래 빈칸에 필요한 내용을 기입하십시오.",
-    "상기 사항을 확인하였으며 별도의 문의사항은 없습니다.",
-    "첨부된 서류를 확인하시고 서명해 주세요.",
-    "계약 조건 및 조항을 숙지하였습니다.",
-    "관련 법령에 따라 처리됩니다.",
-    "본 문서는 참고용으로 제공됩니다.",
-    "필요 시 추가 정보를 요청할 수 있습니다.",
-    "작성일자를 기입하고 서명하십시오.",
-    "본 문서의 일부는 생략되었습니다.",
-    "서명란에 자필 서명을 해 주세요.",
-    
-    # Entity 없는 일반 문장 (10개 - 중요!)
+    # 일반 계약 문구 (15개)
+    "본 계약은 다음과 같은 조건에 따라 체결된다.",
+    "양도인과 양수인은 아래의 내용에 합의한다.",
     "저작재산권 양도 계약서",
-    "참여 인력 명단",
-    "아래와 같이 계약을 체결한다.",
-    "본 사업의 목적은 다음과 같다.",
-    "관련 법령에 따라 처리한다.",
-    "상기 내용에 동의합니다.",
-    "주요 업무 내용",
-    "사업 개요",
-    "계약 조건",
-    "첨부 서류 목록",
+    "창작물 이용료 지급 및 권리 이전 약정",
+    "본 창작물의 저작재산권 양도를 위한 계약서",
+    "위의 사항을 확인하고 계약에 동의합니다.",
+    "상기 내용에 이의 없음을 확인합니다.",
+    "본 계약의 모든 조항을 숙지하였습니다.",
+    "다음 서류들이 본 계약에 첨부됩니다.",
+    "계약 조건 및 조항을 읽고 이해하였습니다.",
+    "본 계약은 한국 법률에 따라 해석됩니다.",
+    "계약 내용의 변경은 서면으로만 가능합니다.",
+    "모든 당사자는 계약 조건을 이해했습니다.",
+    "본 계약은 쌍방 간에 합의된 것입니다.",
+    "계약서는 정본과 사본 각 1부씩 보관합니다.",
+    
+    # 법적 문구 (10개)
+    "관련 법령 및 규정에 따라 처리합니다.",
+    "저작권법에 따른 적절한 절차를 따릅니다.",
+    "분쟁 발생 시 관할 법원에 제소합니다.",
+    "계약 조건은 법적 구속력을 가집니다.",
+    "양당사자의 서명은 계약을 구속합니다.",
+    "계약의 해석은 한국 저작권법을 따릅니다.",
+    "모든 분쟁은 중재 또는 소송으로 해결합니다.",
+    "본 계약에서 정하지 않은 사항은 법령에 따릅니다.",
+    "계약 조건 변경은 서면 합의로만 가능합니다.",
+    "계약의 부분 무효가 전체 무효를 초래하지 않습니다.",
+    
+    # 서명/확인 관련 (15개)
+    "아래에 서명하시기 바랍니다.",
+    "성명과 날짜를 기입해 주세요.",
+    "서명란에 자필 서명을 부탁드립니다.",
+    "인장이 없는 경우 서명으로 갈음합니다.",
+    "서명 후 원본 사본을 보관하세요.",
+    "본인은 위 내용이 사실임을 증명합니다.",
+    "서명자: ",
+    "확인 서명: ",
+    "인감 날인을 부탁드립니다.",
+    "본인의 자필 서명을 기입합니다.",
+    "서명 위치에 표시를 부탁드립니다.",
+    "계약 내용에 동의하며 서명합니다.",
+    "아래 서명란이 비어있습니다.",
+    "개인 서명이 필수입니다.",
+    "법인의 경우 대표 인감을 사용합니다.",
+    
+    # 개인정보 처리 (12개)
+    "개인정보 처리 방침",
+    "개인정보 보호 관련 안내",
+    "개인정보의 안전한 관리를 약속합니다.",
+    "제공하신 정보는 보안이 유지됩니다.",
+    "개인정보는 통상적인 방법으로 보호됩니다.",
+    "개인정보 수집에 동의해주세요.",
+    "수집된 개인정보는 보안 시스템에 저장됩니다.",
+    "개인정보는 계약 이행 목적으로만 사용됩니다.",
+    "제3자 공개는 법적 근거 없이 불가능합니다.",
+    "개인정보 보유 기간은 계약 종료 후 3년입니다.",
+    "정보 주체는 언제든 개인정보 열람을 요청할 수 있습니다.",
+    "개인정보 오류 정정을 신청할 수 있습니다.",
+    
+    # 행정 및 절차 문구 (15개)
+    "해당 사항이 없으면 표시하지 마세요.",
+    "작성 후 제출하기 전에 다시 확인하세요.",
+    "모든 필수 항목을 반드시 작성해 주세요.",
+    "불완전한 신청은 처리되지 않습니다.",
+    "추가 정보 필요 시 연락드리겠습니다.",
+    "처리 결과는 별도로 안내합니다.",
+    "신청서는 복사본도 보관해 주세요.",
+    "제출된 서류는 원본으로 반환되지 않습니다.",
+    "사본 확인서가 필요한 경우 별도 신청하세요.",
+    "접수 후 검토 기간은 5일입니다.",
+    "반려된 신청서는 수정 후 재제출하세요.",
+    "처리 완료 후 통지서를 발급합니다.",
+    "신청인의 의견을 먼저 청취합니다.",
+    "절차상 이의가 있으면 신청할 수 있습니다.",
+    "행정 처분에 대한 항소기간은 30일입니다.",
+    
+    # 이행 및 책임 (12개)
+    "이 문서는 법적 효력을 가집니다.",
+    "본 계약의 모든 조항은 유효합니다.",
+    "계약 이행 시 법적 책임이 발생합니다.",
+    "분쟁 해결을 위한 중재를 요청할 수 있습니다.",
+    "계약 내용 확인 후 의견을 제시하세요.",
+    "계약 불이행 시 손해배상을 청구할 수 있습니다.",
+    "양당사자는 성실하게 계약을 이행합니다.",
+    "계약 조건은 상호 구속력을 가집니다.",
+    "계약 위반으로 인한 피해는 배상됩니다.",
+    "계약 이행을 위해 최선을 다할 것을 약속합니다.",
+    "계약의 효력은 양당사자의 서명 시부터 발생합니다.",
+    "계약 종료 후의 책임과 의무를 명시합니다.",
+    
+    # 업무 관련 문구 (10개)
+    "위 업무는 성실하게 수행됩니다.",
+    "프로젝트는 정해진 일정대로 진행됩니다.",
+    "품질 관리를 철저히 하겠습니다.",
+    "정기적인 진행 상황을 보고하겠습니다.",
+    "변경 사항이 생기면 즉시 알리겠습니다.",
+    "문제 발생 시 신속하게 대응합니다.",
+    "업무 완료 후 최종 보고서를 제출합니다.",
+    "매월 진행 상황 보고를 받습니다.",
+    "업무 수행 중 발생한 문제는 함께 해결합니다.",
+    "계약 종료 후 모든 자료를 정리합니다.",
+    
+    # =========== 엔티티 1-2개만 포함 (약 60개) ===========
+    # 담당자 정보 (6개)
+    "담당자: {NAME}",
+    "연락처: {PHONE}",
+    "이메일: {EMAIL}",
+    "주소: {ADDRESS}",
+    "소속: {COMPANY}",
+    "직책: {POSITION}",
+    
+    # 날짜/기간 (5개)
+    "계약일: {DATE}",
+    "작성일: {DATE}",
+    "시작일: {DATE}",
+    "종료일: {DATE}",
+    "기간: {PERIOD}",
+    
+    # 문서 정보 (4개)
+    "문서 번호: {ID_NUM}",
+    "문서명: {TITLE}",
+    "문서 유형: {TYPE}",
+    "첨부 파일: {URL}",
+    
+    # 엔티티 2개 조합 (15개)
+    "{NAME} 담당자",
+    "{COMPANY} 소속",
+    "{POSITION} {NAME}",
+    "{NAME}({PHONE})",
+    "{PHONE} {EMAIL}",
+    "{ADDRESS}에 위치",
+    "{DATE} 기준",
+    "{COMPANY} {DEPARTMENT}",
+    "{TITLE}: {CONTRACT_TYPE}",
+    "{TYPE} 문서",
+    "{RIGHT_INFO} 양도",
+    "{MONEY} 지불",
+    "{PROJECT_NAME} 진행",
+    "{DESCRIPTION} 담당",
+    "{STATUS} 상태",
+    
+    # 엔티티 2-3개 선언문 (15개)
+    "{NAME}은 {POSITION}입니다.",
+    "{COMPANY}의 {NAME}",
+    "{DATE}에 {NAME}이 작성",
+    "{ADDRESS}에 {COMPANY}가 위치",
+    "{NAME} 연락처 {PHONE}",
+    "{CONTRACT_TYPE} 계약",
+    "{NAME}과 {COMPANY}",
+    "{COMPANY} 대표자: {NAME}",
+    "{NAME}({COMPANY})",
+    "기간: {DATE}부터 {PERIOD}",
+    "주소: {ADDRESS}",
+    "{ADDRESS}의 {COMPANY}",
+    "{ADDRESS}에 거주",
+    "프로젝트: {PROJECT_NAME}",
+    "금액: {MONEY}",
+    
+    # 작성자/서명자 (5개)
+    "작성자: {NAME}",
+    "서명: {NAME}",
+    "인장: {NAME}",
+    "승인자: {NAME}",
+    "확인자: {NAME}",
+    
+    # 전화/이메일/기타 (5개)
+    "전화: {PHONE}",
+    "팩스: {PHONE}",
+    "이메일: {EMAIL}",
+    "URL: {URL}",
+    "언어: {LANGUAGE}",
+    
+    # =========== 엔티티 3+개 포함 (약 40개) ===========
+    # 복합 계약 정보 (10개)
+    "{NAME}은 {COMPANY}의 {POSITION}입니다.",
+    "{COMPANY}의 {DEPARTMENT}에서 {NAME}이 담당합니다.",
+    "{DATE}부터 {NAME}은 {COMPANY}에서 근무합니다.",
+    "{NAME}({PHONE})은 {COMPANY}의 {POSITION}입니다.",
+    "{COMPANY}({ADDRESS})의 {NAME} {PHONE}",
+    "{CONTRACT_TYPE} 계약 대상: {PROJECT_NAME}",
+    "{DATE}에 {NAME}과 {COMPANY}가 {CONTRACT_TYPE}합니다.",
+    "{NAME}의 {RIGHT_INFO}를 {COMPANY}에 {CONTRACT_TYPE}합니다.",
+    "{NAME}({COMPANY})이 {RIGHT_INFO}를 양도합니다.",
+    "계약금: {MONEY}, 기간: {PERIOD}",
+    
+    # 복합 업무 설명 (10개)
+    "{NAME}은 {PROJECT_NAME}에서 {DESCRIPTION}를 합니다.",
+    "{COMPANY}의 {NAME}({POSITION})이 {DESCRIPTION}를 담당합니다.",
+    "{PROJECT_NAME} 프로젝트: {DESCRIPTION}",
+    "{NAME}({PHONE}): {DESCRIPTION}",
+    "주요 업무: {DESCRIPTION}, 담당자: {NAME}",
+    "{DATE}부터 {PERIOD}간 {NAME}이 {DESCRIPTION}를 합니다.",
+    "{COMPANY}의 {DESCRIPTION}을 {NAME}이 수행합니다.",
+    "{NAME}({POSITION})은 {DESCRIPTION}을 담당하며 {PHONE}으로 연락할 수 있습니다.",
+    "{PROJECT_NAME}의 {DESCRIPTION}는 {COMPANY}가 담당합니다.",
+    "{RIGHT_INFO}의 {DESCRIPTION}을 {NAME}과 {COMPANY}가 협의합니다.",
+    
+    # 복합 개인정보 (10개)
+    "이름: {NAME}, 연락처: {PHONE}, 주소: {ADDRESS}",
+    "{NAME}({ADDRESS})의 개인정보를 수집합니다.",
+    "성명: {NAME}, 이메일: {EMAIL}, 소속: {COMPANY}",
+    "{NAME}({COMPANY})의 연락처: {PHONE}",
+    "개인정보: {NAME}, {PHONE}, {EMAIL}",
+    "{NAME}({POSITION})의 이메일은 {EMAIL}입니다.",
+    "{COMPANY}의 {NAME} {PHONE} {EMAIL}",
+    "{ADDRESS}의 {COMPANY}에 소속된 {NAME}",
+    "{NAME}({COMPANY} {POSITION})의 전화: {PHONE}",
+    "담당자: {NAME}, 회사: {COMPANY}, 이메일: {EMAIL}",
+    
+    # 복합 문서 처리 (10개)
+    "{DATE}에 {NAME}이 {TYPE} 문서를 제출합니다.",
+    "{NAME}은 {LANGUAGE} 문서를 {DATE}까지 제출합니다.",
+    "{COMPANY}의 {NAME}({PHONE})이 {POSITION}을 맡습니다.",
+    "계약자: {NAME}, 소속: {COMPANY}, 날짜: {DATE}",
+    "{ADDRESS}의 {COMPANY}({NAME}) {PHONE}",
+    "{NAME}({POSITION})은 {PROJECT_NAME}에 참여합니다.",
+    "{TYPE} 문서 작성자: {NAME}, 날짜: {DATE}, 연락처: {PHONE}",
+    "{COMPANY}의 {NAME}({POSITION})이 {DATE}에 {TYPE} 문서를 작성합니다.",
+    "{RIGHT_INFO} 양도: {NAME}({COMPANY})에서 {DATE}에 진행",
+    "프로젝트: {PROJECT_NAME}, 기간: {PERIOD}, 담당: {NAME}({PHONE})",
+    
+    # 기간/날짜 관련 문장
+    "{DATE}부터 {PERIOD}까지 진행됩니다.",
+    "기간: {PERIOD}, 시작일: {DATE}",
+    "{NAME}은 {DATE}부터 {PERIOD} 근무합니다.",
+    "{COMPANY}는 {PERIOD} 동안 {RIGHT_INFO}를 보유합니다.",
+    "계약 기간: {DATE}부터 {PERIOD}",
+    
+    # 참여자/담당자 문장
+    "참여자: {NAME}({COMPANY}), {POSITION}",
+    "{NAME}({PHONE})이 {PROJECT_NAME}에 참여합니다.",
+    "담당자: {NAME}, 부서: {DEPARTMENT}",
+    "{COMPANY} {DEPARTMENT} {NAME}({POSITION})",
+    "프로젝트 리더: {NAME}({COMPANY})",
+    
+    # 금액/계약금 문장
+    "계약금: {MONEY}, 지급일: {DATE}",
+    "금액: {MONEY}, 수량: {QUANTITY}",
+    "{NAME}에게 {MONEY}를 지급합니다.",
+    "{COMPANY}에 {MONEY}를 납부합니다.",
+    "총액: {MONEY}, 기간: {PERIOD}",
+    
+    # 양도/이전 문장
+    "{NAME}이 {RIGHT_INFO}를 {COMPANY}에 양도합니다.",
+    "{RIGHT_INFO}의 양도인: {NAME}, 양수인: {COMPANY}",
+    "{NAME}({COMPANY})이 {RIGHT_INFO}를 이전받습니다.",
+    "저작권 양도: {NAME}에서 {COMPANY}로",
+    "{RIGHT_INFO} 양도 기간: {PERIOD}",
+    
+    # 도메인 특화: 계약서/저작권 관련 (30개 추가)
+    "{LAW_REFERENCE}에 따라 {RIGHT_INFO}를 양도합니다.",
+    "{CONTRACT_TYPE} 체결: {NAME}과 {COMPANY} 간",
+    "{PROJECT_NAME}의 {TYPE} 저작물을 {DATE}에 제작",
+    "{TITLE}: {NAME}({COMPANY}) - {DATE}",
+    "{LAW_REFERENCE} 제{QUANTITY}조에 의거하여",
+    "{RIGHT_INFO}(복제권, 배포권, 전송권 등)을 양도",
+    "{NAME}은 {RIGHT_INFO}에 대한 권리를 포기합니다.",
+    "{COMPANY}가 {RIGHT_INFO}를 {DATE}까지 보유",
+    "{CONTRACT_TYPE}: {NAME} → {COMPANY}",
+    "{PROJECT_NAME}의 산출물: {TYPE}",
+    
+    "{DESCRIPTION}를 목적으로 {TYPE}을 제작",
+    "사업명: {PROJECT_NAME}, 기간: {PERIOD}",
+    "{COMPANY}의 {PROJECT_NAME} 참여자: {NAME}",
+    "저작물: {TYPE}, 저작자: {NAME}, 양수인: {COMPANY}",
+    "{DATE} 계약 체결, {RIGHT_INFO} 양도",
+    "{NAME}({ADDRESS})이 {PROJECT_NAME}에 참여",
+    "{CONSENT_TYPE}에 동의함: {NAME}",
+    "{LAW_REFERENCE}에 따른 {RIGHT_INFO} 보호",
+    "주소: {ADDRESS}, 연락처: {PHONE}",
+    "{COMPANY} {DEPARTMENT} 소속 {NAME}({POSITION})",
+    
+    "{STATUS} 확인: {NAME}, {DATE}",
+    "{TYPE} 산출물: {DESCRIPTION}",
+    "사업책임자: {NAME}({COMPANY}), 전화: {PHONE}",
+    "{PROJECT_NAME}의 {TYPE} 저작물 양도계약",
+    "{NAME}은 {RIGHT_INFO}를 {COMPANY}에 전부 양도",
+    "계약일: {DATE}, 계약당사자: {NAME}, {COMPANY}",
+    "{LAW_REFERENCE} 및 {LAW_REFERENCE} 적용",
+    "{PROJECT_NAME} 결과물: {TYPE} {QUANTITY}건",
+    "{RIGHT_INFO} 양도 및 {CONSENT_TYPE} 동의",
+    "{COMPANY}의 {ADDRESS}에서 {DATE} 계약 체결",
 ]
 
 def simple_word_tokenize(text: str) -> List[str]:
     """
-    공백 기반 단어 분리 - BERT tokenizer가 내부적으로 subword 처리
-    한국어는 형태소 단위가 아닌 어절(공백 단위) 분리
+    한국어 NER용 토큰화: 완전한 문자 단위 분리
+    - "홍길동"은 ['홍', '길', '동']으로 분리
+    - "ABC회사"는 ['A', 'B', 'C', '회', '사']로 분리
+    - "홍 길 동이" -> ['홍', '길', '동', '이'] (공백 무시)
+    
+    BERT의 subword tokenization과 일관성을 위해
+    모든 문자를 개별 토큰으로 처리 (공백 제외)
     """
-    # 공백으로 분리
-    tokens = text.split()
-    # 빈 토큰 제거
-    return [t for t in tokens if t.strip()]
+    if not text:
+        return []
+    
+    # 완전한 문자 단위 분리: 공백을 제외한 모든 문자가 개별 토큰
+    return [ch for ch in text if ch != ' ']
 
 
 def render_template(template: str, pool: Dict[str, List[str]], rng: np.random.RandomState) -> Tuple[List[str], List[str]]:
     """
     템플릿을 렌더링하고 BIO 태그를 생성합니다.
-    OCR 오류를 시뮬레이션하기 위해 일부 템플릿에서는 띄어쓰기를 제거합니다.
+    개선된 버전: 더 정확한 엔티티 매칭 및 BIO 시퀀스 검증
     """
     used: Dict[str, str] = {}
     text = template
+    entity_positions: List[Tuple[str, int, int, str]] = []  # (entity_type, start_word_idx, end_word_idx, entity_text)
+    char_separated_map: Dict[str, str] = {}
+    
+    # First, render all entities and track their positions in the template
     for t in ENTITY_TYPES:
         key = "{" + t + "}"
         if key in text:
             used[t] = rng.choice(pool[t])
-            text = text.replace(key, used[t])
+    
+    # Replace entities in template while tracking positions
+    # 중요: 엔티티 텍스트를 문자 단위로 공백 삽입 (홍길동 → 홍 길 동)
+    # 이렇게 하면 simple_word_tokenize에서 각 문자가 별도 토큰이 됨
+    for ent_type, ent_text in used.items():
+        key = "{" + ent_type + "}"
+        # 엔티티 텍스트를 문자 단위로 분리 후 공백으로 재결합
+        char_separated = " ".join(ent_text)
+        text = text.replace(key, char_separated)
+        char_separated_map[ent_type] = char_separated
 
-    # OCR 오류 시뮬레이션: 일부 템플릿에서 띄어쓰기 제거 (30% 확률)
-    if rng.rand() < 0.3:
-        # 엔티티 사이의 띄어쓰기만 제거 (엔티티 내부는 유지)
-        for ent_type, ent_text in used.items():
-            # 엔티티 앞뒤의 띄어쓰기 제거
-            text = text.replace(f" {ent_text} ", f"{ent_text}")
-            text = text.replace(f" {ent_text}", f"{ent_text}")
-            text = text.replace(f"{ent_text} ", f"{ent_text}")
+    # OCR 오류 시뮬레이션: 일부 템플릿에서 띄어쓰기 제거 (20% 확률 감소)
+    apply_ocr_noise = rng.rand() < 0.2  # 30% → 20%
 
     words = simple_word_tokenize(text)
     labels = ["O"] * len(words)
 
     # 엔티티 매칭: 정확한 매칭과 부분 매칭 모두 시도
     for ent_type, ent_text in used.items():
-        ent_words = simple_word_tokenize(ent_text)
+        ent_source = char_separated_map.get(ent_type, " ".join(ent_text))
+        ent_words = simple_word_tokenize(ent_source)
         if not ent_words:
             continue
         
@@ -844,59 +1112,194 @@ def render_template(template: str, pool: Dict[str, List[str]], rng: np.random.Ra
         i = 0
         matched = False
         while i <= len(words) - len(ent_words):
+            # Check if words match
             if words[i:i+len(ent_words)] == ent_words:
-                labels[i] = f"B-{ent_type}"
-                for j in range(1, len(ent_words)):
-                    labels[i+j] = f"I-{ent_type}"
+                # Validate BIO sequence before tagging
+                can_tag = True
+                if i > 0 and labels[i-1].startswith("I-"):
+                    # Cannot start new entity right after I- tag without O in between
+                    can_tag = False
+                
+                if can_tag:
+                    labels[i] = f"B-{ent_type}"
+                    for j in range(1, len(ent_words)):
+                        labels[i+j] = f"I-{ent_type}"
+                    matched = True
                 i += len(ent_words)
-                matched = True
             else:
                 i += 1
         
-        # 정확한 매칭 실패 시, 엔티티가 하나의 단어로 합쳐진 경우 찾기
-        if not matched and len(ent_text.replace(" ", "")) > 0:
+        # 정확한 매칭 실패 시, 엔티티가 하나의 단어로 합쳐진 경우 찾기 (OCR 오류 대응)
+        if not matched and len(ent_text.replace(" ", "")) > 2:
             ent_combined = ent_text.replace(" ", "")
             for i, word in enumerate(words):
-                if ent_combined in word or word in ent_combined:
-                    # 부분 매칭: 단어가 엔티티를 포함하거나 그 반대인 경우
-                    if len(ent_combined) >= len(word) * 0.7:  # 70% 이상 일치
+                # Skip already labeled words
+                if labels[i] != "O":
+                    continue
+                    
+                # Check if word contains the entity (with tolerance)
+                if ent_combined in word:
+                    # Validate BIO sequence
+                    can_tag = True
+                    if i > 0 and labels[i-1].startswith("I-"):
+                        can_tag = False
+                    
+                    if can_tag:
                         labels[i] = f"B-{ent_type}"
                         matched = True
                         break
+                elif word in ent_combined and len(word) >= len(ent_combined) * 0.6:
+                    # Partial match with at least 60% overlap
+                    can_tag = True
+                    if i > 0 and labels[i-1].startswith("I-"):
+                        can_tag = False
+                    
+                    if can_tag:
+                        labels[i] = f"B-{ent_type}"
+                        matched = True
+                        break
+    
+    # Final BIO sequence validation
+    validated_labels = []
+    for i, label in enumerate(labels):
+        if label.startswith("I-"):
+            # I- must follow B- or I- of the same type
+            if i == 0:
+                # I- at the beginning is invalid, convert to B-
+                entity_type = label[2:]
+                validated_labels.append(f"B-{entity_type}")
+            else:
+                prev_label = validated_labels[i-1]
+                curr_type = label[2:]
+                if prev_label == f"B-{curr_type}" or prev_label == f"I-{curr_type}":
+                    validated_labels.append(label)
+                else:
+                    # Invalid I- tag, convert to B-
+                    validated_labels.append(f"B-{curr_type}")
+        else:
+            validated_labels.append(label)
 
-    return words, labels
+    return words, validated_labels
 
 
-def generate_bio_samples(num_samples: int, seed: int) -> List[Dict]:
+def load_real_document_samples() -> List[Dict]:
+    """실제 문서에서 추출한 Ground Truth 샘플 로드"""
+    real_data_dir = Path("data/in/real_document_train")
+    samples = []
+    
+    if not real_data_dir.exists():
+        return samples
+    
+    for json_file in real_data_dir.glob("*.json"):
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    samples.extend(data)
+                    print(f"[INFO] 실제 문서 로드: {json_file.name} ({len(data)}개 샘플)", flush=True)
+        except Exception as e:
+            print(f"[WARN] 실제 문서 로드 실패: {json_file.name} - {e}", flush=True)
+    
+    return samples
+
+
+def generate_bio_samples(num_samples: int, seed: int, real_doc_ratio: float = 0.20) -> List[Dict]:
+    """Generate NER training data with balanced entity/non-entity distribution.
+    
+    Target distribution:
+    - real_doc_ratio: 실제 문서 샘플 (Ground Truth)
+    - (1-real_doc_ratio): 합성 데이터
+      - 60% no-entity samples
+      - 25% light samples (1-2 entities)
+      - 15% heavy samples (3+ entities)
+    """
     rng = np.random.RandomState(seed)
+    
+    # 실제 문서 샘플 로드
+    real_samples = load_real_document_samples()
+    num_real = min(len(real_samples), int(num_samples * real_doc_ratio))
+    
+    if num_real > 0:
+        print(f"[INFO] 실제 문서 샘플: {num_real}개 (전체의 {num_real/num_samples*100:.1f}%)", flush=True)
+        # 랜덤 샘플링
+        rng.shuffle(real_samples)
+        selected_real = real_samples[:num_real]
+    else:
+        selected_real = []
+        print(f"[INFO] 실제 문서 샘플 없음. 합성 데이터만 사용", flush=True)
+    
+    # 합성 샘플 생성
+    num_synthetic = num_samples - num_real
     pool = build_entity_pool(rng)
-    print(f"[INFO] 샘플 생성 시작: {num_samples}개", flush=True)
+    print(f"[INFO] 합성 샘플 생성 시작: {num_synthetic}개 (60% 비엔티티, 25% 경량, 15% 복잡)", flush=True)
     samples: List[Dict] = []
-
-    initial_count = min(500, num_samples // 2)
-    print(f"[INFO] 초기 샘플 생성: {initial_count}개", flush=True)
-    for i in range(initial_count):
-        tmpl = rng.choice(TEMPLATES)
+    
+    # Categorize templates
+    no_entity_templates = [t for t in TEMPLATES if "{" not in t]
+    # Light templates: single placeholder or simple combo
+    light_templates = []
+    heavy_templates = []
+    
+    for t in TEMPLATES:
+        if "{" in t:
+            placeholders = re.findall(r'\{([A-Z_]+)\}', t)
+            if len(placeholders) <= 2:
+                light_templates.append(t)
+            else:
+                heavy_templates.append(t)
+    
+    print(f"[INFO] 템플릿 분류: {len(no_entity_templates)} 비엔티티, {len(light_templates)} 경량, {len(heavy_templates)} 복잡", flush=True)
+    
+    # Calculate target counts
+    num_no_entity = int(num_samples * 0.60)
+    num_light = int(num_samples * 0.25)
+    num_heavy = num_samples - num_no_entity - num_light
+    
+    print(f"[INFO] 합성 데이터 목표 분포: {num_no_entity} 비엔티티, {num_light} 경량, {num_heavy} 복잡", flush=True)
+    
+    # 1) Generate no-entity samples
+    print(f"[INFO] 비엔티티 샘플 생성 시작: {num_no_entity}개", flush=True)
+    for i in range(num_no_entity):
+        tmpl = rng.choice(no_entity_templates)
+        # No-entity templates should not have entities
+        w = simple_word_tokenize(tmpl)
+        y = ["O"] * len(w)
+        samples.append({"tokens": w, "labels": y})
+        if (i + 1) % 1000 == 0:
+            print(f"[INFO] 비엔티티 진행: {i+1}/{num_no_entity}", flush=True)
+    
+    # 2) Generate light samples (1-2 entities)
+    print(f"[INFO] 경량 샘플 생성 시작: {num_light}개", flush=True)
+    for i in range(num_light):
+        tmpl = rng.choice(light_templates)
         w, y = render_template(tmpl, pool, rng)
         samples.append({"tokens": w, "labels": y})
-        if (i + 1) % 100 == 0:
-            print(f"[INFO] 초기 샘플 진행: {i+1}/{initial_count}", flush=True)
-
-    print(f"[INFO] 추가 샘플 생성: {num_samples - len(samples)}개", flush=True)
+        if (i + 1) % 1000 == 0:
+            print(f"[INFO] 경량 진행: {i+1}/{num_light}", flush=True)
+    
+    # 3) Generate heavy samples (3+ entities)
+    print(f"[INFO] 복잡 샘플 생성 시작: {num_heavy}개", flush=True)
     last = time.time()
-    while len(samples) < num_samples:
-        tmpl = rng.choice(TEMPLATES)
+    for i in range(num_heavy):
+        tmpl = rng.choice(heavy_templates) if heavy_templates else rng.choice(light_templates)
         w, y = render_template(tmpl, pool, rng)
         samples.append({"tokens": w, "labels": y})
-
-        if len(samples) % 500 == 0:
+        if (i + 1) % 1000 == 0:
             now = time.time()
             dt = now - last
             last = now
-            print(f"[INFO] 샘플 진행: {len(samples)}/{num_samples} (+500 in {dt:.1f}s)", flush=True)
-
-    print(f"[INFO] ✅ 샘플 생성 완료: {len(samples)}개", flush=True)
-    return samples[:num_samples]
+            print(f"[INFO] 복잡 진행: {i+1}/{num_heavy} ({dt:.1f}s)", flush=True)
+    
+    # 합성 샘플 셔플
+    rng.shuffle(samples)
+    synthetic_samples = samples[:num_synthetic]
+    
+    # 실제 문서 + 합성 데이터 결합
+    all_samples = selected_real + synthetic_samples
+    rng.shuffle(all_samples)
+    
+    print(f"[INFO] ✅ 샘플 생성 완료: {len(all_samples)}개 (실제: {len(selected_real)}, 합성: {len(synthetic_samples)})", flush=True)
+    return all_samples
 
 
 # -----------------------------
@@ -910,21 +1313,54 @@ def load_tokenizer(bert_path: str):
 
 
 def align_labels_with_word_ids(encodings, word_labels: List[List[int]], max_len: int) -> np.ndarray:
+    """라벨을 모든 subword에 전파
+
+    - 단어의 첫 subword는 원래 라벨(B/I/O)을 사용
+    - 같은 단어의 후속 subword는:
+        * 라벨이 B-XX였으면 I-XX로 전파
+        * 라벨이 I-XX면 그대로 I-XX로 전파
+        * O면 O로 전파
+    - padding이나 특수 토큰은 IGNORE_INDEX 유지
+    """
     out = []
     for i in range(len(word_labels)):
         word_ids = encodings.word_ids(batch_index=i)
         aligned = np.full((max_len,), IGNORE_INDEX, dtype=np.int64)
         prev_wid = None
+        prev_label_id: Optional[int] = None
+
         for j, wid in enumerate(word_ids):
             if j >= max_len:
                 break
-            if wid is None:
+            if wid is None:  # Special tokens
                 continue
+
+            # 라벨 가져오기 (단어 단위)
+            label_id = None
+            if wid < len(word_labels[i]):
+                label_id = int(word_labels[i][wid])
+
             if wid != prev_wid:
-                if wid < len(word_labels[i]):
-                    aligned[j] = int(word_labels[i][wid])
+                # 첫 subword: 단어의 라벨 사용
+                if label_id is not None:
+                    aligned[j] = label_id
+                    prev_label_id = aligned[j]
+            else:
+                # 같은 단어의 후속 subword: 라벨 전파
+                if prev_label_id is None or prev_label_id == IGNORE_INDEX:
+                    continue
+                prev_label = ID2LABEL.get(prev_label_id, "O")
+                if prev_label.startswith("B-"):
+                    ent = prev_label[2:]
+                    aligned[j] = LABEL2ID.get(f"I-{ent}", prev_label_id)
+                else:
+                    aligned[j] = prev_label_id
+                prev_label_id = aligned[j]
+
             prev_wid = wid
+
         out.append(aligned)
+
     return np.stack(out, axis=0)
 
 
@@ -1043,29 +1479,81 @@ class NERDataset(Dataset):
 
 
 # -----------------------------
-# 8) PyTorch Model (mBERT + BiLSTM)
+# 8) PyTorch Model (mBERT + BiLSTM + Attention + LayerNorm)
 # -----------------------------
 class BertBiLSTMNER(nn.Module):
-    def __init__(self, bert_path: str, num_labels: int, lstm_units: int, dropout: float):
+    def __init__(self, bert_path: str, num_labels: int, lstm_units: int, lstm_layers: int, dropout: float):
         super().__init__()
         self.bert = AutoModel.from_pretrained(bert_path)
+        hidden_size = self.bert.config.hidden_size
+        
+        # Layer Normalization for BERT output
+        self.bert_layer_norm = nn.LayerNorm(hidden_size)
+        
         self.dropout = nn.Dropout(dropout)
+        
+        # BiLSTM with configurable layers
         self.lstm = nn.LSTM(
-            self.bert.config.hidden_size,
+            hidden_size,
             lstm_units,
-            num_layers=1,
+            num_layers=lstm_layers,  # 설정 가능
             bidirectional=True,
+            batch_first=True,
+            dropout=dropout if lstm_layers > 1 and dropout > 0 else 0  # LSTM internal dropout (2층 이상일 때만)
+        )
+        
+        # Layer Normalization for LSTM output
+        self.lstm_layer_norm = nn.LayerNorm(lstm_units * 2)
+        
+        # Self-attention layer for contextual refinement
+        self.attention = nn.MultiheadAttention(
+            embed_dim=lstm_units * 2,
+            num_heads=8,
+            dropout=dropout,
             batch_first=True
         )
-        self.classifier = nn.Linear(lstm_units * 2, num_labels)
+        
+        # Residual connection weight
+        self.residual_weight = nn.Parameter(torch.tensor(0.5))
+        
+        # Final classifier with intermediate layer
+        self.intermediate = nn.Linear(lstm_units * 2, lstm_units)
+        self.activation = nn.GELU()
+        self.classifier = nn.Linear(lstm_units, num_labels)
+        
+        # CRF-like transition scores (optional soft constraint)
+        self.transitions = nn.Parameter(torch.randn(num_labels, num_labels) * 0.01)
         
     def forward(self, input_ids, attention_mask):
+        # BERT encoding
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         sequence_output = outputs.last_hidden_state  # (batch, seq_len, hidden)
+        
+        # LayerNorm after BERT
+        sequence_output = self.bert_layer_norm(sequence_output)
         sequence_output = self.dropout(sequence_output)
+        
+        # BiLSTM
         lstm_output, _ = self.lstm(sequence_output)  # (batch, seq_len, lstm_units*2)
+        lstm_output = self.lstm_layer_norm(lstm_output)
         lstm_output = self.dropout(lstm_output)
-        logits = self.classifier(lstm_output)  # (batch, seq_len, num_labels)
+        
+        # Self-attention with residual connection
+        attn_output, _ = self.attention(
+            lstm_output, lstm_output, lstm_output,
+            key_padding_mask=(attention_mask == 0)
+        )
+        
+        # Weighted residual connection
+        combined = self.residual_weight * attn_output + (1 - self.residual_weight) * lstm_output
+        combined = self.dropout(combined)
+        
+        # Classification with intermediate layer
+        intermediate = self.intermediate(combined)
+        intermediate = self.activation(intermediate)
+        intermediate = self.dropout(intermediate)
+        logits = self.classifier(intermediate)  # (batch, seq_len, num_labels)
+        
         return logits
 
 
@@ -1081,7 +1569,7 @@ def decode_bio(label_ids: torch.Tensor, attention_mask: torch.Tensor) -> List[st
             break
         if lid == IGNORE_INDEX:
             out.append("O")
-    else:
+        else:
             out.append(ID2LABEL.get(int(lid), "O"))
     return out
 
@@ -1103,12 +1591,13 @@ def bio_to_entities(seq: List[str]) -> List[Tuple[str, int, int]]:
     return ents
 
 
-def entity_f1(y_true_seqs: List[List[str]], y_pred_seqs: List[List[str]]) -> Dict[str, float]:
+def entity_f1(y_true_seqs: List[List[str]], y_pred_seqs: List[List[str]], per_type: bool = False) -> Dict[str, float]:
     """
     엔티티 레벨 F1 - 타입과 위치가 정확히 일치하는 엔티티만 TP로 계산
     (타입, 시작위치, 끝위치) 튜플이 완전히 일치해야 정확한 매칭으로 간주
     """
     tp = fp = fn = 0
+    type_stats = {t: {"tp": 0, "fp": 0, "fn": 0} for t in ENTITY_TYPES}
     
     for yt, yp in zip(y_true_seqs, y_pred_seqs):
         # 엔티티를 (타입, 시작위치, 끝위치) 튜플로 추출
@@ -1116,12 +1605,80 @@ def entity_f1(y_true_seqs: List[List[str]], y_pred_seqs: List[List[str]]) -> Dic
         pred_entities = set(bio_to_entities(yp))
         
         # 정확히 일치하는 것만 TP (타입과 위치가 모두 일치)
-        tp += len(true_entities & pred_entities)
-        # 예측했지만 실제로는 없는 것 = FP
-        fp += len(pred_entities - true_entities)
-        # 실제로는 있지만 예측하지 못한 것 = FN
-        fn += len(true_entities - pred_entities)
+        matched = true_entities & pred_entities
+        tp += len(matched)
+        
+        # FP와 FN 계산
+        false_pos = pred_entities - true_entities
+        false_neg = true_entities - pred_entities
+        fp += len(false_pos)
+        fn += len(false_neg)
+        
+        # Per-type stats
+        if per_type:
+            for t, s, e in matched:
+                type_stats[t]["tp"] += 1
+            for t, s, e in false_pos:
+                type_stats[t]["fp"] += 1
+            for t, s, e in false_neg:
+                type_stats[t]["fn"] += 1
     
+    prec = tp / (tp + fp + 1e-9)
+    rec = tp / (tp + fn + 1e-9)
+    f1 = 2 * prec * rec / (prec + rec + 1e-9)
+    
+    result = {"precision": prec, "recall": rec, "f1": f1, "tp": tp, "fp": fp, "fn": fn}
+    
+    if per_type:
+        result["per_type"] = type_stats
+    
+    return result
+
+
+def _span_iou(a: Tuple[int, int], b: Tuple[int, int]) -> float:
+    """Compute IoU between two spans [start, end)."""
+    inter = max(0, min(a[1], b[1]) - max(a[0], b[0]))
+    union = max(a[1], b[1]) - min(a[0], b[0])
+    return inter / (union + 1e-9)
+
+
+def entity_f1_relaxed(y_true_seqs: List[List[str]], y_pred_seqs: List[List[str]], iou_threshold: float = 0.1) -> Dict[str, float]:
+    """
+    완화된 엔티티 F1: 타입이 같고 IoU가 임계치 이상이면 TP로 인정
+    - 위치가 조금 어긋나도 IoU >= 0.1이면 매칭
+    - 한 번 매칭된 엔티티는 중복 매칭되지 않음
+    """
+    tp = fp = fn = 0
+
+    for yt, yp in zip(y_true_seqs, y_pred_seqs):
+        true_entities = list(bio_to_entities(yt))  # (type, s, e)
+        pred_entities = list(bio_to_entities(yp))
+
+        matched_true = set()
+        matched_pred = set()
+
+        for pi, p in enumerate(pred_entities):
+            p_type, ps, pe = p
+            best_iou = 0.0
+            best_idx = None
+            for ti, t in enumerate(true_entities):
+                if ti in matched_true:
+                    continue
+                t_type, ts, te = t
+                if t_type != p_type:
+                    continue
+                iou = _span_iou((ps, pe), (ts, te))
+                if iou > best_iou:
+                    best_iou = iou
+                    best_idx = ti
+            if best_idx is not None and best_iou >= iou_threshold:
+                matched_pred.add(pi)
+                matched_true.add(best_idx)
+
+        tp += len(matched_pred)
+        fp += len(pred_entities) - len(matched_pred)
+        fn += len(true_entities) - len(matched_true)
+
     prec = tp / (tp + fp + 1e-9)
     rec = tp / (tp + fn + 1e-9)
     f1 = 2 * prec * rec / (prec + rec + 1e-9)
@@ -1131,38 +1688,85 @@ def entity_f1(y_true_seqs: List[List[str]], y_pred_seqs: List[List[str]]) -> Dic
 # -----------------------------
 # 10) Save / Load
 # -----------------------------
-def save_artifacts(model: nn.Module, tokenizer, cfg: Config):
-    ensure_dir(cfg.model_dir)
-    torch.save(model.state_dict(), cfg.model_dir / "model.pt")
-    tokenizer.save_pretrained(cfg.model_dir / "tokenizer")
-    (cfg.model_dir / "labels.json").write_text(
+def save_artifacts(model: nn.Module, tokenizer, cfg: Config, bert_path: str):
+    # BERT 모델명 추출하여 모델 디렉토리 결정
+    bert_model_name = Path(bert_path).name
+    model_dir = cfg.get_model_dir(bert_model_name)
+    
+    # models/{model_name}에 파인튜닝 모델을 통째로 저장 (BERT 원본 덮어씌움)
+    ensure_dir(model_dir)
+    
+    # BiLSTM+CRF 모델 가중치만 저장
+    torch.save(model.state_dict(), model_dir / "pytorch_model.bin")
+    
+    # 토크나이저 저장 (BERT 토크나이저 포함)
+    tokenizer.save_pretrained(model_dir)
+    
+    # 설정 저장
+    (model_dir / "ner_config.json").write_text(
         json.dumps(
-            {"BIO_LABELS": BIO_LABELS, "ENTITY_TYPES": ENTITY_TYPES, "max_len": cfg.max_len},
+            {
+                "BIO_LABELS": BIO_LABELS,
+                "ENTITY_TYPES": ENTITY_TYPES,
+                "max_len": cfg.max_len,
+                "model_type": "bert_bilstm_ner",
+                "bert_model": cfg.hf_fallback,
+            },
             ensure_ascii=False,
             indent=2,
         ),
         encoding="utf-8",
     )
-    print(f"\n[INFO] ✅ 모델 저장 완료: {cfg.model_dir}", flush=True)
+    
+    print(f"\n[INFO] ✅ 파인튜닝 모델 저장 완료: {model_dir}", flush=True)
+    print(f"[INFO]    - pytorch_model.bin (BiLSTM+CRF 가중치)", flush=True)
+    print(f"[INFO]    - tokenizer 설정 및 파일", flush=True)
+    print(f"[INFO]    - ner_config.json", flush=True)
 
 
 def load_artifacts(cfg: Config, bert_path: str, device: torch.device):
-    model_path = cfg.model_dir / "model.pt"
-    tok_dir = cfg.model_dir / "tokenizer"
-    labels_path = cfg.model_dir / "labels.json"
-    if not model_path.exists() or not tok_dir.exists() or not labels_path.exists():
+    # BERT 모델명 추출
+    bert_model_name = Path(bert_path).name
+    model_dir = cfg.get_model_dir(bert_model_name)
+    
+    # 파인튜닝 모델 파일 확인
+    model_path = model_dir / "pytorch_model.bin"
+    config_path = model_dir / "ner_config.json"
+    
+    if not model_path.exists() or not config_path.exists():
         return None, None
 
-    meta = json.loads(labels_path.read_text(encoding="utf-8"))
-    if meta.get("BIO_LABELS") != BIO_LABELS or meta.get("max_len") != cfg.max_len:
-        print("[WARN] Saved label schema/max_len differs. Refusing to continue-training.", flush=True)
+    # 설정 로드 및 검증
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        if config.get("BIO_LABELS") != BIO_LABELS or config.get("max_len") != cfg.max_len:
+            print("[WARN] Saved label schema/max_len differs. 새로 훈련합니다.", flush=True)
+            return None, None
+    except Exception as e:
+        print(f"[WARN] 설정 로드 실패: {e}", flush=True)
         return None, None
 
-    model = BertBiLSTMNER(bert_path, len(BIO_LABELS), cfg.lstm_units, cfg.dropout)
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.to(device)
-    tokenizer = AutoTokenizer.from_pretrained(tok_dir, use_fast=True)
-    return model, tokenizer
+    try:
+        # BiLSTM+CRF 모델 생성
+        model = BertBiLSTMNER(bert_path, len(BIO_LABELS), cfg.lstm_units, cfg.lstm_layers, cfg.dropout)
+        # 저장된 가중치 로드
+        model.load_state_dict(torch.load(model_path, map_location=device))
+        model.to(device)
+        
+        # 토크나이저 로드
+        tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True)
+        
+        print(f"[INFO] ✅ 파인튜닝 모델 로드 성공: {model_dir}", flush=True)
+        return model, tokenizer
+    except (RuntimeError, KeyError) as e:
+        print(f"[WARN] 모델 로드 실패: {str(e)[:200]}...", flush=True)
+        print(f"[INFO] 새로운 모델로 처음부터 학습을 시작합니다.", flush=True)
+        return None, None
+    except (RuntimeError, KeyError) as e:
+        print(f"[WARN] 기존 모델 아키텍처가 현재 버전과 호환되지 않습니다.", flush=True)
+        print(f"[WARN] 상세 에러: {str(e)[:200]}...", flush=True)
+        print(f"[INFO] 새로운 모델로 처음부터 학습을 시작합니다.", flush=True)
+        return None, None
 
 
 # -----------------------------
@@ -1240,12 +1844,28 @@ def train(continue_from_existing: bool, bert_dir_override: Optional[str] = None,
 
     if model is None:
         print(f"[INFO] Building model...", flush=True)
-        model = BertBiLSTMNER(bert_path, len(BIO_LABELS), CFG.lstm_units, CFG.dropout)
+        model = BertBiLSTMNER(bert_path, len(BIO_LABELS), CFG.lstm_units, CFG.lstm_layers, CFG.dropout)
         print(f"[INFO] 모델을 GPU로 이동 중...", flush=True)
         model.to(device)
         print(f"[INFO] ✅ Model moved to {device}", flush=True)
 
-    optimizer = AdamW(model.parameters(), lr=CFG.lr)
+    # Optimizer with weight decay
+    optimizer = AdamW(model.parameters(), lr=CFG.lr, weight_decay=CFG.weight_decay)
+    
+    # Learning rate scheduler with warmup
+    total_steps = len(train_loader) * CFG.epochs
+    warmup_steps = int(total_steps * CFG.warmup_ratio)
+    
+    def lr_lambda(current_step: int):
+        if current_step < warmup_steps:
+            return float(current_step) / float(max(1, warmup_steps))
+        return max(0.0, float(total_steps - current_step) / float(max(1, total_steps - warmup_steps)))
+    
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+    
+    # Mixed Precision Training with GradScaler
+    scaler = torch.cuda.amp.GradScaler(enabled=CFG.use_mixed_precision)
+    
     # Compute class weights to improve minority label learning
     weights = compute_label_weights(tr_y)
     criterion = nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX, weight=weights.to(device))
@@ -1253,7 +1873,14 @@ def train(continue_from_existing: bool, bert_dir_override: Optional[str] = None,
     print(f"\n{'='*70}", flush=True)
     print(f"[INFO] 훈련 시작: {CFG.epochs} 에포크, 배치={CFG.batch_size}", flush=True)
     print(f"[INFO] 훈련 배치: {len(train_loader)}/에포크 | 검증 배치: {len(val_loader)}", flush=True)
+    print(f"[INFO] Warmup steps: {warmup_steps}/{total_steps}", flush=True)
+    print(f"[INFO] Mixed Precision: {'활성화' if CFG.use_mixed_precision else '비활성화'}", flush=True)
+    print(f"[INFO] BiLSTM 레이어: {CFG.lstm_layers}", flush=True)
     print(f"{'='*70}\n", flush=True)
+    
+    best_f1 = 0.0
+    patience = 5  # 3 → 5 (더 많은 기회)
+    patience_counter = 0
     
     for epoch in range(CFG.epochs):
         model.train()
@@ -1270,12 +1897,22 @@ def train(continue_from_existing: bool, bert_dir_override: Optional[str] = None,
             labels = batch['labels'].to(device)
 
             optimizer.zero_grad()
-            logits = model(input_ids, attention_mask)
             
-            # Reshape for loss calculation
-            loss = criterion(logits.view(-1, len(BIO_LABELS)), labels.view(-1))
-            loss.backward()
-            optimizer.step()
+            # Mixed Precision Training
+            with torch.cuda.amp.autocast(enabled=CFG.use_mixed_precision):
+                logits = model(input_ids, attention_mask)
+                loss = criterion(logits.view(-1, len(BIO_LABELS)), labels.view(-1))
+            
+            # Backward pass with gradient scaling
+            scaler.scale(loss).backward()
+            
+            # Gradient clipping to prevent exploding gradients
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            
+            scaler.step(optimizer)
+            scaler.update()
+            scheduler.step()  # Update learning rate
             
             total_loss += loss.item()
             batch_count += 1
@@ -1284,7 +1921,8 @@ def train(continue_from_existing: bool, bert_dir_override: Optional[str] = None,
             if batch_count % 10 == 0:
                 avg_loss = total_loss / batch_count
                 progress = (batch_count / len(train_loader)) * 100
-                print(f"  [{epoch+1}/{CFG.epochs}] Batch {batch_count:3d}/{len(train_loader)} ({progress:5.1f}%) | Loss: {avg_loss:.4f}", flush=True)
+                current_lr = scheduler.get_last_lr()[0]
+                print(f"  [{epoch+1}/{CFG.epochs}] Batch {batch_count:3d}/{len(train_loader)} ({progress:5.1f}%) | Loss: {avg_loss:.4f} | LR: {current_lr:.2e}", flush=True)
         
         avg_train_loss = total_loss / len(train_loader)
         print(f"\n[EPOCH {epoch+1}/{CFG.epochs}] 훈련 완료 - Train Loss: {avg_train_loss:.4f}", flush=True)
@@ -1313,19 +1951,59 @@ def train(continue_from_existing: bool, bert_dir_override: Optional[str] = None,
                     y_pred_seqs.append(yp)
         
         avg_val_loss = val_loss / len(val_loader)
-        metrics = entity_f1(y_true_seqs, y_pred_seqs)
+        metrics = entity_f1(y_true_seqs, y_pred_seqs, per_type=(epoch == CFG.epochs - 1))
+        relaxed_metrics = entity_f1_relaxed(y_true_seqs, y_pred_seqs, iou_threshold=0.1)
         
         print(f"\n{'='*70}", flush=True)
         print(f"[EPOCH {epoch+1}/{CFG.epochs}] 검증 완료", flush=True)
         print(f"  Train Loss: {avg_train_loss:.4f}", flush=True)
         print(f"  Val Loss:   {avg_val_loss:.4f}", flush=True)
-        print(f"  Precision:  {metrics['precision']:.4f}", flush=True)
-        print(f"  Recall:     {metrics['recall']:.4f}", flush=True)
-        print(f"  F1 Score:   {metrics['f1']:.4f}", flush=True)
+        print(f"  Precision (strict):  {metrics['precision']:.4f} (목표: 0.90)", flush=True)
+        print(f"  Recall (strict):     {metrics['recall']:.4f}", flush=True)
+        print(f"  F1 Score (strict):   {metrics['f1']:.4f} (목표: 0.90)", flush=True)
+        print(f"  Precision (relaxed): {relaxed_metrics['precision']:.4f}", flush=True)
+        print(f"  Recall (relaxed):    {relaxed_metrics['recall']:.4f}", flush=True)
+        print(f"  F1 Score (relaxed):  {relaxed_metrics['f1']:.4f}", flush=True)
+        
+        # Per-type analysis on last epoch
+        if "per_type" in metrics:
+            print(f"\n  [타입별 성능 분석]", flush=True)
+            poor_types = []
+            for t in ENTITY_TYPES:
+                stats = metrics["per_type"][t]
+                if stats["tp"] + stats["fn"] > 0:  # Has ground truth instances
+                    type_rec = stats["tp"] / (stats["tp"] + stats["fn"] + 1e-9)
+                    type_prec = stats["tp"] / (stats["tp"] + stats["fp"] + 1e-9)
+                    type_f1 = 2 * type_prec * type_rec / (type_prec + type_rec + 1e-9)
+                    if type_f1 < 0.70 or stats["tp"] + stats["fn"] < 5:
+                        print(f"    {t:15s}: F1={type_f1:.3f} P={type_prec:.3f} R={type_rec:.3f} (TP={stats['tp']}, FP={stats['fp']}, FN={stats['fn']})", flush=True)
+                        if type_f1 < 0.70:
+                            poor_types.append((t, type_f1))
+            if poor_types:
+                print(f"  ⚠️ 성능 낮은 타입 ({len(poor_types)}개): {', '.join(t for t, _ in sorted(poor_types, key=lambda x: x[1])[:5])}", flush=True)
+        
+        # Early stopping and best model saving
+        if metrics['f1'] > best_f1:
+            best_f1 = metrics['f1']
+            patience_counter = 0
+            print(f"  ✅ 새로운 최고 F1 Score! 모델 저장 중...", flush=True)
+            save_artifacts(model, tokenizer, CFG, bert_path)
+        else:
+            patience_counter += 1
+            print(f"  ⚠️ F1 개선 없음 ({patience_counter}/{patience})", flush=True)
+        
+        print(f"  Best F1 so far: {best_f1:.4f}", flush=True)
         print(f"{'='*70}\n", flush=True)
+        
+        # Early stopping check
+        if patience_counter >= patience:
+            print(f"\n[INFO] Early stopping triggered! Best F1: {best_f1:.4f}", flush=True)
+            break
 
-    # Save final model
-    save_artifacts(model, tokenizer, CFG)
+    # Final summary
+    print(f"\n{'='*70}", flush=True)
+    print(f"[INFO] 훈련 완료! Best F1 Score: {best_f1:.4f}", flush=True)
+    print(f"{'='*70}\n", flush=True)
 
 
 # -----------------------------

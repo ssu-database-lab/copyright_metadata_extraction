@@ -1,0 +1,2 @@
+{"id": "doc1_sent1", "tokens": ["서울특별시", "강남구", "테헤란로", "123"], "labels": ["B-address", "I-address", "I-address", "I-address"]}
+{"id": "doc3_sent1", "tokens": ["인천광역시", "연수구", "송도과학로", "789"], "labels": ["B-address", "I-address", "I-address", "I-address"]}

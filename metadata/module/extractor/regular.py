@@ -4,22 +4,15 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence
 
-import dateparser
 import spacy
 import yaml
 from urlextract import URLExtract
 import re
 
-from .types import Decision
+from module.parts.types import Decision
 
 
 LABELS_PATH = Path("configs/labels.yaml")
-_DATETIME_HINTS: Dict[str, Sequence[str]] = {
-    "created_date": ("작성", "게재"),
-    "registration_date": ("등록",),
-    "production_date": ("제작", "발행"),
-    "valid_period": ("유효", "기간", "부터", "까지", "~"),
-}
 _NUMERIC_HINTS: Dict[str, Sequence[str]] = {
     "seq_number": ("순번", "번호", "no"),
     "quantity": ("수량", "총수량"),
@@ -30,14 +23,6 @@ _NUMERIC_HINTS: Dict[str, Sequence[str]] = {
 
 _URL_EXTRACTOR = URLExtract()
 _NLP = None
-
-# 공통 패턴
-_DATE_PATTERNS = [
-    r'\d{4}년\s*\d{1,2}월\s*\d{1,2}일',
-    r'\d{4}-\d{1,2}-\d{1,2}',
-    r'\d{4}\.\d{1,2}\.\d{1,2}',
-    r'\d{4}/\d{1,2}/\d{1,2}',
-]
 
 
 # ---------- 공통 유틸 ----------
@@ -53,18 +38,38 @@ def _load_config() -> Dict[str, Any]:
 
 
 @lru_cache(maxsize=1)
-def _get_datetime_labels() -> Sequence[str]:
-    return tuple(_load_config().get("datetime_labels") or [])
+def _get_labels(label_type: str) -> Sequence[str] | Dict[str, str]:
+    """
+    라벨 타입에 따라 labels.yaml에서 라벨 목록을 가져옵니다.
+    
+    Args:
+        label_type: "datetime_labels", "numeric_labels", "regex_labels" 중 하나
+    
+    Returns:
+        datetime_labels, numeric_labels: Sequence[str]
+        regex_labels: Dict[str, str]
+    """
+    config = _load_config()
+    if label_type == "regex_labels":
+        return config.get("regex_labels") or {}
+    else:
+        return tuple(config.get(label_type) or [])
 
 
-@lru_cache(maxsize=1)
-def _get_numeric_labels() -> Sequence[str]:
-    return tuple(_load_config().get("numeric_labels") or [])
+def _get_labels_as_sequence(label_type: str) -> Sequence[str]:
+    """라벨을 Sequence[str]로 반환 (datetime_labels, numeric_labels용)"""
+    result = _get_labels(label_type)
+    if isinstance(result, dict):
+        return tuple()
+    return result
 
 
-@lru_cache(maxsize=1)
-def _get_regex_labels() -> Dict[str, str]:
-    return _load_config().get("regex_labels") or {}
+def _get_labels_as_dict(label_type: str) -> Dict[str, str]:
+    """라벨을 Dict[str, str]로 반환 (regex_labels용)"""
+    result = _get_labels(label_type)
+    if isinstance(result, dict):
+        return result
+    return {}
 
 
 def _get_nlp():
@@ -109,45 +114,220 @@ def _group_tokens_by_sentence(tokens: Iterable[Dict[str, Any]]) -> Dict[int, Lis
     return grouped
 
 
-# ---------- Regex ----------
+# ---------- Regex Extractors (라벨별 분리) ----------
 
 
-def regex_extractor(*, tokens: List[Dict[str, Any]], sentences: List[Dict[str, Any]]) -> List[Decision]:
-    regex_specs = _get_regex_labels()
-    if not regex_specs:
-        return []
+def _regex_pattern_extractor(*, label: str, pattern: str, tokens: List[Dict[str, Any]], 
+                             sentences: List[Dict[str, Any]], 
+                             token_groups: Dict[int, List[Dict[str, Any]]],
+                             flags: int = 0) -> List[Decision]:
+    """
+    정규식 패턴 기반 추출기 (phone, email 등 공통 로직)
     
+    Args:
+        label: 라벨 이름 (예: "phone", "email")
+        pattern: 정규식 패턴
+        tokens: 토큰 리스트
+        sentences: 문장 리스트
+        token_groups: 문장별 토큰 그룹
+        flags: re.compile 플래그
+    """
     decisions: List[Decision] = []
-    token_groups = _group_tokens_by_sentence(tokens)
+    used_values = set()
     
+    # 문장 단위로 추출 (토큰 분리로 인한 누락 방지)
     for sentence in sentences:
         if not sentence:
             continue
-        sent_id = sentence.get("sent_id")
+        sid = sentence.get("sent_id")
         text = str(sentence.get("text", ""))
+        if not text or sid is None:
+            continue
+        
+        sid = int(sid)
+        try:
+            for match in re.compile(pattern, flags).finditer(text):
+                if value := match.group(0):
+                    if value not in used_values:
+                        # 문장의 첫 번째 토큰 ID 사용
+                        tokens_in_sent = token_groups.get(sid, [])
+                        tok_id = tokens_in_sent[0].get("tok_id") if tokens_in_sent else None
+                        decisions.append(_decision(label, value, sid, tok_id, "regex"))
+                        used_values.add(value)
+        except re.error:
+            continue
+    
+    return decisions
+
+
+def phone_extractor(*, tokens: List[Dict[str, Any]], sentences: List[Dict[str, Any]], 
+                    token_groups: Dict[int, List[Dict[str, Any]]]) -> List[Decision]:
+    """전화번호 추출기"""
+    regex_specs = _get_labels_as_dict("regex_labels")
+    if "phone" not in regex_specs:
+        return []
+    
+    return _regex_pattern_extractor(
+        label="phone",
+        pattern=regex_specs["phone"],
+        tokens=tokens,
+        sentences=sentences,
+        token_groups=token_groups
+    )
+
+
+def email_extractor(*, tokens: List[Dict[str, Any]], sentences: List[Dict[str, Any]], 
+                    token_groups: Dict[int, List[Dict[str, Any]]]) -> List[Decision]:
+    """이메일 주소 추출기"""
+    regex_specs = _get_labels_as_dict("regex_labels")
+    if "email" not in regex_specs:
+        return []
+    
+    return _regex_pattern_extractor(
+        label="email",
+        pattern=regex_specs["email"],
+        tokens=tokens,
+        sentences=sentences,
+        token_groups=token_groups,
+        flags=re.IGNORECASE
+    )
+
+
+def date_extractor(*, tokens: List[Dict[str, Any]], sentences: List[Dict[str, Any]], 
+                    token_groups: Dict[int, List[Dict[str, Any]]]) -> List[Decision]:
+    """날짜 추출기"""
+    regex_specs = _get_labels_as_dict("regex_labels")
+    if "date" not in regex_specs:
+        return []
+    
+    decisions: List[Decision] = []
+    date_pattern = regex_specs["date"]
+    used_values = set()
+    
+    # 문장 단위로 추출 (토큰 분리로 인한 누락 방지)
+    for sentence in sentences:
+        if not sentence:
+            continue
+        sid = sentence.get("sent_id")
+        text = str(sentence.get("text", ""))
+        if not text or sid is None:
+            continue
+        
+        sid = int(sid)
+        try:
+            for match in re.compile(date_pattern).finditer(text):
+                if value := match.group(0):
+                    if value not in used_values:
+                        # 문장의 첫 번째 토큰 ID 사용
+                        tokens_in_sent = token_groups.get(sid, [])
+                        tok_id = tokens_in_sent[0].get("tok_id") if tokens_in_sent else None
+                        decisions.append(_decision("date", value, sid, tok_id, "regex"))
+                        used_values.add(value)
+        except re.error:
+            continue
+    
+    return decisions
+
+
+def url_extractor(*, tokens: List[Dict[str, Any]], sentences: Optional[List[Dict[str, Any]]] = None) -> List[Decision]:
+    """URL 추출기"""
+    regex_specs = _get_labels_as_dict("regex_labels")
+    # regex_specs에 "url"이 없으면 기본적으로 URL 추출 수행
+    if regex_specs and "url" in regex_specs:
+        return []  # regex_labels에 url이 정의되어 있으면 여기서는 처리하지 않음
+    
+    decisions: List[Decision] = []
+    used_values = set()
+    
+    # tokens를 기반으로 처리
+    for token in tokens:
+        if not token:
+            continue
+        tok_id = token.get("tok_id")
+        sent_id = token.get("sent_id")
+        text = str(token.get("text", ""))
+        
         if not text or sent_id is None:
             continue
         
         sid = int(sent_id)
-        tokens_in_sent = token_groups.get(sid, [])
+        for url in _extract_urls_enhanced(text):
+            if url in text and url not in used_values:
+                decisions.append(_decision("url", url, sid, tok_id, "regex"))
+                used_values.add(url)
+    
+    return decisions
+
+
+def regex_extractor(*, tokens: List[Dict[str, Any]], sentences: Optional[List[Dict[str, Any]]] = None) -> List[Decision]:
+    """
+    Regex 추출기 통합 함수: 각 라벨별 extractor를 호출하여 통합
+    
+    Args:
+        tokens: 토큰 리스트 (word 단위)
+        sentences: 문장 리스트
+    """
+    if sentences is None:
+        sentences = []
+    
+    token_groups = _group_tokens_by_sentence(tokens)
+    regex_specs = _get_labels_as_dict("regex_labels")
+    
+    all_decisions: List[Decision] = []
+    used_labels = set()
+    
+    # 각 라벨별 extractor 호출
+    # phone_extractor
+    if "phone" in regex_specs:
+        phone_decisions = phone_extractor(tokens=tokens, sentences=sentences, token_groups=token_groups)
+        all_decisions.extend(phone_decisions)
+        used_labels.add("phone")
+    
+    # email_extractor
+    if "email" in regex_specs:
+        email_decisions = email_extractor(tokens=tokens, sentences=sentences, token_groups=token_groups)
+        all_decisions.extend(email_decisions)
+        used_labels.add("email")
+    
+    # date_extractor
+    if "date" in regex_specs:
+        date_decisions = date_extractor(tokens=tokens, sentences=sentences, token_groups=token_groups)
+        all_decisions.extend(date_decisions)
+        used_labels.add("date")
+    
+    # url_extractor
+    url_decisions = url_extractor(tokens=tokens, sentences=sentences)
+    all_decisions.extend(url_decisions)
+    used_labels.add("url")
+    
+    # 기타 regex_labels에 정의된 패턴들 (phone, email, date, url 제외)
+    for label, pattern_str in regex_specs.items():
+        if label in used_labels:
+            continue
         
-        # regex 패턴 매칭
-        for label, pattern_str in regex_specs.items():
+        # 일반적인 패턴 매칭 (word 단위)
+        used_values = set()
+        for token in tokens:
+            if not token:
+                continue
+            tok_id = token.get("tok_id")
+            sent_id = token.get("sent_id")
+            text = str(token.get("text", ""))
+            
+            if not text or sent_id is None:
+                continue
+            
+            sid = int(sent_id)
             try:
                 for match in re.compile(pattern_str).finditer(text):
                     if value := match.group(0):
-                        tok_id = next((t.get("tok_id") for t in tokens_in_sent if value in str(t.get("text", ""))), None)
-                        decisions.append(_decision(label, value, sid, tok_id, "regex"))
+                        if value not in used_values:
+                            all_decisions.append(_decision(label, value, sid, tok_id, "regex"))
+                            used_values.add(value)
             except re.error:
                 continue
-        
-        # URL 추출 (urlextract + 한국어 도메인 지원)
-        if "url" not in regex_specs:
-            for url in _extract_urls_enhanced(text):
-                tok_id = next((t.get("tok_id") for t in tokens_in_sent if url in str(t.get("text", ""))), None)
-                decisions.append(_decision("url", url, sid, tok_id, "regex"))
     
-    return decisions
+    return all_decisions
 
 
 def _extract_urls_enhanced(text: str) -> List[str]:
@@ -199,51 +379,6 @@ def _is_valid_url(url: str) -> bool:
     return len(parts) >= 2 and len(parts[-1].split('/')[0]) >= 2
 
 
-# ---------- Datetime ----------
-
-
-def datetime_extractor(*, sentences: List[Dict[str, Any]], 
-                           token_groups: Dict[int, List[Dict[str, Any]]]) -> List[Decision]:
-    allowed = _get_datetime_labels()
-    if not allowed:
-        return []
-
-    decisions: List[Decision] = []
-    date_formats = ['%Y년 %m월 %d일', '%Y-%m-%d', '%Y.%m.%d', '%Y/%m/%d']
-    
-    for sentence in sentences:
-        if not sentence:
-            continue
-        sid = sentence.get("sent_id")
-        text = str(sentence.get("text", ""))
-        if not text or sid is None:
-            continue
-        
-        sid = int(sid)
-        label = _choose_label(text, _DATETIME_HINTS, allowed)
-        if not label:
-            continue
-        
-        # 날짜 패턴 매칭
-        found_dates = []
-        for pattern_str in _DATE_PATTERNS:
-            for match in re.compile(pattern_str).finditer(text):
-                if parsed := dateparser.parse(match.group(0), languages=["ko", "en"], date_formats=date_formats):
-                    found_dates.append(parsed)
-        
-        # 패턴 실패 시 전체 문장 파싱
-        if not found_dates:
-            if parsed := dateparser.parse(text, languages=["ko", "en"]):
-                found_dates.append(parsed)
-        
-        # 날짜 추가
-        tokens_in_sent = token_groups.get(sid, [])
-        for found_date in found_dates:
-            date_value = found_date.strftime("%Y-%m-%d")
-            tok_id = _match_token_by_value(tokens_in_sent, date_value.replace("-", ""))
-            decisions.append(_decision(label, date_value, sid, tok_id, "datetime", {"raw": text}))
-    
-    return decisions
 
 
 # ---------- Numeric ----------
@@ -251,7 +386,14 @@ def datetime_extractor(*, sentences: List[Dict[str, Any]],
 
 def numeric_extractor(*, sentences: List[Dict[str, Any]], 
                          token_groups: Dict[int, List[Dict[str, Any]]]) -> List[Decision]:
-    allowed = _get_numeric_labels()
+    """
+    숫자 추출기
+    
+    Args:
+        sentences: 문장 리스트
+        token_groups: 문장별 토큰 그룹
+    """
+    allowed = _get_labels_as_sequence("numeric_labels")
     if not allowed:
         return []
 
@@ -273,12 +415,34 @@ def numeric_extractor(*, sentences: List[Dict[str, Any]],
         if not label:
             continue
 
+        # seq_number는 더 구체적인 패턴만 추출 (예: "1.", "순번: 1", "번호 1" 등)
+        if label == "seq_number":
+            seq_patterns = [
+                r'순번\s*[:：]?\s*(\d+)',
+                r'번호\s*[:：]?\s*(\d+)',
+                r'\bno\.?\s*[:：]?\s*(\d+)',
+                r'^(\d+)\s*[\.\)]',  # 줄 시작의 "1.", "1)" 형식
+            ]
+            for pattern_str in seq_patterns:
+                for match in re.compile(pattern_str, re.IGNORECASE | re.MULTILINE).finditer(text):
+                    if value := match.group(1):
+                        tokens_in_sent = token_groups.get(sid, [])
+                        tok_id = _match_token_by_value(tokens_in_sent, value)
+                        decisions.append(_decision(label, value, sid, tok_id, "numeric", 
+                                                   {"raw": text, "pattern": pattern_str}))
+            continue  # seq_number는 여기서 처리 완료
+
         # 날짜 패턴 내 숫자 수집 (부분 문자열 포함)
         date_matches = set()
-        for pattern_str in _DATE_PATTERNS:
-            for match in re.compile(pattern_str).finditer(text):
-                for num in re.findall(r'\d+', match.group(0)):
-                    date_matches.update(num[i:j] for i in range(len(num)) for j in range(i + 1, len(num) + 1))
+        regex_specs = _get_labels_as_dict("regex_labels")
+        date_pattern = regex_specs.get("date", "")
+        if date_pattern:
+            try:
+                for match in re.compile(date_pattern).finditer(text):
+                    for num in re.findall(r'\d+', match.group(0)):
+                        date_matches.update(num[i:j] for i in range(len(num)) for j in range(i + 1, len(num) + 1))
+            except re.error:
+                pass
 
         # 숫자 추출
         if nlp:
@@ -313,19 +477,27 @@ def numeric_extractor(*, sentences: List[Dict[str, Any]],
 
 
 def regular_extractor(*, sentences: List[Dict[str, Any]], tokens: List[Dict[str, Any]]) -> List[Decision]:
+    """
+    Regular 추출기 통합 함수
+    
+    Args:
+        sentences: 문장 리스트 (datetime, numeric 추출에 사용)
+        tokens: 토큰 리스트 (regex 추출에 word만 사용)
+    
+    Returns:
+        Decision 리스트
+    """
     token_groups = _group_tokens_by_sentence(tokens)
 
+    # Regex: word(tokens)만 사용, 단 전화번호는 문장 단위로도 처리
     regex_decisions = regex_extractor(tokens=tokens, sentences=sentences)
     used_labels = {d.label for d in regex_decisions}
     extracted_values = {d.value for d in regex_decisions if d.value}
     phone_sent_ids = {d.sent_id for d in regex_decisions if d.label == "phone" and d.sent_id is not None}
 
-    datetime_decisions = [d for d in datetime_extractor(sentences=sentences, token_groups=token_groups)
-                          if d.label not in used_labels]
-    used_labels.update(d.label for d in datetime_decisions)
-
+    # Numeric: sentences 사용 (기존 로직 유지)
     numeric_decisions = [d for d in numeric_extractor(sentences=sentences, token_groups=token_groups)
                          if d.label not in used_labels and d.value not in extracted_values 
                          and d.sent_id not in phone_sent_ids]
 
-    return regex_decisions + datetime_decisions + numeric_decisions
+    return regex_decisions + numeric_decisions

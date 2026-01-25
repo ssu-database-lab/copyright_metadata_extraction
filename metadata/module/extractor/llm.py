@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Dict, Any, List
 
-from .types import Decision
+from module.parts.types import Decision
 
 
 def llm_extractor(
