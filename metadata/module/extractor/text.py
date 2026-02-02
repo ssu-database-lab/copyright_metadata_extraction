@@ -95,19 +95,29 @@ def tokenize(s: str) -> List[str]:
         return s.split()
 
     morphs = kiwi.analyze(s)
-    tokens = []
+    tokens: List[str] = []
     for word in morphs:
         if isinstance(word, (list, tuple)) and len(word) > 0:
             token = word[0]
             # token이 문자열인지 확인
             if isinstance(token, str):
                 tokens.append(token)
+            elif hasattr(token, "form"):
+                tokens.append(str(getattr(token, "form")))
             elif isinstance(token, (list, tuple)) and len(token) > 0:
-                tokens.append(str(token[0]))
+                for item in token:
+                    if isinstance(item, str):
+                        tokens.append(item)
+                    elif hasattr(item, "form"):
+                        tokens.append(str(getattr(item, "form")))
+                    else:
+                        tokens.append(str(item))
             else:
                 tokens.append(str(token))
         elif isinstance(word, str):
             tokens.append(word)
+        elif hasattr(word, "form"):
+            tokens.append(str(getattr(word, "form")))
         else:
             tokens.append(str(word))
     # 문자열로 변환하고 공백 제거

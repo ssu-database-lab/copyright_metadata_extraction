@@ -1,4 +1,0 @@
-{"id": "doc1_sent2", "tokens": ["주식회사", "네이버"], "labels": ["B-company_name", "I-company_name"]}
-{"id":"doc1_sent3","tokens":["기관명",":","주)","나라지식정보"],"labels":["O","O","B-company_name","I-company_name"]}
-{"id":"doc3_sent2","tokens":["기업","삼성전자"],"labels":["O","B-company_name"]}
-{"id":"doc2_sent2","tokens":["(주)","카카오"],"labels":["B-company_name","I-company_name"]}

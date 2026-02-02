@@ -1,3 +1,0 @@
-{"id": "doc1_sent5", "tokens": ["이메일", ":", "contact", "@", "example.com"], "labels": ["O", "O", "B-email", "I-email", "I-email"]}
-{"id": "doc2_sent5", "tokens": ["메일", ":", "info", "@", "test.co.kr"], "labels": ["O", "O", "B-email", "I-email", "I-email"]}
-{"id": "doc3_sent5", "tokens": ["E-mail", ":", "support", "@", "company.kr"], "labels": ["O", "O", "B-email", "I-email", "I-email"]}

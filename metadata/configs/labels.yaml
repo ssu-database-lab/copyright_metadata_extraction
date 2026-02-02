@@ -22,14 +22,10 @@ ocr:
   labels:
     - text              # 일반 텍스트 - 이게 제일 중요해보이네요
     - paragraph_title   # 문단 제목 - 텍스트처럼 분류
-    - number            # 숫자
-    - image             # 이미지
-    - table             # 표
+    - number            # 숫자 - 텍스트로 분류
+    - image             # 이미지 - 얘도 text로 재분류
+    - table             # 표, 추후에 table은 text로 재분류
     - doc_title         # 문서 제목 - 더 분류할 필요 없음
-
-# OCR를 수행한다면 doc_title은 분류 X
-# regular 단계는 OCR 결과에서 갖고와서 추가분류
-regular:
 
 # 정규식 추출에 사용할 라벨과 패턴 (라벨: 정규식 패턴)
 # regex_extractor에서 사용 (비어있으면 URL만 추출)
@@ -45,14 +41,17 @@ regex_labels:
 # NER 단계는 text로 처리된 라벨들과 paragraph_title로 처리된 라벨들 포함해서 추가분류
 ner:
   labels:
-    # text 라벨 기반
-    - address           # 주소
+    # ocr의 text 라벨에서 추가적으로 분류함
+    - doc_title         # 문서 제목, 이것은 OCR에서 갖고올 경우 더이상 사용하지 않음
+    - paragraph_title   # 문단 제목
     - company_name      # 기관명
     - person_name       # 이름
-    - phone_number      # 전화번호
+    - address           # 주소
+    # Regex 라벨에서 갖고옴
+    # 아래는 Regex와 추가 호환됨
+    - phone             # 전화번호
     - email             # 이메일
     - url               # 웹사이트
-    # number 라벨 기반
     - date              # 날짜
 
 # LLM 단계에서 사용할 스키마

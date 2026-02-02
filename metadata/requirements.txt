@@ -1,32 +1,19 @@
 # python 3.12.9에서 테스트가 이루어졌습니다.
 # 사용하는 모듈은 PyTorch, PaddleOCR이며 Cuda를 13.0에 맞춰 설치합니다.
+
 # -------------------- library.py --------------------
-tldextract>=3.4.0
-pandas>=1.5.0
 # PaddleOCR-VL/PaddlePaddle 호환성을 위해 NumPy 2.0 미만 버전 사용 필요
-numpy>=1.21.0,<2.0
+numpy==1.26.4
 
 # -------------------- extractor --------------------
 # YAML 설정
-PyYAML>=6.0
+PyYAML==6.0.2
 
-# 날짜·수량 등 정규 추출
-python-dateutil>=2.8.0
-dateparser>=1.1.8
-flashtext>=2.7
-urlextract>=1.8.0
-spacy>=3.7.0
+transformers[torch]==4.51.3
+gliner2>=0.2.0
 
-# NER (mBERT, XLM, Bi-LSTM+CRF, Adapter-based Zero-Shot)
-transformers>=4.30.0
-# 어댑터 기반 Zero-Shot Learning을 위한 라이브러리
-# pip install -U adapters
-transformers[torch]>=4.30.0
-adapters>=1.2.0
 # cuda 13.0은 아래 명령어로 깔아주세요.
 # pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu130
-seqeval>=1.2.2
-matplotlib>=3.5.0
 
 # LLM (Qwen)
 # transformers, torch는 위에서 이미 포함
@@ -38,12 +25,10 @@ kiwipiepy>=0.10.0
 # GPU를 사용하려면 아래 명령어로 설치하세요 (CUDA 13.0용):
 # python -m pip install paddlepaddle-gpu==3.2.2 -i https://www.paddlepaddle.org.cn/packages/stable/cu130/
 # CPU 버전을 사용하려면 아래 주석을 해제하고 GPU 설치 명령어를 주석 처리하세요.
-# paddlepaddle>=3.2.2
-# 
+# paddlepaddle==3.2.2
+#
 # 주의: PaddlePaddle-GPU 사용 시 라이브러리 경로 설정이 필요합니다.
 # 가상환경 활성화 후 다음 명령어로 경로를 설정하세요:
 # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(python -c "import site; print(site.getsitepackages()[0])")/nvidia/cu13/lib:$(python -c "import site; print(site.getsitepackages()[0])")/paddle/libs
-paddleocr>=3.3.0
-# PaddleOCR-VL 사용을 위해 paddlex[ocr]로 설치해야 합니다.
-# pip install "paddlex[ocr]>=3.3.0" 또는 아래와 같이 직접 설치:
-paddlex[ocr]>=3.3.0
+paddleocr==3.3.0
+paddlex[ocr]==3.3.0

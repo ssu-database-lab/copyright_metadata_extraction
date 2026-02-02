@@ -1,3 +1,0 @@
-{"id": "doc1_sent7", "tokens": ["등록일", ":", "2024", "년", "1", "월", "15", "일"], "labels": ["O", "O", "B-date", "I-date", "I-date", "I-date", "I-date", "I-date", "I-date"]}
-{"id": "doc2_sent7", "tokens": ["작성일", ":", "2023", "년", "12", "월", "25", "일"], "labels": ["O", "O", "B-date", "I-date", "I-date", "I-date", "I-date", "I-date", "I-date"]}
-{"id": "doc3_sent7", "tokens": ["날짜", ":", "2024", "-", "03", "-", "20"], "labels": ["O", "O", "B-date", "I-date", "I-date", "I-date"]}

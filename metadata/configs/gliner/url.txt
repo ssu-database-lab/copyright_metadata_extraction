@@ -1,0 +1,2 @@
+웹사이트 주소(URL). 영문 도메인/혼합 표기 포함.
+예: https://example.com, http://www.site.co.kr, https://ko.wikipedia.org

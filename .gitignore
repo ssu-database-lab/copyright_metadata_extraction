@@ -143,3 +143,4 @@ project-deployment.bundle
 metadata/data/in/csv/원문DB 메타데이터_20251119.csv
 /api/api/new
 /apimodels
+/metadata/configs/old

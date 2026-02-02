@@ -1,4 +1,0 @@
-{"id": "doc1_sent3", "tokens": ["대표이사", "김", "철수"], "labels": ["O", "B-person_name", "I-person_name"]}
-{"id":"doc1_sent4","tokens":["대표자명",":","손","영","호"],"labels":["O","O","B-person_name","I-person_name","I-person_name"]}
-{"id":"doc3_sent3","tokens":["대표","박","민수"],"labels":["O","B-person_name","I-person_name"]}
-{"id":"doc2_sent3","tokens":["사장","이","영희"],"labels":["O","B-person_name","I-person_name"]}

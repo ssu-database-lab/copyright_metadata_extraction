@@ -4,9 +4,15 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence
 
-import spacy
+try:
+    import spacy
+except ImportError:
+    spacy = None
 import yaml
-from urlextract import URLExtract
+try:
+    from urlextract import URLExtract
+except ImportError:
+    URLExtract = None
 import re
 
 from module.parts.types import Decision
@@ -21,7 +27,7 @@ _NUMERIC_HINTS: Dict[str, Sequence[str]] = {
     "document_count": ("문서",),
 }
 
-_URL_EXTRACTOR = URLExtract()
+_URL_EXTRACTOR = URLExtract() if URLExtract else None
 _NLP = None
 
 
@@ -74,6 +80,8 @@ def _get_labels_as_dict(label_type: str) -> Dict[str, str]:
 
 def _get_nlp():
     global _NLP
+    if spacy is None:
+        return False
     if _NLP is None:
         try:
             _NLP = spacy.load("ko_core_news_lg")
@@ -335,10 +343,11 @@ def _extract_urls_enhanced(text: str) -> List[str]:
     urls = set()
     
     # urlextract로 기본 URL 추출
-    try:
-        urls.update(_URL_EXTRACTOR.find_urls(text))
-    except Exception:
-        pass
+    if _URL_EXTRACTOR:
+        try:
+            urls.update(_URL_EXTRACTOR.find_urls(text))
+        except Exception:
+            pass
     
     # 한국어 도메인 지원 패턴
     patterns = [
