@@ -299,7 +299,8 @@ def extract_text_from_file(
 
 def process_file_for_metadata(
     file_path: Path,
-    use_temp_dir: bool = True
+    use_temp_dir: bool = True,
+    temp_root: str = "/temp",
 ) -> tuple[str, Dict[str, Any]]:
     """
     메타데이터 추출을 위한 파일 처리 (OCR 또는 텍스트 읽기)
@@ -328,17 +329,24 @@ def process_file_for_metadata(
         pipeline = PaddleOCRVL()
         
         if use_temp_dir:
-            # 임시 디렉토리에 OCR 결과 저장
+            # 임시 디렉토리에 OCR 결과 저장 (요청에 따라 /temp만 사용)
             import tempfile
-            with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root_path = Path(temp_root)
+            temp_root_path.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(dir=str(temp_root_path)) as temp_dir:
                 temp_path = Path(temp_dir)
                 text_result, ocr_metadata = extract_text_from_file(
-                    pipeline, 
-                    str(file_path), 
+                    pipeline,
+                    str(file_path),
                     save_path=str(temp_path)
                 )
                 raw_text = text_result
                 ocr_labeled_metadata = ocr_metadata.get('labels', {}) if ocr_metadata else {}
+                if ocr_metadata:
+                    metadata_file = temp_path / "result" / "metadata" / f"{file_path.stem}.json"
+                    metadata_file.parent.mkdir(parents=True, exist_ok=True)
+                    with open(metadata_file, "w", encoding="utf-8") as f:
+                        json.dump(ocr_metadata, f, ensure_ascii=False, indent=2)
         else:
             # 영구 디렉토리에 저장 (기본 OCR 출력 경로)
             text_result, ocr_metadata = extract_text_from_file(

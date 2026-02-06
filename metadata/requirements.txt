@@ -30,5 +30,5 @@ kiwipiepy>=0.10.0
 # 주의: PaddlePaddle-GPU 사용 시 라이브러리 경로 설정이 필요합니다.
 # 가상환경 활성화 후 다음 명령어로 경로를 설정하세요:
 # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(python -c "import site; print(site.getsitepackages()[0])")/nvidia/cu13/lib:$(python -c "import site; print(site.getsitepackages()[0])")/paddle/libs
-paddleocr==3.3.0
-paddlex[ocr]==3.3.0
+paddleocr>=3.3.0
+paddlex[ocr]>=3.3.0
