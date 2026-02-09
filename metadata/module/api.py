@@ -204,6 +204,29 @@ def metadata_extract(
     file_path_obj = Path(file_path) if file_path else None
     ocr_labeled_metadata: Dict[str, Any] = {}
 
+    if text is None and file_path_obj and file_path_obj.is_dir():
+        results: Dict[str, Any] = {}
+        text_exts = ["txt", "md"]
+        text_files = list(directory.iter_files_by_ext(file_path_obj, text_exts))
+        doc_files = list(directory.iter_document_files(file_path_obj))
+        all_files = text_files + [f for f in doc_files if f not in text_files]
+        all_files = sorted(set(all_files), key=lambda p: str(p))
+        total = len(all_files)
+        print(f"metadata_extract: 디렉토리 처리 시작 ({total} files) - {file_path_obj}")
+        for idx, fpath in enumerate(all_files, start=1):
+            rel_path = str(fpath.relative_to(file_path_obj))
+            print(f"[{idx}/{total}] 처리 중: {rel_path}")
+            results[rel_path] = metadata_extract(
+                text=None,
+                file_path=str(fpath),
+                out_dir=out_dir,
+                threshold=threshold,
+            )
+        return {
+            "directory": str(file_path_obj),
+            "results": results,
+        }
+
     if text is None and file_path_obj:
         if file_path_obj.suffix.lower() in [".txt", ".md"]:
             text = file_path_obj.read_text(encoding="utf-8")
