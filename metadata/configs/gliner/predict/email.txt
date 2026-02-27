@@ -1,0 +1,2 @@
+이메일. 전자우편 주소.
+예: help@company.co.kr, info@example.com, contact@copyright.go.kr

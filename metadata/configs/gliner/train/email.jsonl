@@ -1,0 +1,2 @@
+{"id": "s1", "tokens": ["문의", "메일", ":", "help", "@", "company", ".", "co", ".", "kr", "입니다"], "labels": ["O", "O", "O", "B-email", "I-email", "I-email", "I-email", "I-email", "I-email", "I-email", "O"]}
+{"id": "s2", "tokens": ["연락처", "info", "@", "example", ".", "com", "으로", "보내주세요"], "labels": ["O", "B-email", "I-email", "I-email", "I-email", "I-email", "O", "O"]}

@@ -1,0 +1,2 @@
+{"id": "l1", "tokens": ["저작권법", "제", "50", "조", "에", "따릅니다"], "labels": ["B-law_reference", "I-law_reference", "I-law_reference", "I-law_reference", "O", "O"]}
+{"id": "l2", "tokens": ["관련", "법령", "저작권법", "시행령", "제", "25", "조"], "labels": ["O", "O", "B-law_reference", "I-law_reference", "I-law_reference", "I-law_reference", "I-law_reference"]}

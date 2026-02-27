@@ -14,6 +14,67 @@ from module.extractor.llm import merge_regular_ner
 from module.parts.types import Decision
 
 
+def _aggregate_decisions(
+    decisions: List[Decision],
+    labels: Optional[List[str]] = None,
+) -> Dict[str, List[str]]:
+    if labels is None:
+        labels = sorted({d.label for d in decisions})
+    aggregated = {label: [] for label in labels}
+    for decision in decisions:
+        label = decision.label
+        value = decision.value
+        if not isinstance(value, str):
+            value = str(value)
+        if label in aggregated and value and value.strip() and value not in aggregated[label]:
+            aggregated[label].append(value)
+    for label in aggregated:
+        if not aggregated[label]:
+            aggregated[label] = ["N/A"]
+    return aggregated
+
+
+def _aggregate_ocr_metadata(ocr_labeled_metadata: Dict[str, Any]) -> Dict[str, List[str]]:
+    aggregated: Dict[str, List[str]] = {}
+    for label, items in (ocr_labeled_metadata or {}).items():
+        values: List[str] = []
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, dict):
+                    content = item.get("content")
+                else:
+                    content = None
+                if content is None:
+                    content = str(item)
+                if isinstance(content, str) and content.strip() and content not in values:
+                    values.append(content)
+        aggregated[label] = values if values else ["N/A"]
+    return aggregated
+
+
+def _merge_metadata(
+    gliner_metadata: Dict[str, List[str]],
+    ocr_metadata: Dict[str, List[str]],
+) -> Dict[str, List[str]]:
+    merged = {**gliner_metadata}
+    for label, values in ocr_metadata.items():
+        if label not in merged:
+            merged[label] = values
+            continue
+        if merged[label] == ["N/A"]:
+            merged[label] = []
+        for value in values:
+            if value != "N/A" and value not in merged[label]:
+                merged[label].append(value)
+        if not merged[label]:
+            merged[label] = ["N/A"]
+    return merged
+
+
+# -----------------------------------------------------------------------------
+# export
+# -----------------------------------------------------------------------------
+
 def ocr_extract(
     in_path: str,
     out_path: str,
@@ -129,63 +190,6 @@ def llm_metadata_extract(
     return {}
 
 
-def _aggregate_decisions(
-    decisions: List[Decision],
-    labels: Optional[List[str]] = None,
-) -> Dict[str, List[str]]:
-    if labels is None:
-        labels = sorted({d.label for d in decisions})
-    aggregated = {label: [] for label in labels}
-    for decision in decisions:
-        label = decision.label
-        value = decision.value
-        if not isinstance(value, str):
-            value = str(value)
-        if label in aggregated and value and value.strip() and value not in aggregated[label]:
-            aggregated[label].append(value)
-    for label in aggregated:
-        if not aggregated[label]:
-            aggregated[label] = ["N/A"]
-    return aggregated
-
-
-def _aggregate_ocr_metadata(ocr_labeled_metadata: Dict[str, Any]) -> Dict[str, List[str]]:
-    aggregated: Dict[str, List[str]] = {}
-    for label, items in (ocr_labeled_metadata or {}).items():
-        values: List[str] = []
-        if isinstance(items, list):
-            for item in items:
-                if isinstance(item, dict):
-                    content = item.get("content")
-                else:
-                    content = None
-                if content is None:
-                    content = str(item)
-                if isinstance(content, str) and content.strip() and content not in values:
-                    values.append(content)
-        aggregated[label] = values if values else ["N/A"]
-    return aggregated
-
-
-def _merge_metadata(
-    gliner_metadata: Dict[str, List[str]],
-    ocr_metadata: Dict[str, List[str]],
-) -> Dict[str, List[str]]:
-    merged = {**gliner_metadata}
-    for label, values in ocr_metadata.items():
-        if label not in merged:
-            merged[label] = values
-            continue
-        if merged[label] == ["N/A"]:
-            merged[label] = []
-        for value in values:
-            if value != "N/A" and value not in merged[label]:
-                merged[label].append(value)
-        if not merged[label]:
-            merged[label] = ["N/A"]
-    return merged
-
-
 def metadata_extract(
     *,
     text: Optional[str] = None,
@@ -227,10 +231,18 @@ def metadata_extract(
             "results": results,
         }
 
+    ocr_required = (
+        file_path_obj is not None
+        and file_path_obj.is_file()
+        and file_path_obj.suffix.lower() not in [".txt", ".md"]
+    )
+    ocr_performed = False
+
     if text is None and file_path_obj:
         if file_path_obj.suffix.lower() in [".txt", ".md"]:
             text = file_path_obj.read_text(encoding="utf-8")
         else:
+            ocr_performed = True
             text, ocr_labeled_metadata = ocr_module.process_file_for_metadata(
                 file_path_obj, use_temp_dir=True, temp_root="temp"
             )
@@ -256,6 +268,15 @@ def metadata_extract(
     )
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(merged_metadata, f, ensure_ascii=False, indent=2)
+    metadata_saved = out_file.exists()
+
+    if ocr_required:
+        if not ocr_performed:
+            print("⚠️ 검사: OCR가 필요한 파일인데 OCR이 수행되지 않았습니다.")
+        if not metadata_saved:
+            print("⚠️ 검사: 메타데이터 파일이 저장되지 않았습니다.")
+        if ocr_performed and metadata_saved:
+            print("✓ 검사: OCR 수행 후 메타데이터 저장 완료.")
 
     print(
         f"metadata_extract: sentences={len(sentences)}, tokens={len(tokens)}, "
@@ -272,4 +293,7 @@ def metadata_extract(
         "ocr_metadata": ocr_metadata,
         "merged_metadata": merged_metadata,
         "out_file": str(out_file),
+        "ocr_required": ocr_required,
+        "ocr_performed": ocr_performed,
+        "metadata_saved": metadata_saved,
     }

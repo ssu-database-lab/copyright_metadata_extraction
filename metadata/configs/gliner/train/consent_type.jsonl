@@ -1,0 +1,2 @@
+{"id": "con1", "tokens": ["이용", "허락", "동의서", "를", "제출합니다"], "labels": ["O", "O", "B-consent_type", "O", "O"]}
+{"id": "con2", "tokens": ["문서", "유형", ":", "저작물", "이용", "동의", "서"], "labels": ["O", "O", "O", "O", "O", "O", "B-consent_type"]}

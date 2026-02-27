@@ -13,20 +13,38 @@ Weak Supervision을 사용하여 실제 문서에서 학습 데이터 자동 생
 """
 from __future__ import annotations
 
+# import
 import argparse
 import json
-from pathlib import Path
-from typing import Dict, List, Optional
 import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from module.extractor import text as text_module
+from module.extractor import ocr as ocr_module
 try:
     from module.extractor.ner.weak_supervision import WeakSupervisionLabeler  # type: ignore
 except Exception:
     WeakSupervisionLabeler = None  # type: ignore
-TRAINING_DATA_DIR = Path("configs/training")
-from module.extractor import ocr as ocr_module
 
+
+# -----------------------------------------------------------------------------
+# 변수 선언
+# -----------------------------------------------------------------------------
+
+TRAINING_DATA_DIR = Path("configs/training")
+
+# 키워드 기반 라벨링용 (generate_training_data_from_documents에서 사용)
+_KEYWORD_PATTERNS = {
+    "person_name": ["대표", "사장", "이름", "대표이사", "대표자", "담당자", "작성자"],
+    "company_name": ["회사", "기관", "법인", "주식회사", "(주)", "㈜", "기업", "단체"],
+    "address": ["주소", "소재지", "위치", "본사", "사무소", "도로명", "지번"],
+}
+
+
+# -----------------------------------------------------------------------------
+# function 선언 (private 먼저 / export)
+# -----------------------------------------------------------------------------
 
 def load_regex_patterns() -> Dict[str, str]:
     """labels.yaml에서 정규식 패턴 로드"""
@@ -110,6 +128,60 @@ def extract_text_from_file(file_path: Path) -> Optional[str]:
             return None
 
 
+def _labels_for_sentence(
+    sent_tokens: List[str],
+    labeler: Any,
+    regex_patterns: Dict[str, str],
+    min_tokens: int,
+) -> Optional[List[str]]:
+    """문장 토큰에 대해 정규식+키워드 라벨을 병합한 BIO 리스트 반환. 라벨 없거나 짧으면 None."""
+    if len(sent_tokens) < min_tokens:
+        return None
+    regex_labels = labeler.label_with_regex(sent_tokens, regex_patterns)
+    keyword_labels = label_with_keywords(sent_tokens, _KEYWORD_PATTERNS)
+    labels = regex_labels.copy()
+    for i, (r, k) in enumerate(zip(regex_labels, keyword_labels)):
+        if r == "O" and k != "O":
+            labels[i] = k
+    if all(l == "O" for l in labels):
+        return None
+    return labels
+
+
+def _append_labeled_samples_to_jsonl(
+    output_path: Path,
+    file_stem: str,
+    sent_idx: int,
+    sent_tokens: List[str],
+    labels: List[str],
+    stats: Dict[str, int],
+) -> int:
+    """라벨별로 jsonl에 샘플 추가. 추가된 샘플 수 반환."""
+    label_counts: Dict[str, int] = {}
+    for label in labels:
+        if label.startswith("B-"):
+            base = label[2:]
+            label_counts[base] = label_counts.get(base, 0) + 1
+
+    added = 0
+    sample_id = f"{file_stem}_sent{sent_idx}"
+    for base_label in label_counts:
+        output_file = output_path / f"{base_label}.jsonl"
+        label_specific = [
+            lbl if (lbl.startswith(f"B-{base_label}") or lbl.startswith(f"I-{base_label}")) else "O"
+            for lbl in labels
+        ]
+        with open(output_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "id": sample_id,
+                "tokens": sent_tokens,
+                "labels": label_specific,
+            }, ensure_ascii=False) + "\n")
+        stats[base_label] = stats.get(base_label, 0) + 1
+        added += 1
+    return added
+
+
 def generate_training_data_from_documents(
     input_dir: str,
     output_dir: Optional[str] = None,
@@ -177,81 +249,26 @@ def generate_training_data_from_documents(
         if not sentences:
             print(f"  → 문장 없음")
             continue
-        
-        # 문장별로 처리
+
         samples_per_file = 0
         for sent_idx, sentence in enumerate(sentences):
             if samples_per_file >= max_samples_per_file:
                 break
-            
-            sent_text = sentence.get("text", "")
-            if not sent_text:
+            if not sentence.get("text"):
                 continue
-            
-            # 문장의 토큰 추출
             sent_id = sentence.get("sent_id")
             if sent_id is None:
                 continue
-            
-            sent_tokens = [t.get("text", "") for t in tokens_list 
-                          if t.get("sent_id") == sent_id]
-            
-            if len(sent_tokens) < min_tokens:
+            sent_tokens = [t.get("text", "") for t in tokens_list if t.get("sent_id") == sent_id]
+            labels = _labels_for_sentence(sent_tokens, labeler, regex_patterns, min_tokens)
+            if not labels:
                 continue
-            
-            # 정규식으로 라벨링
-            regex_labels = labeler.label_with_regex(sent_tokens, regex_patterns)
-            
-            # 키워드 기반 라벨링 (person_name, company_name, address)
-            keyword_patterns = {
-                "person_name": ["대표", "사장", "이름", "대표이사", "대표자", "담당자", "작성자"],
-                "company_name": ["회사", "기관", "법인", "주식회사", "(주)", "㈜", "기업", "단체"],
-                "address": ["주소", "소재지", "위치", "본사", "사무소", "도로명", "지번"],
-            }
-            keyword_labels = label_with_keywords(sent_tokens, keyword_patterns)
-            
-            # 두 라벨링 결과 병합 (정규식 우선)
-            labels = regex_labels.copy()
-            for i, (regex_l, keyword_l) in enumerate(zip(regex_labels, keyword_labels)):
-                if regex_l == "O" and keyword_l != "O":
-                    labels[i] = keyword_l
-            
-            # 라벨이 있는지 확인
-            has_label = any(l != "O" for l in labels)
-            if not has_label:
-                continue
-            
-            # 각 라벨별로 파일에 추가
-            label_counts: Dict[str, int] = {}
-            for label in labels:
-                if label.startswith("B-"):
-                    base_label = label[2:]
-                    label_counts[base_label] = label_counts.get(base_label, 0) + 1
-            
-            # 각 라벨별로 별도 샘플로 저장
-            for base_label in label_counts.keys():
-                sample_id = f"{file_path.stem}_sent{sent_idx}"
-                output_file = output_path / f"{base_label}.jsonl"
-                
-                # 해당 라벨만 포함하는 라벨 리스트 생성 (다른 라벨은 O로)
-                label_specific_labels = []
-                for i, lbl in enumerate(labels):
-                    if lbl.startswith(f"B-{base_label}") or lbl.startswith(f"I-{base_label}"):
-                        label_specific_labels.append(lbl)
-                    else:
-                        label_specific_labels.append("O")
-                
-                with open(output_file, "a", encoding="utf-8") as f:
-                    f.write(json.dumps({
-                        "id": sample_id,
-                        "tokens": sent_tokens,
-                        "labels": label_specific_labels
-                    }, ensure_ascii=False) + "\n")
-                
-                stats[base_label] = stats.get(base_label, 0) + 1
-                total_samples += 1
-                samples_per_file += 1
-        
+            added = _append_labeled_samples_to_jsonl(
+                output_path, file_path.stem, sent_idx, sent_tokens, labels, stats
+            )
+            samples_per_file += added
+            total_samples += added
+
         print(f"  → {samples_per_file}개 샘플 생성")
     
     print(f"\n{'='*60}")

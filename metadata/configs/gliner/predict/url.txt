@@ -1,0 +1,2 @@
+링크, 주소. 인터넷 경로.
+예: https://www.example.com, http://copyright.go.kr

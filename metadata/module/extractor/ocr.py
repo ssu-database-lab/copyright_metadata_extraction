@@ -7,6 +7,139 @@ from paddleocr import PaddleOCRVL
 from module.parts import directory
 
 
+
+def _load_ocr_config() -> Dict[str, Any]:
+    """OCR 라벨 설정 로드"""
+    config_path = Path('configs/labels.yaml')
+    if config_path.exists():
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        return config.get('ocr', {})
+    return {}
+
+
+def _normalize_label(label: Optional[str], normalize_map: Dict[str, Any]) -> Optional[str]:
+    """OCR 라벨을 표준 키로 정규화"""
+    if not label:
+        return None
+
+    if label in normalize_map:
+        normalized = normalize_map[label]
+        return str(normalized) if normalized else label
+
+    normalized_values = [str(v) for v in normalize_map.values()]
+    if label in normalized_values:
+        return label
+    return label
+
+
+def _parse_parsing_item(parsing_item_obj: Any) -> tuple[Optional[str], Optional[str], Any]:
+    """PaddleOCRVLBlock 또는 dict에서 (content, label, bbox) 추출. content 없으면 (None, ..., ...)."""
+    try:
+        if hasattr(parsing_item_obj, 'to_dict'):
+            parsing_item = parsing_item_obj.to_dict()
+        elif isinstance(parsing_item_obj, dict):
+            parsing_item = parsing_item_obj
+        else:
+            parsing_item = None
+    except (AttributeError, TypeError):
+        parsing_item = None
+
+    if parsing_item and isinstance(parsing_item, dict):
+        return (
+            parsing_item.get('content'),
+            parsing_item.get('label'),
+            parsing_item.get('bbox'),
+        )
+
+    item_str = str(parsing_item_obj)
+    content = None
+    label = None
+    bbox = None
+    content_match = re.search(r'content:\s*(.+?)(?=\n#################|\Z)', item_str, re.DOTALL)
+    label_match = re.search(r'label:\s*(\S+)', item_str)
+    bbox_match = re.search(r'bbox:\s*\[([^\]]+)\]', item_str)
+    if content_match:
+        content = content_match.group(1).strip()
+    if label_match:
+        label = label_match.group(1).strip()
+    if bbox_match:
+        try:
+            bbox = [float(x.strip()) for x in bbox_match.group(1).strip().split(',')]
+        except Exception:
+            bbox = None
+    return (content, label, bbox)
+
+
+def _extract_ocr_results(results: List[Dict[str, Any]]) -> tuple[List[str], Dict[str, List[Dict[str, Any]]]]:
+    """
+    OCR 결과에서 텍스트와 라벨별 메타데이터를 추출합니다.
+
+    Args:
+        results: pipeline.predict() 결과 리스트
+
+    Returns:
+        (페이지별 텍스트 리스트, 라벨별 메타데이터 딕셔너리)
+    """
+    ocr_config = _load_ocr_config()
+    normalize_map = ocr_config.get('normalize_map', {})
+
+    page_texts = []
+    labeled_metadata = {}
+
+    for page_idx, page_result_obj in enumerate(results):
+        try:
+            page_result = (
+                page_result_obj
+                if isinstance(page_result_obj, dict)
+                else page_result_obj.to_dict()  # type: ignore
+                if hasattr(page_result_obj, 'to_dict')
+                else None
+            )
+        except (AttributeError, TypeError):
+            continue
+        if page_result is None:
+            continue
+
+        try:
+            page_index = page_result.get('page_index')
+            page_index = page_idx if page_index is None or not isinstance(page_index, int) else page_index
+            page_count = page_result.get('page_count')
+            page_count = len(results) if page_count is None or not isinstance(page_count, int) else page_count
+            parsing_res_list = page_result.get('parsing_res_list', [])
+        except (KeyError, TypeError, AttributeError):
+            page_index, page_count, parsing_res_list = page_idx, len(results), []
+
+        page_content = []
+        for item_idx, parsing_item_obj in enumerate(parsing_res_list):
+            content, label, bbox = _parse_parsing_item(parsing_item_obj)
+            if not content:
+                continue
+
+            normalized_label = _normalize_label(label, normalize_map) or 'text'
+            page_content.append(content)
+            item_data = {
+                'page_index': page_index,
+                'item_index': item_idx,
+                'label': normalized_label,
+                'content': content,
+                'bbox': bbox,
+            }
+            labeled_metadata.setdefault(normalized_label, []).append(item_data)
+
+        if page_content:
+            safe_page_index = page_index if isinstance(page_index, int) else page_idx
+            safe_page_count = page_count if isinstance(page_count, int) else len(results)
+            page_text = "\n".join(page_content)
+            page_texts.append(f"--- Page {safe_page_index + 1}/{safe_page_count} ---\n{page_text}")
+
+    return page_texts, labeled_metadata
+
+
+# -----------------------------------------------------------------------------
+# export
+# -----------------------------------------------------------------------------
+
 def needs_ocr(file_path: Path) -> bool:
     """
     파일이 OCR이 필요한지 확인 (이미지, PDF 등)
@@ -39,167 +172,6 @@ def needs_ocr(file_path: Path) -> bool:
 
 # 하위 호환성을 위한 별칭
 _needs_ocr = needs_ocr
-
-
-def _load_ocr_config() -> Dict[str, Any]:
-    """OCR 라벨 설정 로드"""
-    config_path = Path('configs/labels.yaml')
-    if config_path.exists():
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = yaml.safe_load(f)
-        return config.get('ocr', {})
-    return {}
-
-
-def _normalize_label(label: Optional[str], normalize_map: Dict[str, Any]) -> Optional[str]:
-    """OCR 라벨을 표준 키로 정규화"""
-    if not label:
-        return None
-    
-    # normalize_map에서 직접 매핑 찾기 (키가 입력 라벨, 값이 표준 키)
-    if label in normalize_map:
-        normalized = normalize_map[label]
-        # YAML에서 키워드로 파싱된 경우 문자열로 변환
-        return str(normalized) if normalized else label
-    
-    # 이미 표준 키인 경우 (normalize_map의 값들을 문자열로 변환하여 비교)
-    normalized_values = [str(v) for v in normalize_map.values()]
-    if label in normalized_values:
-        return label
-    
-    # 매핑되지 않은 경우 원본 반환
-    return label
-
-
-def _extract_ocr_results(results: List[Dict[str, Any]]) -> tuple[List[str], Dict[str, List[Dict[str, Any]]]]:
-    """
-    OCR 결과에서 텍스트와 라벨별 메타데이터를 추출합니다.
-    
-    Args:
-        results: pipeline.predict() 결과 리스트
-    
-    Returns:
-        (페이지별 텍스트 리스트, 라벨별 메타데이터 딕셔너리)
-    """
-    ocr_config = _load_ocr_config()
-    normalize_map = ocr_config.get('normalize_map', {})
-    
-    page_texts = []
-    labeled_metadata = {}
-    
-    for page_idx, page_result_obj in enumerate(results):
-        # PaddleOCRVLResult 객체를 딕셔너리로 변환
-        try:
-            if isinstance(page_result_obj, dict):
-                page_result = page_result_obj
-            elif hasattr(page_result_obj, 'to_dict'):
-                page_result = page_result_obj.to_dict()  # type: ignore
-            else:
-                # 객체가 아닌 경우 스킵
-                continue
-        except (AttributeError, TypeError):
-            continue
-        
-        # page_index와 page_count 안전하게 추출
-        try:
-            page_index = page_result.get('page_index')
-            if page_index is None:
-                page_index = page_idx
-            
-            page_count = page_result.get('page_count')
-            if page_count is None:
-                page_count = len(results)
-            
-            # 정수 타입 확인
-            if not isinstance(page_index, int):
-                page_index = page_idx
-            if not isinstance(page_count, int):
-                page_count = len(results)
-            
-            parsing_res_list = page_result.get('parsing_res_list', [])
-        except (KeyError, TypeError, AttributeError):
-            # 기본값 사용
-            page_index = page_idx
-            page_count = len(results)
-            parsing_res_list = []
-        
-        page_content = []
-        page_labeled_items = []
-        
-        for item_idx, parsing_item_obj in enumerate(parsing_res_list):
-            content = None
-            label = None
-            bbox = None
-            
-            # PaddleOCRVLBlock 객체를 딕셔너리로 변환 시도
-            try:
-                if hasattr(parsing_item_obj, 'to_dict'):
-                    parsing_item = parsing_item_obj.to_dict()
-                elif isinstance(parsing_item_obj, dict):
-                    parsing_item = parsing_item_obj
-                else:
-                    parsing_item = None
-            except (AttributeError, TypeError):
-                parsing_item = None
-            
-            if parsing_item and isinstance(parsing_item, dict):
-                # 딕셔너리인 경우 직접 접근
-                content = parsing_item.get('content')
-                label = parsing_item.get('label')
-                bbox = parsing_item.get('bbox')
-            else:
-                # 문자열로 변환하여 파싱
-                item_str = str(parsing_item_obj)
-                
-                # 정규표현식으로 content, label, bbox 추출
-                content_match = re.search(r'content:\s*(.+?)(?=\n#################|\Z)', item_str, re.DOTALL)
-                label_match = re.search(r'label:\s*(\S+)', item_str)
-                bbox_match = re.search(r'bbox:\s*\[([^\]]+)\]', item_str)
-                
-                if content_match:
-                    content = content_match.group(1).strip()
-                if label_match:
-                    label = label_match.group(1).strip()
-                if bbox_match:
-                    bbox_str = bbox_match.group(1).strip()
-                    try:
-                        bbox = [float(x.strip()) for x in bbox_str.split(',')]
-                    except:
-                        bbox = None
-            
-            if content:
-                # 라벨 정규화
-                normalized_label = _normalize_label(label, normalize_map)
-                if not normalized_label:
-                    normalized_label = 'text'  # 기본값
-                
-                # 텍스트 추가
-                page_content.append(content)
-                
-                # 메타데이터 추가
-                item_data = {
-                    'page_index': page_index,
-                    'item_index': item_idx,
-                    'label': normalized_label,
-                    'content': content,
-                    'bbox': bbox
-                }
-                page_labeled_items.append(item_data)
-                
-                # 라벨별로 그룹화
-                if normalized_label not in labeled_metadata:
-                    labeled_metadata[normalized_label] = []
-                labeled_metadata[normalized_label].append(item_data)
-        
-        # 페이지 구분자와 함께 텍스트 저장
-        if page_content:
-            page_text = "\n".join(page_content)
-            # page_index와 page_count가 None이 아닌지 확인
-            safe_page_index = page_index if isinstance(page_index, int) else page_idx
-            safe_page_count = page_count if isinstance(page_count, int) else len(results)
-            page_texts.append(f"--- Page {safe_page_index + 1}/{safe_page_count} ---\n{page_text}")
-    
-    return page_texts, labeled_metadata
 
 
 def extract_text_from_file(

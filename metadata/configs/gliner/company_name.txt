@@ -1,3 +1,0 @@
-회사, 기관, 단체, 부서 이름. 공공기관/학교/기업 포함.
-English or mixed KR/EN organization names.
-예: 삼성전자, 행정안전부, 카카오, 서울시청, 한국문화정보원, Seoul Metropolitan Government

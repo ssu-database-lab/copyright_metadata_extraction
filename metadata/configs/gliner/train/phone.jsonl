@@ -1,0 +1,3 @@
+{"id": "p1", "tokens": ["연락처", ":", "02", "-", "1234", "-", "5678", "입니다"], "labels": ["O", "O", "B-phone", "I-phone", "I-phone", "I-phone", "I-phone", "O"]}
+{"id": "p2", "tokens": ["휴대전화", "010", "-", "9999", "-", "8888", "으로", "문의하세요"], "labels": ["O", "B-phone", "I-phone", "I-phone", "I-phone", "I-phone", "O", "O"]}
+{"id": "p3", "tokens": ["전화", "031", "-", "123", "-", "4567"], "labels": ["O", "B-phone", "I-phone", "I-phone", "I-phone", "I-phone"]}

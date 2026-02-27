@@ -1,12 +1,21 @@
+# import
 from pathlib import Path
 from collections import Counter
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1] / "data" / "in" / "training_csv"
 
+# -----------------------------------------------------------------------------
+# 변수 선언
+# -----------------------------------------------------------------------------
+
+ROOT = Path(__file__).resolve().parents[1] / "data" / "in" / "training_csv"
 header_counts = Counter()
 file_headers = {}
 
+
+# -----------------------------------------------------------------------------
+# function 선언 (export)
+# -----------------------------------------------------------------------------
 
 def find_header(df):
     for i in range(min(5, len(df))):
@@ -17,6 +26,10 @@ def find_header(df):
     row0 = [str(x).strip() if not pd.isna(x) else "" for x in df.iloc[0]]
     return 0, [x for x in row0 if x and x.lower() != "nan"]
 
+
+# -----------------------------------------------------------------------------
+# 실행
+# -----------------------------------------------------------------------------
 
 for csv_path in ROOT.rglob("*.csv"):
     df = pd.read_csv(csv_path, header=None, dtype=str)

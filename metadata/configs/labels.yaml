@@ -39,20 +39,31 @@ regex_labels:
 
 # NER 단계에서 사용할 스키마
 # NER 단계는 text로 처리된 라벨들과 paragraph_title로 처리된 라벨들 포함해서 추가분류
+# (선택) zero-shot만 쓸 때 트레이닝 없이 조정:
+#   threshold: 전역 confidence 임계값 (기본 0.55). 낮추면 recall↑, 높이면 precision↑
+#   threshold_per_label: 라벨별 임계값. person_name은 낮춰서 더 많이 잡고, date는 높여서 확실한 것만
+# ner:
+#   threshold: 0.55
+#   threshold_per_label:
+#     person_name: 0.45
+#     company_name: 0.48
+#     date: 0.62
+#     phone: 0.60
 ner:
-  labels:
-    # ocr의 text 라벨에서 추가적으로 분류함
-    - doc_title         # 문서 제목, 이것은 OCR에서 갖고올 경우 더이상 사용하지 않음
-    - paragraph_title   # 문단 제목
-    - company_name      # 기관명
-    - person_name       # 이름
-    - address           # 주소
-    # Regex 라벨에서 갖고옴
-    # 아래는 Regex와 추가 호환됨
-    - phone             # 전화번호
-    - email             # 이메일
-    - url               # 웹사이트
-    - date              # 날짜
+  # auto: configs/gliner/predict/ 에 있는 .txt/.md 파일명으로 라벨 자동 수집.
+  #       predict만 관리하면 train도 같은 라벨 집합으로 동작.
+  labels: auto
+  # 수동 지정 시 예:
+  # labels:
+  #   - doc_title
+  #   - paragraph_title
+  #   - company_name
+  #   - person_name
+  #   - address
+  #   - phone
+  #   - email
+  #   - url
+  #   - date
 
 # LLM 단계에서 사용할 스키마
 # LLM 단계는 능동적인 구분이 가능할 수준의 LLM을 사용할 가능성이 높으므로 라벨 분류는 지금 고려하지 않음

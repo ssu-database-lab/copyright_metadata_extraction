@@ -1,3 +1,0 @@
-문서의 제목이나 문서명. 보통 문서 상단의 큰 제목.
-English or mixed KR/EN titles.
-예: 개인정보 제공 동의서, 진천동의서, 신청서, Consent Form, Application Form

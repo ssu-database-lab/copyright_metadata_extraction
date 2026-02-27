@@ -1,2 +1,0 @@
-이메일 주소. English/KR domain 포함.
-예: example@domain.com, help@company.co.kr, info@university.ac.kr

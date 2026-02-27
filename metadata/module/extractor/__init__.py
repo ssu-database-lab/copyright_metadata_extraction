@@ -4,9 +4,10 @@
 - ner_extractor
 - ocr (extract_text_from_file)
 """
-
+# import
 from module.parts.types import Decision
 from .ner import ner_extractor
 from . import ocr
 
+# export
 __all__ = ["Decision", "ner_extractor", "ocr"]

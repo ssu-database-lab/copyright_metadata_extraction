@@ -1,0 +1,2 @@
+{"id": "st1", "tokens": ["진행", "상태", "검토", "중", "입니다"], "labels": ["O", "O", "B-status", "I-status", "O"]}
+{"id": "st2", "tokens": ["처리", "현황", "승인", "완료", "되었습니다"], "labels": ["O", "O", "B-status", "I-status", "O"]}

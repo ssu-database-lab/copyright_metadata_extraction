@@ -1,14 +1,23 @@
 """CSV 데이터 검증 및 매핑 도구"""
+# import
 import sys
 from pathlib import Path
 
-# 상위 디렉토리를 모듈 경로에 추가
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 from library.mapping import map_csv_columns, get_label_category
 from library.csv import load_config
 
+
+# -----------------------------------------------------------------------------
+# 변수 선언 (없음)
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# function 선언 (export)
+# -----------------------------------------------------------------------------
 
 def validate_csv_file(csv_path, verbose=True):
     """
@@ -167,6 +176,10 @@ def export_mapping_table(output_path='configs/column_mapping.csv'):
     print(f"✅ 매핑 테이블 저장: {output_path}")
     print(f"   총 {len(rows)}개 매핑")
 
+
+# -----------------------------------------------------------------------------
+# 실행
+# -----------------------------------------------------------------------------
 
 if __name__ == "__main__":
     import sys

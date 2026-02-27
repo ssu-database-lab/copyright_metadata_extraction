@@ -1,0 +1,2 @@
+{"id": "s5", "tokens": ["회사명", "은", "주식회사", "테크", "입니다"], "labels": ["O", "O", "B-company", "I-company", "O"]}
+{"id": "s6", "tokens": ["(주)", "에이비씨", "대표", "이사"], "labels": ["B-company", "I-company", "O", "O"]}

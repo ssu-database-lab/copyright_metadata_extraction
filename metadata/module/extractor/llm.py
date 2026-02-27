@@ -6,41 +6,19 @@ from typing import Dict, Any, List
 from module.parts.types import Decision
 
 
-def llm_extractor(
-    *,
-    raw_text: str,
-    sentences: List[Dict[str, Any]],
-    tokens: List[Dict[str, Any]],
-    previous_decisions: List[Decision],
-) -> List[Decision]:
-    """
-    LLM 기반 통합 및 최종 정리
-    
-    regular와 ner의 모든 결과를 받아서 LLM이 최종 판단
-    우선순위: regular < ner < llm (llm이 최종 결정)
-    충돌은 무시하고 모든 결과를 LLM에게 전달
-    """
-    if not previous_decisions:
-        return []
-    
-    # regular와 ner 결과 분리 (충돌 무시, 모두 전달)
-    regular_sources = {"regex", "datetime", "numeric"}
-    regular_decisions = [d for d in previous_decisions if d.source in regular_sources]
-    ner_decisions = [d for d in previous_decisions if d.source == "ner"]
-    
-    # 모든 결과를 LLM에게 전달 (충돌 무시)
-    all_decisions = regular_decisions + ner_decisions
-    
-    # LLM이 문맥을 고려하여 최종 판단
-    final_decisions = _llm_finalize(
-        all_decisions=all_decisions,
-        sentences=sentences,
-        tokens=tokens,
-        raw_text=raw_text
-    )
-    
-    return final_decisions
+# -----------------------------------------------------------------------------
+# 변수 선언 (없음)
+# -----------------------------------------------------------------------------
 
+
+# -----------------------------------------------------------------------------
+# class 선언 (없음)
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# function 선언 (private 먼저)
+# -----------------------------------------------------------------------------
 
 def _llm_finalize(
     all_decisions: List[Decision],
@@ -111,6 +89,41 @@ def _llm_finalize(
     # - 값 검증 및 보정
     # - 충돌하는 값들 중 가장 적절한 것 선택
     
+    return final_decisions
+
+
+# -----------------------------------------------------------------------------
+# export
+# -----------------------------------------------------------------------------
+
+def llm_extractor(
+    *,
+    raw_text: str,
+    sentences: List[Dict[str, Any]],
+    tokens: List[Dict[str, Any]],
+    previous_decisions: List[Decision],
+) -> List[Decision]:
+    """
+    LLM 기반 통합 및 최종 정리
+
+    regular와 ner의 모든 결과를 받아서 LLM이 최종 판단
+    우선순위: regular < ner < llm (llm이 최종 결정)
+    충돌은 무시하고 모든 결과를 LLM에게 전달
+    """
+    if not previous_decisions:
+        return []
+
+    regular_sources = {"regex", "datetime", "numeric"}
+    regular_decisions = [d for d in previous_decisions if d.source in regular_sources]
+    ner_decisions = [d for d in previous_decisions if d.source == "ner"]
+    all_decisions = regular_decisions + ner_decisions
+
+    final_decisions = _llm_finalize(
+        all_decisions=all_decisions,
+        sentences=sentences,
+        tokens=tokens,
+        raw_text=raw_text
+    )
     return final_decisions
 
 

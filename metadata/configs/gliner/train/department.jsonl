@@ -1,0 +1,2 @@
+{"id": "dep1", "tokens": ["담당", "부서", "저작권", "사업팀", "입니다"], "labels": ["O", "O", "B-department", "I-department", "O"]}
+{"id": "dep2", "tokens": ["문의", "처", "문화정보원", "기획조정과"], "labels": ["O", "O", "B-department", "I-department"]}

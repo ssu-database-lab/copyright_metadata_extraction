@@ -1,0 +1,2 @@
+{"id": "dt1", "tokens": ["저작물", "유형", "영상", "작품", "입니다"], "labels": ["O", "O", "B-doc_type", "I-doc_type", "O"]}
+{"id": "dt2", "tokens": ["분류", ":", "문서", ",", "이미지", ",", "음원"], "labels": ["O", "O", "B-doc_type", "O", "B-doc_type", "O", "B-doc_type"]}

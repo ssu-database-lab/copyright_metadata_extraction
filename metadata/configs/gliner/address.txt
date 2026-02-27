@@ -1,3 +1,0 @@
-주소(도로명/지번/상세 주소). 시·군·구/동/로/길/번지 포함.
-English address or mixed KR/EN address.
-예: 서울시 강남구 테헤란로 123, 충북 진천군 진천읍, 123 Teheran-ro, Gangnam-gu

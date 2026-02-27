@@ -1,3 +1,0 @@
-사람 이름(개인 성명). 한글/영문 이름 모두 포함.
-Mixed KR/EN names are possible.
-예: 홍길동, 김철수, 이영희, John Doe, Kim Min-su

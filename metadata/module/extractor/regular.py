@@ -18,6 +18,10 @@ import re
 from module.parts.types import Decision
 
 
+# -----------------------------------------------------------------------------
+# 변수 선언
+# -----------------------------------------------------------------------------
+
 LABELS_PATH = Path("configs/labels.yaml")
 _NUMERIC_HINTS: Dict[str, Sequence[str]] = {
     "seq_number": ("순번", "번호", "no"),
@@ -30,9 +34,9 @@ _NUMERIC_HINTS: Dict[str, Sequence[str]] = {
 _URL_EXTRACTOR = URLExtract() if URLExtract else None
 _NLP = None
 
-
-# ---------- 공통 유틸 ----------
-
+# -----------------------------------------------------------------------------
+# function (private 우선)
+# -----------------------------------------------------------------------------
 
 @lru_cache(maxsize=1)
 def _load_config() -> Dict[str, Any]:
@@ -122,13 +126,62 @@ def _group_tokens_by_sentence(tokens: Iterable[Dict[str, Any]]) -> Dict[int, Lis
     return grouped
 
 
-# ---------- Regex Extractors (라벨별 분리) ----------
+def _is_valid_url(url: str) -> bool:
+    """URL 형식 검증"""
+    if not url or len(url) < 4 or '.' not in url:
+        return False
+
+    if any(re.search(p, url) for p in [r'\.http', r'^[^가-힣\w]', r'[가-힣]\s+\.', r'\.\s+[가-힣]']):
+        return False
+
+    parts = url.split('.')
+    return len(parts) >= 2 and len(parts[-1].split('/')[0]) >= 2
 
 
-def _regex_pattern_extractor(*, label: str, pattern: str, tokens: List[Dict[str, Any]], 
-                             sentences: List[Dict[str, Any]], 
-                             token_groups: Dict[int, List[Dict[str, Any]]],
-                             flags: int = 0) -> List[Decision]:
+def _extract_urls_enhanced(text: str) -> List[str]:
+    """URL 추출 (urlextract + 한국어 도메인 지원)"""
+    urls = set()
+
+    if _URL_EXTRACTOR:
+        try:
+            urls.update(_URL_EXTRACTOR.find_urls(text))
+        except Exception:
+            pass
+
+    patterns = [
+        r'https?://[가-힣\w][가-힣\w.-]*\.[a-z가-힣]{2,}(?:/[^\s<>"\'{}|\\^`\[\]]*)?',
+        r'www\.[가-힣\w][가-힣\w.-]*\.[a-z가-힣]{2,}(?:/[^\s<>"\'{}|\\^`\[\]]*)?',
+        r'\b[가-힣\w][가-힣\w.-]*\.[a-z가-힣]{2,}(?:/[^\s<>"\'{}|\\^`\[\]]*)?',
+    ]
+
+    for pattern_str in patterns:
+        try:
+            for match in re.compile(pattern_str, re.I).finditer(text):
+                url = match.group(0)
+                if _is_valid_url(url):
+                    urls.add(url)
+        except re.error:
+            continue
+
+    urls_by_domain = {}
+    for url in urls:
+        norm = re.sub(r'^https?://|^www\.', '', url, flags=re.I).split('/')[0]
+        existing = urls_by_domain.get(norm)
+        if not existing or (('://' in url or url.startswith('www.')) and '://' not in existing and not existing.startswith('www.')):
+            urls_by_domain[norm] = url
+
+    return sorted(urls_by_domain.values())
+
+
+def _regex_pattern_extractor(
+    *,
+    label: str,
+    pattern: str,
+    tokens: List[Dict[str, Any]],
+    sentences: List[Dict[str, Any]],
+    token_groups: Dict[int, List[Dict[str, Any]]],
+    flags: int = 0,
+) -> List[Decision]:
     """
     정규식 패턴 기반 추출기 (phone, email 등 공통 로직)
     
@@ -167,6 +220,10 @@ def _regex_pattern_extractor(*, label: str, pattern: str, tokens: List[Dict[str,
     
     return decisions
 
+
+# -----------------------------------------------------------------------------
+# export
+# -----------------------------------------------------------------------------
 
 def phone_extractor(*, tokens: List[Dict[str, Any]], sentences: List[Dict[str, Any]], 
                     token_groups: Dict[int, List[Dict[str, Any]]]) -> List[Decision]:
@@ -338,66 +395,74 @@ def regex_extractor(*, tokens: List[Dict[str, Any]], sentences: Optional[List[Di
     return all_decisions
 
 
-def _extract_urls_enhanced(text: str) -> List[str]:
-    """URL 추출 (urlextract + 한국어 도메인 지원)"""
-    urls = set()
-    
-    # urlextract로 기본 URL 추출
-    if _URL_EXTRACTOR:
+_SEQ_NUMBER_PATTERNS = [
+    r'순번\s*[:：]?\s*(\d+)',
+    r'번호\s*[:：]?\s*(\d+)',
+    r'\bno\.?\s*[:：]?\s*(\d+)',
+    r'^(\d+)\s*[\.\)]',
+]
+_DATE_HINTS = {"년", "월", "일", "작성", "등록", "제작", "유효", "기간"}
+
+
+def _extract_seq_number_decisions(
+    sid: int,
+    text: str,
+    token_groups: Dict[int, List[Dict[str, Any]]],
+) -> List[Decision]:
+    """seq_number 라벨만 추출 (순번, 번호, no., 1. 등)."""
+    decisions: List[Decision] = []
+    tokens_in_sent = token_groups.get(sid, [])
+    for pattern_str in _SEQ_NUMBER_PATTERNS:
+        for match in re.compile(pattern_str, re.IGNORECASE | re.MULTILINE).finditer(text):
+            if value := match.group(1):
+                tok_id = _match_token_by_value(tokens_in_sent, value)
+                decisions.append(_decision("seq_number", value, sid, tok_id, "numeric", {"raw": text, "pattern": pattern_str}))
+    return decisions
+
+
+def _extract_numeric_value_decisions(
+    sid: int,
+    text: str,
+    label: str,
+    token_groups: Dict[int, List[Dict[str, Any]]],
+    nlp: Any,
+    pattern: re.Pattern[str],
+) -> List[Decision]:
+    """날짜/연도 제외 후 숫자 값 추출 (seq_number 제외)."""
+    date_matches: set = set()
+    regex_specs = _get_labels_as_dict("regex_labels")
+    date_pattern = regex_specs.get("date", "")
+    if date_pattern:
         try:
-            urls.update(_URL_EXTRACTOR.find_urls(text))
-        except Exception:
-            pass
-    
-    # 한국어 도메인 지원 패턴
-    patterns = [
-        r'https?://[가-힣\w][가-힣\w.-]*\.[a-z가-힣]{2,}(?:/[^\s<>"\'{}|\\^`\[\]]*)?',
-        r'www\.[가-힣\w][가-힣\w.-]*\.[a-z가-힣]{2,}(?:/[^\s<>"\'{}|\\^`\[\]]*)?',
-        r'\b[가-힣\w][가-힣\w.-]*\.[a-z가-힣]{2,}(?:/[^\s<>"\'{}|\\^`\[\]]*)?',
-    ]
-    
-    for pattern_str in patterns:
-        try:
-            for match in re.compile(pattern_str, re.I).finditer(text):
-                url = match.group(0)
-                if _is_valid_url(url):
-                    urls.add(url)
+            for match in re.compile(date_pattern).finditer(text):
+                for num in re.findall(r'\d+', match.group(0)):
+                    date_matches.update(num[i:j] for i in range(len(num)) for j in range(i + 1, len(num) + 1))
         except re.error:
+            pass
+
+    values = [t.text for t in nlp(text) if t.like_num] if nlp else pattern.findall(text)
+    tokens_in_sent = token_groups.get(sid, [])
+    decisions: List[Decision] = []
+    for value in values:
+        norm = value.replace(",", "")
+        if norm in date_matches:
             continue
-    
-    # 중복 제거: 프로토콜 있는 버전 우선
-    urls_by_domain = {}
-    for url in urls:
-        norm = re.sub(r'^https?://|^www\.', '', url, flags=re.I).split('/')[0]
-        existing = urls_by_domain.get(norm)
-        if not existing or (('://' in url or url.startswith('www.')) and '://' not in existing and not existing.startswith('www.')):
-            urls_by_domain[norm] = url
-    
-    return sorted(urls_by_domain.values())
-
-
-def _is_valid_url(url: str) -> bool:
-    """URL 형식 검증"""
-    if not url or len(url) < 4 or '.' not in url:
-        return False
-    
-    if any(re.search(p, url) for p in [r'\.http', r'^[^가-힣\w]', r'[가-힣]\s+\.', r'\.\s+[가-힣]']):
-        return False
-    
-    parts = url.split('.')
-    return len(parts) >= 2 and len(parts[-1].split('/')[0]) >= 2
-
-
-
-
-# ---------- Numeric ----------
+        if len(norm) == 4:
+            try:
+                if 1900 <= int(norm) <= 2100 and any(h in text for h in _DATE_HINTS):
+                    continue
+            except ValueError:
+                pass
+        tok_id = _match_token_by_value(tokens_in_sent, norm)
+        decisions.append(_decision(label, norm, sid, tok_id, "numeric", {"raw": value, "nlp": bool(nlp)}))
+    return decisions
 
 
 def numeric_extractor(*, sentences: List[Dict[str, Any]], 
                          token_groups: Dict[int, List[Dict[str, Any]]]) -> List[Decision]:
     """
     숫자 추출기
-    
+
     Args:
         sentences: 문장 리스트
         token_groups: 문장별 토큰 그룹
@@ -407,9 +472,8 @@ def numeric_extractor(*, sentences: List[Dict[str, Any]],
         return []
 
     nlp = _get_nlp()
-    decisions: List[Decision] = []
     pattern = re.compile(r"\d{1,3}(?:,\d{3})*|\d+")
-    date_hints = {"년", "월", "일", "작성", "등록", "제작", "유효", "기간"}
+    decisions: List[Decision] = []
 
     for sentence in sentences:
         if not sentence:
@@ -418,67 +482,19 @@ def numeric_extractor(*, sentences: List[Dict[str, Any]],
         text = str(sentence.get("text", ""))
         if not text or sid is None:
             continue
-        
         sid = int(sid)
         label = _choose_label(text, _NUMERIC_HINTS, allowed)
         if not label:
             continue
 
-        # seq_number는 더 구체적인 패턴만 추출 (예: "1.", "순번: 1", "번호 1" 등)
         if label == "seq_number":
-            seq_patterns = [
-                r'순번\s*[:：]?\s*(\d+)',
-                r'번호\s*[:：]?\s*(\d+)',
-                r'\bno\.?\s*[:：]?\s*(\d+)',
-                r'^(\d+)\s*[\.\)]',  # 줄 시작의 "1.", "1)" 형식
-            ]
-            for pattern_str in seq_patterns:
-                for match in re.compile(pattern_str, re.IGNORECASE | re.MULTILINE).finditer(text):
-                    if value := match.group(1):
-                        tokens_in_sent = token_groups.get(sid, [])
-                        tok_id = _match_token_by_value(tokens_in_sent, value)
-                        decisions.append(_decision(label, value, sid, tok_id, "numeric", 
-                                                   {"raw": text, "pattern": pattern_str}))
-            continue  # seq_number는 여기서 처리 완료
+            decisions.extend(_extract_seq_number_decisions(sid, text, token_groups))
+            continue
 
-        # 날짜 패턴 내 숫자 수집 (부분 문자열 포함)
-        date_matches = set()
-        regex_specs = _get_labels_as_dict("regex_labels")
-        date_pattern = regex_specs.get("date", "")
-        if date_pattern:
-            try:
-                for match in re.compile(date_pattern).finditer(text):
-                    for num in re.findall(r'\d+', match.group(0)):
-                        date_matches.update(num[i:j] for i in range(len(num)) for j in range(i + 1, len(num) + 1))
-            except re.error:
-                pass
+        decisions.extend(_extract_numeric_value_decisions(
+            sid, text, label, token_groups, nlp, pattern
+        ))
 
-        # 숫자 추출
-        if nlp:
-            values = [token.text for token in nlp(text) if token.like_num]
-        else:
-            values = pattern.findall(text)
-
-        tokens_in_sent = token_groups.get(sid, [])
-        for value in values:
-            norm = value.replace(",", "")
-            
-            # 날짜 숫자 제외
-            if norm in date_matches:
-                continue
-            
-            # 연도 제외 (1900-2100, 날짜 힌트 있을 때)
-            if len(norm) == 4:
-                try:
-                    if 1900 <= int(norm) <= 2100 and any(h in text for h in date_hints):
-                        continue
-                except ValueError:
-                    pass
-            
-            tok_id = _match_token_by_value(tokens_in_sent, norm)
-            decisions.append(_decision(label, norm, sid, tok_id, "numeric", 
-                                       {"raw": value, "nlp": bool(nlp)}))
-    
     return decisions
 
 

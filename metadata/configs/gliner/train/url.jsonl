@@ -1,0 +1,2 @@
+{"id": "u1", "tokens": ["홈페이지", "https", ":", "//", "www", ".", "example", ".", "com", "을", "참조하세요"], "labels": ["O", "B-url", "I-url", "I-url", "I-url", "I-url", "I-url", "I-url", "I-url", "O", "O"]}
+{"id": "u2", "tokens": ["링크", "http", ":", "//", "copyright", ".", "go", ".", "kr"], "labels": ["O", "B-url", "I-url", "I-url", "I-url", "I-url", "I-url", "I-url", "I-url"]}
