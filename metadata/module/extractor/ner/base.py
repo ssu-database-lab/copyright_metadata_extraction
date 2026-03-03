@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -50,11 +51,55 @@ def _max_chunk_tokens() -> int:
 
 
 # 배치 추론 시 한 번에 넣을 문장/청크 개수. env GLINER_NER_BATCH_SIZE 로 변경 가능.
+# 12GB GPU OOM 시 1~2 유지. 긴 청크는 자동으로 batch_size=1 로 처리.
 def _ner_batch_size() -> int:
     try:
-        return max(1, int(os.environ.get("GLINER_NER_BATCH_SIZE", "8")))
+        return max(1, int(os.environ.get("GLINER_NER_BATCH_SIZE", "2")))
     except ValueError:
-        return 8
+        return 2
+
+# 마이크로 배치(우리쪽 분할) 크기. env GLINER_MICRO_BATCH_SIZE 로 변경 가능.
+# 12GB GPU OOM 시 2~4 유지. 긴 청크는 1건씩 처리.
+def _micro_batch_size() -> int:
+    try:
+        return max(1, int(os.environ.get("GLINER_MICRO_BATCH_SIZE", "4")))
+    except ValueError:
+        return 4
+
+
+# GPU 메모리 상한(비율 0~1). 설정 시 torch.cuda.set_per_process_memory_fraction 적용.
+# WSL2 등에서 cudaErrorUnknown 완화용. 토큰/청크 제한은 그대로 두는 것이 안전함.
+def _cuda_memory_fraction() -> Optional[float]:
+    val = os.environ.get("GLINER_CUDA_MEMORY_FRACTION", "").strip()
+    if not val:
+        return None
+    try:
+        f = float(val)
+        return None if f <= 0 or f > 1 else f
+    except ValueError:
+        return None
+
+
+# auto 학습 쿨다운(초). 너무 자주 학습 띄우는 것 방지.
+def _auto_train_cooldown_sec() -> int:
+    try:
+        return max(0, int(os.environ.get("GLINER_AUTO_TRAIN_COOLDOWN_SEC", "300")))
+    except ValueError:
+        return 300
+
+
+# 락 경합 시 최대 대기(초). 길게 대기하면 추론이 멎을 수 있어 짧게.
+def _auto_train_lock_wait_sec() -> float:
+    try:
+        return max(0.0, float(os.environ.get("GLINER_AUTO_TRAIN_LOCK_WAIT_SEC", "2.0")))
+    except ValueError:
+        return 2.0
+
+
+# auto 모델에서 '학습까지' 수행할지. (운영 추론 환경에서 0으로 끄면 학습 subprocess를 띄우지 않음)
+def _auto_train_enabled() -> bool:
+    return os.environ.get("GLINER_AUTO_TRAIN", "1") not in ("0", "false", "False", "no", "NO")
+
 
 
 MAX_CHUNK_TOKENS = 512
@@ -75,11 +120,24 @@ class EntitySpan:
     confidence: float
 
 
+
 class ZeroShotNER:
     """
     - 입력: List[List[str]] (토큰 단위)
     - 출력: List[List[str]] (BIO)
     - 내부: GLiNER2 zero-shot extract_entities 사용
+
+    auto=True 모드 동작:
+    - 학습 데이터(signature)가 변하지 않았으면: adapter 로드/유지 후 추론만
+    - 변했으면:
+      1) 현재 프로세스가 잡고 있던 GPU VRAM을 먼저 비움(모델 offload)
+      2) 학습 subprocess 실행 (module.extractor.ner.train)
+      3) train_state.json 기준으로 최신 adapter 재로드 후 추론
+
+    폭주 방지:
+    - 학습 전 offload + empty_cache
+    - 학습 중복 실행 방지: lockfile + 재검증(락 획득 후 다시 signature 비교)
+    - 추론 VRAM 피크 완화: batch_texts를 마이크로 배치로 쪼개 batch_extract_entities 호출
     """
 
     def __init__(
@@ -95,6 +153,7 @@ class ZeroShotNER:
         self.threshold = float(threshold)
         self.auto = bool(auto)
         self._loaded_adapter_path: Optional[str] = None
+        self._last_auto_train_attempt_ts: float = 0.0
 
         if labels is None:
             labels, desc = load_labels_from_yaml()
@@ -112,18 +171,132 @@ class ZeroShotNER:
         model_source = _resolve_model_source(self.model_id)
         self.extractor = GLiNER2.from_pretrained(model_source)
 
+        # preferred device
+        self.device = "cpu"
+        self._preferred_device = "cpu"
+        if torch is not None and torch.cuda.is_available() and hasattr(self.extractor, "to"):
+            self._preferred_device = "cuda"
+
         if not self.auto:
             adapter = adapter_path or os.environ.get("GLINER_ONLINE_ADAPTER")
             if _try_load_adapter(self.extractor, adapter):
                 self._loaded_adapter_path = str(Path(adapter).resolve())
+            self._ensure_on_preferred_device()
+        else:
+            # auto: 초기에는 CPU 유지 (학습 필요 시 VRAM 경합 방지)
+            self._ensure_on_cpu()
 
-        # ✅ 안전한 device 선택 + eval
-        self.device = "cpu"
-        if torch is not None and torch.cuda.is_available() and hasattr(self.extractor, "to"):
-            self.device = "cuda"
-            self.extractor = self.extractor.to(self.device)
         if hasattr(self.extractor, "eval"):
             self.extractor.eval()
+
+    # ---------------------------
+    # device helpers
+    # ---------------------------
+
+    def _ensure_on_cpu(self) -> None:
+        if self.device == "cpu":
+            return
+        try:
+            if hasattr(self.extractor, "to"):
+                self.extractor = self.extractor.to("cpu")
+        finally:
+            self.device = "cpu"
+            if torch is not None and torch.cuda.is_available():
+                try:
+                    torch.cuda.empty_cache()
+                except Exception:
+                    pass
+
+    def _ensure_on_cuda(self) -> None:
+        if self.device == "cuda":
+            return
+        if torch is None or not torch.cuda.is_available() or not hasattr(self.extractor, "to"):
+            self.device = "cpu"
+            return
+        frac = _cuda_memory_fraction()
+        if frac is not None:
+            try:
+                torch.cuda.set_per_process_memory_fraction(frac, 0)
+            except Exception:
+                pass
+        self.extractor = self.extractor.to("cuda")
+        self.device = "cuda"
+
+    def _ensure_on_preferred_device(self) -> None:
+        if self._preferred_device == "cuda":
+            self._ensure_on_cuda()
+        else:
+            self._ensure_on_cpu()
+
+    # ---------------------------
+    # auto adapter / training
+    # ---------------------------
+
+    def _maybe_load_adapter(self, adapter_path: Optional[str]) -> None:
+        if not adapter_path:
+            return
+        if self._loaded_adapter_path == adapter_path:
+            return
+        if _try_load_adapter(self.extractor, adapter_path):
+            self._loaded_adapter_path = adapter_path
+
+    def _refresh_adapter_auto(self) -> None:
+        train_dir = get_gliner_train_dir()
+        current_sig = get_training_data_signature(train_dir)
+        state = read_train_state() or {}
+        state_sig = state.get("signature")
+        adapter_path = state.get("adapter_path")
+
+        # 변경 없음 → adapter만 최신으로 맞춤
+        if current_sig and state_sig == current_sig:
+            if adapter_path is None:
+                best = get_best_adapter_path()
+                adapter_path = str(best) if best is not None else None
+            self._maybe_load_adapter(adapter_path)
+            self._ensure_on_preferred_device()
+            return
+
+        # 학습 데이터 자체가 없으면 adapter만
+        if not current_sig:
+            best = get_best_adapter_path()
+            self._maybe_load_adapter(str(best) if best else None)
+            self._ensure_on_preferred_device()
+            return
+
+        # 변경됨 → 쿨다운/활성화 체크
+        if not _auto_train_enabled():
+            best = get_best_adapter_path()
+            self._maybe_load_adapter(str(best) if best else None)
+            self._ensure_on_preferred_device()
+            return
+
+        now = time.time()
+        if (now - self._last_auto_train_attempt_ts) < float(_auto_train_cooldown_sec()):
+            best = get_best_adapter_path()
+            self._maybe_load_adapter(str(best) if best else None)
+            self._ensure_on_preferred_device()
+            return
+
+        self._last_auto_train_attempt_ts = now
+
+        # ✅ 학습 전에 VRAM 경합 방지: CPU offload
+        self._ensure_on_cpu()
+
+        _ensure_trained_if_auto()
+
+        # 학습 결과 반영
+        state2 = read_train_state() or {}
+        adapter2 = state2.get("adapter_path")
+        if adapter2 is None:
+            best = get_best_adapter_path()
+            adapter2 = str(best) if best is not None else None
+        self._maybe_load_adapter(adapter2)
+
+        self._ensure_on_preferred_device()
+
+    # ---------------------------
+    # predict
+    # ---------------------------
 
     def predict(
         self,
@@ -132,14 +305,9 @@ class ZeroShotNER:
         use_descriptions: bool = True,
     ) -> List[List[str]]:
         if self.auto:
-            _ensure_trained_if_auto()
-            state = read_train_state() or {}
-            adapter_path = state.get("adapter_path")
-            if adapter_path is None:
-                best = get_best_adapter_path()
-                adapter_path = str(best) if best is not None else None
-            if adapter_path and self._loaded_adapter_path != adapter_path and _try_load_adapter(self.extractor, adapter_path):
-                self._loaded_adapter_path = adapter_path
+            self._refresh_adapter_auto()
+        else:
+            self._ensure_on_preferred_device()
 
         th = self.threshold if threshold is None else float(threshold)
         schema: Union[List[str], Dict[str, str]] = (
@@ -149,6 +317,7 @@ class ZeroShotNER:
         )
         max_chunk = getattr(self, "max_chunk_tokens", None) or _max_chunk_tokens()
         batch_size = _ner_batch_size()
+        micro_bs = _micro_batch_size()
         th_per_label = getattr(self, "threshold_per_label", None)
 
         # (tokens, out_idx) 단위로 작업 목록 생성
@@ -163,23 +332,65 @@ class ZeroShotNER:
         if not jobs:
             return []
 
-        batch_texts = []
+        batch_texts: List[str] = []
         for tokens, _ in jobs:
             raw_text, _ = join_tokens_with_spans(tokens)
             batch_texts.append(normalize_ocr_text(raw_text))
 
-        batch_results = self.extractor.batch_extract_entities(
-            batch_texts,
-            schema,
-            batch_size=batch_size,
-            threshold=th,
-            include_confidence=True,
-            include_spans=True,
-        )
+        # 마이크로 배치로 분할 호출 → VRAM 피크 완화
+        results_all: List[Any] = []
+        ctx = None
+        if torch is not None:
+            try:
+                ctx = torch.inference_mode()
+                ctx.__enter__()
+            except Exception:
+                ctx = None
+
+        # 긴 텍스트(문자 수 기준)는 VRAM 폭증 방지를 위해 1건씩, batch_size=1 로 처리
+        long_char_threshold = 500
+        try:
+            for i in range(0, len(batch_texts), micro_bs):
+                chunk = batch_texts[i : i + micro_bs]
+                max_chunk_len = max(len(s) for s in chunk) if chunk else 0
+                use_batch_size = 1 if max_chunk_len > long_char_threshold else batch_size
+                if max_chunk_len > long_char_threshold:
+                    for text in chunk:
+                        one_result = self.extractor.batch_extract_entities(
+                            [text],
+                            schema,
+                            batch_size=1,
+                            threshold=th,
+                            include_confidence=True,
+                            include_spans=True,
+                        )
+                        if isinstance(one_result, list):
+                            results_all.extend(one_result)
+                        else:
+                            results_all.append(one_result)
+                else:
+                    chunk_results = self.extractor.batch_extract_entities(
+                        chunk,
+                        schema,
+                        batch_size=use_batch_size,
+                        threshold=th,
+                        include_confidence=True,
+                        include_spans=True,
+                    )
+                    if isinstance(chunk_results, list):
+                        results_all.extend(chunk_results)
+                    else:
+                        results_all.append(chunk_results)
+        finally:
+            if ctx is not None:
+                try:
+                    ctx.__exit__(None, None, None)
+                except Exception:
+                    pass
 
         outputs: List[List[str]] = [[] for _ in range(len(texts))]
         for i, (tokens, out_idx) in enumerate(jobs):
-            res = batch_results[i] if i < len(batch_results) else {}
+            res = results_all[i] if i < len(results_all) else {}
             _, token_spans = join_tokens_with_spans(tokens)
             entities = _parse_entities_from_res(res, th, th_per_label)
             entities.sort(key=lambda x: x.confidence, reverse=True)
@@ -394,23 +605,73 @@ def write_train_state(signature: str, adapter_path: Union[str, Path]) -> None:
     )
 
 
+def _auto_lock_path() -> Path:
+    return get_adapter_dir() / ".auto_train.lock"
+
+
+def _acquire_auto_lock(wait_sec: float) -> Optional[int]:
+    """단순 lockfile (O_EXCL)로 중복 학습 방지. 성공 시 fd 반환."""
+    lock_path = _auto_lock_path()
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    deadline = time.time() + max(0.0, wait_sec)
+    while True:
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            os.write(fd, str(os.getpid()).encode("utf-8"))
+            return fd
+        except FileExistsError:
+            if time.time() >= deadline:
+                return None
+            time.sleep(0.1)
+
+
+def _release_auto_lock(fd: Optional[int]) -> None:
+    if fd is None:
+        return
+    try:
+        os.close(fd)
+    except Exception:
+        pass
+    try:
+        _auto_lock_path().unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
 def _ensure_trained_if_auto() -> None:
-    """어댑터 확인 → 학습 데이터 변경 여부 확인 → 변경 시 추가 학습, 없으면 그대로 → 예측 준비."""
+    """어댑터 확인 → 학습 데이터 변경 여부 확인 → 변경 시 추가 학습, 없으면 그대로."""
     train_dir = get_gliner_train_dir()
     current_sig = get_training_data_signature(train_dir)
-    state = read_train_state()
-    if not current_sig or (state and state.get("signature") == current_sig):
+    if not current_sig:
         return
-    subprocess.run(
-        [
-            sys.executable, "-m", "module.extractor.ner.train",
-            "--train_dir", str(train_dir),
-            "--out_dir", str(get_adapter_dir()),
-        ],
-        cwd=str(_project_root()),
-        check=False,
-    )
 
+    state = read_train_state()
+    if state and state.get("signature") == current_sig:
+        return
+
+    fd = _acquire_auto_lock(_auto_train_lock_wait_sec())
+    if fd is None:
+        # 다른 프로세스가 학습 중일 가능성이 높음 → 여기서는 멎지 않도록 그냥 반환
+        return
+
+    try:
+        # 락 획득 후 재검증 (경합 상황 방지)
+        state2 = read_train_state()
+        current_sig2 = get_training_data_signature(train_dir)
+        if not current_sig2 or (state2 and state2.get("signature") == current_sig2):
+            return
+
+        subprocess.run(
+            [
+                sys.executable, "-m", "module.extractor.ner.train",
+                "--train_dir", str(train_dir),
+                "--out_dir", str(get_adapter_dir()),
+            ],
+            cwd=str(_project_root()),
+            check=False,
+        )
+    finally:
+        _release_auto_lock(fd)
 
 def bio_to_ner_spans(labels: List[str]) -> List[List[Union[int, str]]]:
     """BIO 시퀀스 → GLiNER2 ner 형식 [[start, end, label], ...] (end 포함). train.py 병합용."""
