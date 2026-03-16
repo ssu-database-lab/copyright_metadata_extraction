@@ -1,3 +1,0 @@
-{"id": "m1", "tokens": ["대가", "금", "1", ",", "000", ",", "000", "원", "을", "지급합니다"], "labels": ["O", "O", "B-money", "I-money", "I-money", "I-money", "I-money", "I-money", "O", "O"]}
-{"id": "m2", "tokens": ["보상금", "500만원", "으로", "합의", "하였습니다"], "labels": ["O", "B-money", "O", "O", "O"]}
-{"id": "m3", "tokens": ["사용료", "는", "월", "100", "만", "원", "입니다"], "labels": ["O", "O", "O", "B-money", "I-money", "I-money", "O"]}

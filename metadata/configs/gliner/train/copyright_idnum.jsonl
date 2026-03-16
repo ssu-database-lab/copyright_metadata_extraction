@@ -1,0 +1,15 @@
+{"id": "id01", "tokens": ["사업자등록번호", ":", "123-45-67890"], "labels": ["O", "O", "B-copyright_idnum"]}
+{"id": "id02", "tokens": ["문서", "번호", ":", "제2024-001호"], "labels": ["O", "O", "O", "B-copyright_idnum"]}
+{"id": "id03", "tokens": ["관리번호", ":", "doc00180820201224100019"], "labels": ["O", "O", "B-copyright_idnum"]}
+{"id": "id04", "tokens": ["접수번호", ":", "2024-001"], "labels": ["O", "O", "B-copyright_idnum"]}
+{"id": "id05", "tokens": ["법인등록번호", ":", "110111-1234567"], "labels": ["O", "O", "B-copyright_idnum"]}
+{"id": "id06", "tokens": ["계약번호", ":", "KCISA-2024-0156"], "labels": ["O", "O", "B-copyright_idnum"]}
+{"id": "id07", "tokens": ["등록번호", ":", "제", "C-2024-012345", "호"], "labels": ["O", "O", "O", "B-copyright_idnum", "O"]}
+{"id": "id08", "tokens": ["사업자번호", ":", "214-86-12345"], "labels": ["O", "O", "B-copyright_idnum"]}
+{"id": "id09", "tokens": ["문서ID", ":", "doc00185020201224103706"], "labels": ["O", "O", "B-copyright_idnum"]}
+{"id": "id10", "tokens": ["관리", "번호", ":", "2024-KCI-001"], "labels": ["O", "O", "O", "B-copyright_idnum"]}
+{"id": "id11", "tokens": ["저작권", "등록번호", ":", "제C-2023-056789호"], "labels": ["O", "O", "O", "B-copyright_idnum"]}
+{"id": "id12", "tokens": ["참조번호", ":", "REF-20240301-001"], "labels": ["O", "O", "B-copyright_idnum"]}
+{"id": "id13", "tokens": ["사업자등록번호", "214-86-55555", "로", "등록된"], "labels": ["O", "B-copyright_idnum", "O", "O"]}
+{"id": "id14", "tokens": ["허가번호", ":", "제2024-문화-0012호"], "labels": ["O", "O", "B-copyright_idnum"]}
+{"id": "id15", "tokens": ["계약", "관리번호", ":", "CT-2024-001234"], "labels": ["O", "O", "O", "B-copyright_idnum"]}

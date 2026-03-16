@@ -1,3 +1,0 @@
-{"id": "q1", "tokens": ["총", "수량", "10", "건", "입니다"], "labels": ["O", "O", "B-quantity", "I-quantity", "O"]}
-{"id": "q2", "tokens": ["영상", "5", "개", ",", "사진", "20", "장", "제출"], "labels": ["O", "B-quantity", "I-quantity", "O", "O", "B-quantity", "I-quantity", "O"]}
-{"id": "q3", "tokens": ["분량", "100", "페이지", "이상"], "labels": ["O", "B-quantity", "I-quantity", "O"]}

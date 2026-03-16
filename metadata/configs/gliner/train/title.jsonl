@@ -1,3 +1,0 @@
-{"id": "t1", "tokens": ["계약서", "제목", ":", "저작물", "양도", "계약서"], "labels": ["O", "O", "O", "B-title", "I-title", "I-title"]}
-{"id": "t2", "tokens": ["문서명", "마들", "대표", "동의서", "및", "명단"], "labels": ["O", "B-title", "I-title", "I-title", "O", "O"]}
-{"id": "t3", "tokens": ["저작물명", "화순", "동의서", "이점례"], "labels": ["O", "B-title", "I-title", "I-title"]}

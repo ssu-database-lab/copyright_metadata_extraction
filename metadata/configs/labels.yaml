@@ -31,10 +31,10 @@ ocr:
 # regex_extractor에서 사용 (비어있으면 URL만 추출)
 # 각 라벨별로 {label}_extractor 함수로 분리하여 관리
 regex_labels:
-  phone: r'\d{2,3}-\d{3,4}-\d{4}|\d{3}-\d{4}-\d{4}|\(\d{2,3}\)\s*\d{3,4}-\d{4}'
-  email: r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-  url: r'https?://(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)'
-  date: r'\d{4}년\s*\d{1,2}월\s*\d{1,2}일|\d{4}-\d{1,2}-\d{1,2}|\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.|\d{4}\.\d{1,2}\.\d{1,2}|\d{4}/\d{1,2}/\d{1,2}'
+  ch_co_phone: r'\d{2,3}-\d{3,4}-\d{4}|\d{3}-\d{4}-\d{4}|\(\d{2,3}\)\s*\d{3,4}-\d{4}'
+  ch_co_email: r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+  copyright_url: r'https?://(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)'
+  copyright_date: r'\d{4}년\s*\d{1,2}월\s*\d{1,2}일|\d{4}-\d{1,2}-\d{1,2}|\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.|\d{4}\.\d{1,2}\.\d{1,2}|\d{4}/\d{1,2}/\d{1,2}'
 
 
 # NER 단계에서 사용할 스키마
@@ -45,25 +45,24 @@ regex_labels:
 # ner:
 #   threshold: 0.55
 #   threshold_per_label:
-#     person_name: 0.45
-#     company_name: 0.48
-#     date: 0.62
-#     phone: 0.60
+#     ch_co_name: 0.45
+#     ch_co_company: 0.48
+#     copyright_date: 0.62
+#     ch_co_phone: 0.60
 ner:
   # auto: configs/gliner/predict/ 에 있는 .txt/.md 파일명으로 라벨 자동 수집.
   #       predict만 관리하면 train도 같은 라벨 집합으로 동작.
   labels: auto
   # 수동 지정 시 예:
   # labels:
-  #   - doc_title
-  #   - paragraph_title
-  #   - company_name
-  #   - person_name
-  #   - address
-  #   - phone
-  #   - email
-  #   - url
-  #   - date
+  #   - ch_co_name
+  #   - ch_co_address
+  #   - ch_co_phone
+  #   - ch_co_company
+  #   - ch_co_email
+  #   - copyright_kotitle
+  #   - copyright_date
+  #   - copyright_url
 
 # LLM 단계에서 사용할 스키마
 # LLM 단계는 능동적인 구분이 가능할 수준의 LLM을 사용할 가능성이 높으므로 라벨 분류는 지금 고려하지 않음

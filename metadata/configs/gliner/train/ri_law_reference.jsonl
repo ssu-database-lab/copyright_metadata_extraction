@@ -1,0 +1,15 @@
+{"id": "l01", "tokens": ["저작권법", "제24조의", "2", "에", "따라"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "I-ri_law_reference", "O", "O"]}
+{"id": "l02", "tokens": ["공공데이터의", "제공", "및", "이용활성화에", "관한", "법률", "이", "시행됨에", "따라"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "I-ri_law_reference", "I-ri_law_reference", "I-ri_law_reference", "I-ri_law_reference", "O", "O", "O"]}
+{"id": "l03", "tokens": ["저작권법", "제50조", "에", "따릅니다"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "O", "O"]}
+{"id": "l04", "tokens": ["저작권법", "시행령", "제25조", "에", "의거하여"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "I-ri_law_reference", "O", "O"]}
+{"id": "l05", "tokens": ["저작권법", "제45조", "제1항", "에", "따라", "양도한다"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "I-ri_law_reference", "O", "O", "O"]}
+{"id": "l06", "tokens": ["저작권법", "제46조", "에", "의한", "이용허락"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "O", "O", "O"]}
+{"id": "l07", "tokens": ["민법", "제105조", "에", "따라", "합의합니다"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "O", "O", "O"]}
+{"id": "l08", "tokens": ["저작권법", "제2조", "제1호", "에서", "정의하는"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "I-ri_law_reference", "O", "O"]}
+{"id": "l09", "tokens": ["관련", "법령", ":", "저작권법", "제63조"], "labels": ["O", "O", "O", "B-ri_law_reference", "I-ri_law_reference"]}
+{"id": "l10", "tokens": ["개인정보", "보호법", "제15조", "에", "따라", "수집합니다"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "I-ri_law_reference", "O", "O", "O"]}
+{"id": "l11", "tokens": ["저작권법", "제124조", "에", "의한", "침해", "구제"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "O", "O", "O", "O"]}
+{"id": "l12", "tokens": ["문화재보호법", "제48조", "에", "근거하여"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "O", "O"]}
+{"id": "l13", "tokens": ["전자서명법", "제3조", "에", "따른", "전자서명"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "O", "O", "O"]}
+{"id": "l14", "tokens": ["저작권법", "제35조의3", "에", "해당하는", "경우"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "O", "O", "O"]}
+{"id": "l15", "tokens": ["콘텐츠산업", "진흥법", "제22조", "에", "따릅니다"], "labels": ["B-ri_law_reference", "I-ri_law_reference", "I-ri_law_reference", "O", "O"]}

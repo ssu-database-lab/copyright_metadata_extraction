@@ -1,2 +1,0 @@
-{"id": "lang1", "tokens": ["문서", "언어", "한국어", "로", "작성되었습니다"], "labels": ["O", "O", "B-language", "O", "O"]}
-{"id": "lang2", "tokens": ["언어", "형태", ":", "영어", ",", "중국어", "혼용"], "labels": ["O", "O", "O", "B-language", "O", "B-language", "O"]}

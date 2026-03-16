@@ -1,2 +1,0 @@
-{"id": "r1", "tokens": ["저작권", "및", "저작인격권", "을", "양도합니다"], "labels": ["B-right_info", "O", "B-right_info", "O", "O"]}
-{"id": "r2", "tokens": ["지적재산권", ",", "인접권", "에", "관한", "조항"], "labels": ["B-right_info", "O", "B-right_info", "O", "O", "O"]}

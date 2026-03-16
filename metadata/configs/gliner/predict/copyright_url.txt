@@ -1,0 +1,2 @@
+URL, 링크. 인터넷 주소, 웹사이트 경로.
+예: https://www.kcisa.kr, http://copyright.go.kr, https://www.culture.go.kr

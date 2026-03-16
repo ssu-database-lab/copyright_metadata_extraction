@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import gc
 import json
+import os
 import shutil
 import tempfile
 from pathlib import Path
 from typing import Optional
+
+from accelerate.utils import find_executable_batch_size
 
 from module.extractor.ner.base import (
     bio_to_ner_spans,
@@ -28,8 +32,35 @@ except ImportError as e:
     raise RuntimeError("GLiNER2가 필요합니다.") from e
 
 
+_VRAM_SAFETY_MARGIN_MIB = 1500
+_TARGET_EFFECTIVE_BATCH = 8
+
+
+def _check_gpu_and_limit_memory() -> None:
+    """GPU VRAM 확인 및 메모리 사용 제한 설정."""
+    import torch
+
+    if not torch.cuda.is_available():
+        print("[GPU] CUDA GPU가 감지되지 않습니다. CPU로 학습합니다.")
+        return
+
+    props = torch.cuda.get_device_properties(0)
+    total_mib = props.total_memory / (1024 ** 2)
+    allocated_mib = torch.cuda.memory_allocated(0) / (1024 ** 2)
+
+    print(f"[GPU] {props.name} — VRAM {total_mib:.0f} MiB, 사용 중 {allocated_mib:.0f} MiB")
+
+    fraction = min(0.85, (total_mib - _VRAM_SAFETY_MARGIN_MIB) / total_mib)
+    torch.cuda.set_per_process_memory_fraction(fraction, 0)
+    print(f"[GPU] 메모리 제한 {fraction:.0%} ({total_mib * fraction:.0f} MiB) 설정 완료")
+
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+    gc.collect()
+    torch.cuda.empty_cache()
+
+
 def _line_to_gliner_record(obj: dict) -> Optional[dict]:
-    """한 줄 JSON (tokens, labels BIO) → GLiNER2 학습 형식 {"input": str, "output": {"entities": {label: [mention, ...]}}}."""
+    """한 줄 JSON (tokens, labels BIO) → GLiNER2 학습 형식."""
     tokens = obj.get("tokens", [])
     labels = obj.get("labels", [])
     if not tokens or len(tokens) != len(labels):
@@ -89,11 +120,13 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def _make_config(args: argparse.Namespace, out_dir: Path) -> "TrainingConfig":
+def _make_config(args: argparse.Namespace, out_dir: Path, batch_size: int) -> "TrainingConfig":
+    grad_accum = max(1, _TARGET_EFFECTIVE_BATCH // batch_size)
     return TrainingConfig(
         output_dir=str(out_dir),
         num_epochs=args.epochs,
-        batch_size=args.batch_size,
+        batch_size=batch_size,
+        gradient_accumulation_steps=grad_accum,
         encoder_lr=args.encoder_lr,
         task_lr=args.task_lr,
         use_lora=True,
@@ -102,7 +135,40 @@ def _make_config(args: argparse.Namespace, out_dir: Path) -> "TrainingConfig":
         lora_dropout=args.lora_dropout,
         lora_target_modules=args.lora_target,
         save_adapter_only=True,
+        num_workers=0,
+        pin_memory=False,
     )
+
+
+def _train_with_auto_batch(
+    args: argparse.Namespace,
+    train_jsonl: str,
+    out_dir: Path,
+    valid_jsonl: Optional[str] = None,
+) -> None:
+    """find_executable_batch_size로 GPU에 맞는 batch_size를 자동 탐색하여 학습."""
+
+    @find_executable_batch_size(starting_batch_size=args.batch_size)
+    def _inner(batch_size: int):
+        import torch
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        grad_accum = max(1, _TARGET_EFFECTIVE_BATCH // batch_size)
+        print(f"[Auto] batch_size={batch_size}, gradient_accumulation={grad_accum}, "
+              f"effective_batch={batch_size * grad_accum}")
+
+        model = GLiNER2.from_pretrained(args.base_model)
+        config = _make_config(args, out_dir, batch_size)
+        trainer = GLiNER2Trainer(model=model, config=config)
+
+        if valid_jsonl:
+            trainer.train(train_data=train_jsonl, valid_data=valid_jsonl)
+        else:
+            trainer.train(train_data=train_jsonl)
+
+    _inner()
 
 
 def _run_optimization(args: argparse.Namespace, train_dir: Path) -> None:
@@ -111,10 +177,7 @@ def _run_optimization(args: argparse.Namespace, train_dir: Path) -> None:
     opt_dir = get_optimized_dir()
     opt_dir.mkdir(parents=True, exist_ok=True)
     try:
-        model = GLiNER2.from_pretrained(args.base_model)
-        config = _make_config(args, opt_dir)
-        trainer = GLiNER2Trainer(model=model, config=config)
-        trainer.train(train_data=str(merged_path))
+        _train_with_auto_batch(args, str(merged_path), opt_dir)
         for run_path in list_adapter_runs():
             shutil.rmtree(run_path, ignore_errors=True)
     finally:
@@ -122,6 +185,8 @@ def _run_optimization(args: argparse.Namespace, train_dir: Path) -> None:
 
 
 def main() -> None:
+    _check_gpu_and_limit_memory()
+
     args = parse_args()
     train_dir_path = Path(args.train_dir) if args.train_dir else get_gliner_train_dir()
     has_dir_data = train_dir_path.exists() and any(train_dir_path.glob("*.jsonl"))
@@ -143,16 +208,12 @@ def main() -> None:
         return
 
     try:
-        model = GLiNER2.from_pretrained(args.base_model)
-        config = _make_config(args, out_dir)
-        trainer = GLiNER2Trainer(model=model, config=config)
-        if args.valid_jsonl:
-            trainer.train(train_data=train_jsonl, valid_data=args.valid_jsonl)
-        else:
-            trainer.train(train_data=train_jsonl)
+        _train_with_auto_batch(args, train_jsonl, out_dir, args.valid_jsonl)
+
         if signature:
             write_train_state(signature, out_dir)
         print(f"[OK] Done. Adapter saved under: {out_dir}")
+
         if has_dir_data and len(list_adapter_runs()) >= 5:
             print("[OK] Adapter 5개 이상 → 최적화 수행 중...")
             _run_optimization(args, train_dir_path)

@@ -1,0 +1,15 @@
+{"id": "pos01", "tokens": ["대표이사", "홍길동", "이", "서명합니다"], "labels": ["B-ch_co_position", "O", "O", "O"]}
+{"id": "pos02", "tokens": ["담당자", ":", "김철수", "팀장"], "labels": ["O", "O", "O", "B-ch_co_position"]}
+{"id": "pos03", "tokens": ["사업", "책임자", "(", "대표자", ")", "강희주"], "labels": ["O", "B-ch_co_position", "O", "B-ch_co_position", "O", "O"]}
+{"id": "pos04", "tokens": ["대표자명", ":", "손영호"], "labels": ["B-ch_co_position", "O", "O"]}
+{"id": "pos05", "tokens": ["직위", ":", "이사"], "labels": ["O", "O", "B-ch_co_position"]}
+{"id": "pos06", "tokens": ["저작권담당관", "이정훈", "과장"], "labels": ["B-ch_co_position", "O", "B-ch_co_position"]}
+{"id": "pos07", "tokens": ["참여", "인력", "손동수", "가", "총괄한다"], "labels": ["B-ch_co_position", "I-ch_co_position", "O", "O", "O"]}
+{"id": "pos08", "tokens": ["양도인", "대표", ":", "강희주"], "labels": ["O", "B-ch_co_position", "O", "O"]}
+{"id": "pos09", "tokens": ["양수인", "대표자", "손영호", "입니다"], "labels": ["O", "B-ch_co_position", "O", "O"]}
+{"id": "pos10", "tokens": ["실장", "김수현", "이", "검토합니다"], "labels": ["B-ch_co_position", "O", "O", "O"]}
+{"id": "pos11", "tokens": ["수석연구원", "박지성", "님"], "labels": ["B-ch_co_position", "O", "O"]}
+{"id": "pos12", "tokens": ["사업관리", "총괄", "담당"], "labels": ["O", "O", "B-ch_co_position"]}
+{"id": "pos13", "tokens": ["원장", "이승기", "가", "승인합니다"], "labels": ["B-ch_co_position", "O", "O", "O"]}
+{"id": "pos14", "tokens": ["과장", "이영희", ",", "대리", "최민수"], "labels": ["B-ch_co_position", "O", "O", "B-ch_co_position", "O"]}
+{"id": "pos15", "tokens": ["위임자", "직위", ":", "부장"], "labels": ["O", "O", "O", "B-ch_co_position"]}

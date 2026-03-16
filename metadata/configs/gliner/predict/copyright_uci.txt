@@ -1,0 +1,2 @@
+UCI(Universal Content Identifier). 저작물의 고유 식별자.
+예: I005-UCI-12345, G701-UCI-67890

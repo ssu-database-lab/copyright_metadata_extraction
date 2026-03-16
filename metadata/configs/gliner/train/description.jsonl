@@ -1,2 +1,0 @@
-{"id": "desc1", "tokens": ["목적", "본", "계약은", "저작물", "의", "양도", "에", "관한", "사항", "을", "정합니다"], "labels": ["O", "B-description", "I-description", "I-description", "O", "I-description", "O", "I-description", "I-description", "O", "O"]}
-{"id": "desc2", "tokens": ["제", "1", "조", "목적", "이", "계약은", "이용", "허락", "조건", "을", "규정", "한다"], "labels": ["O", "O", "O", "B-description", "O", "I-description", "I-description", "I-description", "I-description", "O", "I-description", "O"]}

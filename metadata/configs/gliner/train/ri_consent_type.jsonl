@@ -1,0 +1,15 @@
+{"id": "con01", "tokens": ["저작인접권의", "저작재산권", "양도", "및", "초상", "이용", "동의서"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type"]}
+{"id": "con02", "tokens": ["개인정보", "수집", "및", "이용", "동의"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type"]}
+{"id": "con03", "tokens": ["개인정보", "제3자", "제공에", "대한", "동의"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type"]}
+{"id": "con04", "tokens": ["이용", "허락", "동의서", "를", "제출합니다"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "O", "O"]}
+{"id": "con05", "tokens": ["저작물", "이용", "동의서", "에", "서명합니다"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "O", "O"]}
+{"id": "con06", "tokens": ["초상", "공개", "및", "사용", "동의"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type"]}
+{"id": "con07", "tokens": ["양도자", "본인은", "개인정보", "수집", "및", "이용에", "동의합니다"], "labels": ["O", "O", "B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "O"]}
+{"id": "con08", "tokens": ["양도자", "본인은", "개인정보의", "제3자", "제공에", "동의합니다"], "labels": ["O", "O", "B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "O"]}
+{"id": "con09", "tokens": ["이용동의서", "를", "아래와", "같이", "작성합니다"], "labels": ["B-ri_consent_type", "O", "O", "O", "O"]}
+{"id": "con10", "tokens": ["초상권", "이용", "동의서"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type"]}
+{"id": "con11", "tokens": ["저작재산권", "양도", "동의서", "입니다"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "O"]}
+{"id": "con12", "tokens": ["공연", "촬영", "동의서", "에", "서명"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "O", "O"]}
+{"id": "con13", "tokens": ["음원", "사용", "동의서"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type"]}
+{"id": "con14", "tokens": ["영상", "촬영", "및", "배포", "동의서"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type"]}
+{"id": "con15", "tokens": ["저작인격권", "행사", "동의서"], "labels": ["B-ri_consent_type", "I-ri_consent_type", "I-ri_consent_type"]}

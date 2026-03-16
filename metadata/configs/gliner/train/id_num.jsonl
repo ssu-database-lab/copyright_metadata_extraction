@@ -1,3 +1,0 @@
-{"id": "id1", "tokens": ["사업자등록번호", "123", "-", "45", "-", "67890"], "labels": ["O", "B-id_num", "I-id_num", "I-id_num", "I-id_num", "I-id_num"]}
-{"id": "id2", "tokens": ["문서", "번호", "제2024", "-", "001", "호"], "labels": ["O", "O", "B-id_num", "I-id_num", "I-id_num", "O"]}
-{"id": "id3", "tokens": ["접수번호", "doc00180820201224100019", "로", "관리합니다"], "labels": ["O", "B-id_num", "O", "O"]}

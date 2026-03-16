@@ -1,3 +1,0 @@
-{"id": "pos1", "tokens": ["대표이사", "홍길동", "이", "서명합니다"], "labels": ["B-position", "O", "O", "O"]}
-{"id": "pos2", "tokens": ["담당자", "김철수", "팀장", "님"], "labels": ["O", "B-name", "B-position", "O"]}
-{"id": "pos3", "tokens": ["직위", "이사", ",", "저작권담당관"], "labels": ["O", "B-position", "O", "B-position"]}

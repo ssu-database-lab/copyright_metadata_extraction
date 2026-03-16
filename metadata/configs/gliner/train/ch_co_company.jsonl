@@ -1,0 +1,20 @@
+{"id": "c01", "tokens": ["기관명", ":", "한국문화정보원"], "labels": ["O", "O", "B-ch_co_company"]}
+{"id": "c02", "tokens": ["(주)", "스튜디오수집", "이하", "양도자", "라", "한다"], "labels": ["B-ch_co_company", "I-ch_co_company", "O", "O", "O", "O"]}
+{"id": "c03", "tokens": ["기관명", ":", "주)", "나라지식정보"], "labels": ["O", "O", "B-ch_co_company", "I-ch_co_company"]}
+{"id": "c04", "tokens": ["양수기관", "한국문화정보원", "에", "양도한다"], "labels": ["O", "B-ch_co_company", "O", "O"]}
+{"id": "c05", "tokens": ["소속", ":", "스튜디오수집"], "labels": ["O", "O", "B-ch_co_company"]}
+{"id": "c06", "tokens": ["국가유산청", ":", "대상체에", "대한", "사진", "촬영"], "labels": ["B-ch_co_company", "O", "O", "O", "O", "O"]}
+{"id": "c07", "tokens": ["제주콘텐츠진흥원", ":", "영상", "촬영본"], "labels": ["B-ch_co_company", "O", "O", "O"]}
+{"id": "c08", "tokens": ["충남문화관광재단", ":", "사진", "촬영본"], "labels": ["B-ch_co_company", "O", "O", "O"]}
+{"id": "c09", "tokens": ["행정안전부", "와", "한국문화정보원", "이", "공동으로"], "labels": ["B-ch_co_company", "O", "B-ch_co_company", "O", "O"]}
+{"id": "c10", "tokens": ["(주)에이비씨", "대표", "이사"], "labels": ["B-ch_co_company", "O", "O"]}
+{"id": "c11", "tokens": ["양수인", "기관명", ":", "한국문화정보원"], "labels": ["O", "O", "O", "B-ch_co_company"]}
+{"id": "c12", "tokens": ["발주처", ":", "서울특별시청"], "labels": ["O", "O", "B-ch_co_company"]}
+{"id": "c13", "tokens": ["주식회사", "디지털콘텐츠", "가", "수행합니다"], "labels": ["B-ch_co_company", "I-ch_co_company", "O", "O"]}
+{"id": "c14", "tokens": ["한국저작권위원회", "에서", "관리합니다"], "labels": ["B-ch_co_company", "O", "O"]}
+{"id": "c15", "tokens": ["문화체육관광부", "산하", "한국문화정보원"], "labels": ["B-ch_co_company", "O", "B-ch_co_company"]}
+{"id": "c16", "tokens": ["수행기관", ":", "(주)", "문화기술연구소"], "labels": ["O", "O", "B-ch_co_company", "I-ch_co_company"]}
+{"id": "c17", "tokens": ["제공자", ":", "주)", "나라지식정보", "(", "한국문화정보원", ")"], "labels": ["O", "O", "B-ch_co_company", "I-ch_co_company", "O", "B-ch_co_company", "O"]}
+{"id": "c18", "tokens": ["한국콘텐츠진흥원", "과", "계약을", "체결한다"], "labels": ["B-ch_co_company", "O", "O", "O"]}
+{"id": "c19", "tokens": ["공공기관", "인", "국립중앙박물관", "이", "양수합니다"], "labels": ["O", "O", "B-ch_co_company", "O", "O"]}
+{"id": "c20", "tokens": ["기관명", ":", "(재)", "경기문화재단"], "labels": ["O", "O", "B-ch_co_company", "I-ch_co_company"]}

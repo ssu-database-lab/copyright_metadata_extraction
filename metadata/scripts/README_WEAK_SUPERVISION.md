@@ -23,15 +23,15 @@ python scripts/generate_training_data_from_documents.py \
 ### 동작 방식
 
 1. **정규식 기반 라벨링**: `labels.yaml`의 `regex_labels` 패턴 사용
-   - `phone_number`: 전화번호 패턴
-   - `email`: 이메일 패턴
-   - `url`: URL 패턴
-   - `date`: 날짜 패턴
+   - `ch_co_phone`: 전화번호 패턴
+   - `ch_co_email`: 이메일 패턴
+   - `copyright_url`: URL 패턴
+   - `copyright_date`: 날짜 패턴
 
 2. **키워드 기반 라벨링**: 특정 키워드 다음에 오는 단어를 엔티티로 간주
-   - `person_name`: "대표", "사장", "이름" 등 다음의 단어
-   - `company_name`: "회사", "기관", "법인" 등 다음의 단어
-   - `address`: "주소", "소재지", "위치" 등 다음의 단어
+   - `ch_co_name`: "대표", "사장", "이름" 등 다음의 단어
+   - `ch_co_company`: "회사", "기관", "법인" 등 다음의 단어
+   - `ch_co_address`: "주소", "소재지", "위치" 등 다음의 단어
 
 3. **자동 저장**: 각 라벨별로 `ner_labels/{label}.jsonl` 파일에 추가
 
@@ -105,8 +105,8 @@ for sentence in sentences:
 # address.jsonl에 추가
 echo '{"id":"manual_001","tokens":["서울시","강남구","역삼동","123"],"labels":["B-address","I-address","I-address","I-address"]}' >> configs/training/ner_labels/address.jsonl
 
-# company_name.jsonl에 추가
-echo '{"id":"manual_002","tokens":["주식회사","카카오"],"labels":["B-company_name","I-company_name"]}' >> configs/training/ner_labels/company_name.jsonl
+# ch_co_company.jsonl에 추가
+echo '{"id":"manual_002","tokens":["주식회사","카카오"],"labels":["B-ch_co_company","I-ch_co_company"]}' >> configs/training/ner_labels/ch_co_company.jsonl
 ```
 
 ## 방법 4: 배치 처리로 대량 생성
@@ -156,9 +156,9 @@ regex_labels:
 
 ```python
 keyword_patterns = {
-    "person_name": ["대표", "사장", "이름", "대표이사", "대표자", "담당자", "작성자", "성명"],
-    "company_name": ["회사", "기관", "법인", "주식회사", "(주)", "㈜", "기업", "단체", "조합"],
-    "address": ["주소", "소재지", "위치", "본사", "사무소", "도로명", "지번", "주소지"],
+    "ch_co_name": ["대표", "사장", "이름", "대표이사", "대표자", "담당자", "작성자", "성명"],
+    "ch_co_company": ["회사", "기관", "법인", "주식회사", "(주)", "㈜", "기업", "단체", "조합"],
+    "ch_co_address": ["주소", "소재지", "위치", "본사", "사무소", "도로명", "지번", "주소지"],
 }
 ```
 

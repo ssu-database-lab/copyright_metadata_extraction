@@ -1,0 +1,15 @@
+{"id": "m01", "tokens": ["대가", ":", "금", "1,000,000원", "을", "지급합니다"], "labels": ["O", "O", "O", "B-ri_money", "O", "O"]}
+{"id": "m02", "tokens": ["보상금", "500만원", "으로", "합의"], "labels": ["O", "B-ri_money", "O", "O"]}
+{"id": "m03", "tokens": ["사용료", ":", "월", "100만원"], "labels": ["O", "O", "O", "B-ri_money"]}
+{"id": "m04", "tokens": ["금액", ":", "금", "오백만원정"], "labels": ["O", "O", "O", "B-ri_money"]}
+{"id": "m05", "tokens": ["로열티", ":", "10%"], "labels": ["O", "O", "B-ri_money"]}
+{"id": "m06", "tokens": ["계약", "대가", ":", "무상", "으로", "양도한다"], "labels": ["O", "O", "O", "B-ri_money", "O", "O"]}
+{"id": "m07", "tokens": ["양도", "대가", "금", "3,000,000", "원", "을", "지급한다"], "labels": ["O", "O", "O", "B-ri_money", "I-ri_money", "O", "O"]}
+{"id": "m08", "tokens": ["총", "사업비", ":", "50,000,000원"], "labels": ["O", "O", "O", "B-ri_money"]}
+{"id": "m09", "tokens": ["이용료", ":", "건당", "5,000원"], "labels": ["O", "O", "O", "B-ri_money"]}
+{"id": "m10", "tokens": ["보수", ":", "금", "이백만원정", "(", "2,000,000원", ")"], "labels": ["O", "O", "O", "B-ri_money", "O", "B-ri_money", "O"]}
+{"id": "m11", "tokens": ["수수료", ":", "매출의", "5%"], "labels": ["O", "O", "O", "B-ri_money"]}
+{"id": "m12", "tokens": ["위약금", ":", "계약금의", "200%"], "labels": ["O", "O", "O", "B-ri_money"]}
+{"id": "m13", "tokens": ["연간", "사용료", ":", "12,000,000원"], "labels": ["O", "O", "O", "B-ri_money"]}
+{"id": "m14", "tokens": ["대가", "없이", "무상으로", "양도합니다"], "labels": ["O", "O", "B-ri_money", "O"]}
+{"id": "m15", "tokens": ["계약금", ":", "금", "일천만원정"], "labels": ["O", "O", "O", "B-ri_money"]}

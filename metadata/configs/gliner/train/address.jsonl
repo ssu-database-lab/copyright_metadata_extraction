@@ -1,2 +1,0 @@
-{"id": "a1", "tokens": ["주소", ":", "서울시", "강남구", "테헤란로", "123", "입니다"], "labels": ["O", "O", "B-address", "I-address", "I-address", "I-address", "O"]}
-{"id": "a2", "tokens": ["사무실", "은", "충청북도", "진천군", "진천읍", "중앙로", "45", "에", "있습니다"], "labels": ["O", "O", "B-address", "I-address", "I-address", "I-address", "I-address", "O", "O"]}

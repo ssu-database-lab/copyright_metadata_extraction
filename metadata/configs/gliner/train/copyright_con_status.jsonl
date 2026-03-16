@@ -1,0 +1,15 @@
+{"id": "st01", "tokens": ["동의함"], "labels": ["B-copyright_con_status"]}
+{"id": "st02", "tokens": ["동의하지", "않음"], "labels": ["B-copyright_con_status", "I-copyright_con_status"]}
+{"id": "st03", "tokens": ["진행", "상태", ":", "검토", "중"], "labels": ["O", "O", "O", "B-copyright_con_status", "I-copyright_con_status"]}
+{"id": "st04", "tokens": ["처리", "현황", ":", "승인", "완료"], "labels": ["O", "O", "O", "B-copyright_con_status", "I-copyright_con_status"]}
+{"id": "st05", "tokens": ["접수", "완료", "되었습니다"], "labels": ["B-copyright_con_status", "I-copyright_con_status", "O"]}
+{"id": "st06", "tokens": ["계약", "체결", "완료"], "labels": ["B-copyright_con_status", "I-copyright_con_status", "I-copyright_con_status"]}
+{"id": "st07", "tokens": ["처리", "대기", "상태입니다"], "labels": ["B-copyright_con_status", "I-copyright_con_status", "O"]}
+{"id": "st08", "tokens": ["양도자", "본인은", "동의합니다"], "labels": ["O", "O", "B-copyright_con_status"]}
+{"id": "st09", "tokens": ["서명", "완료"], "labels": ["B-copyright_con_status", "I-copyright_con_status"]}
+{"id": "st10", "tokens": ["반려", "사유를", "확인하세요"], "labels": ["B-copyright_con_status", "O", "O"]}
+{"id": "st11", "tokens": ["검토", "진행", "중", "입니다"], "labels": ["B-copyright_con_status", "I-copyright_con_status", "I-copyright_con_status", "O"]}
+{"id": "st12", "tokens": ["양도", "확인", "완료"], "labels": ["B-copyright_con_status", "I-copyright_con_status", "I-copyright_con_status"]}
+{"id": "st13", "tokens": ["미동의"], "labels": ["B-copyright_con_status"]}
+{"id": "st14", "tokens": ["학습", "완료", "후", "적용됩니다"], "labels": ["B-copyright_con_status", "I-copyright_con_status", "O", "O"]}
+{"id": "st15", "tokens": ["보류", "중", "입니다"], "labels": ["B-copyright_con_status", "I-copyright_con_status", "O"]}

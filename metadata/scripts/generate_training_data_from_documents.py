@@ -36,9 +36,9 @@ TRAINING_DATA_DIR = Path("configs/training")
 
 # 키워드 기반 라벨링용 (generate_training_data_from_documents에서 사용)
 _KEYWORD_PATTERNS = {
-    "person_name": ["대표", "사장", "이름", "대표이사", "대표자", "담당자", "작성자"],
-    "company_name": ["회사", "기관", "법인", "주식회사", "(주)", "㈜", "기업", "단체"],
-    "address": ["주소", "소재지", "위치", "본사", "사무소", "도로명", "지번"],
+    "ch_co_name": ["대표", "사장", "이름", "대표이사", "대표자", "담당자", "작성자"],
+    "ch_co_company": ["회사", "기관", "법인", "주식회사", "(주)", "㈜", "기업", "단체"],
+    "ch_co_address": ["주소", "소재지", "위치", "본사", "사무소", "도로명", "지번"],
 }
 
 
@@ -53,22 +53,9 @@ def load_regex_patterns() -> Dict[str, str]:
     with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     
-    regex_labels = config.get("regular", {}).get("regex_labels", {})
+    regex_labels = config.get("regex_labels", {})
     
-    # NER 라벨과 매핑
-    ner_label_map = {
-        "phone": "phone_number",
-        "email": "email",
-        "url": "url",
-        "date": "date",
-    }
-    
-    patterns = {}
-    for regex_label, pattern in regex_labels.items():
-        ner_label = ner_label_map.get(regex_label, regex_label)
-        patterns[ner_label] = pattern
-    
-    return patterns
+    return dict(regex_labels)
 
 
 def label_with_keywords(
@@ -76,11 +63,11 @@ def label_with_keywords(
     keyword_map: Dict[str, List[str]],
 ) -> List[str]:
     """
-    키워드 기반 라벨링 (person_name, company_name, address 등)
+    키워드 기반 라벨링 (ch_co_name, ch_co_company, ch_co_address 등)
     
     Args:
         tokens: 토큰 리스트
-        keyword_map: {"person_name": ["대표", "사장", "이름"], ...}
+        keyword_map: {"ch_co_name": ["대표", "사장", "이름"], ...}
     
     Returns:
         BIO 라벨 리스트
