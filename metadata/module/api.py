@@ -7,8 +7,8 @@ from typing import Optional, Dict, Any, List
 from module.extractor import ocr as ocr_module
 from module.parts import directory
 from module.extractor import text as text_module
-from module.extractor.ner import ner_extractor
-from module.extractor.ner.base import load_labels_from_yaml
+from module.extractor.ner import ner_extractor, ner_predict_only
+from module.extractor.ner.base import load_labels_from_yaml, ner_check_and_train
 from module.extractor import regular as regular_module
 from module.extractor.llm import merge_regular_ner
 from module.parts.types import Decision
@@ -90,14 +90,30 @@ def ocr_extract(
     )
 
 
+def ner_train(*, force: bool = False) -> Dict[str, Any]:
+    """
+    NER 학습 모듈: 자동학습 검사 + 필요 시 학습 실행.
+
+    학습 데이터의 서명(signature)을 비교하여 변경 사항이 있을 때만 학습합니다.
+    force=True 시 서명과 관계없이 강제 재학습합니다.
+    """
+    return ner_check_and_train(force=force)
+
+
 def ner_predict(
     text: Optional[str] = None,
     file_path: Optional[str] = None,
     sentences: Optional[List[Dict[str, Any]]] = None,
     tokens: Optional[List[Dict[str, Any]]] = None,
     out_dir: str = "data/out/results",
-    **kwargs,
+    threshold: Optional[float] = None,
 ) -> Dict[str, Any]:
+    """
+    NER 예측 전용 API (자동학습 없음).
+
+    학습이 필요하면 먼저 ner_train()을 호출하세요.
+    최신 어댑터를 자동으로 로드하여 예측합니다.
+    """
     if text is None and file_path is None and (sentences is None or tokens is None):
         raise ValueError("text/file_path 또는 sentences/tokens 중 하나는 제공되어야 합니다.")
 
@@ -113,7 +129,9 @@ def ner_predict(
         sentences = struct.get("sentences", [])
         tokens = struct.get("tokens", [])
 
-    decisions = ner_extractor(sentences=sentences or [], tokens=tokens or [], **kwargs)
+    decisions = ner_predict_only(
+        sentences=sentences or [], tokens=tokens or [], threshold=threshold,
+    )
     print(
         f"NER: sentences={len(sentences or [])}, tokens={len(tokens or [])}, decisions={len(decisions)}"
     )
@@ -253,7 +271,7 @@ def metadata_extract(
     tokens = struct.get("tokens", [])
 
     regular_decisions = regular_module.regular_extractor(sentences=sentences, tokens=tokens)
-    ner_decisions = ner_extractor(sentences=sentences, tokens=tokens, threshold=threshold)
+    ner_decisions = ner_predict_only(sentences=sentences, tokens=tokens, threshold=threshold)
     merged_decisions = merge_regular_ner(regular_decisions, ner_decisions)
 
     ner_labels, _ = load_labels_from_yaml()

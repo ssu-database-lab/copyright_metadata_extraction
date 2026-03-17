@@ -7,21 +7,40 @@ from module import api
 # -----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    api.metadata_extract(
-        file_path="data/out/ocr/result",
-        out_dir="data/out/results"
+
+    # 1) OCR 추출
+    print("=" * 60)
+    print("[TEST] OCR 추출")
+    print("=" * 60)
+    api.ocr_extract(
+        in_path="data/in/text/text.txt",
+        out_path="data/out/ocr/result",
     )
 
-    # NER 모델 학습 (필요 시 주석 해제 또는 사용)
-    # api.ner_train(
-    #     model_name="bert-base-multilingual-cased",
-    #     model_path=None,  # None이면 model_downloaded/{model_name} 사용
-    #     adapter_dir="models/ner/adapters",
-    #     epochs=5,
-    #     batch_size=16,
-    #     learning_rate=2e-5,
-    #     train_data_path="configs/training",  # configs/training 디렉토리에서 *.jsonl 또는 training_data.json 읽음
-    #     train_ratio=0.8,
-    #     random_seed=42
-    # )
-    
+    # 2) NER 학습 (자동학습 검사 → 변경 시에만 학습)
+    print("=" * 60)
+    print("[TEST] NER 학습")
+    print("=" * 60)
+    train_result = api.ner_train()
+    print(f"  → {train_result.get('message')}")
+
+    # 3) NER 예측 (학습 없이 예측만)
+    print("=" * 60)
+    print("[TEST] NER 예측")
+    print("=" * 60)
+    predict_result = api.ner_predict(
+        file_path="data/out/ocr/result/화순동의서_박광순.txt",
+        out_dir="data/out/results",
+    )
+    print(f"  → labels: {list(predict_result.keys())}")
+
+    # 4) 통합 메타데이터 추출 (OCR + 정규식 + NER 예측)
+    print("=" * 60)
+    print("[TEST] 통합 메타데이터 추출")
+    print("=" * 60)
+    meta_result = api.metadata_extract(
+        file_path="data/out/ocr/result/화순동의서_박광순.txt",
+        out_dir="data/out/results",
+    )
+    print(f"  → ner={len(meta_result.get('ner_decisions', []))}, "
+          f"regular={len(meta_result.get('regular_decisions', []))}")

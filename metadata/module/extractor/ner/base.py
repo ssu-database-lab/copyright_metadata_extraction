@@ -763,6 +763,80 @@ def _ensure_trained_if_auto() -> None:
         _release_auto_lock(fd)
 
 
+def _run_ner_training(lock_wait_sec: float = 600.0, force: bool = False) -> bool:
+    """락 보호 하에 학습 subprocess 실행."""
+    train_dir = get_gliner_train_dir()
+    fd = _acquire_auto_lock(lock_wait_sec)
+    if fd is None:
+        log.warning("학습 락 획득 실패 (다른 학습이 진행 중일 수 있음)")
+        return False
+    try:
+        if not force:
+            state = read_train_state()
+            current_sig = get_training_data_signature(train_dir)
+            if state and state.get("signature") == current_sig:
+                return True
+
+        subprocess.run(
+            [
+                sys.executable, "-m", "module.extractor.ner.train",
+                "--train_dir", str(train_dir),
+                "--out_dir", str(get_adapter_dir()),
+            ],
+            cwd=str(_project_root()),
+            check=False,
+        )
+        return True
+    finally:
+        _release_auto_lock(fd)
+
+
+def ner_check_and_train(force: bool = False) -> Dict[str, Any]:
+    """NER 학습 모듈: 학습 데이터 변경 검사 + 필요 시 학습 실행.
+
+    Args:
+        force: True 시 서명 일치 여부와 관계없이 강제 재학습.
+
+    Returns:
+        학습 상태 정보 dict.
+    """
+    train_dir = get_gliner_train_dir()
+    current_sig = get_training_data_signature(train_dir)
+    state = read_train_state() or {}
+
+    result: Dict[str, Any] = {
+        "current_signature": current_sig,
+        "stored_signature": state.get("signature"),
+        "training_needed": False,
+        "training_executed": False,
+        "adapter_path": state.get("adapter_path"),
+    }
+
+    if not current_sig:
+        result["message"] = "학습 데이터가 없습니다."
+        print(f"[NER Train] {result['message']}")
+        return result
+
+    if not force and state.get("signature") == current_sig:
+        result["message"] = "학습 데이터 변경 없음. 학습 불필요."
+        print(f"[NER Train] {result['message']}")
+        return result
+
+    result["training_needed"] = True
+    print(f"[NER Train] 학습 데이터 변경 감지 (force={force}). 학습 시작...")
+
+    success = _run_ner_training(force=force)
+
+    state2 = read_train_state() or {}
+    result["training_executed"] = success
+    result["adapter_path"] = state2.get("adapter_path")
+    result["new_signature"] = state2.get("signature")
+    result["message"] = "학습 완료." if success else "학습 실패 (락 획득 불가)."
+    print(f"[NER Train] {result['message']} adapter: {result['adapter_path']}")
+
+    return result
+
+
 # -----------------------------------------------------------------------------
 # BIO 변환 (train.py에서도 사용)
 # -----------------------------------------------------------------------------
@@ -994,6 +1068,28 @@ def ner_extractor(
         return []
 
     model = _get_auto_model() if auto else _get_zeroshot_model()
+    predicted_labels_list = model.predict(sentence_texts, threshold=threshold)
+
+    decisions: List[Decision] = []
+    for (sid, sent_tokens), predicted_labels in zip(sentence_info, predicted_labels_list):
+        decisions.extend(_build_decisions_from_bio(sent_tokens, predicted_labels, int(sid)))
+    return decisions
+
+
+def ner_predict_only(
+    *,
+    sentences: List[Dict[str, Any]],
+    tokens: List[Dict[str, Any]],
+    threshold: Optional[float] = None,
+) -> List[Decision]:
+    """NER 예측만 수행 (자동학습 없음). 최신 어댑터를 로드한 뒤 예측."""
+    sentence_texts, sentence_info = _prepare_sentence_input(sentences, tokens)
+    if not sentence_texts:
+        return []
+
+    model = _get_zeroshot_model()
+    model._load_best_adapter_and_move()
+
     predicted_labels_list = model.predict(sentence_texts, threshold=threshold)
 
     decisions: List[Decision] = []
