@@ -520,6 +520,17 @@ async def index(request: Request):
         }
     )
 
+@app.get("/v2")
+async def index_v2(request: Request):
+    """메인 페이지 v2 (새 디자인)"""
+    return templates.TemplateResponse(
+        "index2.html",
+        {
+            "request": request,
+            "models": AVAILABLE_MODELS
+        }
+    )
+
 @app.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),

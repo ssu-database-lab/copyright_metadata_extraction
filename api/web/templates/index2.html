@@ -1,0 +1,2992 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>저작권 메타데이터 추출 시스템</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --sidebar-w: 280px;
+            --navy: #0f172a;
+            --navy-light: #1e293b;
+            --navy-lighter: #334155;
+            --accent-from: #6366f1;
+            --accent-to: #8b5cf6;
+            --accent: #7c3aed;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+            --shadow-lg: 0 4px 24px rgba(0,0,0,0.08);
+            --shadow-xl: 0 8px 40px rgba(0,0,0,0.12);
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            font-size: 15px;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: var(--sidebar-w);
+            min-height: 100vh;
+            background: var(--navy);
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            transition: transform var(--transition);
+        }
+
+        .sidebar-header {
+            padding: 28px 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .sidebar-logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo-text {
+            color: #f1f5f9;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .sidebar-logo-sub {
+            color: var(--text-light);
+            font-size: 15px;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        /* Stepper */
+        .stepper {
+            padding: 24px 20px;
+            flex: 1;
+        }
+
+        .stepper-label {
+            color: var(--text-light);
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 16px;
+            padding-left: 4px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 12px 8px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background var(--transition);
+            position: relative;
+            margin-bottom: 2px;
+        }
+
+        .step-item:hover {
+            background: rgba(255,255,255,0.04);
+        }
+
+        .step-item.active {
+            background: rgba(99,102,241,0.12);
+        }
+
+        .step-item.completed .step-number {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .step-item.active .step-number {
+            background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+            border-color: var(--accent-from);
+            box-shadow: 0 0 16px rgba(99,102,241,0.4);
+        }
+
+        .step-item.active .step-title {
+            color: #fff;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            border: 2px solid var(--navy-lighter);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            color: var(--text-light);
+            flex-shrink: 0;
+            transition: all var(--transition);
+            position: relative;
+        }
+
+        .step-number svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .step-connector {
+            position: absolute;
+            left: 23px;
+            top: 44px;
+            width: 2px;
+            height: 14px;
+            background: var(--navy-lighter);
+            transition: background var(--transition);
+        }
+
+        .step-item.completed .step-connector {
+            background: var(--success);
+        }
+
+        .step-item.active .step-connector {
+            background: linear-gradient(to bottom, var(--accent-from), transparent);
+        }
+
+        .step-info {
+            padding-top: 4px;
+        }
+
+        .step-title {
+            color: var(--text-light);
+            font-size: 15px;
+            font-weight: 600;
+            transition: color var(--transition);
+        }
+
+        .step-desc {
+            color: rgba(148,163,184,0.6);
+            font-size: 15px;
+            margin-top: 2px;
+        }
+
+        .step-item.completed .step-title {
+            color: var(--success);
+        }
+
+        .step-item.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        /* Sidebar footer */
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .sidebar-footer-text {
+            color: var(--text-light);
+            font-size: 11px;
+            text-align: center;
+            opacity: 0.5;
+            white-space: nowrap;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            min-height: 100vh;
+            padding: 32px 40px;
+        }
+
+        .main-header {
+            margin-bottom: 32px;
+        }
+
+        .main-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .main-subtitle {
+            color: var(--text-muted);
+            font-size: 16px;
+            margin-top: 4px;
+        }
+
+        /* Step panels */
+        .step-panel {
+            display: none;
+            animation: fadeSlideIn 0.35s ease;
+        }
+
+        .step-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            padding: 28px;
+            margin-bottom: 20px;
+            transition: box-shadow var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title svg {
+            width: 18px;
+            height: 18px;
+            color: var(--accent);
+        }
+
+        /* ===== STEP 1: FILE UPLOAD ===== */
+        .dropzone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 56px 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(99,102,241,0.02), rgba(139,92,246,0.02));
+        }
+
+        .dropzone::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: var(--radius);
+            padding: 2px;
+            background: linear-gradient(135deg, var(--accent-from), var(--accent-to), var(--accent-from));
+            background-size: 300% 300%;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity var(--transition);
+            animation: gradientMove 4s ease infinite;
+        }
+
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .dropzone:hover::before,
+        .dropzone.dragover::before {
+            opacity: 1;
+        }
+
+        .dropzone:hover {
+            border-color: transparent;
+            background: linear-gradient(135deg, rgba(99,102,241,0.04), rgba(139,92,246,0.04));
+        }
+
+        .dropzone.dragover {
+            border-color: transparent;
+            background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08));
+            transform: scale(1.005);
+        }
+
+        .dropzone-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform var(--transition);
+        }
+
+        .dropzone:hover .dropzone-icon {
+            transform: translateY(-4px);
+        }
+
+        .dropzone-icon svg {
+            width: 28px;
+            height: 28px;
+            color: white;
+        }
+
+        .dropzone-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .dropzone-desc {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+
+        .dropzone-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: inherit;
+        }
+
+        .dropzone-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+        }
+
+        .format-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .format-badge {
+            padding: 4px 10px;
+            background: rgba(99,102,241,0.08);
+            color: var(--accent);
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        /* File preview */
+        .file-preview {
+            display: none;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: rgba(99,102,241,0.04);
+            border: 1px solid rgba(99,102,241,0.15);
+            border-radius: var(--radius-sm);
+            margin-top: 16px;
+        }
+
+        .file-preview.show {
+            display: flex;
+        }
+
+        .file-preview-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .file-preview-icon.pdf { background: rgba(239,68,68,0.1); color: var(--danger); }
+        .file-preview-icon.image { background: rgba(16,185,129,0.1); color: var(--success); }
+        .file-preview-icon.doc { background: rgba(59,130,246,0.1); color: var(--info); }
+        .file-preview-icon.other { background: rgba(100,116,139,0.1); color: var(--text-muted); }
+
+        .file-preview-icon svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .file-preview-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-preview-name {
+            font-size: 16px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-preview-size {
+            color: var(--text-muted);
+            font-size: 16px;
+            margin-top: 2px;
+        }
+
+        .file-preview-remove {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(239,68,68,0.08);
+            color: var(--danger);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+        }
+
+        .file-preview-remove:hover {
+            background: rgba(239,68,68,0.15);
+        }
+
+        .file-preview-remove svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .file-thumbnail {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        /* ===== STEP 2: OCR Settings ===== */
+        .pill-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            padding: 10px 20px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--card);
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text);
+            position: relative;
+        }
+
+        .pill:hover {
+            border-color: var(--accent-from);
+            background: rgba(99,102,241,0.03);
+        }
+
+        .pill.selected {
+            border-color: var(--accent-from);
+            background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.06));
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .pill.selected::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        .pill-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .pill-recommended {
+            font-size: 16px;
+            padding: 2px 7px;
+            background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+            color: white;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+
+        /* ===== STEP 3: Model Settings ===== */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .settings-full {
+            grid-column: 1 / -1;
+        }
+
+        .setting-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .custom-select {
+            width: 100%;
+            padding: 10px 40px 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--card);
+            font-family: inherit;
+            font-size: 15px;
+            color: var(--text);
+            appearance: none;
+            cursor: pointer;
+            transition: border-color var(--transition);
+        }
+
+        .custom-select:focus {
+            outline: none;
+            border-color: var(--accent-from);
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid var(--text-muted);
+            pointer-events: none;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: rgba(16,185,129,0.04);
+            border: 1px solid rgba(16,185,129,0.15);
+            border-radius: var(--radius-sm);
+        }
+
+        .toggle-label {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .toggle-desc {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-track {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--border);
+            border-radius: 12px;
+            transition: background var(--transition);
+        }
+
+        .toggle-track::before {
+            content: '';
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: transform var(--transition);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .toggle input:checked + .toggle-track {
+            background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+        }
+
+        .toggle input:checked + .toggle-track::before {
+            transform: translateX(20px);
+        }
+
+        /* Big CTA */
+        .btn-cta {
+            width: 100%;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-cta::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-cta:hover::before {
+            left: 100%;
+        }
+
+        .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(99,102,241,0.4);
+        }
+
+        .btn-cta:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-cta svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* ===== STEP 4: Processing ===== */
+        .pipeline-viz {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            padding: 32px 16px;
+            flex-wrap: wrap;
+        }
+
+        .pipeline-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.3;
+            transition: all 0.5s ease;
+            position: relative;
+        }
+
+        .pipeline-node.active {
+            opacity: 1;
+        }
+
+        .pipeline-node.active .pipeline-node-circle {
+            box-shadow: 0 0 24px rgba(99,102,241,0.4);
+            border-color: var(--accent-from);
+        }
+
+        .pipeline-node.completed {
+            opacity: 1;
+        }
+
+        .pipeline-node.completed .pipeline-node-circle {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .pipeline-node.completed .pipeline-node-circle svg {
+            color: white;
+        }
+
+        .pipeline-node-circle {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--card);
+            transition: all 0.5s ease;
+            position: relative;
+        }
+
+        .pipeline-node.active .pipeline-node-circle::after {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 20px;
+            border: 2px solid var(--accent-from);
+            opacity: 0;
+            animation: pulseRing 1.5s ease infinite;
+        }
+
+        @keyframes pulseRing {
+            0% { opacity: 0.6; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.15); }
+        }
+
+        .pipeline-node-circle svg {
+            width: 24px;
+            height: 24px;
+            color: var(--text-muted);
+        }
+
+        .pipeline-node-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .pipeline-node.active .pipeline-node-label {
+            color: var(--accent);
+        }
+
+        .pipeline-node.completed .pipeline-node-label {
+            color: var(--success);
+        }
+
+        .pipeline-node-time {
+            font-size: 16px;
+            color: var(--text-light);
+        }
+
+        .pipeline-connector {
+            width: 48px;
+            height: 2px;
+            background: var(--border);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pipeline-connector.active::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, var(--accent-from), var(--accent-to));
+            animation: flowRight 1s ease infinite;
+        }
+
+        .pipeline-connector.completed {
+            background: var(--success);
+        }
+
+        @keyframes flowRight {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Circular progress */
+        .circular-progress {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin: 28px 0;
+        }
+
+        .progress-ring-wrapper {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring-bg {
+            stroke: var(--border);
+        }
+
+        .progress-ring-fg {
+            stroke: url(#progressGradient);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .progress-percent {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .progress-message {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text);
+            text-align: center;
+        }
+
+        /* Log area */
+        .log-area {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 14px;
+            background: var(--navy);
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 15px;
+            line-height: 1.8;
+            color: #a5f3fc;
+            margin-top: 16px;
+        }
+
+        .log-line {
+            opacity: 0;
+            animation: logAppear 0.3s ease forwards;
+        }
+
+        @keyframes logAppear {
+            to { opacity: 1; }
+        }
+
+        .log-time {
+            color: var(--text-light);
+            margin-right: 8px;
+        }
+
+        .log-level-info { color: #67e8f9; }
+        .log-level-success { color: #6ee7b7; }
+        .log-level-warn { color: #fcd34d; }
+        .log-level-error { color: #fca5a5; }
+
+        /* ===== STEP 5: Results ===== */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            text-align: center;
+            transition: all var(--transition);
+        }
+
+        .summary-card:hover {
+            border-color: var(--accent-from);
+            box-shadow: var(--shadow);
+        }
+
+        .summary-card-value {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .summary-card-value.success-val {
+            background: var(--success);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        .summary-card-label {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        /* Result Tabs */
+        .result-tabs {
+            display: flex;
+            gap: 2px;
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            padding: 3px;
+            margin-bottom: 20px;
+        }
+
+        .result-tab {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all var(--transition);
+            text-align: center;
+        }
+
+        .result-tab:hover {
+            color: var(--text);
+        }
+
+        .result-tab.active {
+            background: var(--card);
+            color: var(--accent);
+            font-weight: 600;
+            box-shadow: var(--shadow);
+        }
+
+        .result-tab-content {
+            display: none;
+            animation: fadeSlideIn 0.3s ease;
+        }
+
+        .result-tab-content.active {
+            display: block;
+        }
+
+        /* OCR text display */
+        .ocr-text-display {
+            background: var(--navy);
+            border-radius: var(--radius-sm);
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 16px;
+            line-height: 1.7;
+            color: #e2e8f0;
+            counter-reset: line;
+        }
+
+        .ocr-line {
+            display: flex;
+            gap: 16px;
+        }
+
+        .ocr-line-num {
+            color: var(--navy-lighter);
+            min-width: 32px;
+            text-align: right;
+            user-select: none;
+        }
+
+        /* Metadata cards */
+        .metadata-group {
+            margin-bottom: 20px;
+        }
+
+        .metadata-group-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            padding: 10px 14px;
+            background: linear-gradient(90deg, rgba(99,102,241,0.06), transparent);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            margin-bottom: 12px;
+        }
+
+        .metadata-pairs {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 10px;
+        }
+
+        .metadata-pair {
+            padding: 10px 14px;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .metadata-key {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .metadata-value {
+            font-size: 15px;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .metadata-value.date-val { color: var(--info); }
+        .metadata-value.name-val { color: var(--success); }
+        .metadata-value.empty-val { color: var(--text-light); font-style: italic; }
+
+        /* Consolidation decision cards */
+        .decision-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 10px;
+            overflow: hidden;
+            transition: all var(--transition);
+        }
+
+        .decision-card:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .decision-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background var(--transition);
+        }
+
+        .decision-card-header:hover {
+            background: var(--bg);
+        }
+
+        .decision-card-field {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .decision-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .decision-badge.AGREED { background: rgba(16,185,129,0.1); color: var(--success); }
+        .decision-badge.CONFLICT { background: rgba(245,158,11,0.1); color: var(--warning); }
+        .decision-badge.LLM_ONLY { background: rgba(59,130,246,0.1); color: var(--info); }
+        .decision-badge.NER_ONLY { background: rgba(139,92,246,0.1); color: var(--accent); }
+        .decision-badge.MISSING { background: rgba(100,116,139,0.1); color: var(--text-muted); }
+
+        .decision-expand-icon {
+            margin-left: 8px;
+            color: var(--text-light);
+            transition: transform var(--transition);
+        }
+
+        .decision-card.expanded .decision-expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .decision-card-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .decision-card.expanded .decision-card-body {
+            max-height: 500px;
+        }
+
+        .decision-card-body-inner {
+            padding: 0 16px 16px;
+        }
+
+        .decision-values-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .decision-value-box {
+            padding: 10px 12px;
+            background: var(--bg);
+            border-radius: 8px;
+            border-left: 3px solid var(--border);
+        }
+
+        .decision-value-box.llm { border-left-color: var(--info); }
+        .decision-value-box.ner { border-left-color: var(--accent); }
+        .decision-value-box.final { border-left-color: var(--success); }
+        .decision-value-box.confidence { border-left-color: var(--warning); }
+
+        .decision-value-box-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 4px;
+        }
+
+        .decision-value-box-content {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            word-break: break-all;
+        }
+
+        .decision-evidence-box {
+            padding: 10px 12px;
+            background: rgba(16,185,129,0.04);
+            border: 1px solid rgba(16,185,129,0.12);
+            border-radius: 8px;
+        }
+
+        .decision-evidence-box-label {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--success);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 4px;
+        }
+
+        .decision-evidence-box-content {
+            font-size: 16px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Download buttons */
+        .download-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-download {
+            padding: 10px 18px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--card);
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-download:hover {
+            border-color: var(--accent-from);
+            color: var(--accent);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-download.primary {
+            background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+            color: white;
+            border-color: transparent;
+        }
+
+        .btn-download.primary:hover {
+            box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+            color: white;
+        }
+
+        .btn-download svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Error banner */
+        .error-banner {
+            display: none;
+            padding: 14px 18px;
+            background: rgba(239,68,68,0.06);
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: var(--radius-sm);
+            color: var(--danger);
+            font-size: 15px;
+            font-weight: 500;
+            margin-top: 16px;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .error-banner.show {
+            display: flex;
+        }
+
+        .error-banner svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        /* Utility */
+        .hidden { display: none !important; }
+
+        .btn-back {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--card);
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .btn-back:hover {
+            border-color: var(--accent-from);
+            color: var(--accent);
+        }
+
+        .btn-back svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* NER results */
+        .entity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .entity-card-mini {
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+            background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+            color: white;
+        }
+
+        .entity-card-mini-type {
+            font-size: 15px;
+            opacity: 0.85;
+            margin-bottom: 4px;
+        }
+
+        .entity-card-mini-count {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        /* Mobile sidebar toggle */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 200;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: none;
+            background: var(--navy);
+            color: white;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 99;
+        }
+
+        /* Consolidation summary in results */
+        .consol-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .consol-stat {
+            text-align: center;
+            padding: 12px 8px;
+            background: var(--bg);
+            border-radius: 8px;
+        }
+
+        .consol-stat-num {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .consol-stat-num.agreed { color: var(--success); }
+        .consol-stat-num.conflict { color: var(--warning); }
+        .consol-stat-num.llm-only { color: var(--info); }
+        .consol-stat-num.ner-only { color: var(--accent); }
+        .consol-stat-num.missing { color: var(--text-light); }
+
+        .consol-stat-label {
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        /* Loading spinner for buttons */
+        .spinner-small {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* JSON raw toggle */
+        .raw-json-toggle {
+            font-size: 15px;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .raw-json-toggle:hover { color: var(--accent); }
+
+        .raw-json-box {
+            display: none;
+            background: var(--navy);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .raw-json-box.show {
+            display: block;
+        }
+
+        .raw-json-box pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #e2e8f0;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            :root { --sidebar-w: 0px; }
+
+            .sidebar {
+                transform: translateX(-280px);
+                width: 280px;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle {
+                display: flex;
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 24px 16px;
+                padding-top: 64px;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline-viz {
+                gap: 0;
+            }
+
+            .pipeline-connector {
+                width: 24px;
+            }
+
+            .summary-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-light); }
+
+        /* NER standalone result style */
+        .ner-result-section {
+            margin-top: 16px;
+        }
+
+        .ner-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .ner-stat-card {
+            padding: 14px;
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .ner-stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .ner-stat-label {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile sidebar toggle -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    </button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <div>
+                    <div class="sidebar-logo-text">저작권 메타데이터</div>
+                    <div class="sidebar-logo-sub">추출 시스템 v2.0</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="stepper">
+            <div class="stepper-label">처리 단계</div>
+
+            <div class="step-item active" data-step="1" onclick="goToStep(1)">
+                <div class="step-number">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <div class="step-info">
+                    <div class="step-title">파일 업로드</div>
+                    <div class="step-desc">PDF, 이미지, 문서</div>
+                </div>
+                <div class="step-connector"></div>
+            </div>
+
+            <div class="step-item" data-step="2" onclick="goToStep(2)">
+                <div class="step-number">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>
+                <div class="step-info">
+                    <div class="step-title">OCR 설정</div>
+                    <div class="step-desc">텍스트 인식 엔진</div>
+                </div>
+                <div class="step-connector"></div>
+            </div>
+
+            <div class="step-item" data-step="3" onclick="goToStep(3)">
+                <div class="step-number">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a9 9 0 0 1 9 9c0 3.5-2 6.5-5 8l-4 3-4-3c-3-1.5-5-4.5-5-8a9 9 0 0 1 9-9z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div class="step-info">
+                    <div class="step-title">추출 모델 설정</div>
+                    <div class="step-desc">LLM / NER 선택</div>
+                </div>
+                <div class="step-connector"></div>
+            </div>
+
+            <div class="step-item disabled" data-step="4">
+                <div class="step-number">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+                </div>
+                <div class="step-info">
+                    <div class="step-title">처리 중...</div>
+                    <div class="step-desc">파이프라인 실행</div>
+                </div>
+                <div class="step-connector"></div>
+            </div>
+
+            <div class="step-item disabled" data-step="5">
+                <div class="step-number">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                </div>
+                <div class="step-info">
+                    <div class="step-title">결과 확인</div>
+                    <div class="step-desc">메타데이터 조회</div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-text">Soongsil University &middot; Database Lab</div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main" id="mainContent">
+
+        <!-- ===== STEP 1: File Upload ===== -->
+        <section class="step-panel active" id="panel-1">
+            <div class="main-header">
+                <div class="main-title">파일 업로드</div>
+                <div class="main-subtitle">저작권 문서를 업로드하면 메타데이터를 자동으로 추출합니다</div>
+            </div>
+
+            <div class="card">
+                <div class="dropzone" id="dropzone">
+                    <div class="dropzone-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <div class="dropzone-title">파일을 드래그하거나 클릭하여 업로드</div>
+                    <div class="dropzone-desc">최대 100MB, 다양한 문서 형식 지원</div>
+                    <button class="dropzone-btn" id="selectFileBtn" type="button">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        파일 선택
+                    </button>
+                    <input type="file" id="fileInput" style="display:none" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.tif,.tiff">
+                    <div class="format-badges">
+                        <span class="format-badge">PDF</span>
+                        <span class="format-badge">JPG</span>
+                        <span class="format-badge">JPEG</span>
+                        <span class="format-badge">PNG</span>
+                        <span class="format-badge">TIFF</span>
+                        <span class="format-badge">GIF</span>
+                        <span class="format-badge">BMP</span>
+                    </div>
+                </div>
+
+                <div class="file-preview" id="filePreview">
+                    <div class="file-preview-icon other" id="filePreviewIcon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    <img class="file-thumbnail hidden" id="fileThumbnail" alt="preview">
+                    <div class="file-preview-info">
+                        <div class="file-preview-name" id="filePreviewName">-</div>
+                        <div class="file-preview-size" id="filePreviewSize">-</div>
+                    </div>
+                    <button class="file-preview-remove" id="fileRemoveBtn" type="button">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <button class="btn-cta" id="nextToStep2" disabled>
+                <span>다음: OCR 설정</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+        </section>
+
+        <!-- ===== STEP 2: OCR Settings ===== -->
+        <section class="step-panel" id="panel-2">
+            <div class="main-header">
+                <div class="main-title">OCR 설정</div>
+                <div class="main-subtitle">문서 텍스트 인식에 사용할 엔진을 선택하세요</div>
+            </div>
+
+            <button class="btn-back" onclick="goToStep(1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                이전 단계
+            </button>
+
+            <div class="card">
+                <div class="card-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    OCR 엔진 선택
+                </div>
+                <div class="pill-group" id="ocrProviderGroup">
+                    <button class="pill selected" data-value="alibaba">
+                        <div class="pill-icon" style="background:rgba(255,106,0,0.1);color:#ff6a00;">A</div>
+                        <span>Alibaba Qwen3-VL</span>
+                        <span class="pill-recommended">권장</span>
+                    </button>
+                    <button class="pill" data-value="google">
+                        <div class="pill-icon" style="background:rgba(66,133,244,0.1);color:#4285f4;">G</div>
+                        <span>Google Vision</span>
+                    </button>
+                    <button class="pill" data-value="mistral">
+                        <div class="pill-icon" style="background:rgba(249,115,22,0.1);color:#f97316;">M</div>
+                        <span>Mistral OCR</span>
+                    </button>
+                    <button class="pill" data-value="naver">
+                        <div class="pill-icon" style="background:rgba(3,199,90,0.1);color:#03c75a;">N</div>
+                        <span>Naver CLOVA</span>
+                    </button>
+                </div>
+
+                <!-- Alibaba sub-model -->
+                <div id="alibabaSubModel" style="margin-top:16px;">
+                    <div class="setting-label">Alibaba 모델</div>
+                    <div class="pill-group" id="alibabaModelGroup">
+                        <button class="pill" data-value="qwen-vl-plus">Qwen3-VL-Plus</button>
+                        <button class="pill" data-value="qwen3-vl-30b-a3b-instruct">Qwen3-VL-30B</button>
+                        <button class="pill selected" data-value="qwen3-vl-235b-a22b-instruct">Qwen3-VL-235B (권장)</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-cta" id="nextToStep3">
+                <span>다음: 모델 설정</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+        </section>
+
+        <!-- ===== STEP 3: Model Settings ===== -->
+        <section class="step-panel" id="panel-3">
+            <div class="main-header">
+                <div class="main-title">추출 모델 설정</div>
+                <div class="main-subtitle">LLM과 NER 모델을 선택하고 옵션을 설정하세요</div>
+            </div>
+
+            <button class="btn-back" onclick="goToStep(2)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                이전 단계
+            </button>
+
+            <div class="settings-grid">
+                <!-- LLM Model -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a9 9 0 0 1 9 9c0 3.5-2 6.5-5 8l-4 3-4-3c-3-1.5-5-4.5-5-8a9 9 0 0 1 9-9z"/><circle cx="12" cy="10" r="3"/></svg>
+                        LLM 모델
+                    </div>
+                    <div class="pill-group" id="llmModelGroup">
+                        <button class="pill selected" data-value="alibaba-qwen3.5-122b-a10b">
+                            Qwen3.5-122B
+                            <span class="pill-recommended">권장</span>
+                        </button>
+                        <button class="pill" data-value="alibaba-qwen3.5-plus">Qwen3.5-Plus (397B)</button>
+                        <button class="pill" data-value="alibaba-qwen3.5-flash">Qwen3.5-Flash (35B)</button>
+                    </div>
+                </div>
+
+                <!-- NER Model -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        NER 모델
+                    </div>
+                    <div class="pill-group" id="nerModelGroup">
+                        <button class="pill selected" data-value="klue-roberta-large">
+                            KLUE-RoBERTa
+                            <span class="pill-recommended">권장</span>
+                        </button>
+                        <button class="pill" data-value="google-bert">mBERT</button>
+                        <button class="pill" data-value="xlm-roberta">XLM-RoBERTa</button>
+                    </div>
+                </div>
+
+                <!-- Document Type -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        문서 유형
+                    </div>
+                    <div class="select-wrapper">
+                        <select class="custom-select" id="documentTypeSelect">
+                            <option value="기타문서">기타문서 (자동 감지)</option>
+                            <option value="계약서">계약서</option>
+                            <option value="동의서">동의서</option>
+                            <option value="저작재산권 양도동의서">저작재산권 양도동의서</option>
+                            <option value="디지털 콘텐츠">디지털 콘텐츠</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Consolidation toggle -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+                        옵션
+                    </div>
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">메타데이터 통합 (Consolidation)</div>
+                            <div class="toggle-desc">LLM과 NER 결과를 AI로 교차 검증합니다</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="consolidateToggle" checked>
+                            <span class="toggle-track"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-cta" id="startExtraction">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>추출 시작</span>
+            </button>
+
+            <div class="error-banner" id="errorBanner">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span id="errorText"></span>
+            </div>
+        </section>
+
+        <!-- ===== STEP 4: Processing ===== -->
+        <section class="step-panel" id="panel-4">
+            <div class="main-header">
+                <div class="main-title">처리 중...</div>
+                <div class="main-subtitle">문서를 분석하고 메타데이터를 추출하고 있습니다</div>
+            </div>
+
+            <div class="card">
+                <!-- Pipeline visualization -->
+                <div class="pipeline-viz" id="pipelineViz">
+                    <div class="pipeline-node active" id="pnode-ocr">
+                        <div class="pipeline-node-circle">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        </div>
+                        <div class="pipeline-node-label">OCR</div>
+                        <div class="pipeline-node-time" id="ptime-ocr">--</div>
+                    </div>
+                    <div class="pipeline-connector" id="pconn-1"></div>
+                    <div class="pipeline-node" id="pnode-llm">
+                        <div class="pipeline-node-circle">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a9 9 0 0 1 9 9c0 3.5-2 6.5-5 8l-4 3-4-3c-3-1.5-5-4.5-5-8a9 9 0 0 1 9-9z"/><circle cx="12" cy="10" r="3"/></svg>
+                        </div>
+                        <div class="pipeline-node-label">LLM</div>
+                        <div class="pipeline-node-time" id="ptime-llm">--</div>
+                    </div>
+                    <div class="pipeline-connector" id="pconn-2"></div>
+                    <div class="pipeline-node" id="pnode-ner">
+                        <div class="pipeline-node-circle">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                        <div class="pipeline-node-label">NER</div>
+                        <div class="pipeline-node-time" id="ptime-ner">--</div>
+                    </div>
+                    <div class="pipeline-connector" id="pconn-3"></div>
+                    <div class="pipeline-node" id="pnode-consol">
+                        <div class="pipeline-node-circle">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        </div>
+                        <div class="pipeline-node-label">통합</div>
+                        <div class="pipeline-node-time" id="ptime-consol">--</div>
+                    </div>
+                </div>
+
+                <!-- Circular progress -->
+                <div class="circular-progress">
+                    <div class="progress-ring-wrapper">
+                        <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
+                            <defs>
+                                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="var(--accent-from)"/>
+                                    <stop offset="100%" stop-color="var(--accent-to)"/>
+                                </linearGradient>
+                            </defs>
+                            <circle class="progress-ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8"/>
+                            <circle class="progress-ring-fg" id="progressRing" cx="60" cy="60" r="52" fill="none" stroke-width="8" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+                        </svg>
+                        <div class="progress-percent" id="progressPercent">0%</div>
+                    </div>
+                    <div class="progress-message" id="progressMessage">파일을 처리하고 있습니다...</div>
+                </div>
+
+                <!-- Log area -->
+                <div class="log-area" id="logArea"></div>
+            </div>
+        </section>
+
+        <!-- ===== STEP 5: Results ===== -->
+        <section class="step-panel" id="panel-5">
+            <div class="main-header">
+                <div class="main-title">추출 결과</div>
+                <div class="main-subtitle" id="resultSubtitle">메타데이터 추출이 완료되었습니다</div>
+            </div>
+
+            <button class="btn-back" onclick="resetAndGoToStep1()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                새 파일 처리
+            </button>
+
+            <!-- Summary cards -->
+            <div class="summary-cards" id="summaryCards"></div>
+
+            <!-- Result content will be injected here -->
+            <div id="resultContent"></div>
+
+            <!-- Download bar -->
+            <div class="download-bar" id="downloadBar"></div>
+        </section>
+
+    </main>
+
+    <script>
+    // ==============================
+    // STATE
+    // ==============================
+    let selectedFile = null;
+    let currentRequestId = null;
+    let currentStep = 1;
+    let processingStartTime = null;
+    let stepTimers = {};
+    let lastResult = null;
+
+    // ==============================
+    // SIDEBAR MOBILE
+    // ==============================
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('show');
+    });
+
+    sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('show');
+    });
+
+    // ==============================
+    // STEP NAVIGATION
+    // ==============================
+    function goToStep(step) {
+        // Prevent going to steps that haven't been reached yet
+        if (step === 4 || step === 5) return; // controlled by processing logic
+        if (step > 3) return;
+        if (step > 1 && !selectedFile) return;
+
+        setStep(step);
+    }
+
+    function setStep(step) {
+        currentStep = step;
+
+        // Update panels
+        document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+        const panel = document.getElementById(`panel-${step}`);
+        if (panel) panel.classList.add('active');
+
+        // Update sidebar steps
+        document.querySelectorAll('.step-item').forEach(item => {
+            const s = parseInt(item.dataset.step);
+            item.classList.remove('active', 'completed', 'disabled');
+            if (s < step) {
+                item.classList.add('completed');
+            } else if (s === step) {
+                item.classList.add('active');
+            } else {
+                item.classList.add('disabled');
+            }
+        });
+
+        // Close mobile sidebar
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('show');
+
+        // Scroll to top
+        window.scrollTo(0, 0);
+    }
+
+    function resetAndGoToStep1() {
+        selectedFile = null;
+        currentRequestId = null;
+        lastResult = null;
+        document.getElementById('fileInput').value = '';
+        document.getElementById('filePreview').classList.remove('show');
+        document.getElementById('fileThumbnail').classList.add('hidden');
+        document.getElementById('nextToStep2').disabled = true;
+        document.getElementById('errorBanner').classList.remove('show');
+        document.getElementById('logArea').innerHTML = '';
+        setStep(1);
+    }
+
+    // ==============================
+    // FILE UPLOAD (Step 1)
+    // ==============================
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const selectFileBtn = document.getElementById('selectFileBtn');
+
+    selectFileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.click();
+    });
+
+    dropzone.addEventListener('click', (e) => {
+        if (e.target !== selectFileBtn && !selectFileBtn.contains(e.target)) {
+            fileInput.click();
+        }
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            handleFileSelect(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    function handleFileSelect(file) {
+        selectedFile = file;
+        const preview = document.getElementById('filePreview');
+        const nameEl = document.getElementById('filePreviewName');
+        const sizeEl = document.getElementById('filePreviewSize');
+        const iconEl = document.getElementById('filePreviewIcon');
+        const thumbEl = document.getElementById('fileThumbnail');
+
+        nameEl.textContent = file.name;
+        sizeEl.textContent = formatFileSize(file.size);
+
+        // Determine file type icon
+        const ext = file.name.split('.').pop().toLowerCase();
+        iconEl.className = 'file-preview-icon';
+        thumbEl.classList.add('hidden');
+        iconEl.classList.remove('hidden');
+
+        if (['pdf'].includes(ext)) {
+            iconEl.classList.add('pdf');
+            iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h2m-2 4h6"/></svg>';
+        } else if (['jpg','jpeg','png','gif','bmp','tif','tiff'].includes(ext)) {
+            iconEl.classList.add('hidden');
+            thumbEl.classList.remove('hidden');
+            thumbEl.src = URL.createObjectURL(file);
+        } else if (['doc','docx','hwp'].includes(ext)) {
+            iconEl.classList.add('doc');
+            iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+        } else {
+            iconEl.classList.add('other');
+            iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+        }
+
+        preview.classList.add('show');
+        document.getElementById('nextToStep2').disabled = false;
+    }
+
+    document.getElementById('fileRemoveBtn').addEventListener('click', () => {
+        selectedFile = null;
+        fileInput.value = '';
+        document.getElementById('filePreview').classList.remove('show');
+        document.getElementById('nextToStep2').disabled = true;
+    });
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    // Next step buttons
+    document.getElementById('nextToStep2').addEventListener('click', () => goToStep(2));
+    document.getElementById('nextToStep3').addEventListener('click', () => goToStep(3));
+
+    // ==============================
+    // PILL GROUPS (Step 2 & 3)
+    // ==============================
+    function initPillGroup(groupId) {
+        const group = document.getElementById(groupId);
+        if (!group) return;
+        group.querySelectorAll('.pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                group.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+                pill.classList.add('selected');
+            });
+        });
+    }
+
+    initPillGroup('ocrProviderGroup');
+    initPillGroup('alibabaModelGroup');
+    initPillGroup('llmModelGroup');
+    initPillGroup('nerModelGroup');
+
+    // Show/hide Alibaba sub-model based on OCR provider
+    document.getElementById('ocrProviderGroup').querySelectorAll('.pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            const val = pill.dataset.value;
+            document.getElementById('alibabaSubModel').style.display = val === 'alibaba' ? 'block' : 'none';
+        });
+    });
+
+    // ==============================
+    // HELPERS
+    // ==============================
+    function getSelectedPill(groupId) {
+        const selected = document.querySelector(`#${groupId} .pill.selected`);
+        return selected ? selected.dataset.value : null;
+    }
+
+    function addLog(message, level = 'info') {
+        const area = document.getElementById('logArea');
+        const now = new Date();
+        const time = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-level-${level}">${message}</span>`;
+        area.appendChild(line);
+        area.scrollTop = area.scrollHeight;
+    }
+
+    function setProgress(percent) {
+        const circumference = 2 * Math.PI * 52; // 326.7
+        const offset = circumference - (percent / 100) * circumference;
+        document.getElementById('progressRing').style.strokeDashoffset = offset;
+        document.getElementById('progressPercent').textContent = Math.round(percent) + '%';
+    }
+
+    function setProgressMessage(msg) {
+        document.getElementById('progressMessage').textContent = msg;
+    }
+
+    function setPipelineActive(nodeId) {
+        // nodeId: 'ocr', 'llm', 'ner', 'consol'
+        const nodes = ['ocr', 'llm', 'ner', 'consol'];
+        const connectors = ['pconn-1', 'pconn-2', 'pconn-3'];
+        const idx = nodes.indexOf(nodeId);
+
+        nodes.forEach((n, i) => {
+            const el = document.getElementById(`pnode-${n}`);
+            el.classList.remove('active', 'completed');
+            if (i < idx) {
+                el.classList.add('completed');
+            } else if (i === idx) {
+                el.classList.add('active');
+            }
+        });
+
+        connectors.forEach((c, i) => {
+            const el = document.getElementById(c);
+            el.classList.remove('active', 'completed');
+            if (i < idx) {
+                el.classList.add('completed');
+            } else if (i === idx) {
+                el.classList.add('active');
+            }
+        });
+    }
+
+    function setPipelineCompleted() {
+        ['ocr', 'llm', 'ner', 'consol'].forEach(n => {
+            const el = document.getElementById(`pnode-${n}`);
+            el.classList.remove('active');
+            el.classList.add('completed');
+        });
+        ['pconn-1', 'pconn-2', 'pconn-3'].forEach(c => {
+            const el = document.getElementById(c);
+            el.classList.remove('active');
+            el.classList.add('completed');
+        });
+    }
+
+    function startStepTimer(name) {
+        stepTimers[name] = performance.now();
+    }
+
+    function endStepTimer(name) {
+        if (stepTimers[name]) {
+            const elapsed = ((performance.now() - stepTimers[name]) / 1000).toFixed(1);
+            const timeEl = document.getElementById(`ptime-${name}`);
+            if (timeEl) timeEl.textContent = elapsed + 's';
+            return elapsed;
+        }
+        return '--';
+    }
+
+    function showError(msg) {
+        document.getElementById('errorText').textContent = msg;
+        document.getElementById('errorBanner').classList.add('show');
+    }
+
+    // ==============================
+    // START EXTRACTION (Step 3 -> 4 -> 5)
+    // ==============================
+    document.getElementById('startExtraction').addEventListener('click', startExtraction);
+
+    async function startExtraction() {
+        if (!selectedFile) {
+            showError('파일을 먼저 선택해주세요');
+            return;
+        }
+
+        // Hide error
+        document.getElementById('errorBanner').classList.remove('show');
+
+        // Clear previous logs
+        document.getElementById('logArea').innerHTML = '';
+
+        // Reset pipeline nodes
+        ['ocr','llm','ner','consol'].forEach(n => {
+            const el = document.getElementById(`pnode-${n}`);
+            el.classList.remove('active', 'completed');
+            document.getElementById(`ptime-${n}`).textContent = '--';
+        });
+        ['pconn-1','pconn-2','pconn-3'].forEach(c => {
+            document.getElementById(c).classList.remove('active','completed');
+        });
+
+        // Go to step 4
+        setStep(4);
+        setProgress(0);
+        processingStartTime = performance.now();
+
+        // Gather parameters
+        const ocrProvider = getSelectedPill('ocrProviderGroup') || 'alibaba';
+        const alibabaModel = getSelectedPill('alibabaModelGroup') || 'qwen3-vl-235b-a22b-instruct';
+        const llmModel = getSelectedPill('llmModelGroup') || 'alibaba-qwen3.5-122b-a10b';
+        const nerModel = getSelectedPill('nerModelGroup') || 'klue-roberta-large';
+        const documentType = document.getElementById('documentTypeSelect').value;
+        const consolidate = document.getElementById('consolidateToggle').checked;
+
+        addLog('추출 시작: ' + selectedFile.name, 'info');
+        addLog(`OCR: ${ocrProvider} | LLM: ${llmModel} | NER: ${nerModel}`, 'info');
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('model_name', llmModel);
+        formData.append('document_type', documentType);
+        formData.append('ocr_provider', ocrProvider);
+        formData.append('ner_model', nerModel);
+        formData.append('consolidate', consolidate ? 'true' : 'false');
+        formData.append('stream', 'true');
+
+        if (ocrProvider === 'alibaba') {
+            formData.append('ocr_model', alibabaModel);
+        }
+
+        // Start pipeline
+        setPipelineActive('ocr');
+        startStepTimer('ocr');
+        setProgressMessage('OCR 텍스트 추출 중...');
+        setProgress(5);
+        addLog('OCR 처리 시작...', 'info');
+
+        try {
+            const response = await fetch('/api/llm-extract', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            // Handle SSE stream
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let finalResult = null;
+            let hasError = false;
+            let errorMessage = null;
+
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                    // Process remaining buffer
+                    if (buffer.trim()) {
+                        processSSEBuffer(buffer);
+                    }
+                    break;
+                }
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.trim() && line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            handleSSEMessage(data);
+
+                            if (data.result) {
+                                finalResult = data.result;
+                            }
+                            if (data.error) {
+                                hasError = true;
+                                errorMessage = data.error;
+                                if (data.result) finalResult = data.result;
+                            }
+                        } catch (e) {
+                            // Ignore JSON parse errors for incomplete messages
+                        }
+                    }
+                }
+            }
+
+            function processSSEBuffer(buf) {
+                const lines = buf.split('\n');
+                for (const line of lines) {
+                    if (line.trim() && line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            handleSSEMessage(data);
+                            if (data.result) finalResult = data.result;
+                            if (data.error) {
+                                hasError = true;
+                                errorMessage = data.error;
+                                if (data.result) finalResult = data.result;
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+
+            if (hasError && !finalResult) {
+                throw new Error(errorMessage || '처리 중 오류가 발생했습니다');
+            }
+
+            if (!finalResult) {
+                throw new Error('서버에서 결과를 받지 못했습니다');
+            }
+
+            if (!finalResult.success) {
+                throw new Error(finalResult.error || '처리 중 오류가 발생했습니다');
+            }
+
+            // Processing complete
+            setPipelineCompleted();
+            setProgress(100);
+            setProgressMessage('처리 완료!');
+            addLog('모든 처리 완료', 'success');
+
+            lastResult = finalResult;
+
+            // Transition to results after a short delay
+            setTimeout(() => {
+                showResults(finalResult);
+                setStep(5);
+            }, 800);
+
+        } catch (error) {
+            console.error('Extraction error:', error);
+            addLog('오류: ' + error.message, 'error');
+            setProgressMessage('오류 발생');
+
+            // Go back to step 3 with error
+            setTimeout(() => {
+                setStep(3);
+                showError('처리 오류: ' + error.message);
+            }, 1000);
+        }
+    }
+
+    function handleSSEMessage(data) {
+        // Map steps to pipeline nodes
+        const stepMap = {
+            1: { node: 'ocr', msg: '파일 변환 중...' },
+            2: { node: 'ocr', msg: 'OCR 텍스트 추출 중...' },
+            3: { node: 'llm', msg: 'LLM 메타데이터 추출 중...' },
+            4: { node: 'ner', msg: 'NER 엔티티 추출 중...' },
+            5: { node: 'consol', msg: '메타데이터 통합 검증 중...' }
+        };
+
+        if (data.step !== undefined && data.percent !== undefined) {
+            const info = stepMap[data.step];
+            if (info) {
+                // End timer for previous nodes
+                const nodes = ['ocr', 'llm', 'ner', 'consol'];
+                const currentIdx = nodes.indexOf(info.node);
+
+                // Complete previous nodes
+                for (let i = 0; i < currentIdx; i++) {
+                    const prevNode = nodes[i];
+                    const prevEl = document.getElementById(`pnode-${prevNode}`);
+                    if (!prevEl.classList.contains('completed')) {
+                        prevEl.classList.remove('active');
+                        prevEl.classList.add('completed');
+                        endStepTimer(prevNode);
+                    }
+                }
+
+                // Start timer for current node if not started
+                const currEl = document.getElementById(`pnode-${info.node}`);
+                if (!currEl.classList.contains('active') && !currEl.classList.contains('completed')) {
+                    startStepTimer(info.node);
+                }
+
+                setPipelineActive(info.node);
+                setProgress(data.percent);
+                setProgressMessage(data.message || info.msg);
+            }
+
+            if (data.message) {
+                addLog(data.message, 'info');
+            }
+        }
+
+        if (data.result) {
+            setProgress(100);
+            setPipelineCompleted();
+            endStepTimer('consol');
+        }
+    }
+
+    // ==============================
+    // RESULTS RENDERING (Step 5)
+    // ==============================
+    function showResults(result) {
+        currentRequestId = result.request_id;
+
+        const hasConsolidated = result.consolidated_metadata && Object.keys(result.consolidated_metadata).length > 0;
+        const displayMetadata = hasConsolidated ? result.consolidated_metadata : result.metadata;
+        const totalTime = result.processing_time || result.extraction_time || 0;
+
+        // Summary cards
+        const summaryEl = document.getElementById('summaryCards');
+        let summaryHtml = `
+            <div class="summary-card">
+                <div class="summary-card-value">${result.entity_count || 0}</div>
+                <div class="summary-card-label">추출 엔티티</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-value">${totalTime.toFixed(1)}s</div>
+                <div class="summary-card-label">처리 시간</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-value">${((result.confidence || 0) * 100).toFixed(0)}%</div>
+                <div class="summary-card-label">추출 신뢰도</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-value" style="font-size:13px;">${result.model_used || '-'}</div>
+                <div class="summary-card-label">사용 모델</div>
+            </div>
+        `;
+
+        if (hasConsolidated && result.consolidation_confidence) {
+            summaryHtml += `
+                <div class="summary-card">
+                    <div class="summary-card-value success-val">${((result.consolidation_confidence || 0) * 100).toFixed(0)}%</div>
+                    <div class="summary-card-label">통합 신뢰도</div>
+                </div>
+            `;
+        }
+        summaryEl.innerHTML = summaryHtml;
+
+        // Result subtitle
+        document.getElementById('resultSubtitle').textContent =
+            `${result.filename} | ${result.document_type || '-'} | OCR: ${result.ocr_provider || '-'} | NER: ${result.ner_model || '-'}`;
+
+        // Main content
+        const contentEl = document.getElementById('resultContent');
+        let html = '';
+
+        // Consolidation summary
+        if (result.consolidation_summary) {
+            const s = result.consolidation_summary;
+            html += `
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        통합 검증 요약
+                    </div>
+                    <div class="consol-summary-grid">
+                        <div class="consol-stat">
+                            <div class="consol-stat-num">${s.total_fields || 0}</div>
+                            <div class="consol-stat-label">전체 필드</div>
+                        </div>
+                        <div class="consol-stat">
+                            <div class="consol-stat-num agreed">${s.agreed_fields || 0}</div>
+                            <div class="consol-stat-label">일치</div>
+                        </div>
+                        <div class="consol-stat">
+                            <div class="consol-stat-num conflict">${s.conflicted_fields || 0}</div>
+                            <div class="consol-stat-label">충돌</div>
+                        </div>
+                        <div class="consol-stat">
+                            <div class="consol-stat-num llm-only">${s.llm_only_fields || 0}</div>
+                            <div class="consol-stat-label">LLM 전용</div>
+                        </div>
+                        <div class="consol-stat">
+                            <div class="consol-stat-num ner-only">${s.ner_only_fields || 0}</div>
+                            <div class="consol-stat-label">NER 전용</div>
+                        </div>
+                    </div>
+                    ${result.consolidation_error ? `<div style="padding:8px 12px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);border-radius:8px;font-size:12px;color:var(--warning);">통합 오류: ${escapeHtml(result.consolidation_error)}</div>` : ''}
+                </div>
+            `;
+        }
+
+        // Tabs
+        html += `
+            <div class="card" style="padding:20px;">
+                <div class="result-tabs" id="resultTabs">
+                    <button class="result-tab active" onclick="switchResultTab('ocr')">OCR 텍스트</button>
+                    <button class="result-tab" onclick="switchResultTab('metadata')">추출 메타데이터</button>
+                    ${(result.consolidation_decisions && result.consolidation_decisions.length > 0) ? `<button class="result-tab" onclick="switchResultTab('consolidation')">통합 검증</button>` : ''}
+                </div>
+
+                <!-- OCR Tab -->
+                <div class="result-tab-content active" id="tab-ocr">
+                    <div class="ocr-text-display">${renderOcrText(result.ocr_text || '')}</div>
+                </div>
+
+                <!-- Metadata Tab -->
+                <div class="result-tab-content" id="tab-metadata">
+                    ${hasConsolidated ? `
+                        <div class="result-tabs" style="margin-bottom:12px;" id="metadataSubTabs">
+                            <button class="result-tab active" onclick="switchMetadataSubTab('consolidated')">통합 메타데이터</button>
+                            <button class="result-tab" onclick="switchMetadataSubTab('original')">원본 메타데이터</button>
+                        </div>
+                        <div id="metadata-consolidated" class="result-tab-content active">
+                            ${renderMetadataCards(result.consolidated_metadata)}
+                            <button class="raw-json-toggle" onclick="toggleRawJson('raw-consolidated')">JSON 원본 보기</button>
+                            <div class="raw-json-box" id="raw-consolidated"><pre>${escapeHtml(JSON.stringify(result.consolidated_metadata, null, 2))}</pre></div>
+                        </div>
+                        <div id="metadata-original" class="result-tab-content">
+                            ${renderMetadataCards(result.metadata)}
+                            <button class="raw-json-toggle" onclick="toggleRawJson('raw-original')">JSON 원본 보기</button>
+                            <div class="raw-json-box" id="raw-original"><pre>${escapeHtml(JSON.stringify(result.metadata, null, 2))}</pre></div>
+                        </div>
+                    ` : `
+                        ${renderMetadataCards(displayMetadata)}
+                        <button class="raw-json-toggle" onclick="toggleRawJson('raw-main')">JSON 원본 보기</button>
+                        <div class="raw-json-box" id="raw-main"><pre>${escapeHtml(JSON.stringify(displayMetadata, null, 2))}</pre></div>
+                    `}
+                </div>
+
+                <!-- Consolidation Tab -->
+                ${(result.consolidation_decisions && result.consolidation_decisions.length > 0) ? `
+                <div class="result-tab-content" id="tab-consolidation">
+                    <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted);">${result.consolidation_decisions.length}개 필드 검증 결과</div>
+                    ${result.consolidation_decisions.map((d, i) => renderDecisionCard(d, i)).join('')}
+                </div>
+                ` : ''}
+
+                <!-- Entities section -->
+                ${(result.entities && Object.keys(result.entities).length > 0) ? `
+                <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        NER 엔티티 (${result.entity_count || 0}개)
+                    </div>
+                    <div class="entity-grid">
+                        ${Object.entries(result.entities).map(([type, count]) => `
+                            <div class="entity-card-mini">
+                                <div class="entity-card-mini-type">${type}</div>
+                                <div class="entity-card-mini-count">${count}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ${result.ner_error ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(239,68,68,0.06);border-radius:8px;font-size:12px;color:var(--danger);">NER 오류: ${escapeHtml(result.ner_error)}</div>` : ''}
+                </div>
+                ` : ''}
+            </div>
+        `;
+
+        contentEl.innerHTML = html;
+
+        // Download buttons
+        renderDownloadBar(result, hasConsolidated);
+    }
+
+    function renderOcrText(text) {
+        if (!text) return '<div style="color:var(--text-muted);padding:20px;text-align:center;">OCR 텍스트 없음</div>';
+        const lines = text.split('\n');
+        return lines.map((line, i) =>
+            `<div class="ocr-line"><span class="ocr-line-num">${i + 1}</span><span>${escapeHtml(line) || ' '}</span></div>`
+        ).join('');
+    }
+
+    function renderMetadataCards(metadata) {
+        if (!metadata || Object.keys(metadata).length === 0) {
+            return '<div style="color:var(--text-muted);padding:20px;text-align:center;">메타데이터 없음</div>';
+        }
+
+        // Try to group metadata by categories
+        const groups = categorizeMetadata(metadata);
+        let html = '';
+
+        for (const [groupName, fields] of Object.entries(groups)) {
+            html += `<div class="metadata-group">`;
+            html += `<div class="metadata-group-title">${groupName}</div>`;
+            html += `<div class="metadata-pairs">`;
+            for (const [key, value] of Object.entries(fields)) {
+                const valueClass = getValueClass(key, value);
+                const displayValue = formatMetadataValue(value);
+                html += `
+                    <div class="metadata-pair">
+                        <div class="metadata-key">${escapeHtml(key)}</div>
+                        <div class="metadata-value ${valueClass}">${escapeHtml(displayValue)}</div>
+                    </div>
+                `;
+            }
+            html += `</div></div>`;
+        }
+
+        return html;
+    }
+
+    function categorizeMetadata(metadata) {
+        const groups = {};
+        const copyrightKeys = ['copyright_id', 'copyright_uci', 'copyright_num', 'title', 'work_type', 'description', 'creation_date', 'publication_date', 'work_title', 'content_type'];
+        const authorKeys = ['author', 'creator', 'owner', 'joint_author', 'licensor', 'licensee', 'ch_co_', 'ch_ja_', 'ch_nr_'];
+        const rightsKeys = ['ri_', 'right', 'license', 'permission', 'restriction', 'consent', 'agreement', 'contract'];
+
+        for (const [key, value] of Object.entries(metadata)) {
+            if (value === null || value === undefined) continue;
+
+            const lk = key.toLowerCase();
+            let groupName = '기타 정보';
+
+            if (copyrightKeys.some(ck => lk.includes(ck.toLowerCase()))) {
+                groupName = '저작물 정보';
+            } else if (authorKeys.some(ak => lk.startsWith(ak.toLowerCase()) || lk.includes(ak.toLowerCase()))) {
+                groupName = '저작자 정보';
+            } else if (rightsKeys.some(rk => lk.startsWith(rk.toLowerCase()) || lk.includes(rk.toLowerCase()))) {
+                groupName = '권리 정보';
+            }
+
+            if (!groups[groupName]) groups[groupName] = {};
+            groups[groupName][key] = value;
+        }
+
+        // Ensure at least one group
+        if (Object.keys(groups).length === 0) {
+            groups['추출 메타데이터'] = metadata;
+        }
+
+        return groups;
+    }
+
+    function getValueClass(key, value) {
+        if (value === null || value === undefined || value === '' || value === 'N/A') return 'empty-val';
+        const lk = key.toLowerCase();
+        if (lk.includes('date') || lk.includes('일자') || lk.includes('날짜')) return 'date-val';
+        if (lk.includes('name') || lk.includes('이름') || lk.includes('author') || lk.includes('저자') || lk.includes('licensor') || lk.includes('licensee')) return 'name-val';
+        return '';
+    }
+
+    function formatMetadataValue(value) {
+        if (value === null || value === undefined) return '(없음)';
+        if (value === '') return '(빈 값)';
+        if (typeof value === 'object') return JSON.stringify(value, null, 2);
+        return String(value);
+    }
+
+    function renderDecisionCard(decision, index) {
+        const typeLabels = {
+            'AGREED': '일치',
+            'CONFLICT': '충돌',
+            'LLM_ONLY': 'LLM 전용',
+            'NER_ONLY': 'NER 전용',
+            'MISSING': '누락'
+        };
+
+        const decisionType = decision.decision || 'MISSING';
+        const label = typeLabels[decisionType] || decisionType;
+
+        return `
+            <div class="decision-card" id="dcard-${index}">
+                <div class="decision-card-header" onclick="toggleDecisionCard(${index})">
+                    <div class="decision-card-field">${escapeHtml(decision.field || '알 수 없음')}</div>
+                    <div style="display:flex;align-items:center;">
+                        <span class="decision-badge ${decisionType}">${label}</span>
+                        <svg class="decision-expand-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                </div>
+                <div class="decision-card-body">
+                    <div class="decision-card-body-inner">
+                        <div class="decision-values-grid">
+                            <div class="decision-value-box llm">
+                                <div class="decision-value-box-label">LLM 값</div>
+                                <div class="decision-value-box-content">${formatDecisionValue(decision.llm_value)}</div>
+                            </div>
+                            <div class="decision-value-box ner">
+                                <div class="decision-value-box-label">NER 값</div>
+                                <div class="decision-value-box-content">${formatDecisionValue(decision.ner_value)}</div>
+                            </div>
+                            <div class="decision-value-box final">
+                                <div class="decision-value-box-label">최종 값</div>
+                                <div class="decision-value-box-content">${formatDecisionValue(decision.final_value)}</div>
+                            </div>
+                            <div class="decision-value-box confidence">
+                                <div class="decision-value-box-label">신뢰도</div>
+                                <div class="decision-value-box-content">${((decision.confidence || 0) * 100).toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        ${decision.explanation ? `
+                            <div class="decision-evidence-box" style="margin-bottom:8px;">
+                                <div class="decision-evidence-box-label">설명</div>
+                                <div class="decision-evidence-box-content">${escapeHtml(decision.explanation)}</div>
+                            </div>
+                        ` : ''}
+                        ${(decision.evidence && decision.evidence.ocr_excerpt) ? `
+                            <div class="decision-evidence-box">
+                                <div class="decision-evidence-box-label">OCR 증거</div>
+                                <div class="decision-evidence-box-content">${escapeHtml(decision.evidence.ocr_excerpt)}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function formatDecisionValue(val) {
+        if (val === null || val === undefined) return '<span style="color:var(--text-light);">없음</span>';
+        if (typeof val === 'object') return escapeHtml(JSON.stringify(val));
+        return escapeHtml(String(val));
+    }
+
+    function renderDownloadBar(result, hasConsolidated) {
+        const bar = document.getElementById('downloadBar');
+        let html = '';
+
+        // Full ZIP download
+        html += `<button class="btn-download primary" id="downloadZipBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            전체 다운로드 (ZIP)
+        </button>`;
+
+        if (hasConsolidated) {
+            html += `<button class="btn-download" id="downloadConsolBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                통합 메타데이터
+            </button>`;
+            html += `<button class="btn-download" id="downloadOrigMetaBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                원본 메타데이터
+            </button>`;
+        } else {
+            html += `<button class="btn-download" id="downloadMetaBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                메타데이터
+            </button>`;
+        }
+
+        html += `<button class="btn-download" id="downloadNerBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            NER 엔티티
+        </button>`;
+
+        html += `<button class="btn-download" id="downloadOcrBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            OCR 텍스트
+        </button>`;
+
+        bar.innerHTML = html;
+
+        // Attach event handlers
+        bindDownloadButton('downloadZipBtn', () => downloadZip(result));
+        bindDownloadButton('downloadConsolBtn', () => {
+            const data = {
+                metadata: result.consolidated_metadata,
+                consolidation_summary: result.consolidation_summary,
+                consolidation_confidence: result.consolidation_confidence,
+                consolidation_decisions: result.consolidation_decisions
+            };
+            downloadJson(data, `${result.filename}_consolidated_metadata.json`);
+        });
+        bindDownloadButton('downloadOrigMetaBtn', () => {
+            window.location.href = `/download/${result.request_id}?type=llm`;
+        });
+        bindDownloadButton('downloadMetaBtn', () => {
+            if (hasConsolidated) {
+                const data = { metadata: result.consolidated_metadata };
+                downloadJson(data, `${result.filename}_metadata.json`);
+            } else {
+                window.location.href = `/download/${result.request_id}?type=llm`;
+            }
+        });
+        bindDownloadButton('downloadNerBtn', () => {
+            window.location.href = `/download/${result.request_id}?type=entities`;
+        });
+        bindDownloadButton('downloadOcrBtn', () => {
+            downloadBlob(result.ocr_text || '', `${result.filename}_ocr_text.txt`, 'text/plain');
+        });
+    }
+
+    function bindDownloadButton(id, handler) {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', handler);
+    }
+
+    function downloadJson(data, filename) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadBlob(content, filename, mimeType) {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function downloadZip(result) {
+        try {
+            const zip = new JSZip();
+
+            // Add full result JSON
+            zip.file('llm_metadata.json', JSON.stringify(result, null, 2));
+
+            // Consolidated metadata
+            if (result.consolidated_metadata) {
+                zip.file('consolidated_metadata.json', JSON.stringify({
+                    metadata: result.consolidated_metadata,
+                    consolidation_summary: result.consolidation_summary,
+                    consolidation_decisions: result.consolidation_decisions,
+                    consolidation_confidence: result.consolidation_confidence
+                }, null, 2));
+            }
+
+            // OCR text
+            if (result.ocr_text) {
+                zip.file('ocr_text.txt', result.ocr_text);
+            }
+
+            // Fetch summary from server
+            try {
+                const summaryResp = await fetch(`/download/${result.request_id}?type=stats`);
+                if (summaryResp.ok) zip.file('summary.json', await summaryResp.text());
+            } catch (e) {}
+
+            // Fetch NER entities from server
+            try {
+                const entResp = await fetch(`/download/${result.request_id}?type=entities`);
+                if (entResp.ok) zip.file('entities.json', await entResp.text());
+            } catch (e) {}
+
+            // Fetch additional OCR result files
+            try {
+                const listResp = await fetch(`/api/list-files/${result.request_id}`);
+                if (listResp.ok) {
+                    const files = await listResp.json();
+                    for (const file of files.files || []) {
+                        if (file.includes('_ocr_result.json') || file.includes('_extracted_text.txt')) {
+                            try {
+                                const fResp = await fetch(`/download/${result.request_id}/${file}`);
+                                if (fResp.ok) zip.file(file, await fResp.text());
+                            } catch (e) {}
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            const blob = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${result.filename}_complete_results.zip`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error('ZIP error:', error);
+            // Fallback to single JSON
+            downloadJson(result, `${result.filename}_result.json`);
+        }
+    }
+
+    // ==============================
+    // TAB SWITCHING
+    // ==============================
+    function switchResultTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('#resultTabs .result-tab').forEach(t => t.classList.remove('active'));
+        const tabs = document.querySelectorAll('#resultTabs .result-tab');
+        tabs.forEach(t => {
+            if (t.textContent.includes('OCR') && tabName === 'ocr') t.classList.add('active');
+            if (t.textContent.includes('메타데이터') && tabName === 'metadata') t.classList.add('active');
+            if (t.textContent.includes('통합') && tabName === 'consolidation') t.classList.add('active');
+        });
+
+        // Show content
+        ['tab-ocr', 'tab-metadata', 'tab-consolidation'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
+        const activeTab = document.getElementById(`tab-${tabName}`);
+        if (activeTab) activeTab.classList.add('active');
+    }
+
+    function switchMetadataSubTab(tabName) {
+        const subTabs = document.querySelectorAll('#metadataSubTabs .result-tab');
+        subTabs.forEach(t => t.classList.remove('active'));
+        subTabs.forEach(t => {
+            if (t.textContent.includes('통합') && tabName === 'consolidated') t.classList.add('active');
+            if (t.textContent.includes('원본') && tabName === 'original') t.classList.add('active');
+        });
+
+        const consolEl = document.getElementById('metadata-consolidated');
+        const origEl = document.getElementById('metadata-original');
+        if (consolEl) consolEl.classList.toggle('active', tabName === 'consolidated');
+        if (origEl) origEl.classList.toggle('active', tabName === 'original');
+    }
+
+    function toggleDecisionCard(index) {
+        const card = document.getElementById(`dcard-${index}`);
+        if (card) card.classList.toggle('expanded');
+    }
+
+    function toggleRawJson(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('show');
+    }
+
+    // ==============================
+    // UTILITIES
+    // ==============================
+    function escapeHtml(str) {
+        if (typeof str !== 'string') return String(str);
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    </script>
+</body>
+</html>
