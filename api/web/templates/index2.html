@@ -2073,7 +2073,38 @@
         }
     });
 
+    const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tif', 'tiff'];
+
     function handleFileSelect(file) {
+        // Validate file extension
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!ALLOWED_EXTENSIONS.includes(ext)) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;padding:16px 24px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;color:#dc2626;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(220,38,38,0.15);display:flex;align-items:center;gap:10px;animation:slideIn 0.3s ease;';
+            errorDiv.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                <span>지원하지 않는 파일 형식입니다: <strong>.${ext}</strong><br>허용: ${ALLOWED_EXTENSIONS.join(', ').toUpperCase()}</span>
+            `;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => { errorDiv.style.opacity = '0'; errorDiv.style.transition = 'opacity 0.3s'; setTimeout(() => errorDiv.remove(), 300); }, 4000);
+            document.getElementById('fileInput').value = '';
+            return;
+        }
+
+        // Validate file size (100MB max)
+        if (file.size > 100 * 1024 * 1024) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;padding:16px 24px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;color:#dc2626;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(220,38,38,0.15);display:flex;align-items:center;gap:10px;';
+            errorDiv.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                <span>파일 크기 초과: <strong>${formatFileSize(file.size)}</strong> (최대 100MB)</span>
+            `;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => { errorDiv.style.opacity = '0'; errorDiv.style.transition = 'opacity 0.3s'; setTimeout(() => errorDiv.remove(), 300); }, 4000);
+            document.getElementById('fileInput').value = '';
+            return;
+        }
+
         selectedFile = file;
         const preview = document.getElementById('filePreview');
         const nameEl = document.getElementById('filePreviewName');
@@ -2083,9 +2114,6 @@
 
         nameEl.textContent = file.name;
         sizeEl.textContent = formatFileSize(file.size);
-
-        // Determine file type icon
-        const ext = file.name.split('.').pop().toLowerCase();
         iconEl.className = 'file-preview-icon';
         thumbEl.classList.add('hidden');
         iconEl.classList.remove('hidden');
