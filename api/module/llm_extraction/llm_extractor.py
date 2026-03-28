@@ -25,53 +25,24 @@ class LLMExtractionProcessor:
         
         # Available models
         self.available_models = {
-            # Local models
-            "solar-ko": "SOLAR-Ko-10.7B (Korean Specialized)",
-            "qwen": "Qwen2.5-7B (Multilingual)",
-            "lightweight": "SOLAR-Ko-1.7B (Lightweight)",
-            "llama": "Llama-3.1-70B (General Purpose)",
-            "qwen72b": "Qwen2.5-72B (High Performance)",
-            "qwenvl": "Qwen2.5-VL-72B (Vision-Language)",
-            "qwen3": "Qwen3-4B (Latest Generation)",
-            "qwen3-next": "Qwen3-Next-80B (Ultra Efficient)",
-            "qwen3-30b": "Qwen3-30B (Balanced Performance)",
-            "qwen3-235b": "Qwen3-235B (Maximum Performance)",
-            "gemma3": "Gemma3-12B (Google's Latest)",
-            "mixtral": "Mixtral-8x7B (Mixture of Experts)",
-            
-            # Alibaba Cloud models
-            "alibaba-qwen-plus": "Alibaba Qwen-Plus (Cloud)",
-            "alibaba-qwen-max": "Alibaba Qwen-Max (Cloud)",
-            "alibaba-qwen-turbo": "Alibaba Qwen-Turbo (Cloud)",
-            "alibaba-qwen-vl-plus": "Alibaba Qwen-VL-Plus (Cloud Vision)",
-            "alibaba-qwen3-next-80b-a3b-instruct": "Alibaba Qwen3-Next-80B (Cloud)",
-            "alibaba-qwen3-vl-235b-a22b-instruct": "Alibaba Qwen3-VL-235B (Cloud Vision)",
-            "alibaba-qwen3-235b-a22b-instruct-2507": "Alibaba Qwen3-235B (Cloud)"
+            # Qwen3.5 (current generation — recommended)
+            "alibaba-qwen3.5-122b-a10b": "Qwen3.5-122B 10B active (Cloud, recommended)",
+            "alibaba-qwen3.5-plus": "Qwen3.5-Plus 397B (Cloud, flagship)",
+            "alibaba-qwen3.5-flash": "Qwen3.5-Flash 35B (Cloud, cost-effective)",
+            # Qwen3 (previous generation)
+            "alibaba-qwen3-next-80b-a3b-instruct": "Qwen3-Next-80B (Cloud)",
+            "alibaba-qwen3-vl-235b-a22b-instruct": "Qwen3-VL-235B (Cloud Vision)",
+            "alibaba-qwen3-max": "Qwen3-Max (Cloud)",
         }
-        
+
         # Model configurations
         self.model_configs = {
-            "solar-ko": {"name": "SOLAR-Ko-10.7B", "description": "Korean specialized model", "type": "local"},
-            "qwen": {"name": "Qwen2.5-7B", "description": "Multilingual model", "type": "local"},
-            "lightweight": {"name": "SOLAR-Ko-1.7B", "description": "Lightweight model", "type": "local"},
-            "llama": {"name": "Llama-3.1-70B", "description": "General purpose model", "type": "local"},
-            "qwen72b": {"name": "Qwen2.5-72B", "description": "High performance model", "type": "local"},
-            "qwenvl": {"name": "Qwen2.5-VL-72B", "description": "Vision-language model", "type": "local"},
-            "qwen3": {"name": "Qwen3-4B", "description": "Latest generation model", "type": "local"},
-            "qwen3-next": {"name": "Qwen3-Next-80B", "description": "Ultra efficient model", "type": "local"},
-            "qwen3-30b": {"name": "Qwen3-30B", "description": "Balanced performance model", "type": "local"},
-            "qwen3-235b": {"name": "Qwen3-235B", "description": "Maximum performance model", "type": "local"},
-            "gemma3": {"name": "Gemma3-12B", "description": "Google's latest model", "type": "local"},
-            "mixtral": {"name": "Mixtral-8x7B", "description": "Mixture of experts model", "type": "local"},
-            
-            # Alibaba Cloud models
-            "alibaba-qwen-plus": {"name": "Alibaba Qwen-Plus", "description": "Cloud-based model", "type": "cloud"},
-            "alibaba-qwen-max": {"name": "Alibaba Qwen-Max", "description": "Cloud-based model", "type": "cloud"},
-            "alibaba-qwen-turbo": {"name": "Alibaba Qwen-Turbo", "description": "Cloud-based model", "type": "cloud"},
-            "alibaba-qwen-vl-plus": {"name": "Alibaba Qwen-VL-Plus", "description": "Cloud vision model", "type": "cloud"},
-            "alibaba-qwen3-next-80b-a3b-instruct": {"name": "Alibaba Qwen3-Next-80B", "description": "Cloud-based model", "type": "cloud"},
-            "alibaba-qwen3-vl-235b-a22b-instruct": {"name": "Alibaba Qwen3-VL-235B", "description": "Cloud vision model", "type": "cloud"},
-            "alibaba-qwen3-235b-a22b-instruct-2507": {"name": "Alibaba Qwen3-235B", "description": "Cloud-based model", "type": "cloud"}
+            "alibaba-qwen3.5-122b-a10b": {"name": "Qwen3.5-122B", "description": "Best value 122B model (recommended)", "type": "cloud"},
+            "alibaba-qwen3.5-plus": {"name": "Qwen3.5-Plus", "description": "Flagship 397B model", "type": "cloud"},
+            "alibaba-qwen3.5-flash": {"name": "Qwen3.5-Flash", "description": "Cost-effective 35B model", "type": "cloud"},
+            "alibaba-qwen3-next-80b-a3b-instruct": {"name": "Qwen3-Next-80B", "description": "Previous generation", "type": "cloud"},
+            "alibaba-qwen3-vl-235b-a22b-instruct": {"name": "Qwen3-VL-235B", "description": "Vision-language model", "type": "cloud"},
+            "alibaba-qwen3-max": {"name": "Qwen3-Max", "description": "Previous flagship", "type": "cloud"},
         }
         
         self.extractor = None
@@ -100,7 +71,7 @@ class LLMExtractionProcessor:
             return False
     
     def extract_metadata_from_text(self, text: str, document_type: str = "기타문서", 
-                                 document_name: str = "", model_name: str = "solar-ko") -> Dict[str, Any]:
+                                 document_name: str = "", model_name: str = "alibaba-qwen3.5-122b-a10b") -> Dict[str, Any]:
         """Extract metadata from text using LLM"""
         try:
             # Initialize model if not already done or different model requested
@@ -141,7 +112,7 @@ class LLMExtractionProcessor:
                 "model_used": model_name
             }
     
-    def extract_metadata_from_file(self, file_path: str, model_name: str = "solar-ko") -> Dict[str, Any]:
+    def extract_metadata_from_file(self, file_path: str, model_name: str = "alibaba-qwen3.5-122b-a10b") -> Dict[str, Any]:
         """Extract metadata from a text file"""
         try:
             file_path = Path(file_path)
@@ -188,7 +159,7 @@ class LLMExtractionProcessor:
                 "model_used": model_name
             }
     
-    def batch_extract_from_directory(self, input_dir: str, model_name: str = "solar-ko") -> Dict[str, Any]:
+    def batch_extract_from_directory(self, input_dir: str, model_name: str = "alibaba-qwen3.5-122b-a10b") -> Dict[str, Any]:
         """Extract metadata from all text files in a directory"""
         try:
             input_path = Path(input_dir)
@@ -312,7 +283,7 @@ class LLMExtractionProcessor:
         """Get JSON schema for a specific document type"""
         return DocumentSchemas.get_schema_by_document_type(document_type)
     
-    def test_extraction(self, model_name: str = "solar-ko") -> Dict[str, Any]:
+    def test_extraction(self, model_name: str = "alibaba-qwen3.5-122b-a10b") -> Dict[str, Any]:
         """Test the extraction pipeline with sample data"""
         sample_text = """
         저작재산권 비독점적 이용허락 계약서

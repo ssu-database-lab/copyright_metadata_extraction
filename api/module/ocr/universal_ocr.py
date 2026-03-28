@@ -33,27 +33,9 @@ except ImportError:
 # Configure logging first
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-from dotenv import load_dotenv
+# Load environment variables from project root
 import os
-
-# Load environment variables from multiple locations
-env_paths = [
-    Path(__file__).parent.parent / ".env",  # API directory
-    Path(__file__).parent.parent.parent / "OCR" / "google_vision" / ".env",  # OCR directory
-    Path(__file__).parent.parent / ".env_alibaba",  # Alibaba specific
-]
-
-for env_path in env_paths:
-    if env_path.exists():
-        load_dotenv(env_path)
-        logger.info(f"Loaded environment variables from: {env_path}")
-        break
-else:
-    logger.warning("No .env file found. Using system environment variables only.")
-
-# Force IPv4 for gRPC (fixes WSL2 IPv6 issues)
-os.environ["GRPC_DNS_RESOLVER"] = "native"
+import module.env_loader  # noqa: F401 — loads .env on import
 
 class OCRProvider(ABC):
     """Abstract base class for OCR providers."""
@@ -154,63 +136,91 @@ class FileProcessor:
         return []
 
 class UniversalOCRProcessor:
-    """Universal OCR processor supporting multiple providers and file types."""
-    
-    def __init__(self, provider: str, output_dir: str = "universal_ocr_results", model: str = None):
+    """Universal OCR processor supporting multiple providers and file types.
+
+    Supports automatic fallback: if the primary provider fails for an entire
+    document, the next provider in the fallback chain is tried.
+
+    Default fallback order: alibaba → google → mistral → naver
+    """
+
+    # Default fallback order (most capable / cheapest first)
+    DEFAULT_FALLBACK_ORDER = ["alibaba", "mistral", "google", "naver"]
+
+    def __init__(self, provider: str = "alibaba", output_dir: str = "universal_ocr_results",
+                 model: str = None, fallback: bool = True):
         self.provider_name = provider.lower()
         self.base_output_dir = Path(output_dir)
         self.base_output_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Initialize OCR provider
-        if self.provider_name == "google":
+        self.model = model
+        self.fallback_enabled = fallback
+
+        # Build fallback chain: requested provider first, then the rest
+        if self.fallback_enabled:
+            self.fallback_chain = [self.provider_name] + [
+                p for p in self.DEFAULT_FALLBACK_ORDER if p != self.provider_name
+            ]
+        else:
+            self.fallback_chain = [self.provider_name]
+
+        # Initialize the primary provider
+        self.ocr_provider = self._create_provider(self.provider_name, model)
+        self._setup_output_dir()
+
+        logger.info(f"Initialized {self.provider_name} OCR processor")
+        logger.info(f"Output directory: {self.provider_output_dir}")
+        if self.fallback_enabled:
+            logger.info(f"Fallback chain: {' → '.join(self.fallback_chain)}")
+        if hasattr(self.ocr_provider, 'model'):
+            logger.info(f"Model: {self.ocr_provider.model}")
+        if hasattr(self.ocr_provider, 'temperature'):
+            logger.info(f"Temperature: {self.ocr_provider.temperature}, Top-p: {self.ocr_provider.top_p}")
+
+    def _create_provider(self, provider_name: str, model: str = None):
+        """Create an OCR provider instance by name."""
+        if provider_name == "google":
             from .google_ocr import GoogleCloudOCRProvider
-            self.ocr_provider = GoogleCloudOCRProvider()
-        elif self.provider_name == "mistral":
+            return GoogleCloudOCRProvider()
+        elif provider_name == "mistral":
             from .mistral_ocr import MistralOCRProvider
-            self.ocr_provider = MistralOCRProvider()
-        elif self.provider_name == "naver":
+            return MistralOCRProvider()
+        elif provider_name == "naver":
             from .naver_ocr import NaverOCRProvider
-            self.ocr_provider = NaverOCRProvider()
-        elif self.provider_name == "alibaba":
+            return NaverOCRProvider()
+        elif provider_name == "alibaba":
             from .alibaba_ocr import AlibabaCloudOCRProvider
             api_key = os.getenv('DASHSCOPE_API_KEY') or os.getenv('ALIBABA_API_KEY')
             if not api_key:
                 raise ValueError("DASHSCOPE_API_KEY or ALIBABA_API_KEY environment variable not set")
-            
+
             region = os.getenv('ALIBABA_REGION', 'singapore')
-            alibaba_model = model or os.getenv('ALIBABA_MODEL', 'qwen-vl-ocr')
-            
+            alibaba_model = model or os.getenv('ALIBABA_MODEL', 'qwen3-vl-235b-a22b-instruct')
+
             temperature = float(os.getenv('ALIBABA_TEMPERATURE', '1.0'))
             top_p = float(os.getenv('ALIBABA_TOP_P', '0.8'))
             top_k = os.getenv('ALIBABA_TOP_K')
             if top_k:
                 top_k = int(top_k)
-            
-            self.ocr_provider = AlibabaCloudOCRProvider(
-                api_key, 
-                model=alibaba_model, 
+
+            return AlibabaCloudOCRProvider(
+                api_key,
+                model=alibaba_model,
                 region=region,
                 temperature=temperature,
                 top_p=top_p,
                 top_k=top_k
             )
         else:
-            raise ValueError(f"Unsupported OCR provider: {provider}")
-        
-        # Create provider-specific output directory
+            raise ValueError(f"Unsupported OCR provider: {provider_name}")
+
+    def _setup_output_dir(self):
+        """Create provider-specific output directory."""
         if self.provider_name == "alibaba" and hasattr(self.ocr_provider, 'model'):
             model_name = self.ocr_provider.model.replace('-', '_')
             self.provider_output_dir = self.base_output_dir / f"{self.provider_name}_ocr" / model_name
         else:
             self.provider_output_dir = self.base_output_dir / f"{self.provider_name}_ocr"
         self.provider_output_dir.mkdir(parents=True, exist_ok=True)
-        
-        logger.info(f"Initialized {self.provider_name} OCR processor")
-        logger.info(f"Output directory: {self.provider_output_dir}")
-        if hasattr(self.ocr_provider, 'model'):
-            logger.info(f"Model: {self.ocr_provider.model}")
-        if hasattr(self.ocr_provider, 'temperature'):
-            logger.info(f"Temperature: {self.ocr_provider.temperature}, Top-p: {self.ocr_provider.top_p}")
     
     def create_structured_output_paths(self, file_path: str) -> Dict[str, Path]:
         """Create structured output paths for a file."""
@@ -252,9 +262,45 @@ class UniversalOCRProcessor:
             return 'general'
     
     def process_single_file(self, file_path: str) -> Dict:
-        """Process a single file with OCR."""
+        """Process a single file with OCR, with automatic fallback on failure."""
+        result = self._process_with_current_provider(file_path)
+
+        # If primary provider failed entirely and fallback is enabled, try others
+        if result.get('status') == 'failed' and self.fallback_enabled:
+            primary_error = result.get('error', 'unknown error')
+            primary_provider = self.provider_name
+
+            for fallback_provider in self.fallback_chain[1:]:  # skip primary (already tried)
+                logger.warning(
+                    f"OCR provider '{primary_provider}' failed: {primary_error}. "
+                    f"Trying fallback provider: {fallback_provider}"
+                )
+                try:
+                    self.ocr_provider = self._create_provider(fallback_provider, self.model)
+                    self.provider_name = fallback_provider
+                    self._setup_output_dir()
+
+                    result = self._process_with_current_provider(file_path)
+                    if result.get('status') != 'failed':
+                        result['fallback_used'] = True
+                        result['original_provider'] = primary_provider
+                        result['fallback_reason'] = primary_error
+                        logger.info(f"Fallback to '{fallback_provider}' succeeded")
+                        return result
+                except Exception as e:
+                    logger.warning(f"Fallback provider '{fallback_provider}' also failed: {e}")
+                    continue
+
+            # All fallbacks exhausted
+            logger.error(f"All OCR providers failed for {file_path}")
+            result['fallback_exhausted'] = True
+
+        return result
+
+    def _process_with_current_provider(self, file_path: str) -> Dict:
+        """Process a single file with the current OCR provider (no fallback)."""
         file_path = Path(file_path)
-        logger.info(f"Processing file: {file_path.name}")
+        logger.info(f"Processing file: {file_path.name} with {self.provider_name}")
         
         try:
             output_paths = self.create_structured_output_paths(str(file_path))

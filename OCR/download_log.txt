@@ -1,0 +1,3 @@
+Downloading PaddlePaddle/PaddleOCR-VL to /mnt/c/Users/user/OneDrive/SSU/LAB/PROJECTS/DB/copyright/copyright_metadata_extraction/ocr/PaddlePaddle_PaddleOCR-VL...
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files:   4%|▍         | 1/23 [00:00<00:11,  1.84it/s]Fetching 23 files:   9%|▊         | 2/23 [00:01<00:16,  1.27it/s]Fetching 23 files:  17%|█▋        | 4/23 [09:52<58:43, 185.44s/it]Fetching 23 files:  65%|██████▌   | 15/23 [10:32<04:34, 34.32s/it]Fetching 23 files: 100%|██████████| 23/23 [10:32<00:00, 27.48s/it]
+Download completed successfully!

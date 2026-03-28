@@ -1166,39 +1166,353 @@ class DocumentSchemas:
         }
     
     @staticmethod
+    def get_digital_content_schema() -> Dict[str, Any]:
+        """Legacy alias — returns unified schema"""
+        return DocumentSchemas.get_unified_schema()
+
+    @staticmethod
+    def get_unified_schema() -> Dict[str, Any]:
+        """Unified schema for ALL document types (계약서, 동의서, 양도동의서, 공공저작물, 기타문서).
+
+        Combines the 20 mandatory metadata fields with contract/consent-specific
+        fields and digital content fields. The LLM returns null for fields not
+        present in the document — no harm, no confusion.
+        """
+        return {
+            "type": "object",
+            "properties": {
+                # ============================================
+                # 저작물 정보 (8 mandatory fields)
+                # ============================================
+                "work_title": {
+                    "type": ["string", "null"],
+                    "description": "저작물명 (작품 제목, 계약서 제목, 문서 제목)"
+                },
+                "work_type": {
+                    "type": ["string", "null"],
+                    "description": "유형 (저작물 유형: 어문저작물, 음악저작물, 미술저작물, 영상저작물, 사진저작물 등)"
+                },
+                "digital_format": {
+                    "type": ["string", "null"],
+                    "description": "디지털화 형태 (디지털 파일 형식: PDF, JPG, MP4, HWP 등)"
+                },
+                "description": {
+                    "type": ["string", "null"],
+                    "description": "설명 (콘텐츠 설명, 계약 목적, 동의 내용 요약)"
+                },
+                "keyword": {
+                    "type": ["string", "array", "null"],
+                    "description": "주제어 (키워드 또는 태그 목록)"
+                },
+                "language": {
+                    "type": ["string", "null"],
+                    "description": "언어 (콘텐츠 언어: 한국어, 영어 등)"
+                },
+                "created_date": {
+                    "type": ["string", "null"],
+                    "format": "date",
+                    "description": "제작일/작성일 (YYYY-MM-DD 형식)"
+                },
+                "production_date": {
+                    "type": ["string", "null"],
+                    "format": "date",
+                    "description": "제작일 (YYYY-MM-DD 형식, created_date와 같을 수 있음)"
+                },
+
+                # ============================================
+                # 저작자 정보 (3 mandatory fields)
+                # ============================================
+                "copyright_holder": {
+                    "type": ["string", "array", "null"],
+                    "description": "저작권자 (저작권 보유자, 권리자, 양수기관 등)"
+                },
+                "co_author": {
+                    "type": ["string", "array", "null"],
+                    "description": "공동저작자 (공동 저작자 목록)"
+                },
+                "neighboring_rights_holder": {
+                    "type": ["string", "array", "null"],
+                    "description": "저작인접권자 (실연자, 음반제작자, 방송사업자 등)"
+                },
+
+                # ============================================
+                # 권리 정보 (9 mandatory fields)
+                # ============================================
+                "disclosure_type": {
+                    "type": ["string", "null"],
+                    "description": "공개유형 (공개, 비공개, 제한공개 등)"
+                },
+                "copyrightability": {
+                    "type": ["string", "null"],
+                    "description": "저작물성 (저작물로 인정되는지 여부: 인정, 미인정, 불명)"
+                },
+                "unprotected_work": {
+                    "type": ["string", "null"],
+                    "description": "비보호저작물 (저작권 보호 대상이 아닌 저작물 여부: 해당, 비해당)"
+                },
+                "work_for_hire": {
+                    "type": ["string", "null"],
+                    "description": "업무상저작물 (업무상 작성된 저작물 여부: 해당, 비해당)"
+                },
+                "commercial_use": {
+                    "type": ["string", "null"],
+                    "description": "상업적 이용허락 (상업적 이용 허용 여부 또는 조건)"
+                },
+                "economic_rights": {
+                    "type": ["string", "array", "null"],
+                    "description": "저작재산권 (복제권, 공연권, 공중송신권, 배포권, 대여권, 2차적저작물작성권 등)"
+                },
+                "co_author_consent": {
+                    "type": ["string", "null"],
+                    "description": "공동저작자 동의 (공동저작자 동의 여부: 동의, 미동의)"
+                },
+                "valid_period": {
+                    "type": ["string", "null"],
+                    "description": "유효기간 (계약 기간, 보존 기간, 이용허락 기간 등)"
+                },
+                "portrait_rights": {
+                    "type": ["string", "null"],
+                    "description": "초상권 (초상권 관련 정보: 해당, 비해당)"
+                },
+
+                # ============================================
+                # 계약서 전용 필드 (from contract schemas)
+                # ============================================
+                "contract_type": {
+                    "type": ["string", "null"],
+                    "description": "계약서/문서 유형 (저작재산권 이용허락 계약서, 개인정보 수집 동의서, 양도동의서 등)"
+                },
+                "granted_rights": {
+                    "type": ["object", "array", "null"],
+                    "description": "허락된 권리 (복제권, 공연권, 공중송신권, 전시권, 배포권, 대여권, 2차적저작물작성권의 체크박스 상태 또는 목록)"
+                },
+                "contract_duration": {
+                    "type": ["string", "null"],
+                    "description": "계약 기간 (시작일~종료일 또는 기간 문자열)"
+                },
+                "payment_amount": {
+                    "type": ["number", "string", "null"],
+                    "description": "지급 금액"
+                },
+                "payment_currency": {
+                    "type": ["string", "null"],
+                    "description": "통화 (원, 달러 등)"
+                },
+                "signature_date": {
+                    "type": ["string", "null"],
+                    "format": "date",
+                    "description": "서명일/계약 체결일 (YYYY-MM-DD)"
+                },
+                "effective_date": {
+                    "type": ["string", "null"],
+                    "format": "date",
+                    "description": "계약 효력 발생일 (YYYY-MM-DD)"
+                },
+                "expiration_date": {
+                    "type": ["string", "null"],
+                    "format": "date",
+                    "description": "계약 만료일 (YYYY-MM-DD)"
+                },
+                "special_terms": {
+                    "type": ["array", "null"],
+                    "items": {"type": "string"},
+                    "description": "특별 약정 사항"
+                },
+                "termination_conditions": {
+                    "type": ["array", "null"],
+                    "items": {"type": "string"},
+                    "description": "계약 해지 조건"
+                },
+                "contract_terms": {
+                    "type": ["object", "null"],
+                    "description": "계약 조건 (독점/비독점, 결제 방식, 갱신 옵션 등의 체크박스 상태)"
+                },
+
+                # ============================================
+                # 동의서 전용 필드 (from consent schemas)
+                # ============================================
+                "consent_type": {
+                    "type": ["string", "null"],
+                    "description": "동의서 유형 (개인정보 수집 동의서, 저작재산권 양도 동의서 등)"
+                },
+                "consent_status": {
+                    "type": ["string", "null"],
+                    "description": "동의 여부 (동의함, 미동의 등)"
+                },
+                "consent_date": {
+                    "type": ["string", "null"],
+                    "format": "date",
+                    "description": "동의 날짜 (YYYY-MM-DD)"
+                },
+                "data_controller": {
+                    "type": ["string", "null"],
+                    "description": "개인정보 처리자/수집기관 (회사명 또는 기관명)"
+                },
+                "data_subject": {
+                    "type": ["string", "null"],
+                    "description": "정보주체/동의자 (개인 이름)"
+                },
+                "collection_purpose": {
+                    "type": ["string", "null"],
+                    "description": "수집 목적"
+                },
+                "collected_data_types": {
+                    "type": ["array", "null"],
+                    "items": {"type": "string"},
+                    "description": "수집 항목 (성명, 전화번호, 주소 등)"
+                },
+                "retention_period": {
+                    "type": ["string", "null"],
+                    "description": "보존 기간"
+                },
+                "third_party_sharing": {
+                    "type": ["object", "null"],
+                    "description": "제3자 제공 (수령자, 목적, 제공 항목)"
+                },
+                "withdrawal_rights": {
+                    "type": ["string", "null"],
+                    "description": "동의 철회 방법"
+                },
+                "consequences_of_refusal": {
+                    "type": ["string", "null"],
+                    "description": "동의 거부 시 불이익"
+                },
+                "signature": {
+                    "type": ["string", "null"],
+                    "description": "서명 (서명자 이름)"
+                },
+
+                # ============================================
+                # 당사자 정보 (shared across all types)
+                # ============================================
+                "parties": {
+                    "type": ["array", "null"],
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string", "description": "당사자 이름 또는 회사명"},
+                            "phone": {"type": "string", "description": "전화번호"},
+                            "address": {"type": "string", "description": "주소"},
+                            "registration_no": {"type": "string", "description": "사업자등록번호 또는 주민등록번호"},
+                            "role": {"type": "string", "description": "역할 (권리자, 이용자, 양도인, 양수인, 동의자 등)"}
+                        },
+                        "required": ["name"]
+                    },
+                    "description": "당사자들의 정보 (계약 당사자, 양도인/양수인, 동의자/수집자 등)"
+                },
+                "contact_info": {
+                    "type": ["object", "null"],
+                    "description": "연락처 정보 (전화번호, 주소, 이메일)"
+                },
+
+                # ============================================
+                # 공공누리/디지털콘텐츠 필드
+                # ============================================
+                "kogl_type": {
+                    "type": ["string", "null"],
+                    "description": "공공누리유형 (KOGL 라이선스 유형: 제1유형, 제2유형, 제3유형, 제4유형)"
+                },
+                "third_party_rights": {
+                    "type": ["string", "array", "null"],
+                    "description": "제3자 권리 (제3자에게 귀속된 권리 정보)"
+                },
+                "personal_info": {
+                    "type": ["string", "array", "null"],
+                    "description": "개인정보 (개인정보 포함 여부 또는 항목)"
+                },
+
+                # ============================================
+                # 디지털콘텐츠 관리 필드 (supplementary)
+                # ============================================
+                "seq_number": {
+                    "type": ["integer", "string", "null"],
+                    "description": "순번"
+                },
+                "site_name": {
+                    "type": ["string", "null"],
+                    "description": "사이트명"
+                },
+                "agency_name": {
+                    "type": ["string", "null"],
+                    "description": "기관명"
+                },
+                "board_name": {
+                    "type": ["string", "null"],
+                    "description": "게시판명"
+                },
+                "board_path": {
+                    "type": ["string", "null"],
+                    "description": "게시판 진입 과정"
+                },
+                "category": {
+                    "type": ["string", "null"],
+                    "description": "카테고리"
+                },
+                "url": {
+                    "type": ["string", "null"],
+                    "format": "uri",
+                    "description": "URL"
+                },
+                "registration_date": {
+                    "type": ["string", "null"],
+                    "format": "date",
+                    "description": "등록일 (YYYY-MM-DD)"
+                },
+                "attachment": {
+                    "type": ["string", "array", "null"],
+                    "description": "첨부파일"
+                },
+                "video_count": {"type": ["integer", "null"], "description": "영상 개수"},
+                "photo_count": {"type": ["integer", "null"], "description": "사진 개수"},
+                "document_count": {"type": ["integer", "null"], "description": "문서 개수"},
+                "quantity": {"type": ["integer", "string", "null"], "description": "수량"},
+                "view_count": {"type": ["integer", "null"], "description": "조회수"},
+                "contract": {
+                    "type": ["string", "object", "null"],
+                    "description": "계약서 정보"
+                },
+                "review_impossible": {
+                    "type": ["string", "null"],
+                    "description": "검토불가 사유"
+                },
+                "phone": {
+                    "type": ["string", "null"],
+                    "description": "전화번호"
+                },
+                "memo": {
+                    "type": ["string", "null"],
+                    "description": "비고"
+                },
+
+                # ============================================
+                # 체크박스 정보 (shared)
+                # ============================================
+                "checkbox_info": {
+                    "type": ["object", "null"],
+                    "properties": {
+                        "pattern_detected": {"type": "string", "description": "감지된 체크박스 패턴"},
+                        "extraction_confidence": {"type": "number", "description": "체크박스 추출 신뢰도"},
+                        "checkbox_fields_found": {"type": "array", "items": {"type": "string"}, "description": "발견된 체크박스 필드들"}
+                    },
+                    "description": "체크박스 추출 정보"
+                }
+            },
+            "required": ["work_title"]
+        }
+    
+    @staticmethod
     def get_schema_by_document_type(document_type: str) -> Dict[str, Any]:
-        """Get appropriate schema based on document type with enhanced detection"""
-        
-        # Convert to lowercase for case-insensitive matching
-        doc_type_lower = document_type.lower()
-        
-        # Copyright Transfer Consent Forms (저작재산권 양도동의서)
-        if any(keyword in document_type for keyword in [
-            "저작재산권 양도동의서", "copyright transfer consent", "양도동의서", "transfer consent"
-        ]) or any(keyword in doc_type_lower for keyword in [
-            "copyright transfer", "양도동의", "transfer consent"
-        ]):
-            return DocumentSchemas.get_copyright_transfer_consent_schema()
-        
-        # Public Copyright Consent Forms (공공저작물 자유이용허락 동의서)
-        elif any(keyword in document_type for keyword in [
-            "공공저작물 자유이용허락 동의서", "public copyright consent", "공공누리"
-        ]) or any(keyword in doc_type_lower for keyword in [
-            "public copyright", "공공저작물", "자유이용허락"
-        ]):
-            return DocumentSchemas.get_public_copyright_consent_schema_enhanced()
-        
-        # Regular Contracts (계약서)
-        elif "계약서" in document_type or "contract" in doc_type_lower:
-            return DocumentSchemas.get_contract_schema_enhanced()
-        
-        # Regular Consent Forms (동의서)
-        elif "동의서" in document_type or "consent" in doc_type_lower:
-            return DocumentSchemas.get_consent_schema_enhanced()
-        
-        # General Documents (기타문서)
-        else:
-            return DocumentSchemas.get_general_document_schema_enhanced()
+        """Get schema for any document type.
+
+        Returns the unified schema for all document types. The unified schema
+        contains all fields from all document-type-specific schemas. The LLM
+        simply returns null for fields not present in the document.
+
+        The document_type parameter is still accepted for backward compatibility
+        and is passed to the LLM prompt to guide extraction focus, but the
+        schema structure is the same regardless.
+        """
+        return DocumentSchemas.get_unified_schema()
     
     @staticmethod
     def detect_document_type_from_title(title: str) -> str:
@@ -1227,6 +1541,13 @@ class DocumentSchemas:
             "동의서", "consent", "agreement"
         ]):
             return "동의서"
+        
+        # Digital Content Management
+        elif any(keyword in title for keyword in [
+            "디지털 콘텐츠", "공공저작물", "콘텐츠 관리", "아카이브", "게시판", "사이트",
+            "digital content", "public content", "kogl", "공공누리"
+        ]):
+            return "디지털 콘텐츠"
         
         # Default
         else:

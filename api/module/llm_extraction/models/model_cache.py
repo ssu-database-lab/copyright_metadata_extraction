@@ -24,9 +24,12 @@ logger = logging.getLogger(__name__)
 class ModelCacheManager:
     """Manages local caching of Hugging Face models."""
     
-    def __init__(self, config_path: str = "config/model_config.yaml"):
+    # Default config path relative to this file: models/ → ../config/model_config.yaml
+    _DEFAULT_CONFIG = str(Path(__file__).parent.parent / "config" / "model_config.yaml")
+
+    def __init__(self, config_path: str = None):
         """Initialize the cache manager with configuration."""
-        self.config_path = Path(config_path)
+        self.config_path = Path(config_path or self._DEFAULT_CONFIG)
         self.config = self._load_config()
         self.cache_dir = Path(self.config['cache']['local_dir'])
         self.cache_dir.mkdir(parents=True, exist_ok=True)

@@ -10,39 +10,35 @@ import re
 from pathlib import Path
 from typing import Dict, Generator
 from openai import OpenAI
-from dotenv import load_dotenv
+import module.env_loader  # noqa: F401 — loads .env on import
 
 # Configure logging first
 logger = logging.getLogger(__name__)
-
-# Load environment variables
-env_paths = [
-    Path(__file__).parent.parent / ".env",  # API directory
-    Path(__file__).parent.parent / "web" / ".env",  # Web directory
-    Path(__file__).parent.parent / ".env_alibaba",  # Alibaba specific
-    Path(__file__).parent.parent / "web" / ".env_alibaba",  # Web Alibaba specific
-    Path(__file__).parent.parent.parent / "OCR" / "google_vision" / ".env",  # OCR directory
-]
-
-for env_path in env_paths:
-    if env_path.exists():
-        load_dotenv(env_path)
-        logger.info(f"Loaded environment variables from: {env_path}")
-        break
-else:
-    logger.warning("No .env file found. Using system environment variables only.")
 
 class AlibabaCloudOCRProvider:
     """Alibaba Cloud DashScope OCR provider."""
     
     AVAILABLE_MODELS = {
-        "qwen-vl-ocr": "Qwen-VL-OCR (Original)",
+        # Qwen3-VL (dedicated vision-language)
+        "qwen-vl-ocr": "Qwen-VL-OCR (Dedicated OCR)",
         "qwen-vl-plus": "Qwen3-VL-Plus",
-        "qwen3-vl-30b-a3b-instruct": "Qwen/Qwen3-VL-30B-A3B-Instruct", 
-        "qwen3-vl-235b-a22b-instruct": "Qwen/Qwen3-VL-235B-A22B-Instruct"
+        "qwen3-vl-30b-a3b-instruct": "Qwen3-VL-30B-A3B",
+        "qwen3-vl-235b-a22b-instruct": "Qwen3-VL-235B-A22B",
+        # Qwen3.5 (natively multimodal — can do OCR)
+        "qwen3.5-plus": "Qwen3.5-Plus (397B, natively multimodal)",
+        "qwen3.5-flash": "Qwen3.5-Flash (35B, natively multimodal)",
     }
     
-    def __init__(self, api_key: str, model: str = "qwen-vl-ocr", region: str = "singapore", 
+    # Model-level fallback order for OCR
+    OCR_MODEL_FALLBACK = {
+        "qwen3-vl-235b-a22b-instruct": "qwen3.5-flash",
+        "qwen3-vl-30b-a3b-instruct": "qwen3.5-flash",
+        "qwen-vl-ocr": "qwen3.5-flash",
+        "qwen-vl-plus": "qwen3.5-flash",
+        "qwen3.5-plus": "qwen3.5-flash",
+    }
+
+    def __init__(self, api_key: str, model: str = "qwen3-vl-235b-a22b-instruct", region: str = "singapore",
                  temperature: float = 1.0, top_p: float = 0.8, top_k: int = None):
         self.api_key = api_key
         self.model = model
@@ -59,9 +55,11 @@ class AlibabaCloudOCRProvider:
         # Map model names to DashScope model IDs
         self.model_mapping = {
             "qwen-vl-ocr": "qwen-vl-ocr",
-            "qwen-vl-plus": "qwen-vl-plus", 
+            "qwen-vl-plus": "qwen-vl-plus",
             "qwen3-vl-30b-a3b-instruct": "qwen3-vl-30b-a3b-instruct",
-            "qwen3-vl-235b-a22b-instruct": "qwen3-vl-235b-a22b-instruct"
+            "qwen3-vl-235b-a22b-instruct": "qwen3-vl-235b-a22b-instruct",
+            "qwen3.5-plus": "qwen3.5-plus",
+            "qwen3.5-flash": "qwen3.5-flash",
         }
         
         self.dashscope_model_id = self.model_mapping.get(model, model)
@@ -70,13 +68,32 @@ class AlibabaCloudOCRProvider:
         try:
             self.client = OpenAI(
                 api_key=api_key,
-                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                timeout=60.0,       # 60s timeout per request
+                max_retries=3       # retry up to 3 times on transient errors
             )
         except ImportError:
             raise ImportError("openai package not found. Install with: pip install openai")
     
     def process_image(self, image_path: str) -> Dict:
-        """Process an image using Alibaba Cloud DashScope API."""
+        """Process an image using Alibaba Cloud DashScope API, with model-level fallback."""
+        result = self._process_image_with_model(image_path, self.dashscope_model_id)
+
+        # If primary model failed and a fallback exists, try it
+        if result.get('metadata', {}).get('error') and self.model in self.OCR_MODEL_FALLBACK:
+            fallback_model = self.OCR_MODEL_FALLBACK[self.model]
+            primary_error = result['metadata']['error']
+            logger.warning(f"OCR model '{self.model}' failed: {primary_error}. Trying fallback: {fallback_model}")
+            result = self._process_image_with_model(image_path, fallback_model)
+            if not result.get('metadata', {}).get('error'):
+                result['metadata']['fallback_used'] = True
+                result['metadata']['original_model'] = self.model
+                logger.info(f"OCR fallback to '{fallback_model}' succeeded")
+
+        return result
+
+    def _process_image_with_model(self, image_path: str, model_id: str) -> Dict:
+        """Process an image with a specific model."""
         try:
             # Read and encode image
             with open(image_path, 'rb') as image_file:
@@ -113,13 +130,11 @@ class AlibabaCloudOCRProvider:
                 "max_tokens": 2048
             }
             
-            # Add top_k if specified
-            if self.top_k is not None:
-                generation_params["top_k"] = self.top_k
+            # Note: top_k is not supported by the OpenAI-compatible DashScope endpoint
             
             # Make API call using OpenAI-compatible client
             response = self.client.chat.completions.create(
-                model=self.dashscope_model_id,
+                model=model_id,
                 messages=messages,
                 **generation_params
             )
@@ -134,9 +149,8 @@ class AlibabaCloudOCRProvider:
                 'metadata': {
                     'provider': 'alibaba_cloud',
                     'model': self.dashscope_model_id,
-                    'confidence': 0.8,  # Alibaba doesn't provide detailed confidence scores
-                    'processing_time': None,
-                    'region': self.region
+                    'confidence': 0.8,
+                    'processing_time': None
                 }
             }
             
@@ -177,6 +191,7 @@ class AlibabaCloudOCRProvider:
                 'extracted_text': '',
                 'metadata': {
                     'provider': 'alibaba_cloud',
+                    'model': self.dashscope_model_id,
                     'error': error_details,
                     'confidence': 0.0
                 }
@@ -221,9 +236,7 @@ class AlibabaCloudOCRProvider:
                 "stream": True
             }
             
-            # Add top_k if specified
-            if self.top_k is not None:
-                generation_params["top_k"] = self.top_k
+            # Note: top_k is not supported by the OpenAI-compatible DashScope endpoint
             
             # Make streaming API call
             completion = self.client.chat.completions.create(
@@ -288,9 +301,7 @@ class AlibabaCloudOCRProvider:
                 "max_tokens": 2048
             }
             
-            # Add top_k if specified
-            if self.top_k is not None:
-                generation_params["top_k"] = self.top_k
+            # Note: top_k is not supported by the OpenAI-compatible DashScope endpoint
             
             # Make API call
             completion = self.client.chat.completions.create(
@@ -310,18 +321,17 @@ class AlibabaCloudOCRProvider:
                     'provider': 'alibaba_cloud',
                     'model': self.dashscope_model_id,
                     'confidence': 0.8,
-                    'processing_time': None,
-                    'region': self.region,
-                    'processing_mode': 'api_client'
+                    'processing_time': None
                 }
             }
-            
+
         except Exception as e:
             logger.error(f"Alibaba Cloud API Client OCR error: {e}")
             return {
                 'extracted_text': '',
                 'metadata': {
                     'provider': 'alibaba_cloud',
+                    'model': self.dashscope_model_id,
                     'error': str(e),
                     'confidence': 0.0
                 }

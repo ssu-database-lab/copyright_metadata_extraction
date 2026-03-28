@@ -190,3 +190,26 @@ project-deployment.bundle
 /api/module/ner
 /api/model_downloaded
 /api/module/ner/training
+
+# SSH keys (sensitive)
+ssh/
+*.key
+*.key.pub
+*.pem
+
+# Package build output
+copyright_extraction_cli/
+copyright_extraction_cli.tar.gz
+
+# Sample/test output
+sample_output/
+test_cli_*/
+test_ocr_*/
+test_ner_*/
+extraction_results/
+
+# kogl-classifier (external repo, has its own git)
+kogl-classifier/
+
+# Node modules
+node_modules/

@@ -19,8 +19,15 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables — search project root first, then api/, then api/web/
+_project_root_env = Path(__file__).parent.parent.parent / ".env"
+_api_env = Path(__file__).parent.parent / ".env"
+if _project_root_env.exists():
+    load_dotenv(_project_root_env)
+elif _api_env.exists():
+    load_dotenv(_api_env)
+else:
+    load_dotenv()  # fallback: cwd
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
@@ -31,10 +38,9 @@ import uvicorn
 import asyncio
 import json
 
-# 상위 디렉토리(api)를 경로에 추가
+# Directory references (no sys.path hack needed — .pth file handles imports)
 current_dir = Path(__file__).parent
 api_dir = current_dir.parent
-sys.path.insert(0, str(api_dir))
 
 # api 모듈 import
 from api import pdf_to_image, ner_predict
@@ -47,6 +53,9 @@ from module.llm_extraction import LLMExtractionProcessor
 
 # Consolidation 모듈 import
 from module.consolidator import ConsolidationAgent
+
+# Pipeline orchestrator
+from web.pipeline import PipelineOrchestrator
 
 # FastAPI 앱 초기화
 app = FastAPI(
@@ -178,6 +187,15 @@ AVAILABLE_MODELS = {
         'speed': '느림'
     }
 }
+
+# Pipeline orchestrator 초기화
+pipeline_orchestrator = PipelineOrchestrator(
+    llm_processor=llm_processor,
+    ner_predict_fn=ner_predict,
+    available_ner_models=AVAILABLE_MODELS,
+    upload_dir=UPLOAD_DIR,
+    results_dir=RESULTS_DIR,
+)
 
 # Universal OCR는 별도 엔드포인트(/api/ocr-universal)에서 처리
 
@@ -807,388 +825,129 @@ def _send_progress_update(message: str, step: int, percent: int, data: Dict = No
 @app.post("/api/llm-extract")
 async def llm_extract_metadata(
     file: UploadFile = File(...),
-    model_name: str = Form(default="solar-ko"),
+    model_name: str = Form(default="alibaba-qwen3.5-122b-a10b"),
     document_type: str = Form(default="기타문서"),
-    ocr_provider: str = Form(default="google"),
+    ocr_provider: str = Form(default="alibaba"),
     ocr_model: str = Form(default=None),
     ner_model: str = Form(default="klue-roberta-large"),
     consolidate: bool = Form(default=True),
-    consolidation_model: str = Form(default="alibaba-qwen3-next-80b-a3b-instruct"),
+    consolidation_model: str = Form(default="alibaba-qwen3.5-122b-a10b"),
     stream: bool = Form(default=False)
 ):
     """LLM을 사용한 메타데이터 추출 (SSE 지원, 통합 기능 포함)"""
-    
-    # CRITICAL: Read file content BEFORE creating the async generator
-    # FastAPI closes the file handle after the request handler starts,
-    # so we must read it synchronously here
+
+    # Read file content before async generator (FastAPI closes handle after)
     try:
         file_content = await file.read()
         filename = file.filename
     except Exception as e:
         logger.error(f"파일 읽기 오류: {e}")
-        error_response = {
-            "success": False,
-            "error": f"파일 읽기 오류: {str(e)}"
-        }
+        error_response = {"success": False, "error": f"파일 읽기 오류: {str(e)}"}
         if stream:
             async def error_stream():
-                yield _send_progress_update(f"파일 읽기 오류: {str(e)}", 0, 0, {"error": f"파일 읽기 오류: {str(e)}", "result": error_response})
-            return StreamingResponse(
-                error_stream(),
-                media_type="text/event-stream",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                    "X-Accel-Buffering": "no"
-                }
-            )
-        else:
-            return JSONResponse(content=error_response, status_code=400)
+                yield _send_progress_update(str(e), 0, 0, {"error": str(e), "result": error_response})
+            return StreamingResponse(error_stream(), media_type="text/event-stream",
+                                     headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"})
+        return JSONResponse(content=error_response, status_code=400)
+
+    # Validate inputs
+    if not filename or not allowed_file(filename):
+        err = f'지원하지 않는 파일 형식입니다. 허용: {", ".join(ALLOWED_EXTENSIONS)}'
+        if stream:
+            async def err_stream():
+                yield _send_progress_update(err, 0, 0, {"error": err})
+            return StreamingResponse(err_stream(), media_type="text/event-stream",
+                                     headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"})
+        return JSONResponse(content={"success": False, "error": err}, status_code=400)
+
+    if ner_model not in AVAILABLE_MODELS:
+        err = f"잘못된 NER 모델: {ner_model}"
+        return JSONResponse(content={"success": False, "error": err}, status_code=400)
     
-    async def process_with_progress():
-        """Process LLM extraction with progress updates"""
-        # Capture outer scope variables
-        captured_filename = filename
-        process_start_time = datetime.now()
-        
-        try:
-            # 파일 검증
-            if not captured_filename:
-                yield _send_progress_update("파일명이 비어있습니다", 0, 0, {"error": "파일명이 비어있습니다"})
-                return
-            
-            if not allowed_file(captured_filename):
-                error_msg = f'지원하지 않는 파일 형식입니다. 허용: {", ".join(ALLOWED_EXTENSIONS)}'
-                yield _send_progress_update(error_msg, 0, 0, {"error": error_msg})
-                return
-            
-            # NER 모델 검증
-            if ner_model not in AVAILABLE_MODELS:
-                yield _send_progress_update("잘못된 NER 모델 선택", 0, 0, {"error": "잘못된 NER 모델 선택"})
-                return
-            
-            # 파일 저장
-            sanitized_filename = secure_filename(captured_filename)
-            request_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            
-            upload_path = UPLOAD_DIR / request_id / sanitized_filename
-            upload_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(upload_path, 'wb') as f:
-                f.write(file_content)
-            
-            file_size_mb = len(file_content) / (1024 * 1024)
-            logger.info(f"LLM 처리 시작: {sanitized_filename} ({file_size_mb:.2f}MB), 모델: {model_name}, OCR: {ocr_provider}")
-            
-            yield _send_progress_update("파일 업로드 완료", 1, 10, {"request_id": request_id})
-            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
-            
-            # 결과 디렉토리
-            result_dir = RESULTS_DIR / request_id
-            result_dir.mkdir(parents=True, exist_ok=True)
-            
-            # OCR 처리 (Universal OCR 사용)
-            yield _send_progress_update("OCR 텍스트 추출 중...", 2, 20)
-            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
-            logger.info(f"LLM 추출을 위한 OCR 처리 시작: provider={ocr_provider}, model={ocr_model}")
-            
-            # Provider name mapping
-            provider_mapping = {
-                "google": "google",
-                "mistral": "mistral", 
-                "alibaba": "alibaba"
-            }
-            mapped_provider = provider_mapping.get(ocr_provider, ocr_provider)
-            
-            # Universal OCR Processor 사용
-            ocr_dir = result_dir / "ocr"
-            ocr_dir.mkdir(parents=True, exist_ok=True)
-            
-            try:
-                processor = UniversalOCRProcessor(provider=mapped_provider, output_dir=str(ocr_dir), model=ocr_model)
-                logger.info(f"OCR 처리 시작: {upload_path}")
-                
-                # OCR 처리 실행
-                ocr_result = processor.process_single_file(str(upload_path))
-                
-                if ocr_result.get('status') != 'success':
-                    logger.warning(f"OCR 처리 실패, 샘플 텍스트 사용: {ocr_result.get('error', 'Unknown error')}")
-                    ocr_text = "샘플 텍스트: OCR 처리 실패"
-                    yield _send_progress_update("OCR 처리 실패 (샘플 텍스트 사용)", 2, 40, {"warning": "OCR 처리 실패"})
-                else:
-                    ocr_text = ocr_result.get('full_text', '')
-                    if not ocr_text:
-                        logger.warning("OCR 텍스트가 비어있음, 샘플 텍스트 사용")
-                        ocr_text = "샘플 텍스트: OCR에서 텍스트를 추출할 수 없습니다."
-                    
-                    logger.info(f"OCR 텍스트 추출 완료: {len(ocr_text)} 문자")
-                    yield _send_progress_update(f"OCR 텍스트 추출 완료 ({len(ocr_text)} 문자)", 2, 40)
-                    await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
-                    
-            except Exception as e:
-                logger.warning(f"OCR 처리 중 오류 발생, 샘플 텍스트 사용: {e}")
-                ocr_text = "샘플 텍스트: OCR 처리 중 오류 발생"
-                yield _send_progress_update("OCR 처리 중 오류 발생 (샘플 텍스트 사용)", 2, 40, {"warning": str(e)})
-            
-            # LLM 메타데이터 추출
-            yield _send_progress_update("LLM 메타데이터 추출 중...", 3, 50)
-            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
-            logger.info("LLM 메타데이터 추출 시작")
-            
-            llm_result = llm_processor.extract_metadata_from_text(
-                text=ocr_text,
-                document_type=document_type,
-                document_name=sanitized_filename,
-                model_name=model_name
-            )
-            
-            yield _send_progress_update("LLM 메타데이터 추출 완료", 3, 70)
-            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
-            
-            # NER 엔티티 추출
-            yield _send_progress_update("NER 엔티티 추출 중...", 4, 80)
-            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
-            logger.info("NER 엔티티 추출 시작 (LLM과 함께)")
-            
-            ner_dir = result_dir / "ner"
-            ner_result = None
-            
-            try:
-                # Use the OCR output directory from UniversalOCRProcessor result
-                # UniversalOCRProcessor now includes 'output_directory' in its result
-                ocr_output_dir = ocr_result.get('output_directory')
-                
-                if not ocr_output_dir or ocr_result.get('status') != 'success':
-                    # Fallback: use ocr_dir if output_directory not available
-                    ocr_output_dir = ocr_dir
-                    logger.warning(f"OCR output directory not available, using ocr_dir: {ocr_dir}")
-                    # Create temp file as fallback
-                    temp_text_file = ocr_dir / "temp_ocr_text.txt"
-                    with open(temp_text_file, 'w', encoding='utf-8') as f:
-                        f.write(ocr_text)
-                else:
-                    logger.info(f"Using OCR output directory from UniversalOCRProcessor: {ocr_output_dir}")
-                
-                # 사용자가 선택한 NER 모델 사용
-                ner_model_name = AVAILABLE_MODELS[ner_model]['name']
-                print(f"NER 모델 이름: {ner_model_name}")
-                print(f"OCR 출력 디렉토리: {ocr_output_dir}")
-                print("-"*100)
-                ner_result = ner_predict(
-                    str(ocr_output_dir),
-                    str(ner_dir),
-                    model_name=ner_model_name,
-                    debug=False
-                )
-                
-                logger.info(f"NER 처리 완료: {ner_result.get('total_entities', 0)}개 엔티티 추출")
-                yield _send_progress_update(f"NER 엔티티 추출 완료 ({ner_result.get('total_entities', 0)}개)", 4, 90)
-                await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
-                
-            except Exception as e:
-                logger.warning(f"NER 처리 중 오류 발생: {e}")
-                ner_result = {
-                    'success': False,
-                    'error': str(e),
-                    'entity_types': {},
-                    'total_entities': 0,
-                    'extracted_entities': []
-                }
-                yield _send_progress_update(f"NER 처리 중 오류 발생: {str(e)}", 4, 90, {"warning": str(e)})
-            
-            # Consolidation 처리 (if enabled)
-            consolidation_result = None
-            consolidation_success = False
-            consolidation_error = None
-            
-            if consolidate:
-                try:
-                    yield _send_progress_update("메타데이터 통합 중...", 5, 95)
-                    await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
-                    logger.info("Consolidation 시작")
-                    
-                    # Ensure ner_result has extracted_entities
-                    if ner_result and 'extracted_entities' not in ner_result:
-                        # Extract entities from statistics if available
-                        statistics = ner_result.get('statistics', {})
-                        entities_data = ner_result.get('entities', {})
-                        extracted_entities = []
-                        
-                        # Convert entities dict to list of tuples (text, type)
-                        if isinstance(entities_data, dict):
-                            for entity_type, entity_list in entities_data.items():
-                                if isinstance(entity_list, list):
-                                    for entity in entity_list:
-                                        if isinstance(entity, dict):
-                                            text = entity.get('text', entity.get('entity', ''))
-                                            extracted_entities.append((text, entity_type))
-                                        elif isinstance(entity, str):
-                                            extracted_entities.append((entity, entity_type))
-                        
-                        ner_result['extracted_entities'] = extracted_entities
-                    
-                    # Ensure llm_result has ocr_text (needed for ConsolidationAgent's _post_process)
-                    llm_result_with_ocr = llm_result.copy()
-                    llm_result_with_ocr['ocr_text'] = ocr_text
-                    
-                    # Initialize ConsolidationAgent with hybrid approach
-                    # Primary: Qwen3-Next-80B (cost-effective), Fallback: Qwen-Max (better JSON quality)
-                    fallback_model = "alibaba-qwen-max" if consolidation_model == "alibaba-qwen3-next-80b-a3b-instruct" else None
-                    consolidation_agent = ConsolidationAgent(
-                        model_name=consolidation_model,
-                        output_dir=str(result_dir),
-                        fallback_model=fallback_model,
-                        enable_hybrid=True  # Enable automatic fallback on JSON parsing errors
-                    )
-                    
-                    # Run consolidation
-                    consolidation_result = consolidation_agent.consolidate(
-                        llm_result=llm_result_with_ocr,
-                        ner_result=ner_result,
-                        ocr_text=ocr_text,
-                        document_type=document_type
-                    )
-                    
-                    if consolidation_result.get('success', False):
-                        consolidation_success = True
-                        logger.info("Consolidation 완료")
-                        yield _send_progress_update("메타데이터 통합 완료", 5, 98)
-                        await asyncio.sleep(0.01)
-                    else:
-                        consolidation_error = consolidation_result.get('error', 'Consolidation 실패')
-                        logger.warning(f"Consolidation 실패: {consolidation_error}")
-                        yield _send_progress_update(f"메타데이터 통합 실패 (원본 메타데이터 사용): {consolidation_error}", 5, 98, {"warning": consolidation_error})
-                        await asyncio.sleep(0.01)
-                        
-                except Exception as e:
-                    consolidation_error = str(e)
-                    logger.error(f"Consolidation 처리 중 오류: {e}", exc_info=True)
-                    yield _send_progress_update(f"메타데이터 통합 중 오류 발생 (원본 메타데이터 사용): {str(e)}", 5, 98, {"warning": str(e)})
-                    await asyncio.sleep(0.01)
-            
-            # 응답 구성
-            total_processing_time = (datetime.now() - process_start_time).total_seconds()
-            
-            response = {
-                "success": llm_result.get('success', False),
-                "request_id": request_id,
-                "filename": sanitized_filename,
-                "file_size_mb": round(file_size_mb, 2),
-                "model_used": llm_result.get('model_used', model_name),
-                "document_type": document_type,
-                "metadata": llm_result.get('metadata', {}),  # Original LLM result
-                "confidence": llm_result.get('confidence', 0.0),
-                "extraction_time": llm_result.get('extraction_time', 0.0),
-                "ocr_text": ocr_text,
-                "ocr_provider": ocr_provider,
-                "ocr_model": ocr_model,
-                "error": llm_result.get('error'),
-                "ner_model": AVAILABLE_MODELS[ner_model]['display_name'],
-                "ner_model_key": ner_model,
-                "entities": _format_ner_entities(ner_result) if ner_result else {},
-                "entity_count": _count_ner_entities(ner_result) if ner_result else 0,
-                "ner_success": ner_result.get('success', False) if ner_result else False,
-                "ner_error": ner_result.get('error') if ner_result and not ner_result.get('success', False) else None,
-                "processing_time": round(total_processing_time, 2),
-                # Consolidation fields
-                "consolidate": consolidate,
-                "consolidation_model": consolidation_model if consolidate else None,
-                "consolidation_success": consolidation_success,
-                "consolidation_error": consolidation_error,
-                "consolidated_metadata": consolidation_result.get('consolidated_metadata', {}) if consolidation_result else None,
-                "consolidation_decisions": consolidation_result.get('validation_report', {}).get('decisions', []) if consolidation_result else None,
-                "consolidation_summary": consolidation_result.get('validation_report', {}).get('summary', {}) if consolidation_result else None,
-                "consolidation_confidence": consolidation_result.get('validation_report', {}).get('confidence_score', 0.0) if consolidation_result else None,
-                "consolidation_model_used": consolidation_result.get('model_used', consolidation_model) if consolidation_result else None,
-                "consolidation_fallback_used": consolidation_result.get('fallback_used', False) if consolidation_result else False
-            }
-            
-            # Debug logging
-            logger.info(f"LLM 응답 생성 - entity_count: {response['entity_count']}, processing_time: {response.get('processing_time', 0)}")
-            logger.info(f"ner_result에서 가져온 값들 - total_entities: {ner_result.get('total_entities', 0) if ner_result else 0}, processing_time: {ner_result.get('processing_time', 0) if ner_result else 0}")
-            
-            # LLM 결과 JSON 저장
-            llm_result_path = result_dir / 'llm_metadata.json'
-            with open(llm_result_path, 'w', encoding='utf-8') as f:
-                json.dump(response, f, ensure_ascii=False, indent=2)
-            
-            # Consolidation 결과 별도 저장 (if available)
-            if consolidation_result and consolidation_success:
-                consolidation_result_path = result_dir / 'consolidated_metadata.json'
-                with open(consolidation_result_path, 'w', encoding='utf-8') as f:
-                    json.dump(consolidation_result, f, ensure_ascii=False, indent=2)
-                logger.info(f"Consolidation 결과 저장: {consolidation_result_path}")
-            
-            # Final progress update with complete result
-            logger.info(f"Sending final result for request_id: {request_id}")
-            yield _send_progress_update("처리 완료", 5, 100, {"result": response})
-            await asyncio.sleep(0.01)  # Small delay to ensure message is flushed
-            logger.info(f"Final result sent successfully for request_id: {request_id}")
-            
-        except Exception as e:
-            logger.error(f"LLM 메타데이터 추출 오류: {e}", exc_info=True)
-            error_response = {
-                "success": False,
-                "error": f"LLM 메타데이터 추출 오류: {str(e)}",
-                "request_id": request_id if 'request_id' in locals() else None,
-                "filename": sanitized_filename if 'sanitized_filename' in locals() else captured_filename if 'captured_filename' in locals() else "unknown"
-            }
-            yield _send_progress_update(f"오류 발생: {str(e)}", 0, 0, {"error": f"LLM 메타데이터 추출 오류: {str(e)}", "result": error_response})
-    
+    # ── SSE streaming mode ──
     if stream:
-        # Return SSE stream
+        async def process_with_progress():
+            try:
+                ctx = pipeline_orchestrator.setup(file_content, filename)
+                yield _send_progress_update("파일 업로드 완료", 1, 10, {"request_id": ctx["request_id"]})
+                await asyncio.sleep(0.01)
+
+                yield _send_progress_update("OCR 텍스트 추출 중...", 2, 20)
+                await asyncio.sleep(0.01)
+                ocr_text, ocr_result = pipeline_orchestrator.run_ocr(ctx, ocr_provider, ocr_model)
+                yield _send_progress_update(f"OCR 완료 ({len(ocr_text)} 문자)", 2, 40)
+                await asyncio.sleep(0.01)
+
+                yield _send_progress_update("LLM + NER 동시 추출 중...", 3, 50)
+                await asyncio.sleep(0.01)
+
+                # Run LLM and NER concurrently using threads
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                    llm_future = executor.submit(
+                        pipeline_orchestrator.run_llm, ocr_text, document_type, ctx["filename"], model_name
+                    )
+                    ner_future = executor.submit(
+                        pipeline_orchestrator.run_ner, ocr_result, ctx["result_dir"], ner_model, ocr_text
+                    )
+                    llm_result = llm_future.result()
+                    ner_result = ner_future.result()
+
+                entity_count = pipeline_orchestrator._count_ner_entities(ner_result)
+                yield _send_progress_update(f"LLM + NER 완료 (엔티티 {entity_count}개)", 4, 90)
+                await asyncio.sleep(0.01)
+
+                con_result, con_success, con_error = None, False, None
+                if consolidate:
+                    yield _send_progress_update("메타데이터 통합 중...", 5, 95)
+                    await asyncio.sleep(0.01)
+                    con_result, con_success, con_error = pipeline_orchestrator.run_consolidation(
+                        llm_result, ner_result, ocr_text, document_type,
+                        ctx["result_dir"], consolidation_model,
+                    )
+                    msg = "메타데이터 통합 완료" if con_success else f"통합 실패: {con_error}"
+                    yield _send_progress_update(msg, 5, 98)
+                    await asyncio.sleep(0.01)
+
+                response = pipeline_orchestrator.build_response(
+                    ctx,
+                    model_name=model_name, document_type=document_type,
+                    ocr_text=ocr_text, ocr_provider=ocr_provider, ocr_model=ocr_model,
+                    llm_result=llm_result, ner_model=ner_model, ner_result=ner_result,
+                    consolidate=consolidate, consolidation_model=consolidation_model,
+                    consolidation_result=con_result,
+                    consolidation_success=con_success, consolidation_error=con_error,
+                )
+                pipeline_orchestrator.save_results(ctx["result_dir"], response, con_result, con_success)
+
+                yield _send_progress_update("처리 완료", 5, 100, {"result": response})
+                await asyncio.sleep(0.01)
+
+            except Exception as e:
+                logger.error(f"Pipeline error: {e}", exc_info=True)
+                error_response = {"success": False, "error": str(e)}
+                yield _send_progress_update(str(e), 0, 0, {"error": str(e), "result": error_response})
+
         return StreamingResponse(
             process_with_progress(),
             media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no"
-            }
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"}
         )
-    else:
-        # Original synchronous behavior - collect all updates and return final result
-        # We still use streaming internally but collect all updates
-        final_result = None
-        error_result = None
-        
-        async def collect_updates():
-            async for update in process_with_progress():
-                yield update
-        
-        # Collect all SSE updates
-        updates = []
-        async for update in collect_updates():
-            updates.append(update)
-            
-        # Parse the last update that contains the result
-        for update in reversed(updates):
-            if update.startswith("data: "):
-                data_str = update.replace("data: ", "").strip()
-                try:
-                    data = json.loads(data_str)
-                    if "result" in data:
-                        final_result = data["result"]
-                        break
-                    elif "error" in data:
-                        error_result = data["error"]
-                        break
-                except:
-                    continue
-        
-        if error_result:
-            return JSONResponse(
-                content={"error": error_result},
-                status_code=500
-            )
-        elif final_result:
-            status_code = 200 if final_result.get('success', False) else 500
-            return JSONResponse(content=final_result, status_code=status_code)
-        else:
-            return JSONResponse(
-                content={"error": "처리 중 오류가 발생했습니다"},
-                status_code=500
-            )
+
+    # ── Non-streaming mode (simple) ──
+    try:
+        result = pipeline_orchestrator.run(
+            file_content, filename,
+            model_name=model_name, document_type=document_type,
+            ocr_provider=ocr_provider, ocr_model=ocr_model,
+            ner_model=ner_model, consolidate=consolidate,
+            consolidation_model=consolidation_model,
+        )
+        status_code = 200 if result.get("success", False) else 500
+        return JSONResponse(content=result, status_code=status_code)
+    except Exception as e:
+        logger.error(f"Pipeline error: {e}", exc_info=True)
+        return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
 
 @app.get("/api/llm-models")
 async def get_llm_models():
@@ -1356,7 +1115,7 @@ async def ner_extract_entities(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/llm-test")
-async def test_llm_extraction(model_name: str = Form(default="solar-ko")):
+async def test_llm_extraction(model_name: str = Form(default="alibaba-qwen3.5-122b-a10b")):
     """LLM 추출 테스트"""
     try:
         result = llm_processor.test_extraction(model_name)
@@ -1367,6 +1126,13 @@ async def test_llm_extraction(model_name: str = Form(default="solar-ko")):
             content={"error": f"LLM 테스트 오류: {str(e)}"},
             status_code=500
         )
+
+# ====== 무하유 프론트엔드 정적 파일 서빙 ======
+# kogl-classifier (npm run export → out/) 빌드 결과물
+_frontend_dir = api_dir.parent / "kogl-classifier" / "out"
+if _frontend_dir.exists():
+    app.mount("/frontend", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")
+    logging.getLogger(__name__).info(f"프론트엔드 마운트: /frontend → {_frontend_dir}")
 
 if __name__ == '__main__':
     print("=" * 80)

@@ -11,12 +11,6 @@ import logging
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 from datetime import datetime
-import sys
-
-# Add parent directory to path for imports
-current_dir = Path(__file__).parent
-module_dir = current_dir.parent.parent
-sys.path.insert(0, str(module_dir))
 
 from module.llm_extraction import LLMExtractionProcessor
 from module.consolidator.field_mapper import FieldMapper
@@ -38,7 +32,7 @@ class ConsolidationAgent:
         self, 
         model_name: str = "alibaba-qwen3-next-80b-a3b-instruct",
         output_dir: Optional[str] = None,
-        fallback_model: Optional[str] = "alibaba-qwen-max",
+        fallback_model: Optional[str] = "alibaba-qwen3.5-plus",
         enable_hybrid: bool = True
     ):
         """
@@ -283,33 +277,33 @@ class ConsolidationAgent:
                 messages = [
                     {
                         "role": "system",
-                        "content": """당신은 한국어 문서 메타데이터 추출 전문가입니다. 두 가지 다른 추출 방법(LLM 추출과 NER 추출)의 결과를 비교하고 통합하는 것이 임무입니다.
-
-중요한 지시사항:
-1. 반드시 유효한 JSON만 출력하세요. 마크다운 코드 블록(```json) 사용 금지.
-2. JSON 형식이 완전하고 올바르게 닫혀있어야 합니다 (모든 중괄호, 대괄호, 따옴표가 닫혀있어야 함).
-3. 문자열 내부의 특수 문자는 반드시 이스케이프 처리하세요 (예: \\", \\n).
-4. 응답은 순수 JSON 객체여야 하며, 추가 설명이나 주석을 포함하지 마세요.
-5. 응답이 길 경우에도 JSON 구조를 완전히 유지하세요."""
+                        "content": "You are a Korean document metadata consolidation expert. "
+                                   "Your task is to compare and merge results from two extraction methods (LLM and NER). "
+                                   "Output ONLY valid JSON. No markdown, no code blocks, no explanations. "
+                                   "Ensure all braces, brackets, and quotes are properly closed. "
+                                   "Escape special characters in strings (\\\" \\n). "
+                                   "Maintain complete JSON structure even for long responses."
                     },
                     {
                         "role": "user",
                         "content": prompt_text
                     }
                 ]
-                
+
                 # Call the cloud extractor's API directly
                 schema_str = json.dumps(schema, ensure_ascii=False, indent=2)
-                
+
                 # For Alibaba Cloud, call the API
                 if hasattr(cloud_extractor, 'client'):
                     try:
                         response = cloud_extractor.client.chat.completions.create(
                             model=cloud_extractor.dashscope_model_id,
                             messages=messages,
-                            temperature=0.7,  # Slightly higher for consolidation reasoning
+                            temperature=0.1,   # Low temperature for deterministic JSON
                             top_p=0.8,
-                            max_tokens=8192  # Increased for large consolidation responses
+                            max_tokens=8192,
+                            timeout=90.0,
+                            response_format={"type": "json_object"}  # Force valid JSON output
                         )
                         
                         extracted_text = response.choices[0].message.content
@@ -543,63 +537,54 @@ class ConsolidationAgent:
         # Truncate OCR text if too long (keep first 3000 chars for context)
         ocr_excerpt = ocr_text[:3000] + ("..." if len(ocr_text) > 3000 else "")
         
-        prompt = f"""당신은 한국어 문서 메타데이터 추출 전문가입니다. 
-두 가지 다른 추출 방법(LLM 추출과 NER 추출)의 결과를 비교하고 통합하는 것이 임무입니다.
+        prompt = f"""Compare and merge the LLM and NER extraction results for this Korean document.
+Output ONLY valid JSON. No markdown, no explanations.
 
-반드시 유효한 JSON만 출력하세요. 설명·주석·마크다운·코드블록 금지.
-
-## 원본 OCR 텍스트:
+## Original OCR text:
 {ocr_excerpt}
 
-## LLM 추출 결과 (구조화된 메타데이터):
+## LLM extraction result (structured metadata):
 {json.dumps(llm_metadata, ensure_ascii=False, indent=2)}
 
-## NER 추출 결과 (엔티티 목록):
+## NER extraction result (entity list):
 {json.dumps(ner_by_type, ensure_ascii=False, indent=2)}
 
-## 필드 매핑 정보:
-NER 엔티티가 LLM 필드로 매핑된 정보:
+## Field mapping (NER entities mapped to LLM fields):
 {json.dumps(field_mappings, ensure_ascii=False, indent=2)}
 
-## 작업 지시사항:
+## Instructions:
 
-1. **각 필드를 비교하세요**:
-   - LLM에서 추출한 값과 NER에서 추출한 값이 일치하는지 확인
-   - 값이 일치하면 decision을 "AGREED"로 설정
-   - 값이 다르면 decision을 "CONFLICT"로 설정
-   - LLM에만 있으면 "LLM_ONLY", NER에만 있으면 "NER_ONLY"
-   - 둘 다 없으면 "MISSING"
+1. Compare each field between LLM and NER:
+   - Both match → decision: "AGREED"
+   - Both exist but differ → decision: "CONFLICT" (check OCR text, pick the more accurate one)
+   - Only in LLM → decision: "LLM_ONLY"
+   - Only in NER → decision: "NER_ONLY"
+   - Neither has it → decision: "MISSING"
 
-2. **최종 값을 선택하세요**:
-   - AGREED: 두 값이 일치하면 해당 값 사용
-   - CONFLICT: OCR 텍스트를 참조하여 더 정확한 값 선택
-   - LLM_ONLY: LLM 값 사용 (하지만 confidence 낮춤)
-   - NER_ONLY: NER 값 사용 (하지만 confidence 낮춤)
-   - MISSING: null 사용
+2. Select final value:
+   - AGREED: use the matched value
+   - CONFLICT: reference OCR text to pick the correct one
+   - LLM_ONLY: use LLM value (lower confidence)
+   - NER_ONLY: use NER value (lower confidence)
+   - MISSING: use null
 
-3. **이유를 설명하세요**:
-   - 각 결정에 대해 한국어로 간단히 이유 설명
-   - 예: "LLM과 NER 모두 '집건에'를 추출하여 일치함"
-   - 예: "LLM은 '2024-01-15', NER은 '2024.1.15' 추출. OCR에서 확인 결과 '2024-01-15'가 정확함"
+3. Provide reasoning in Korean for each decision.
 
-4. **신뢰도 계산**:
+4. Confidence scores:
    - AGREED: 0.9-1.0
-   - CONFLICT 해결: 0.7-0.9
+   - CONFLICT resolved: 0.7-0.9
    - LLM_ONLY: 0.5-0.7
    - NER_ONLY: 0.6-0.8
    - MISSING: 0.0
 
-5. **최종 통합 메타데이터 생성**:
-   - 모든 필드에 대해 결정된 최종 값을 consolidated_metadata에 포함
-   - null 값도 포함 (정보가 없는 경우)
+5. Include ALL fields in consolidated_metadata (including null values).
 
-## 출력 형식 (JSON만):
+## Required JSON output format:
 
 {{
   "consolidated_metadata": {{
     "field1": "final_value1",
-    "field2": "final_value2",
-    ...
+    "field2": "final_value2"
   }},
   "decisions": [
     {{
@@ -608,7 +593,7 @@ NER 엔티티가 LLM 필드로 매핑된 정보:
       "ner_value": "value_from_ner",
       "final_value": "selected_value",
       "decision": "AGREED",
-      "reasoning": "LLM과 NER 모두 동일한 값을 추출했습니다.",
+      "reasoning": "Korean reasoning here",
       "confidence": 1.0
     }}
   ],
@@ -623,7 +608,7 @@ NER 엔티티가 LLM 필드로 매핑된 정보:
   }}
 }}
 
-응답 (JSON만):
+JSON response:
 """
         return prompt
     

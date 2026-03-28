@@ -7,9 +7,6 @@ Handles multiple checkbox patterns and document types with flexible detection
 import re
 from typing import Dict, List, Any, Tuple, Optional
 from enum import Enum
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ..schemas.document_schemas import CheckboxPattern
 
 class UniversalCheckboxExtractor:

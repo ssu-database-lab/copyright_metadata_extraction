@@ -11,10 +11,6 @@ import sys
 import os
 from pathlib import Path
 
-# Add parent directories to path
-current_dir = Path(__file__).parent
-module_dir = current_dir.parent.parent
-sys.path.insert(0, str(module_dir))
 
 def test_phase3_consolidation():
     """Test Phase 3 consolidation with Qwen3-Next-80B"""

@@ -28,21 +28,7 @@ class ReasoningGenerator:
         ocr_text: str = "",
         confidence: float = 0.0
     ) -> Dict[str, Any]:
-        """
-        Generate evidence object for a consolidation decision
-        
-        Args:
-            field_name: Name of the field
-            llm_value: Value from LLM extraction
-            ner_value: Value from NER extraction
-            final_value: Final selected value
-            decision: Decision type (AGREED, CONFLICT, etc.)
-            ocr_text: Original OCR text
-            confidence: Confidence score
-        
-        Returns:
-            Evidence dictionary
-        """
+        """Generate evidence object for a consolidation decision."""
         evidence = {
             "field": field_name,
             "llm_value": llm_value,
@@ -51,69 +37,95 @@ class ReasoningGenerator:
             "decision": decision,
             "confidence": confidence,
             "reasoning": self._generate_reasoning(
-                field_name, llm_value, ner_value, final_value, decision
+                field_name, llm_value, ner_value, final_value, decision, confidence
             ),
-            "ocr_excerpt": self._extract_ocr_excerpt(field_name, ocr_text) if ocr_text else None
+            "ocr_excerpt": self._extract_ocr_excerpt(
+                final_value, ocr_text, llm_value, ner_value
+            ) if ocr_text else None
         }
-        
         return evidence
-    
+
     def _generate_reasoning(
         self,
         field_name: str,
         llm_value: Any,
         ner_value: Any,
         final_value: Any,
-        decision: str
+        decision: str,
+        confidence: float = 0.0
     ) -> str:
-        """Generate Korean reasoning explanation"""
-        
+        """Generate Korean reasoning explanation with confidence-aware messaging."""
+
         if decision == "AGREED":
-            return f"LLM과 NER 모두 '{final_value}' 값을 추출했습니다. 높은 신뢰도입니다."
-        
+            if confidence >= 0.9:
+                return f"LLM과 NER 모두 '{final_value}' 값을 추출했습니다. 매우 높은 신뢰도입니다."
+            elif confidence >= 0.7:
+                return f"LLM과 NER이 유사한 값을 추출했습니다 ('{final_value}'). 신뢰도 양호."
+            else:
+                return f"LLM과 NER 결과가 일치하나 신뢰도가 낮습니다 ({confidence:.0%}). '{final_value}' 사용."
+
         elif decision == "CONFLICT":
-            return f"LLM은 '{llm_value}', NER은 '{ner_value}'를 추출했습니다. {final_value}를 선택했습니다."
-        
+            return (
+                f"LLM은 '{llm_value}', NER은 '{ner_value}'를 추출했습니다. "
+                f"신뢰도 비교 후 '{final_value}'를 선택했습니다."
+            )
+
         elif decision == "LLM_ONLY":
-            return f"NER에서 해당 필드를 찾을 수 없어 LLM 값 '{final_value}'를 사용했습니다."
-        
+            return f"NER에서 해당 필드를 추출하지 못해 LLM 값 '{final_value}'를 사용했습니다."
+
         elif decision == "NER_ONLY":
-            return f"LLM에서 해당 필드를 찾을 수 없어 NER 값 '{final_value}'를 사용했습니다."
-        
+            return f"LLM에서 해당 필드를 추출하지 못해 NER 값 '{final_value}'를 사용했습니다."
+
+        elif decision == "MISSING":
+            return f"LLM과 NER 모두 '{field_name}' 필드를 추출하지 못했습니다."
+
         else:
             return f"필드 '{field_name}'에 대한 처리 결과입니다."
-    
+
     def _extract_ocr_excerpt(
         self,
-        field_name: str,
+        final_value: Any,
         ocr_text: str,
-        context_window: int = 50
+        llm_value: Any = None,
+        ner_value: Any = None,
+        context_window: int = 100
     ) -> Optional[str]:
+        """Extract relevant excerpt from OCR text by searching for the actual value.
+
+        Searches for the final_value (or llm/ner values as fallback) in the OCR
+        text and returns surrounding context. This finds real evidence instead of
+        searching for English field names in Korean text.
         """
-        Extract relevant excerpt from OCR text
-        
-        Phase 1: Simple implementation
-        Phase 2: Will add intelligent context extraction
-        """
-        if not ocr_text or not field_name:
+        if not ocr_text:
             return None
-        
-        # Simple: find field name in text and extract surrounding context
-        field_lower = field_name.lower()
-        text_lower = ocr_text.lower()
-        
-        idx = text_lower.find(field_lower)
-        if idx == -1:
+
+        # Build search terms: try final_value first, then llm/ner values
+        search_terms = []
+        for val in [final_value, llm_value, ner_value]:
+            if val is not None and val != "":
+                str_val = str(val).strip()
+                if len(str_val) >= 2:  # skip single characters
+                    search_terms.append(str_val)
+
+        if not search_terms:
             return None
-        
-        start = max(0, idx - context_window)
-        end = min(len(ocr_text), idx + len(field_name) + context_window)
-        
-        excerpt = ocr_text[start:end]
-        if start > 0:
-            excerpt = "..." + excerpt
-        if end < len(ocr_text):
-            excerpt = excerpt + "..."
-        
-        return excerpt.strip()
+
+        # Search for each term in the OCR text
+        for term in search_terms:
+            idx = ocr_text.find(term)
+            if idx == -1:
+                continue
+
+            start = max(0, idx - context_window)
+            end = min(len(ocr_text), idx + len(term) + context_window)
+
+            excerpt = ocr_text[start:end]
+            if start > 0:
+                excerpt = "..." + excerpt
+            if end < len(ocr_text):
+                excerpt = excerpt + "..."
+
+            return excerpt.strip()
+
+        return None
 

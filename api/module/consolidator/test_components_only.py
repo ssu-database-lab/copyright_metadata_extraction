@@ -10,10 +10,6 @@ import json
 import sys
 from pathlib import Path
 
-# Add parent directories to path
-current_dir = Path(__file__).parent
-module_dir = current_dir.parent.parent
-sys.path.insert(0, str(module_dir))
 
 def test_field_mapper():
     """Test FieldMapper without API"""

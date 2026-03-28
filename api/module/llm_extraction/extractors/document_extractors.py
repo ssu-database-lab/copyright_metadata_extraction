@@ -354,7 +354,7 @@ if __name__ == "__main__":
     from ..models.base_extractor import create_extractor
     
     # Create LLM extractor
-    llm_extractor = create_extractor("solar-ko")
+    llm_extractor = create_extractor("alibaba-qwen3-next-80b-a3b-instruct")
     
     # Create document extractor
     doc_extractor = DocumentMetadataExtractor(llm_extractor)

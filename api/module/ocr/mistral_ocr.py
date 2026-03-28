@@ -9,18 +9,7 @@ import logging
 from pathlib import Path
 from typing import Dict
 from mistralai import Mistral
-from dotenv import load_dotenv
-
-# Load environment variables
-env_paths = [
-    Path(__file__).parent.parent / ".env",  # API directory
-    Path(__file__).parent.parent.parent / "OCR" / "google_vision" / ".env",  # OCR directory
-]
-
-for env_path in env_paths:
-    if env_path.exists():
-        load_dotenv(env_path)
-        break
+import module.env_loader  # noqa: F401 — loads .env on import
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +78,7 @@ class MistralOCRProvider:
                 'extracted_text': '',
                 'metadata': {
                     'provider': 'mistral_ai',
+                    'model': self.model_name,
                     'error': str(e),
                     'confidence': 0.0
                 }

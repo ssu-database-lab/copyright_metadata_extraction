@@ -39,6 +39,50 @@ load_env_file()
 logger = logging.getLogger(__name__)
 
 
+# =====================================================================
+# Shared extraction prompt — single source of truth for all extractors
+# =====================================================================
+
+def create_extraction_prompt(text: str, schema: Dict[str, Any], document_type: str) -> str:
+    """Create the standard metadata extraction prompt.
+
+    This is the single source of truth for the extraction instructions.
+    Used by both local model extractors (base_extractor.py) and all
+    cloud extractors (HuggingFace, OpenAI, Alibaba, Together).
+
+    The prompt is in English for token efficiency and better instruction
+    following, while the document text and extracted values remain in Korean.
+    """
+    schema_str = json.dumps(schema, ensure_ascii=False, indent=2)
+
+    return f"""You are a metadata extraction assistant for Korean documents (contracts, consent forms, copyright documents, etc.).
+Output ONLY valid JSON. No explanations, comments, markdown, or code blocks.
+
+Extract metadata from the following {document_type} document OCR text according to the JSON schema.
+
+Document text:
+{text}
+
+JSON schema:
+{schema_str}
+
+Rules:
+1. Extract information exactly as it appears in the text for each schema field.
+2. Use null if information is not explicitly present or unclear. NEVER GUESS.
+3. Convert dates to YYYY-MM-DD format (e.g. 2024년 3월 15일 → 2024-03-15).
+4. Extract only numbers for monetary amounts (exclude currency units).
+5. Phone numbers: digits and hyphens only (e.g. 010-1234-5678).
+6. Extract full addresses exactly as written.
+7. Business registration numbers: digits and hyphens only.
+8. Checkbox handling:
+   - Checked (📧, ☑, ✓, ■, ●, ◼, ◉) → true
+   - Unchecked (☐, □, ○, ◯, ◻, ◦) → false
+   - Correct common OCR errors: "목제권" → "복제권"
+9. Return ONLY valid JSON. No markdown (```json), no extra text.
+
+JSON response:"""
+
+
 class CloudExtractor(ABC):
     """Abstract base class for cloud-based extractors."""
     
@@ -103,40 +147,9 @@ class HuggingFaceInferenceExtractor(CloudExtractor):
         except requests.RequestException as e:
             logger.error(f"Hugging Face API error: {e}")
             return {"error": str(e)}
-    
+
     def _create_prompt(self, text: str, schema: Dict[str, Any], document_type: str) -> str:
-        """Create a structured prompt for metadata extraction."""
-        schema_str = json.dumps(schema, ensure_ascii=False, indent=2)
-        
-        return f"""당신은 한국어 문서(계약서, 동의서, 기타)에서 정보를 추출하는 도우미입니다.
-반드시 유효한 JSON만 출력하세요. 설명·주석·마크다운·코드블록 금지.
-
-다음은 {document_type} 문서의 OCR 텍스트입니다. 주어진 JSON 스키마에 따라 메타데이터를 추출해주세요.
-
-문서 텍스트:
-{text}
-
-추출할 메타데이터 스키마:
-{schema_str}
-
-지시사항:
-1. 텍스트에서 각 필드에 해당하는 정보를 정확히 찾아 추출하세요
-2. 정보가 명시적으로 존재하지 않거나 불분명한 경우 반드시 null을 사용하세요 (추측 금지)
-3. 날짜는 YYYY-MM-DD 형식으로 변환하세요
-4. 금액은 숫자만 추출하세요 (단위 제외)
-5. 전화번호는 숫자와 하이픈(-)만 포함하세요
-6. 주소는 전체 주소를 정확히 추출하세요
-7. 사업자등록번호는 숫자와 하이픈(-)만 포함하세요
-8. 체크박스 정보 처리:
-   - 체크박스가 체크된 상태(📧, ☑, ✓, ■, ●, ◼, ◉)인 경우 true로 설정
-   - 체크박스가 체크되지 않은 상태(☐, □, ○, ◯, ◻, ◦)인 경우 false로 설정
-   - 체크박스 패턴을 자동으로 감지하여 일관성 있게 처리
-   - OCR 오류 고려: "목제권"은 "복제권"으로 해석
-9. 반드시 유효한 JSON 형식으로 응답하세요
-10. 추가 정보나 설명은 포함하지 마세요
-11. ```json이나 ``` 같은 마크다운 문법 사용 금지
-
-응답 (JSON만):"""
+        return create_extraction_prompt(text, schema, document_type)
 
 
 class OpenAIExtractor(CloudExtractor):
@@ -196,26 +209,7 @@ class OpenAIExtractor(CloudExtractor):
             return {"error": str(e)}
     
     def _create_prompt(self, text: str, schema: Dict[str, Any], document_type: str) -> str:
-        """Create a structured prompt for metadata extraction."""
-        schema_str = json.dumps(schema, ensure_ascii=False, indent=2)
-        
-        return f"""Extract metadata from this Korean {document_type} document text according to the provided JSON schema.
-
-Document text:
-{text}
-
-Schema:
-{schema_str}
-
-Instructions:
-1. Extract information for each field in the schema
-2. Use null for missing or unclear information
-3. Convert dates to YYYY-MM-DD format
-4. Extract only numbers for amounts
-5. Handle checkbox states (☑/☐, ✓/○, ■/□, etc.)
-6. Return only valid JSON without markdown formatting
-
-Response (JSON only):"""
+        return create_extraction_prompt(text, schema, document_type)
 
 
 class AlibabaCloudExtractor(CloudExtractor):
@@ -231,24 +225,35 @@ class AlibabaCloudExtractor(CloudExtractor):
         
         # Available models for metadata extraction (verified working models)
         self.available_models = {
-            "qwen-plus": "Qwen-Plus",
-            "qwen-max": "Qwen-Max", 
-            "qwen-turbo": "Qwen-Turbo",
-            "qwen-vl-plus": "Qwen-VL-Plus",
+            # Qwen3.5 (current generation — recommended)
+            "qwen3.5-122b-a10b": "Qwen3.5-122B-A10B (recommended, best value)",
+            "qwen3.5-plus": "Qwen3.5-Plus (397B-A17B, flagship)",
+            "qwen3.5-flash": "Qwen3.5-Flash (35B-A3B, cost-effective)",
+            # Qwen3 (previous generation)
+            "qwen3-max": "Qwen3-Max",
             "qwen3-next-80b-a3b-instruct": "Qwen3-Next-80B-A3B-Instruct",
             "qwen3-vl-235b-a22b-instruct": "Qwen3-VL-235B-A22B-Instruct",
-            "qwen3-235b-a22b-instruct-2507": "Qwen3-235B-A22B-Instruct-2507"
+            "qwen3-235b-a22b-instruct-2507": "Qwen3-235B-A22B-Instruct-2507",
+            # Qwen (legacy)
+            "qwen-plus": "Qwen-Plus (legacy)",
+            "qwen-max": "Qwen-Max (legacy)",
+            "qwen-turbo": "Qwen-Turbo (legacy)",
+            "qwen-vl-plus": "Qwen-VL-Plus (legacy)",
         }
-        
+
         # Map model names to DashScope model IDs
         self.model_mapping = {
-            "qwen-plus": "qwen-plus",
-            "qwen-max": "qwen-max",
-            "qwen-turbo": "qwen-turbo", 
-            "qwen-vl-plus": "qwen-vl-plus",
+            "qwen3.5-122b-a10b": "qwen3.5-122b-a10b",
+            "qwen3.5-plus": "qwen3.5-plus",
+            "qwen3.5-flash": "qwen3.5-flash",
+            "qwen3-max": "qwen3-max",
             "qwen3-next-80b-a3b-instruct": "qwen3-next-80b-a3b-instruct",
             "qwen3-vl-235b-a22b-instruct": "qwen3-vl-235b-a22b-instruct",
-            "qwen3-235b-a22b-instruct-2507": "qwen3-235b-a22b-instruct-2507"
+            "qwen3-235b-a22b-instruct-2507": "qwen3-235b-a22b-instruct-2507",
+            "qwen-plus": "qwen-plus",
+            "qwen-max": "qwen-max",
+            "qwen-turbo": "qwen-turbo",
+            "qwen-vl-plus": "qwen-vl-plus",
         }
         
         # Validate model
@@ -263,7 +268,9 @@ class AlibabaCloudExtractor(CloudExtractor):
             from openai import OpenAI
             self.client = OpenAI(
                 api_key=api_key,
-                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                timeout=60.0,       # 60s timeout per request
+                max_retries=3       # retry up to 3 times on transient errors
             )
         except ImportError:
             raise ImportError("openai package not found. Install with: pip install openai")
@@ -324,39 +331,8 @@ class AlibabaCloudExtractor(CloudExtractor):
             return {"error": str(e)}
     
     def _create_prompt(self, text: str, schema: Dict[str, Any], document_type: str) -> str:
-        """Create a structured prompt for metadata extraction."""
-        schema_str = json.dumps(schema, ensure_ascii=False, indent=2)
-        
-        return f"""당신은 한국어 문서(계약서, 동의서, 기타)에서 정보를 추출하는 도우미입니다.
-반드시 유효한 JSON만 출력하세요. 설명·주석·마크다운·코드블록 금지.
+        return create_extraction_prompt(text, schema, document_type)
 
-다음은 {document_type} 문서의 OCR 텍스트입니다. 주어진 JSON 스키마에 따라 메타데이터를 추출해주세요.
-
-문서 텍스트:
-{text}
-
-추출할 메타데이터 스키마:
-{schema_str}
-
-지시사항:
-1. 텍스트에서 각 필드에 해당하는 정보를 정확히 찾아 추출하세요
-2. 정보가 명시적으로 존재하지 않거나 불분명한 경우 반드시 null을 사용하세요 (추측 금지)
-3. 날짜는 YYYY-MM-DD 형식으로 변환하세요
-4. 금액은 숫자만 추출하세요 (단위 제외)
-5. 전화번호는 숫자와 하이픈(-)만 포함하세요
-6. 주소는 전체 주소를 정확히 추출하세요
-7. 사업자등록번호는 숫자와 하이픈(-)만 포함하세요
-8. 체크박스 정보 처리:
-   - 체크박스가 체크된 상태(📧, ☑, ✓, ■, ●, ◼, ◉)인 경우 true로 설정
-   - 체크박스가 체크되지 않은 상태(☐, □, ○, ◯, ◻, ◦)인 경우 false로 설정
-   - 체크박스 패턴을 자동으로 감지하여 일관성 있게 처리
-   - OCR 오류 고려: "목제권"은 "복제권"으로 해석
-9. 반드시 유효한 JSON 형식으로 응답하세요
-10. 추가 정보나 설명은 포함하지 마세요
-11. ```json이나 ``` 같은 마크다운 문법 사용 금지
-
-응답 (JSON만):"""
-    
     def _clean_markdown_formatting(self, text: str) -> str:
         """Remove markdown formatting from API response."""
         import re
@@ -434,26 +410,7 @@ class TogetherAIExtractor(CloudExtractor):
             return {"error": str(e)}
     
     def _create_prompt(self, text: str, schema: Dict[str, Any], document_type: str) -> str:
-        """Create a structured prompt for metadata extraction."""
-        schema_str = json.dumps(schema, ensure_ascii=False, indent=2)
-        
-        return f"""Extract metadata from this Korean {document_type} document text according to the provided JSON schema.
-
-Document text:
-{text}
-
-Schema:
-{schema_str}
-
-Instructions:
-1. Extract information for each field in the schema
-2. Use null for missing or unclear information
-3. Convert dates to YYYY-MM-DD format
-4. Extract only numbers for amounts
-5. Handle checkbox states (☑/☐, ✓/○, ■/□, etc.)
-6. Return only valid JSON without markdown formatting
-
-Response (JSON only):"""
+        return create_extraction_prompt(text, schema, document_type)
 
 
 def create_cloud_extractor(provider: str, api_key: str, model_id: str, **kwargs) -> CloudExtractor:

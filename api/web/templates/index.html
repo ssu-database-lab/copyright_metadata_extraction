@@ -967,71 +967,28 @@
             <div class="model-selection" id="llmModelSelection" style="display: none;">
                 <h3>LLM 모델 선택</h3>
                 <div class="model-options">
-                    <!-- Local Models -->
-                    <!-- <div class="model-category">
-                        <h4>로컬 모델</h4>
-                        <div class="model-options">
-                            <label class="model-option">
-                                <input type="radio" name="llm_model" value="solar-ko" checked>
-                                <div>
-                                    <div class="model-name">SOLAR-Ko-10.7B</div>
-                                    <div class="model-desc">한국어 특화 모델 (권장)</div>
-                                </div>
-                            </label>
-                            <label class="model-option">
-                                <input type="radio" name="llm_model" value="qwen">
-                                <div>
-                                    <div class="model-name">Qwen2.5-7B</div>
-                                    <div class="model-desc">다국어 모델</div>
-                                </div>
-                            </label>
-                            <label class="model-option">
-                                <input type="radio" name="llm_model" value="lightweight">
-                                <div>
-                                    <div class="model-name">SOLAR-Ko-1.7B</div>
-                                    <div class="model-desc">경량 모델</div>
-                                </div>
-                            </label>
-                            <label class="model-option">
-                                <input type="radio" name="llm_model" value="qwen3">
-                                <div>
-                                    <div class="model-name">Qwen3-4B</div>
-                                    <div class="model-desc">최신 세대 모델</div>
-                                </div>
-                            </label>
-                        </div>
-                    </div> -->
-                    
-                    <!-- Cloud Models -->
                     <div class="model-category">
-                        <h4>클라우드 모델</h4>
+                        <h4>클라우드 모델 (Alibaba DashScope)</h4>
                         <div class="model-options">
-                            <label class="model-option">
-                                <input type="radio" name="llm_model" value="alibaba-qwen-plus">
+                            <label class="model-option selected">
+                                <input type="radio" name="llm_model" value="alibaba-qwen3.5-122b-a10b" checked>
                                 <div>
-                                    <div class="model-name">Alibaba Qwen-Plus</div>
-                                    <div class="model-desc">클라우드 기반 모델</div>
+                                    <div class="model-name">Qwen3.5-122B (권장)</div>
+                                    <div class="model-desc">최적 성능/비용 모델</div>
                                 </div>
                             </label>
                             <label class="model-option">
-                                <input type="radio" name="llm_model" value="alibaba-qwen-max" checked>
+                                <input type="radio" name="llm_model" value="alibaba-qwen3.5-plus">
                                 <div>
-                                    <div class="model-name">Alibaba Qwen-Max</div>
-                                    <div class="model-desc">최고 성능 모델</div>
+                                    <div class="model-name">Qwen3.5-Plus (397B)</div>
+                                    <div class="model-desc">플래그십 모델</div>
                                 </div>
                             </label>
                             <label class="model-option">
-                                <input type="radio" name="llm_model" value="alibaba-qwen3-next-80b-a3b-instruct">
+                                <input type="radio" name="llm_model" value="alibaba-qwen3.5-flash">
                                 <div>
-                                    <div class="model-name">Alibaba Qwen3-Next-80B</div>
-                                    <div class="model-desc">초효율 MoE 모델 (통합용 권장)</div>
-                                </div>
-                            </label>
-                            <label class="model-option">
-                                <input type="radio" name="llm_model" value="alibaba-qwen-vl-plus">
-                                <div>
-                                    <div class="model-name">Alibaba Qwen-VL-Plus</div>
-                                    <div class="model-desc">비전-언어 모델</div>
+                                    <div class="model-name">Qwen3.5-Flash (35B)</div>
+                                    <div class="model-desc">경제적 모델</div>
                                 </div>
                             </label>
                         </div>
@@ -1069,6 +1026,13 @@
                         <div>
                             <div class="model-name">저작재산권 양도동의서</div>
                             <div class="model-desc">저작권 양도 관련 문서</div>
+                        </div>
+                    </label>
+                    <label class="model-option">
+                        <input type="radio" name="document_type" value="디지털 콘텐츠">
+                        <div>
+                            <div class="model-name">디지털 콘텐츠</div>
+                            <div class="model-desc">디지털 콘텐츠 관리 및 아카이브 시스템</div>
                         </div>
                     </label>
                 </div>

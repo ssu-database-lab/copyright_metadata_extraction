@@ -35,7 +35,10 @@ class FieldMapper:
                 'user',
                 'data_controller',
                 'data_subject',
-                'parties[].name'
+                'parties[].name',
+                # Digital content schema fields
+                'copyright_holder',
+                'co_author'
             ],
             
             # Date entities
@@ -45,14 +48,19 @@ class FieldMapper:
                 'expiration_date',
                 'contract_duration',
                 'consent_date',
-                'retention_period'
+                'retention_period',
+                # Digital content schema fields
+                'created_date',
+                'registration_date',
+                'production_date',
+                'valid_period'
             ],
             
             # Phone entities
             'PHONE': [
                 'parties[].phone',
                 'contact_info.phone',
-                'phone',
+                'phone',  # Digital content schema field
                 'telephone'
             ],
             
@@ -77,7 +85,11 @@ class FieldMapper:
                 'rights_holder',
                 'data_controller',
                 'parties[].company',
-                'organization'
+                'organization',
+                # Digital content schema fields
+                'agency_name',
+                'site_name',
+                'board_name'
             ],
             
             # Money entities
@@ -113,7 +125,7 @@ class FieldMapper:
             # URL entities
             'URL': [
                 'website',
-                'url',
+                'url',  # Digital content schema field
                 'homepage'
             ],
             
@@ -121,13 +133,81 @@ class FieldMapper:
             'DESCRIPTION': [
                 'contract_purpose',
                 'collection_purpose',
-                'description',
-                'remarks'
+                'description',  # Digital content schema field
+                'remarks',
+                'memo'  # Digital content schema field (비고)
             ],
             
             # Contract/Consent types
             'CONTRACT_TYPE': ['contract_type'],
             'CONSENT_TYPE': ['consent_type'],
+            
+            # Period entities (기간)
+            'PERIOD': [
+                'contract_duration',
+                'valid_period',  # Digital content schema field (유효기간)
+                'retention_period'
+            ],
+            
+            # Right/Authority information (권리 정보)
+            'RIGHT_INFO': [
+                'granted_rights',
+                'economic_rights',  # Digital content schema field (저작재산권)
+                'third_party_rights',  # Digital content schema field (제3자 권리)
+                'portrait_rights',  # Digital content schema field (초상권)
+                'neighboring_rights_holder'  # Digital content schema field (저작인접권자)
+            ],
+            
+            # Project/Business name (프로젝트명, 사업명)
+            'PROJECT_NAME': [
+                'work_title',  # Can be project/work name
+                'title',
+                'document_title'
+            ],
+            
+            # Law/Regulation reference (법령, 조항)
+            'LAW_REFERENCE': [
+                'special_terms',  # May contain law references
+                'important_terms',
+                'termination_conditions'
+            ],
+            
+            # Type/Category (유형, 종류)
+            'TYPE': [
+                'work_type',  # Digital content schema field (유형)
+                'work_category',
+                'category',  # Digital content schema field (카테고리)
+                'document_type',
+                'contract_type',
+                'consent_type'
+            ],
+            
+            # Status (상태, 진행현황)
+            'STATUS': [
+                'review_impossible',  # Digital content schema field (검토불가)
+                'disclosure_type'  # Digital content schema field (공개유형)
+            ],
+            
+            # Department (담당부서)
+            'DEPARTMENT': [
+                'agency_name',  # Digital content schema field (기관명)
+                'data_controller',
+                'organization'
+            ],
+            
+            # Language (언어)
+            'LANGUAGE': [
+                'language'  # Digital content schema field (언어)
+            ],
+            
+            # Quantity (수량, 분량)
+            'QUANTITY': [
+                'quantity',  # Digital content schema field (수량)
+                'video_count',  # Digital content schema field (영상)
+                'photo_count',  # Digital content schema field (사진)
+                'document_count',  # Digital content schema field (문서)
+                'view_count'  # Digital content schema field (조회수)
+            ],
         }
     
     def _initialize_priorities(self) -> Dict[str, Dict[str, int]]:
@@ -151,18 +231,80 @@ class FieldMapper:
                 'effective_date': 8,
                 'expiration_date': 7,
                 'consent_date': 10,
-                'contract_duration': 5
+                'contract_duration': 5,
+                # Digital content schema priorities
+                'created_date': 9,
+                'registration_date': 8,
+                'production_date': 7,
+                'valid_period': 6
             },
             'PHONE': {
                 'parties[].phone': 10,
                 'contact_info.phone': 9,
-                'phone': 5
+                'phone': 8
             },
             'COMPANY': {
                 'user': 10,
                 'rights_holder': 9,
                 'data_controller': 10,
-                'parties[].company': 5
+                'parties[].company': 5,
+                # Digital content schema priorities
+                'agency_name': 10,
+                'site_name': 9,
+                'board_name': 8
+            },
+            'NAME': {
+                'rights_holder': 10,
+                'user': 9,
+                'data_controller': 10,
+                'data_subject': 9,
+                'parties[].name': 5,
+                # Digital content schema priorities
+                'copyright_holder': 10,
+                'co_author': 8
+            },
+            'DESCRIPTION': {
+                'description': 10,  # Digital content schema field
+                'contract_purpose': 9,
+                'collection_purpose': 9,
+                'memo': 8  # Digital content schema field
+            },
+            'PERIOD': {
+                'valid_period': 10,  # Digital content schema field
+                'contract_duration': 9,
+                'retention_period': 8
+            },
+            'RIGHT_INFO': {
+                'economic_rights': 10,  # Digital content schema field
+                'granted_rights': 9,
+                'third_party_rights': 8,  # Digital content schema field
+                'portrait_rights': 7,  # Digital content schema field
+                'neighboring_rights_holder': 6  # Digital content schema field
+            },
+            'TYPE': {
+                'work_type': 10,  # Digital content schema field
+                'category': 9,  # Digital content schema field
+                'work_category': 8,
+                'document_type': 7
+            },
+            'STATUS': {
+                'disclosure_type': 10,  # Digital content schema field
+                'review_impossible': 8  # Digital content schema field
+            },
+            'DEPARTMENT': {
+                'agency_name': 10,  # Digital content schema field
+                'data_controller': 9,
+                'organization': 7
+            },
+            'LANGUAGE': {
+                'language': 10  # Digital content schema field
+            },
+            'QUANTITY': {
+                'quantity': 10,  # Digital content schema field
+                'video_count': 9,  # Digital content schema field
+                'photo_count': 9,  # Digital content schema field
+                'document_count': 9,  # Digital content schema field
+                'view_count': 8  # Digital content schema field
             }
         }
     

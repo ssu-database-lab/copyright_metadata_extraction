@@ -144,15 +144,12 @@ class ValidationEngine:
             return 'string'
     
     def _validate_date(self, value: str) -> Tuple[bool, Optional[str]]:
-        """Validate date format (YYYY-MM-DD)"""
-        if not self.date_pattern.match(value):
-            return False, f"Invalid date format: {value}. Expected YYYY-MM-DD"
-        
-        try:
-            datetime.strptime(value, '%Y-%m-%d')
+        """Validate date format — accepts YYYY-MM-DD and Korean date formats"""
+        # Try to normalize first; if it succeeds, the date is valid
+        normalized = self._normalize_date(value)
+        if normalized:
             return True, None
-        except ValueError:
-            return False, f"Invalid date: {value}"
+        return False, f"Invalid date format: {value}. Expected YYYY-MM-DD or Korean date format (예: 2024년 1월 15일)"
     
     def _validate_phone(self, value: str) -> Tuple[bool, Optional[str]]:
         """Validate phone number format"""
@@ -261,25 +258,55 @@ class ValidationEngine:
         return errors
     
     def _normalize_date(self, date_str: str) -> Optional[str]:
-        """Normalize date string to YYYY-MM-DD format"""
+        """Normalize date string to YYYY-MM-DD format.
+
+        Supports:
+        - 2024-01-15, 2024/01/15, 2024.01.15
+        - 2024년 1월 15일, 2024년 01월 15일
+        - 2024. 1. 15., 2024. 01. 15.
+        - 15/01/2024, 15-01-2024
+        """
         if not date_str:
             return None
-        
-        # Try to parse and normalize various date formats
+
+        date_str = date_str.strip()
+
+        # Korean date format: 2024년 1월 15일 or 2024년 01월 15일
+        korean_match = re.match(r'(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일?', date_str)
+        if korean_match:
+            y, m, d = korean_match.groups()
+            try:
+                dt = datetime(int(y), int(m), int(d))
+                return dt.strftime('%Y-%m-%d')
+            except ValueError:
+                pass
+
+        # Korean spaced dot format: 2024. 1. 15. or 2024. 01. 15.
+        dot_space_match = re.match(r'(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.?', date_str)
+        if dot_space_match:
+            y, m, d = dot_space_match.groups()
+            try:
+                dt = datetime(int(y), int(m), int(d))
+                return dt.strftime('%Y-%m-%d')
+            except ValueError:
+                pass
+
+        # Standard formats
         date_formats = [
             '%Y-%m-%d',
             '%Y/%m/%d',
             '%Y.%m.%d',
             '%d/%m/%Y',
             '%d-%m-%Y',
+            '%Y%m%d',
         ]
-        
+
         for fmt in date_formats:
             try:
                 dt = datetime.strptime(date_str, fmt)
                 return dt.strftime('%Y-%m-%d')
             except ValueError:
                 continue
-        
+
         return None
 

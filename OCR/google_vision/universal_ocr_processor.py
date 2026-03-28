@@ -794,7 +794,17 @@ class DeepSeekOCRProvider(OCRProvider):
         self.mode = mode
         self.device = device
         self.prompt = prompt
-        self.model_name = 'deepseek-ai/DeepSeek-OCR'
+        
+        # Check for local model first, then fall back to Hugging Face
+        script_dir = Path(__file__).parent
+        local_model_path = script_dir.parent.parent / "api" / "models" / "ocr" / "deepseek-ai_DeepSeek-OCR"
+        
+        if local_model_path.exists():
+            self.model_name = str(local_model_path)
+            logger.info(f"Using local DeepSeek-OCR model: {self.model_name}")
+        else:
+            self.model_name = 'deepseek-ai/DeepSeek-OCR'
+            logger.info(f"Local model not found, using Hugging Face: {self.model_name}")
         
         # Set CUDA device if available
         if device == "cuda" and torch.cuda.is_available():
@@ -911,6 +921,222 @@ class DeepSeekOCRProvider(OCRProvider):
     def list_available_modes(cls) -> Dict[str, str]:
         """Return dictionary of available processing modes."""
         return cls.AVAILABLE_MODES.copy()
+
+class PaddleOCRVLProvider(OCRProvider):
+    """PaddleOCR-VL provider using local model from api/models/ocr/."""
+    
+    def __init__(self, device: str = "cuda", task: str = "ocr"):
+        """
+        Initialize PaddleOCR-VL provider.
+        
+        Args:
+            device: Device to run on - "cuda" or "cpu"
+            task: Task type - "ocr", "table", "chart", or "formula"
+        """
+        try:
+            from transformers import AutoModelForCausalLM, AutoProcessor
+            from PIL import Image
+            import torch
+        except ImportError:
+            raise ImportError("transformers, torch, and PIL packages not found. Install with: pip install transformers torch pillow")
+        
+        self.device = device
+        self.task = task
+        
+        # Check for local model
+        script_dir = Path(__file__).parent
+        local_model_path = script_dir.parent.parent / "api" / "models" / "ocr" / "PaddlePaddle_PaddleOCR-VL"
+        
+        if local_model_path.exists():
+            self.model_name = str(local_model_path)
+            logger.info(f"Using local PaddleOCR-VL model: {self.model_name}")
+        else:
+            self.model_name = 'PaddlePaddle/PaddleOCR-VL'
+            logger.info(f"Local model not found, using Hugging Face: {self.model_name}")
+        
+        # Set device
+        if device == "cuda" and torch.cuda.is_available():
+            self.device = "cuda"
+        else:
+            self.device = "cpu"
+            logger.warning("CUDA not available, using CPU (slower)")
+        
+        # Define prompts for different tasks
+        self.PROMPTS = {
+            "ocr": "OCR:",
+            "table": "Table Recognition:",
+            "formula": "Formula Recognition:",
+            "chart": "Chart Recognition:",
+        }
+        
+        # Check for torchvision NMS operator (required for some PaddleOCR-VL operations)
+        try:
+            import torchvision
+            if not hasattr(torchvision.ops, 'nms'):
+                logger.warning("torchvision.ops.nms not available. This may cause issues with PaddleOCR-VL.")
+                logger.warning("Try reinstalling torchvision: pip install --upgrade torchvision")
+        except ImportError:
+            logger.warning("torchvision not installed. Some PaddleOCR-VL features may not work.")
+        
+        # Initialize model and processor
+        try:
+            logger.info(f"Loading PaddleOCR-VL model: {self.model_name}")
+            
+            # Try loading the processor first (less likely to trigger torchvision issues)
+            try:
+                self.processor = AutoProcessor.from_pretrained(self.model_name, trust_remote_code=True)
+                logger.info("Processor loaded successfully")
+            except Exception as proc_error:
+                logger.warning(f"Failed to load processor first: {proc_error}")
+                # Continue anyway, will try again after model loads
+            
+            # Try loading with different strategies
+            model_loaded = False
+            load_strategies = [
+                # Strategy 1: Standard load with device_map
+                {
+                    "name": "device_map auto",
+                    "kwargs": {
+                        "trust_remote_code": True,
+                        "torch_dtype": torch.bfloat16 if self.device == "cuda" else torch.float32,
+                        "device_map": "auto" if self.device == "cuda" else None
+                    }
+                },
+                # Strategy 2: Standard load without device_map
+                {
+                    "name": "standard load",
+                    "kwargs": {
+                        "trust_remote_code": True,
+                        "torch_dtype": torch.bfloat16 if self.device == "cuda" else torch.float32
+                    }
+                },
+                # Strategy 3: Load with float32 (more compatible)
+                {
+                    "name": "float32 load",
+                    "kwargs": {
+                        "trust_remote_code": True,
+                        "torch_dtype": torch.float32
+                    }
+                },
+            ]
+            
+            for strategy in load_strategies:
+                try:
+                    logger.info(f"Trying load strategy: {strategy['name']}")
+                    self.model = AutoModelForCausalLM.from_pretrained(
+                        self.model_name,
+                        **strategy['kwargs']
+                    )
+                    if self.device == "cpu" or not hasattr(self.model, 'device'):
+                        self.model = self.model.to(self.device)
+                    self.model = self.model.eval()
+                    model_loaded = True
+                    logger.info(f"Successfully loaded using strategy: {strategy['name']}")
+                    break
+                except Exception as strategy_error:
+                    logger.warning(f"Strategy '{strategy['name']}' failed: {strategy_error}")
+                    continue
+            
+            if not model_loaded:
+                raise RuntimeError("All model loading strategies failed")
+            
+            # Load processor if not already loaded
+            if not hasattr(self, 'processor') or self.processor is None:
+                self.processor = AutoProcessor.from_pretrained(self.model_name, trust_remote_code=True)
+            
+            logger.info(f"PaddleOCR-VL model loaded successfully on {self.device}")
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "torchvision::nms" in error_msg or "nms" in error_msg.lower():
+                logger.error(f"Failed to load PaddleOCR-VL model: {error_msg}")
+                logger.error("\n" + "="*60)
+                logger.error("TORCHVISION NMS OPERATOR ERROR")
+                logger.error("="*60)
+                logger.error("This error occurs when PaddleOCR-VL's custom code tries to use")
+                logger.error("torchvision operations that aren't available in your environment.")
+                logger.error("\nTo fix this issue, try one of the following:")
+                logger.error("\n1. Reinstall torchvision with CUDA support:")
+                logger.error("   pip uninstall torchvision")
+                logger.error("   pip install torchvision --index-url https://download.pytorch.org/whl/cu128")
+                logger.error("\n2. Or reinstall both PyTorch and torchvision together:")
+                logger.error("   pip install --upgrade torch torchvision --index-url https://download.pytorch.org/whl/cu128")
+                logger.error("\n3. Try using CPU mode (set PADDLEOCR_DEVICE=cpu)")
+                logger.error("\n4. Check if the model's custom code has compatibility issues")
+                logger.error("   The error might be in the model's trust_remote_code components")
+                logger.error("="*60)
+            else:
+                logger.error(f"Failed to load PaddleOCR-VL model: {error_msg}")
+            raise
+    
+    def process_image(self, image_path: str) -> Dict:
+        """Process an image using PaddleOCR-VL."""
+        try:
+            logger.info(f"Processing image with PaddleOCR-VL: {image_path}")
+            
+            from PIL import Image
+            import torch
+            
+            # Load image
+            image = Image.open(image_path).convert("RGB")
+            
+            # Prepare messages
+            messages = [
+                {"role": "user",
+                 "content": [
+                     {"type": "image", "image": image},
+                     {"type": "text", "text": self.PROMPTS.get(self.task, "OCR:")},
+                 ]
+                }
+            ]
+            
+            # Process inputs
+            inputs = self.processor.apply_chat_template(
+                messages,
+                tokenize=True,
+                add_generation_prompt=True,
+                return_dict=True,
+                return_tensors="pt"
+            ).to(self.device)
+            
+            # Generate output
+            with torch.no_grad():
+                outputs = self.model.generate(**inputs, max_new_tokens=1024)
+            
+            # Decode output
+            extracted_text = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
+            
+            # Remove the prompt from the output
+            prompt_text = self.PROMPTS.get(self.task, "OCR:")
+            if prompt_text in extracted_text:
+                extracted_text = extracted_text.split(prompt_text, 1)[-1].strip()
+            
+            logger.info(f"PaddleOCR-VL processed {image_path} - {len(extracted_text)} characters")
+            
+            return {
+                "provider": "paddleocr_vl",
+                "extracted_text": extracted_text.strip(),
+                "text_length": len(extracted_text.strip()),
+                "model": self.model_name,
+                "task": self.task,
+                "device": self.device,
+                "status": "success"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing {image_path} with PaddleOCR-VL: {e}")
+            return {
+                "provider": "paddleocr_vl",
+                "extracted_text": "",
+                "text_length": 0,
+                "error": str(e),
+                "model": self.model_name,
+                "task": self.task,
+                "status": "error"
+            }
+    
+    def get_provider_name(self) -> str:
+        return "paddleocr_vl"
 
 class FileProcessor:
     """Handles different file types and converts them to images for OCR."""
@@ -1065,10 +1291,32 @@ class UniversalOCRProcessor:
                 device=device,
                 prompt=prompt
             )
+        elif self.provider_name == "paddleocr_vl":
+            # Get task type from model parameter or use default
+            task = model or os.getenv('PADDLEOCR_TASK', 'ocr')
+            # Get device preference from environment, with fallback to CPU if CUDA fails
+            device = os.getenv('PADDLEOCR_DEVICE', 'cuda')
+            
+            try:
+                self.ocr_provider = PaddleOCRVLProvider(
+                    device=device,
+                    task=task
+                )
+            except Exception as e:
+                # If CUDA fails with torchvision error, try CPU as fallback
+                if "torchvision::nms" in str(e) and device == "cuda":
+                    logger.warning("CUDA mode failed, trying CPU mode as fallback...")
+                    device = "cpu"
+                    self.ocr_provider = PaddleOCRVLProvider(
+                        device=device,
+                        task=task
+                    )
+                else:
+                    raise
         else:
             raise ValueError(f"Unsupported OCR provider: {provider}")
         
-        # Create provider-specific output directory with model subdirectory for Alibaba and DeepSeek
+        # Create provider-specific output directory with model subdirectory for Alibaba, DeepSeek, and PaddleOCR-VL
         if self.provider_name == "alibaba" and hasattr(self.ocr_provider, 'model'):
             # Create model-specific subdirectory for Alibaba Qwen3-VL models
             model_name = self.ocr_provider.model.replace('-', '_')
@@ -1077,6 +1325,10 @@ class UniversalOCRProcessor:
             # Create mode-specific subdirectory for DeepSeek-OCR
             mode_name = self.ocr_provider.mode.replace('-', '_')
             self.provider_output_dir = self.base_output_dir / f"{self.provider_name}_ocr" / mode_name
+        elif self.provider_name == "paddleocr_vl" and hasattr(self.ocr_provider, 'task'):
+            # Create task-specific subdirectory for PaddleOCR-VL
+            task_name = self.ocr_provider.task.replace('-', '_')
+            self.provider_output_dir = self.base_output_dir / f"{self.provider_name}_ocr" / task_name
         else:
             self.provider_output_dir = self.base_output_dir / f"{self.provider_name}_ocr"
         
@@ -1540,7 +1792,7 @@ def main():
     """Main function with command line interface."""
     parser = argparse.ArgumentParser(description="Universal OCR Processor")
     parser.add_argument("path", help="Path to file or directory to process")
-    parser.add_argument("--provider", "-p", choices=["google_cloud", "mistral", "naver", "alibaba", "deepseek"], 
+    parser.add_argument("--provider", "-p", choices=["google_cloud", "mistral", "naver", "alibaba", "deepseek", "paddleocr_vl"], 
                        default="mistral", help="OCR provider to use")
     parser.add_argument("--output", "-o", default="universal_ocr_results", 
                        help="Output directory for results")
@@ -1549,7 +1801,7 @@ def main():
     parser.add_argument("--single-file", "-f", action="store_true", 
                        help="Process as single file (not directory)")
     parser.add_argument("--model", "-m", 
-                       help="Model name for providers that support multiple models (e.g., alibaba: qwen-vl-ocr, qwen-vl-plus, qwen-vl-30b, qwen-vl-235b; deepseek: tiny, small, base, large, gundam)")
+                       help="Model name for providers that support multiple models (e.g., alibaba: qwen-vl-ocr, qwen-vl-plus, qwen-vl-30b, qwen-vl-235b; deepseek: tiny, small, base, large, gundam; paddleocr_vl: ocr, table, chart, formula)")
     parser.add_argument("--stream", "-s", action="store_true",
                        help="Enable streaming output (real-time processing)")
     

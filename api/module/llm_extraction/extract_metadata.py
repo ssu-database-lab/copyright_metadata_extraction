@@ -14,8 +14,6 @@ from typing import List, Dict, Any
 import json
 from datetime import datetime
 
-# Add current directory to path for imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from .models.base_extractor import create_extractor
 from .extractors.document_extractors import DocumentMetadataExtractor
@@ -31,7 +29,7 @@ logger = logging.getLogger(__name__)
 class MetadataExtractionPipeline:
     """Main pipeline for metadata extraction"""
     
-    def __init__(self, model_name: str = "solar-ko", config_path: str = "config/model_config.yaml"):
+    def __init__(self, model_name: str = "alibaba-qwen3.5-122b-a10b", config_path: str = "config/model_config.yaml"):
         self.model_name = model_name
         self.config_path = config_path
         self.extractor = None

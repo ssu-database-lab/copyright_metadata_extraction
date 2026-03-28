@@ -36,9 +36,10 @@ def get_ocr_provider():
     print("3. Naver Clova OCR API")
     print("4. Alibaba Cloud Model Studio (Qwen3-VL models)")
     print("5. DeepSeek-OCR (Local model, requires GPU)")
+    print("6. PaddleOCR-VL (Local model, requires GPU)")
     
     while True:
-        choice = input("Select provider (1-5): ").strip()
+        choice = input("Select provider (1-6): ").strip()
         if choice == "1":
             return "google_cloud", None
         elif choice == "2":
@@ -49,8 +50,10 @@ def get_ocr_provider():
             return "alibaba", get_alibaba_model()
         elif choice == "5":
             return "deepseek", get_deepseek_mode()
+        elif choice == "6":
+            return "paddleocr_vl", get_paddleocr_task()
         else:
-            print("❌ Invalid choice. Please select 1-5.")
+            print("❌ Invalid choice. Please select 1-6.")
 
 def get_alibaba_model():
     """Get Alibaba model choice from user."""
@@ -97,6 +100,27 @@ def get_deepseek_mode():
         else:
             print("❌ Invalid choice. Please select 1-5.")
 
+def get_paddleocr_task():
+    """Get PaddleOCR-VL task choice from user."""
+    print("\n🤖 Choose PaddleOCR-VL Task:")
+    print("1. OCR - Text recognition (default)")
+    print("2. Table - Table recognition")
+    print("3. Chart - Chart recognition")
+    print("4. Formula - Formula recognition")
+    
+    while True:
+        choice = input("Select task (1-4, default=1): ").strip() or "1"
+        if choice == "1":
+            return "ocr"
+        elif choice == "2":
+            return "table"
+        elif choice == "3":
+            return "chart"
+        elif choice == "4":
+            return "formula"
+        else:
+            print("❌ Invalid choice. Please select 1-4.")
+
 def get_processing_mode():
     """Get processing mode choice from user."""
     print("\n⚡ Choose Processing Mode:")
@@ -141,6 +165,9 @@ def process_single_file():
     elif provider == "deepseek":
         processing_mode = "batch"  # DeepSeek-OCR only supports batch processing
         print(f"💡 DeepSeek-OCR will process the file locally (requires GPU)")
+    elif provider == "paddleocr_vl":
+        processing_mode = "batch"  # PaddleOCR-VL only supports batch processing
+        print(f"💡 PaddleOCR-VL will process the file locally (requires GPU)")
     else:
         processing_mode = "batch"  # Other providers only support batch processing
     
@@ -348,6 +375,8 @@ def show_supported_types():
     print("     • Qwen3-VL-Plus")
     print("     • Qwen3-VL-30B-A3B-Instruct")
     print("     • Qwen3-VL-235B-A22B-Instruct")
+    print("   - DeepSeek-OCR (Local model)")
+    print("   - PaddleOCR-VL (Local model)")
     
     print("\n⚡ Processing Modes:")
     print("   - Batch Processing - Complete response (DashScope SDK)")
