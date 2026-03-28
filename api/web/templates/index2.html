@@ -760,7 +760,64 @@
             justify-content: center;
             gap: 0;
             padding: 32px 16px;
-            flex-wrap: wrap;
+        }
+
+        .pipeline-parallel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+
+        .pipeline-parallel::before,
+        .pipeline-parallel::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 12px;
+            background: var(--border);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .pipeline-parallel::before { top: -12px; }
+        .pipeline-parallel::after { bottom: -12px; }
+
+        .pipeline-parallel.active::before,
+        .pipeline-parallel.active::after {
+            background: var(--accent-from);
+        }
+        .pipeline-parallel.completed::before,
+        .pipeline-parallel.completed::after {
+            background: var(--success);
+        }
+
+        .pipeline-parallel-label {
+            font-size: 11px;
+            color: var(--text-light);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            opacity: 0.6;
+        }
+
+        .pipeline-parallel.active .pipeline-parallel-label,
+        .pipeline-parallel.completed .pipeline-parallel-label {
+            opacity: 1;
+            color: var(--accent);
+        }
+
+        .pipeline-branch-connector {
+            width: 32px;
+            height: 2px;
+            background: var(--border);
+            margin-bottom: 30px;
+        }
+        .pipeline-branch-connector.active {
+            background: var(--accent-from);
+        }
+        .pipeline-branch-connector.completed {
+            background: var(--success);
         }
 
         .pipeline-node {
@@ -1870,6 +1927,7 @@
             <div class="card">
                 <!-- Pipeline visualization -->
                 <div class="pipeline-viz" id="pipelineViz">
+                    <!-- OCR node -->
                     <div class="pipeline-node active" id="pnode-ocr">
                         <div class="pipeline-node-circle">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
@@ -1877,23 +1935,33 @@
                         <div class="pipeline-node-label">OCR</div>
                         <div class="pipeline-node-time" id="ptime-ocr">--</div>
                     </div>
+
                     <div class="pipeline-connector" id="pconn-1"></div>
-                    <div class="pipeline-node" id="pnode-llm">
-                        <div class="pipeline-node-circle">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a9 9 0 0 1 9 9c0 3.5-2 6.5-5 8l-4 3-4-3c-3-1.5-5-4.5-5-8a9 9 0 0 1 9-9z"/><circle cx="12" cy="10" r="3"/></svg>
+
+                    <!-- Parallel: LLM + NER -->
+                    <div class="pipeline-parallel" id="pparallel">
+                        <div class="pipeline-parallel-label">동시 처리</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div class="pipeline-node" id="pnode-llm">
+                                <div class="pipeline-node-circle">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a9 9 0 0 1 9 9c0 3.5-2 6.5-5 8l-4 3-4-3c-3-1.5-5-4.5-5-8a9 9 0 0 1 9-9z"/><circle cx="12" cy="10" r="3"/></svg>
+                                </div>
+                                <div class="pipeline-node-label">LLM</div>
+                                <div class="pipeline-node-time" id="ptime-llm">--</div>
+                            </div>
+                            <div class="pipeline-node" id="pnode-ner">
+                                <div class="pipeline-node-circle">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                </div>
+                                <div class="pipeline-node-label">NER</div>
+                                <div class="pipeline-node-time" id="ptime-ner">--</div>
+                            </div>
                         </div>
-                        <div class="pipeline-node-label">LLM</div>
-                        <div class="pipeline-node-time" id="ptime-llm">--</div>
                     </div>
-                    <div class="pipeline-connector" id="pconn-2"></div>
-                    <div class="pipeline-node" id="pnode-ner">
-                        <div class="pipeline-node-circle">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        </div>
-                        <div class="pipeline-node-label">NER</div>
-                        <div class="pipeline-node-time" id="ptime-ner">--</div>
-                    </div>
+
                     <div class="pipeline-connector" id="pconn-3"></div>
+
+                    <!-- Consolidation node -->
                     <div class="pipeline-node" id="pnode-consol">
                         <div class="pipeline-node-circle">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -2216,30 +2284,37 @@
     }
 
     function setPipelineActive(nodeId) {
-        // nodeId: 'ocr', 'llm', 'ner', 'consol'
-        const nodes = ['ocr', 'llm', 'ner', 'consol'];
-        const connectors = ['pconn-1', 'pconn-2', 'pconn-3'];
-        const idx = nodes.indexOf(nodeId);
+        // nodeId: 'ocr', 'llm+ner', 'consol'
+        const parallel = document.getElementById('pparallel');
+        const conn1 = document.getElementById('pconn-1');
+        const conn3 = document.getElementById('pconn-3');
+        const ocrEl = document.getElementById('pnode-ocr');
+        const llmEl = document.getElementById('pnode-llm');
+        const nerEl = document.getElementById('pnode-ner');
+        const consolEl = document.getElementById('pnode-consol');
 
-        nodes.forEach((n, i) => {
-            const el = document.getElementById(`pnode-${n}`);
-            el.classList.remove('active', 'completed');
-            if (i < idx) {
-                el.classList.add('completed');
-            } else if (i === idx) {
-                el.classList.add('active');
-            }
-        });
+        // Reset all
+        [ocrEl, llmEl, nerEl, consolEl].forEach(el => el.classList.remove('active', 'completed'));
+        [conn1, conn3].forEach(el => el.classList.remove('active', 'completed'));
+        parallel.classList.remove('active', 'completed');
 
-        connectors.forEach((c, i) => {
-            const el = document.getElementById(c);
-            el.classList.remove('active', 'completed');
-            if (i < idx) {
-                el.classList.add('completed');
-            } else if (i === idx) {
-                el.classList.add('active');
-            }
-        });
+        if (nodeId === 'ocr') {
+            ocrEl.classList.add('active');
+        } else if (nodeId === 'llm+ner' || nodeId === 'llm' || nodeId === 'ner') {
+            ocrEl.classList.add('completed');
+            conn1.classList.add('completed');
+            llmEl.classList.add('active');
+            nerEl.classList.add('active');
+            parallel.classList.add('active');
+        } else if (nodeId === 'consol') {
+            ocrEl.classList.add('completed');
+            llmEl.classList.add('completed');
+            nerEl.classList.add('completed');
+            conn1.classList.add('completed');
+            conn3.classList.add('active');
+            parallel.classList.add('completed');
+            consolEl.classList.add('active');
+        }
     }
 
     function setPipelineCompleted() {
@@ -2248,11 +2323,14 @@
             el.classList.remove('active');
             el.classList.add('completed');
         });
-        ['pconn-1', 'pconn-2', 'pconn-3'].forEach(c => {
+        ['pconn-1', 'pconn-3'].forEach(c => {
             const el = document.getElementById(c);
             el.classList.remove('active');
             el.classList.add('completed');
         });
+        const parallel = document.getElementById('pparallel');
+        parallel.classList.remove('active');
+        parallel.classList.add('completed');
     }
 
     function startStepTimer(name) {
@@ -2297,9 +2375,10 @@
             el.classList.remove('active', 'completed');
             document.getElementById(`ptime-${n}`).textContent = '--';
         });
-        ['pconn-1','pconn-2','pconn-3'].forEach(c => {
+        ['pconn-1','pconn-3'].forEach(c => {
             document.getElementById(c).classList.remove('active','completed');
         });
+        document.getElementById('pparallel').classList.remove('active','completed');
 
         // Go to step 4
         setStep(4);
@@ -2449,37 +2528,59 @@
     }
 
     function handleSSEMessage(data) {
-        // Map steps to pipeline nodes
+        // Map SSE steps to pipeline nodes
+        // Steps 3+4 from backend = LLM+NER concurrent (mapped to 'llm+ner')
         const stepMap = {
             1: { node: 'ocr', msg: '파일 변환 중...' },
             2: { node: 'ocr', msg: 'OCR 텍스트 추출 중...' },
-            3: { node: 'llm', msg: 'LLM 메타데이터 추출 중...' },
-            4: { node: 'ner', msg: 'NER 엔티티 추출 중...' },
+            3: { node: 'llm+ner', msg: 'LLM + NER 동시 추출 중...' },
+            4: { node: 'llm+ner', msg: 'LLM + NER 완료' },
             5: { node: 'consol', msg: '메타데이터 통합 검증 중...' }
         };
 
         if (data.step !== undefined && data.percent !== undefined) {
             const info = stepMap[data.step];
             if (info) {
-                // End timer for previous nodes
-                const nodes = ['ocr', 'llm', 'ner', 'consol'];
-                const currentIdx = nodes.indexOf(info.node);
-
-                // Complete previous nodes
-                for (let i = 0; i < currentIdx; i++) {
-                    const prevNode = nodes[i];
-                    const prevEl = document.getElementById(`pnode-${prevNode}`);
-                    if (!prevEl.classList.contains('completed')) {
-                        prevEl.classList.remove('active');
-                        prevEl.classList.add('completed');
-                        endStepTimer(prevNode);
+                // Handle OCR completion
+                if (info.node !== 'ocr') {
+                    const ocrEl = document.getElementById('pnode-ocr');
+                    if (!ocrEl.classList.contains('completed')) {
+                        ocrEl.classList.remove('active');
+                        ocrEl.classList.add('completed');
+                        endStepTimer('ocr');
                     }
                 }
 
-                // Start timer for current node if not started
-                const currEl = document.getElementById(`pnode-${info.node}`);
-                if (!currEl.classList.contains('active') && !currEl.classList.contains('completed')) {
-                    startStepTimer(info.node);
+                // Handle LLM+NER completion
+                if (info.node === 'consol') {
+                    ['llm', 'ner'].forEach(n => {
+                        const el = document.getElementById(`pnode-${n}`);
+                        if (!el.classList.contains('completed')) {
+                            el.classList.remove('active');
+                            el.classList.add('completed');
+                            endStepTimer(n);
+                        }
+                    });
+                }
+
+                // Start timers for current node(s)
+                if (info.node === 'llm+ner') {
+                    ['llm', 'ner'].forEach(n => {
+                        const el = document.getElementById(`pnode-${n}`);
+                        if (!el.classList.contains('active') && !el.classList.contains('completed')) {
+                            startStepTimer(n);
+                        }
+                    });
+                } else if (info.node === 'consol') {
+                    const el = document.getElementById('pnode-consol');
+                    if (!el.classList.contains('active') && !el.classList.contains('completed')) {
+                        startStepTimer('consol');
+                    }
+                } else {
+                    const el = document.getElementById(`pnode-${info.node}`);
+                    if (el && !el.classList.contains('active') && !el.classList.contains('completed')) {
+                        startStepTimer(info.node);
+                    }
                 }
 
                 setPipelineActive(info.node);
