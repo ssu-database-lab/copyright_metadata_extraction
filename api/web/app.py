@@ -889,6 +889,19 @@ async def llm_extract_metadata(
                 yield _send_progress_update(f"OCR 완료 ({len(ocr_text)} 문자)", 2, 40)
                 await asyncio.sleep(0.01)
 
+                # Guard: stop early if OCR returned no text
+                if not ocr_text or not ocr_text.strip():
+                    error_response = {
+                        "success": False,
+                        "error": "OCR에서 텍스트를 추출하지 못했습니다. 다른 OCR 제공자를 선택하거나 파일을 확인해 주세요.",
+                        "request_id": ctx["request_id"],
+                        "filename": ctx["filename"],
+                        "ocr_text": "",
+                        "ocr_provider": ocr_provider,
+                    }
+                    yield _send_progress_update("OCR 텍스트가 비어있어 처리를 중단합니다", 0, 0, {"error": "OCR 텍스트 없음", "result": error_response})
+                    return
+
                 yield _send_progress_update("LLM + NER 동시 추출 중...", 3, 50)
                 await asyncio.sleep(0.01)
 

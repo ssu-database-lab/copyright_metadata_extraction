@@ -175,6 +175,14 @@ def process_file(
         print(f" {len(ocr_text)} chars extracted")
         (doc_output / "ocr_text.txt").write_text(ocr_text, encoding="utf-8")
 
+        # Guard: stop early if OCR returned no text
+        if not ocr_text or not ocr_text.strip():
+            elapsed = time.time() - start_time
+            print(f"\n\n  ERROR: OCR에서 텍스트를 추출하지 못했습니다.")
+            print(f"  다른 OCR 제공자를 선택하거나 파일을 확인해 주세요.")
+            print(f"  Time elapsed: {elapsed:.1f}s")
+            return False
+
         # ── Stage: LLM + NER ──
         llm_result = None
         ner_result = None

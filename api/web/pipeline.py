@@ -340,6 +340,23 @@ class PipelineOrchestrator:
         ctx = self.setup(file_bytes, filename)
         ocr_text, ocr_result = self.run_ocr(ctx, ocr_provider, ocr_model)
 
+        # Guard: stop early if OCR returned no text
+        if not ocr_text or not ocr_text.strip():
+            logger.warning("OCR returned empty text — skipping LLM, NER, and consolidation")
+            response = self.build_response(
+                ctx,
+                model_name=model_name, document_type=document_type,
+                ocr_text="", ocr_provider=ocr_provider, ocr_model=ocr_model,
+                llm_result={"success": False, "metadata": {}, "error": "OCR에서 텍스트를 추출하지 못했습니다"},
+                ner_model=ner_model,
+                ner_result={"success": False, "entities": {}, "total_entities": 0},
+                consolidate=False, consolidation_model=consolidation_model,
+                consolidation_result=None, consolidation_success=False,
+                consolidation_error="OCR 텍스트 없음",
+            )
+            self.save_results(ctx["result_dir"], response, None, False)
+            return response
+
         # Run LLM and NER concurrently — they're independent, both only need OCR text
         # LLM is I/O-bound (cloud API), NER is CPU-bound (local model) — no resource conflict
         with ThreadPoolExecutor(max_workers=2) as executor:
