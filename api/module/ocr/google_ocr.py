@@ -17,16 +17,21 @@ class GoogleCloudOCRProvider:
     """Google Cloud Vision API OCR provider."""
     
     def __init__(self):
-        # Set up Google Cloud credentials
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        credentials_path = os.path.join(script_dir, "..", "..", "..", "OCR", "google_vision", "semiotic-pager-466612-t0-c587b9296fb8.json")
-        
-        if os.path.exists(credentials_path):
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
-            logger.info(f"Using Google Cloud credentials from: {credentials_path}")
-        else:
-            logger.warning("Google Cloud credentials not found. Google OCR will not be available.")
-        
+        # Set up Google Cloud credentials — search multiple locations
+        if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+            search_paths = [
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "web", "google_credentials.json"),  # api/web/
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "google_credentials.json"),    # project root
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "OCR", "google_vision", "semiotic-pager-466612-t0-c587b9296fb8.json"),  # legacy
+            ]
+            for cred_path in search_paths:
+                if os.path.exists(cred_path):
+                    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.abspath(cred_path)
+                    logger.info(f"Using Google Cloud credentials from: {cred_path}")
+                    break
+            else:
+                logger.warning("Google Cloud credentials not found. Google OCR will not be available.")
+
         self.client = vision.ImageAnnotatorClient()
     
     def process_image(self, image_path: str) -> Dict:
