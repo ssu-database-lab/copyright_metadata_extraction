@@ -160,7 +160,7 @@ class PipelineOrchestrator:
             if not ocr_output_dir or ocr_result.get("status") != "success":
                 ocr_output_dir = result_dir / "ocr"
                 ocr_output_dir.mkdir(parents=True, exist_ok=True)
-                (ocr_output_dir / "temp_ocr_text.txt").write_text(ocr_text, encoding="utf-8")
+                (ocr_output_dir / "temp.ocr").write_text(ocr_text, encoding="utf-8")
 
             ner_model_name = self.available_ner_models[ner_model]["name"]
             ner_result = self.ner_predict(

@@ -119,8 +119,8 @@ class MetadataExtractionPipeline:
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
         
-        if not file_path.suffix.lower() == '.txt':
-            raise ValueError(f"File must be a .txt file: {file_path}")
+        if not file_path.suffix.lower() == '.ocr':
+            raise ValueError(f"File must be a .ocr file: {file_path}")
         
         # Create timestamped model-specific output directory
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

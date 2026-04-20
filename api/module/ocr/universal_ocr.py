@@ -243,7 +243,7 @@ class UniversalOCRProcessor:
             'category_dir': category_dir,
             'doc_dir': doc_dir,
             'images_dir': images_dir,
-            'text_file': doc_dir / f"{file_path.stem}_extracted_text.txt",
+            'text_file': doc_dir / f"{file_path.stem}.ocr",
             'result_file': doc_dir / f"{file_path.stem}_ocr_result.json"
         }
     

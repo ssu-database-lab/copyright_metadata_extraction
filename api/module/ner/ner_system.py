@@ -1092,10 +1092,10 @@ def ner_predict(
         files_to_process = []
         
         if input_path_obj.is_file():
-            if input_path_obj.suffix.lower() in ['.txt', '.md']:
+            if input_path_obj.suffix.lower() in ['.ocr', '.txt', '.md']:
                 files_to_process = [input_path_obj]
         else:
-            for ext in ['*.txt', '*.md']:
+            for ext in ['*.ocr', '*.txt', '*.md']:
                 files_to_process.extend(input_path_obj.glob(f"**/{ext}"))
         
         if not files_to_process:

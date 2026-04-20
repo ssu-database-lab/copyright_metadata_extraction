@@ -2971,7 +2971,7 @@
             window.location.href = `/download/${result.request_id}?type=entities`;
         });
         bindDownloadButton('downloadOcrBtn', () => {
-            downloadBlob(result.ocr_text || '', `${result.filename}_ocr_text.txt`, 'text/plain');
+            downloadBlob(result.ocr_text || '', `${result.filename}.ocr`, 'text/plain');
         });
     }
 
@@ -3019,7 +3019,7 @@
 
             // OCR text
             if (result.ocr_text) {
-                zip.file('ocr_text.txt', result.ocr_text);
+                zip.file(`${result.filename}.ocr`, result.ocr_text);
             }
 
             // Fetch summary from server

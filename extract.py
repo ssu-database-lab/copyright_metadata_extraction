@@ -20,7 +20,7 @@ Usage:
 
 Output files (per document):
     {output}/{document_name}/
-    ├── ocr_text.txt                  — raw OCR extracted text
+    ├── {document_name}.ocr           — raw OCR extracted text
     ├── llm_metadata.json             — LLM extraction result
     ├── ner_entities.json             — NER entity extraction result
     ├── consolidated_metadata.json    — final consolidated metadata
@@ -173,7 +173,7 @@ def process_file(
         ctx = pipeline.setup(file_bytes, file_path.name)
         ocr_text, ocr_result = pipeline.run_ocr(ctx, ocr_provider, ocr_model)
         print(f" {len(ocr_text)} chars extracted")
-        (doc_output / "ocr_text.txt").write_text(ocr_text, encoding="utf-8")
+        (doc_output / f"{file_path.stem}.ocr").write_text(ocr_text, encoding="utf-8")
 
         # Guard: stop early if OCR returned no text
         if not ocr_text or not ocr_text.strip():

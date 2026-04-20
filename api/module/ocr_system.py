@@ -272,11 +272,11 @@ def ocr_naver(input_path: str, output_path: str) -> Dict[str, Any]:
                             relative_path = file_path.relative_to(base_input_path)
                             path_parts = relative_path.parts[:-1]  # 파일명 제외한 디렉토리 부분
                             if path_parts:
-                                output_filename = f"{path_parts[-1]}.txt"
+                                output_filename = f"{path_parts[-1]}.ocr"
                             else:
-                                output_filename = f"{file_path.stem}.txt"
+                                output_filename = f"{file_path.stem}.ocr"
                         except ValueError:
-                            output_filename = f"{file_path.parent.name}.txt"
+                            output_filename = f"{file_path.parent.name}.ocr"
                             
                         output_dir.mkdir(parents=True, exist_ok=True)
                         output_file_path = output_dir / output_filename
@@ -422,7 +422,7 @@ def ocr_mistral(input_path: str, output_path: str) -> Dict[str, Any]:
                 
                 # _create_output_structure 함수 사용
                 output_dir = _create_output_structure(file_path, base_input_path, output_path_obj, "mistral")
-                output_filename = f"mistral_ocr_{file_path.stem}.txt"
+                output_filename = f"{file_path.stem}.ocr"
                 output_file_path = output_dir / output_filename
                 
                 with open(output_file_path, 'w', encoding='utf-8') as f:
@@ -441,7 +441,7 @@ def ocr_mistral(input_path: str, output_path: str) -> Dict[str, Any]:
         if all_text_content and files_to_process:
             # 첫 번째 파일 기준으로 출력 디렉토리 생성
             output_dir = _create_output_structure(files_to_process[0], base_input_path, output_path_obj, "mistral")
-            combined_output_path = output_dir / "mistral_ocr_combined.txt"
+            combined_output_path = output_dir / "combined.ocr"
             with open(combined_output_path, 'w', encoding='utf-8') as f:
                 f.write("\n\n".join(all_text_content))
         
@@ -581,11 +581,11 @@ def ocr_google(input_path: str, output_path: str) -> Dict[str, Any]:
                             relative_path = file_path.relative_to(base_input_path)
                             path_parts = relative_path.parts[:-1]  # 파일명 제외한 디렉토리 부분
                             if path_parts:
-                                output_filename = f"{path_parts[-1]}.txt"
+                                output_filename = f"{path_parts[-1]}.ocr"
                             else:
-                                output_filename = f"{file_path.stem}.txt"
+                                output_filename = f"{file_path.stem}.ocr"
                         except ValueError:
-                            output_filename = f"{file_path.parent.name}.txt"
+                            output_filename = f"{file_path.parent.name}.ocr"
                             
                         output_dir.mkdir(parents=True, exist_ok=True)
                         output_file_path = output_dir / output_filename
@@ -692,7 +692,7 @@ def ocr_complete(input_path: str, output_path: str,
             total_combined_text = combined_result.get('combined_text', '')
             
             # 통합 결과 저장
-            complete_output_path = ocr_output_dir / "complete_ocr_result.txt"
+            complete_output_path = ocr_output_dir / "complete.ocr"
             with open(complete_output_path, 'w', encoding='utf-8') as f:
                 f.write(total_combined_text)
         
@@ -706,7 +706,7 @@ def ocr_complete(input_path: str, output_path: str,
             "successful_engines": successful_engines,
             "consensus_method": "google_priority",
             "output_directory": str(ocr_output_dir),
-            "output_file": "complete_ocr_result.txt",
+            "output_file": "complete.ocr",
             "engine_results": engine_results,
             "processing_time": processing_time
         }

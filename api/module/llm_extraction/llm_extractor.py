@@ -175,7 +175,7 @@ class LLMExtractionProcessor:
                 }
             
             # Find all text files
-            text_files = list(input_path.glob("**/*.txt"))
+            text_files = list(input_path.glob("**/*.ocr"))
             
             if not text_files:
                 return {

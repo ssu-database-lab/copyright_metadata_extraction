@@ -2022,7 +2022,7 @@
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement('a');
                             a.href = url;
-                            a.download = `${result.filename}_ocr_text.txt`;
+                            a.download = `${result.filename}.ocr`;
                             a.click();
                             URL.revokeObjectURL(url);
                         };
@@ -2077,7 +2077,7 @@
                                             }
                                         }
                                         // Include OCR extracted text files
-                                        if (file.includes('_extracted_text.txt')) {
+                                        if (file.includes('_extracted_text.ocr')) {
                                             const fileResponse = await fetch(`/download/${result.request_id}/${file}`);
                                             if (fileResponse.ok) {
                                                 const fileData = await fileResponse.text();

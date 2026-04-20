@@ -323,7 +323,7 @@ class DocumentMetadataExtractor:
                     logger.info(f"Processing document: {doc_name}")
                     
                     # Find extracted text file
-                    text_file = doc_dir / f"{doc_name}_extracted_text.txt"
+                    text_file = doc_dir / f"{doc_name}.ocr"
                     
                     if text_file.exists():
                         try:

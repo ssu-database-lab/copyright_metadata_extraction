@@ -417,7 +417,7 @@ async def process_document_with_universal_ocr(file_path: Path, output_dir: Path,
         
         try:
             # OCR 텍스트를 임시 파일로 저장
-            temp_text_file = ocr_dir / "temp_ocr_text.txt"
+            temp_text_file = ocr_dir / f"{file_path.stem}.ocr"
             with open(temp_text_file, 'w', encoding='utf-8') as f:
                 f.write(ocr_text)
             
@@ -766,7 +766,7 @@ async def process_universal_ocr(
                 generate_stream(),
                 media_type="text/plain",
                 headers={
-                    "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}_ocr.txt"
+                    "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}.ocr"
                 }
             )
         else:
