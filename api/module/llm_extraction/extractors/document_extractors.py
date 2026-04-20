@@ -20,7 +20,7 @@ class ContractExtractor:
     
     def __init__(self, llm_extractor: BaseLLMExtractor):
         self.llm_extractor = llm_extractor
-        self.schema = DocumentSchemas.get_contract_schema_enhanced()
+        self.schema = DocumentSchemas.get_unified_schema()
         self.checkbox_extractor = UniversalCheckboxExtractor()
     
     def extract_contract_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
@@ -94,7 +94,7 @@ class ConsentExtractor:
     
     def __init__(self, llm_extractor: BaseLLMExtractor):
         self.llm_extractor = llm_extractor
-        self.schema = DocumentSchemas.get_consent_schema_enhanced()
+        self.schema = DocumentSchemas.get_unified_schema()
         self.checkbox_extractor = UniversalCheckboxExtractor()
     
     def extract_consent_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
@@ -150,7 +150,7 @@ class PublicCopyrightConsentExtractor:
     
     def __init__(self, llm_extractor: BaseLLMExtractor):
         self.llm_extractor = llm_extractor
-        self.schema = DocumentSchemas.get_public_copyright_consent_schema_enhanced()
+        self.schema = DocumentSchemas.get_unified_schema()
         self.checkbox_extractor = UniversalCheckboxExtractor()
     
     def extract_public_copyright_consent_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
@@ -206,7 +206,7 @@ class CopyrightTransferConsentExtractor:
     
     def __init__(self, llm_extractor: BaseLLMExtractor):
         self.llm_extractor = llm_extractor
-        self.schema = DocumentSchemas.get_copyright_transfer_consent_schema()
+        self.schema = DocumentSchemas.get_unified_schema()
         self.checkbox_extractor = UniversalCheckboxExtractor()
     
     def extract_copyright_transfer_consent_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
@@ -286,8 +286,8 @@ class DocumentMetadataExtractor:
         elif "동의서" in document_type or "consent" in document_type.lower():
             return self.consent_extractor.extract_consent_metadata(text, document_name)
         else:
-            # Use general schema for unknown document types
-            schema = DocumentSchemas.get_general_document_schema_enhanced()
+            # Use unified schema for unknown document types (all 20 mandatory fields)
+            schema = DocumentSchemas.get_unified_schema()
             return self.llm_extractor.extract_metadata(text, schema, document_type)
     
     def batch_extract_from_ocr_results(self, ocr_results_dir: str, output_dir: str) -> List[ExtractionResult]:
