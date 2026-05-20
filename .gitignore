@@ -43,6 +43,8 @@ OCR/ocr_document/
 .env.local
 .env.production
 .env.staging
+keys.env
+*.keys.env
 
 # Python cache
 __pycache__/
@@ -144,3 +146,6 @@ metadata/data/in/csv/원문DB 메타데이터_20251119.csv
 /api/api/new
 /apimodels
 /metadata/configs/old
+
+# paper
+/paper
