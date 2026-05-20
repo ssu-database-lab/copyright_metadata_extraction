@@ -1,0 +1,25 @@
+# ──────────────────────────────────────────────
+# metadata/ 전용 .gitignore (repo root .gitignore 와 합쳐 적용됨)
+# ──────────────────────────────────────────────
+
+# 비밀 — 외부 API 키
+keys.env
+
+# 연구 사료 (별도 paper/ 트리로 옮겨짐 — 재유입 차단)
+/paper*
+/configs/paper*
+paper*.py
+models/paper*
+
+# 평가 스크립트 — 일회용, 삭제됨
+/eval/
+
+# 런타임 산출물 (재생성 가능, 대용량)
+/data/in/
+/data/out/
+/data/validation/
+/debug/
+
+# 모델 캐시 (HF 다운로드 또는 학습으로 재생성)
+/model_downloaded/
+# /models 는 repo root .gitignore 에서 이미 차단

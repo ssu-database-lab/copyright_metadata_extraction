@@ -1,7 +1,8 @@
-"""NER 추출기 모듈"""
-# import
-from .base import ner_check_and_train, ner_extractor, ner_predict_only
+"""NER 추출기 — 학습 + 예측."""
+import os
 
-# export
-__all__ = ["ner_check_and_train", "ner_extractor", "ner_predict_only"]
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
+from .base import ner_predict, ner_train  # noqa: F401
+
+__all__ = ["ner_predict", "ner_train"]

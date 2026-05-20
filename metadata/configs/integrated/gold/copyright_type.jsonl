@@ -1,0 +1,198 @@
+{"text": "유형 : 이미지", "answer": "이미지", "source": "kogl"}
+{"text": "유형 : 어문", "answer": "어문", "source": "kogl"}
+{"text": "유형 : 복합", "answer": "복합", "source": "tr02"}
+{"text": "디지털형태 : 문서", "answer": "문서", "source": "tr02"}
+{"text": "유형 : 사진", "answer": "사진", "source": "tr02"}
+{"text": "디지털형태 : 이미지", "answer": "이미지", "source": "tr02"}
+{"text": "유형 : 미술", "answer": "미술", "source": "tr02"}
+{"text": "유형 : 연극", "answer": "연극", "source": "tr02"}
+{"text": "유형 : 영상", "answer": "영상", "source": "tr02"}
+{"text": "디지털형태 : 동영상", "answer": "동영상", "source": "tr02"}
+{"text": "유형 : 미술(응용미술)", "answer": "미술(응용미술)", "source": "tr02"}
+{"text": "디지털형태 : 음성", "answer": "음성", "source": "tr02"}
+{"text": "디지털형태 : 오프라인", "answer": "오프라인", "source": "tr02"}
+{"text": "구분 : 3D", "answer": "3D", "source": "wondb"}
+{"text": "구분 : sound", "answer": "sound", "source": "wondb"}
+{"text": "구분 : doc", "answer": "doc", "source": "wondb"}
+{"text": "구분 : img", "answer": "img", "source": "wondb"}
+{"text": "구분 : video", "answer": "video", "source": "wondb"}
+{"text": "구분 : font", "answer": "font", "source": "wondb"}
+{"text": "유형 : 이미지", "answer": "이미지", "source": "gongu"}
+{"text": "분류 : 회화 일반", "answer": "회화 일반", "source": "gongu"}
+{"text": "분류 : 회화", "answer": "회화", "source": "gongu"}
+{"text": "분류 : 미술", "answer": "미술", "source": "gongu"}
+{"text": "분류 : 만화 일반", "answer": "만화 일반", "source": "gongu"}
+{"text": "분류 : 만화", "answer": "만화", "source": "gongu"}
+{"text": "분류 : 기타 미술 일반", "answer": "기타 미술 일반", "source": "gongu"}
+{"text": "분류 : 기타 미술", "answer": "기타 미술", "source": "gongu"}
+{"text": "분류 : 그래픽디자인 일반", "answer": "그래픽디자인 일반", "source": "gongu"}
+{"text": "분류 : 그래픽디자인", "answer": "그래픽디자인", "source": "gongu"}
+{"text": "분류 : 풍경 일반", "answer": "풍경 일반", "source": "gongu"}
+{"text": "분류 : 풍경", "answer": "풍경", "source": "gongu"}
+{"text": "분류 : 사진", "answer": "사진", "source": "gongu"}
+{"text": "분류 : 기타 사진 일반", "answer": "기타 사진 일반", "source": "gongu"}
+{"text": "분류 : 기타 사진", "answer": "기타 사진", "source": "gongu"}
+{"text": "분류 : 식물 일반", "answer": "식물 일반", "source": "gongu"}
+{"text": "분류 : 식물", "answer": "식물", "source": "gongu"}
+{"text": "유형 : 영상", "answer": "영상", "source": "gongu"}
+{"text": "분류 : 기타 영상 일반", "answer": "기타 영상 일반", "source": "gongu"}
+{"text": "분류 : 기타 영상", "answer": "기타 영상", "source": "gongu"}
+{"text": "분류 : 영상", "answer": "영상", "source": "gongu"}
+{"text": "유형 : 음악", "answer": "음악", "source": "gongu"}
+{"text": "분류 : 전통음악 일반", "answer": "전통음악 일반", "source": "gongu"}
+{"text": "분류 : 전통 음악", "answer": "전통 음악", "source": "gongu"}
+{"text": "분류 : 음악", "answer": "음악", "source": "gongu"}
+{"text": "분류 : 기타 음악 일반", "answer": "기타 음악 일반", "source": "gongu"}
+{"text": "분류 : 기타 음악", "answer": "기타 음악", "source": "gongu"}
+{"text": "분류 : 기악 합주 일반", "answer": "기악 합주 일반", "source": "gongu"}
+{"text": "분류 : 기악 합주", "answer": "기악 합주", "source": "gongu"}
+{"text": "분류 : 효과음원", "answer": "효과음원", "source": "gongu"}
+{"text": "분류 : 효과음", "answer": "효과음", "source": "gongu"}
+{"text": "분류 : 자연의 소리", "answer": "자연의 소리", "source": "gongu"}
+{"text": "분류 : 동물", "answer": "동물", "source": "gongu"}
+{"text": "분류 : 인간", "answer": "인간", "source": "gongu"}
+{"text": "유형 : 어문", "answer": "어문", "source": "gongu"}
+{"text": "분류 : 소설 일반", "answer": "소설 일반", "source": "gongu"}
+{"text": "분류 : 소설", "answer": "소설", "source": "gongu"}
+{"text": "분류 : 어문", "answer": "어문", "source": "gongu"}
+{"text": "분류 : 기타 어문 일반", "answer": "기타 어문 일반", "source": "gongu"}
+{"text": "분류 : 기타 어문", "answer": "기타 어문", "source": "gongu"}
+{"text": "분류 : 시 일반", "answer": "시 일반", "source": "gongu"}
+{"text": "분류 : 시", "answer": "시", "source": "gongu"}
+{"text": "유형 : 기타", "answer": "기타", "source": "gongu"}
+{"text": "분류 : 폰트 일반", "answer": "폰트 일반", "source": "gongu"}
+{"text": "분류 : 폰트", "answer": "폰트", "source": "gongu"}
+{"text": "분류 : 컴퓨터프로그램", "answer": "컴퓨터프로그램", "source": "gongu"}
+{"text": "분류 : 컴퓨터프로그램  _0", "answer": "컴퓨터프로그램  _0", "source": "gongu"}
+{"text": "유형 : 어문저작물", "answer": "어문저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 어문저작물", "answer": "어문저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 어문저작물", "answer": "어문저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 음악저작물", "answer": "음악저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 음악저작물", "answer": "음악저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 음악저작물", "answer": "음악저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 연극저작물", "answer": "연극저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 연극저작물", "answer": "연극저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 연극저작물", "answer": "연극저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 미술저작물", "answer": "미술저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 미술저작물", "answer": "미술저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 미술저작물", "answer": "미술저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 건축저작물", "answer": "건축저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 건축저작물", "answer": "건축저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 건축저작물", "answer": "건축저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 사진저작물", "answer": "사진저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 사진저작물", "answer": "사진저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 사진저작물", "answer": "사진저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 영상저작물", "answer": "영상저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 영상저작물", "answer": "영상저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 영상저작물", "answer": "영상저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 도형저작물", "answer": "도형저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 도형저작물", "answer": "도형저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 도형저작물", "answer": "도형저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 컴퓨터프로그램저작물", "answer": "컴퓨터프로그램저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 컴퓨터프로그램저작물", "answer": "컴퓨터프로그램저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 컴퓨터프로그램저작물", "answer": "컴퓨터프로그램저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 2차적저작물", "answer": "2차적저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 2차적저작물", "answer": "2차적저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 2차적저작물", "answer": "2차적저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 편집저작물", "answer": "편집저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 편집저작물", "answer": "편집저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 편집저작물", "answer": "편집저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 데이터베이스", "answer": "데이터베이스", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 데이터베이스", "answer": "데이터베이스", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 데이터베이스", "answer": "데이터베이스", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 이미지", "answer": "이미지", "source": "kogl.or.kr"}
+{"text": "저작물 분류 : 이미지", "answer": "이미지", "source": "kogl.or.kr"}
+{"text": "저작물 유형 : 영상", "answer": "영상", "source": "kogl.or.kr"}
+{"text": "저작물 분류 : 영상", "answer": "영상", "source": "kogl.or.kr"}
+{"text": "저작물 유형 : 음악", "answer": "음악", "source": "kogl.or.kr"}
+{"text": "저작물 분류 : 음악", "answer": "음악", "source": "kogl.or.kr"}
+{"text": "저작물 유형 : 어문", "answer": "어문", "source": "kogl.or.kr"}
+{"text": "저작물 분류 : 어문", "answer": "어문", "source": "kogl.or.kr"}
+{"text": "저작물 유형 : 기타", "answer": "기타", "source": "kogl.or.kr"}
+{"text": "저작물 분류 : 기타", "answer": "기타", "source": "kogl.or.kr"}
+{"text": "유형 : 글꼴", "answer": "글꼴", "source": "kogl.or.kr"}
+{"text": "저작물 유형 : 글꼴", "answer": "글꼴", "source": "kogl.or.kr"}
+{"text": "저작물 분류 : 글꼴", "answer": "글꼴", "source": "kogl.or.kr"}
+{"text": "분류 : 이미지", "answer": "이미지", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 사진", "answer": "사진", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 사진", "answer": "사진", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 그림", "answer": "그림", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 그림", "answer": "그림", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 그림", "answer": "그림", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 그림", "answer": "그림", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 일러스트", "answer": "일러스트", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 일러스트", "answer": "일러스트", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 일러스트", "answer": "일러스트", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 일러스트", "answer": "일러스트", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 동영상", "answer": "동영상", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 동영상", "answer": "동영상", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 동영상", "answer": "동영상", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 동영상", "answer": "동영상", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 방송영상", "answer": "방송영상", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 방송영상", "answer": "방송영상", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 방송영상", "answer": "방송영상", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 방송영상", "answer": "방송영상", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 영화", "answer": "영화", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 영화", "answer": "영화", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 영화", "answer": "영화", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 영화", "answer": "영화", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 음원", "answer": "음원", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 음원", "answer": "음원", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 음원", "answer": "음원", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 음원", "answer": "음원", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 효과음", "answer": "효과음", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 효과음", "answer": "효과음", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 효과음", "answer": "효과음", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 문서", "answer": "문서", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 문서", "answer": "문서", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 문서", "answer": "문서", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 문서", "answer": "문서", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 보고서", "answer": "보고서", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 보고서", "answer": "보고서", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 보고서", "answer": "보고서", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 보고서", "answer": "보고서", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 연구자료", "answer": "연구자료", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 연구자료", "answer": "연구자료", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 연구자료", "answer": "연구자료", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 연구자료", "answer": "연구자료", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 글꼴", "answer": "글꼴", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 폰트", "answer": "폰트", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 폰트", "answer": "폰트", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 폰트", "answer": "폰트", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 3D", "answer": "3D", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 3D", "answer": "3D", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 3D", "answer": "3D", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 3D", "answer": "3D", "source": "kogl.or.kr/categories"}
+{"text": "유형 : 3D 모델", "answer": "3D 모델", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 3D 모델", "answer": "3D 모델", "source": "kogl.or.kr/categories"}
+{"text": "저작물 분류 : 3D 모델", "answer": "3D 모델", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 3D 모델", "answer": "3D 모델", "source": "kogl.or.kr/categories"}
+{"text": "분류 : 기타", "answer": "기타", "source": "kogl.or.kr/categories"}
+{"text": "저작물 유형 : 연극", "answer": "연극", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 연극", "answer": "연극", "source": "law:§4-6-91"}
+{"text": "분류 : 연극", "answer": "연극", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 미술", "answer": "미술", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 미술", "answer": "미술", "source": "law:§4-6-91"}
+{"text": "유형 : 건축", "answer": "건축", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 건축", "answer": "건축", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 건축", "answer": "건축", "source": "law:§4-6-91"}
+{"text": "분류 : 건축", "answer": "건축", "source": "law:§4-6-91"}
+{"text": "유형 : 도형", "answer": "도형", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 도형", "answer": "도형", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 도형", "answer": "도형", "source": "law:§4-6-91"}
+{"text": "분류 : 도형", "answer": "도형", "source": "law:§4-6-91"}
+{"text": "유형 : 컴퓨터프로그램", "answer": "컴퓨터프로그램", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 컴퓨터프로그램", "answer": "컴퓨터프로그램", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 컴퓨터프로그램", "answer": "컴퓨터프로그램", "source": "law:§4-6-91"}
+{"text": "유형 : 2차적 저작물", "answer": "2차적 저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 2차적 저작물", "answer": "2차적 저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 2차적 저작물", "answer": "2차적 저작물", "source": "law:§4-6-91"}
+{"text": "분류 : 2차적 저작물", "answer": "2차적 저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 편집 저작물", "answer": "편집 저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 편집 저작물", "answer": "편집 저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 편집 저작물", "answer": "편집 저작물", "source": "law:§4-6-91"}
+{"text": "분류 : 편집 저작물", "answer": "편집 저작물", "source": "law:§4-6-91"}
+{"text": "유형 : 데이터베이스 저작물", "answer": "데이터베이스 저작물", "source": "law:§4-6-91"}
+{"text": "저작물 유형 : 데이터베이스 저작물", "answer": "데이터베이스 저작물", "source": "law:§4-6-91"}
+{"text": "저작물 분류 : 데이터베이스 저작물", "answer": "데이터베이스 저작물", "source": "law:§4-6-91"}
+{"text": "분류 : 데이터베이스 저작물", "answer": "데이터베이스 저작물", "source": "law:§4-6-91"}

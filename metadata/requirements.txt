@@ -1,34 +1,43 @@
-# python 3.12.9에서 테스트가 이루어졌습니다.
-# 사용하는 모듈은 PyTorch, PaddleOCR이며 Cuda를 13.0에 맞춰 설치합니다.
+# Python 3.12.x + CUDA 13.0 환경 기준.
+# OCR 은 GPU 만 지원 (CPU 거부). 단일 엔진: Qwen3-VL-8B-Instruct-AWQ-4bit (Apache-2.0, 상업 OK).
 
-# -------------------- library.py --------------------
-# PaddleOCR-VL/PaddlePaddle 호환성을 위해 NumPy 2.0 미만 버전 사용 필요
-numpy==1.26.4
+# CUDA 13.0 PyTorch wheel 은 별도 인덱스에서 먼저 설치:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
 
-# -------------------- extractor --------------------
-# YAML 설정
-PyYAML==6.0.2
+# -------------------- Core --------------------
+numpy>=2.1
+PyYAML>=6.0.2
 
-transformers[torch]==4.51.3
-gliner2>=0.2.0
-
-# cuda 13.0은 아래 명령어로 깔아주세요.
-# pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu130
-
-# LLM (Qwen)
-# transformers, torch는 위에서 이미 포함
+# -------------------- Transformers / Qwen3-VL OCR --------------------
+# Qwen3VLForConditionalGeneration 클래스는 transformers>=4.57 (5.x 권장).
+transformers[torch]>=5.3.0
+accelerate>=1.0.0
 huggingface_hub[hf_xet]>=0.16.4
+# 4-bit 양자화 inference. cyankiwi/Qwen3-VL-8B-Instruct-AWQ-4bit 는
+# compressed-tensors 형식으로 저장돼 있어 transformers 가 직접 로드한다.
+compressed-tensors>=0.7.0
+# Qwen chat 메시지 → vision-language 입력 변환 유틸.
+qwen-vl-utils>=0.0.14
+# PDF 페이지 → PIL.Image 렌더링.
+pymupdf>=1.24.0
+pillow>=10.0.0
+
+# -------------------- 한국어 문장/토큰 (NER 입력 전처리) --------------------
 blingfire>=0.1.1
 kiwipiepy>=0.10.0
 
-# OCR (PaddleOCR-VL 포함)
-# GPU를 사용하려면 아래 명령어로 설치하세요 (CUDA 13.0용):
-# python -m pip install paddlepaddle-gpu==3.2.2 -i https://www.paddlepaddle.org.cn/packages/stable/cu130/
-# CPU 버전을 사용하려면 아래 주석을 해제하고 GPU 설치 명령어를 주석 처리하세요.
-# paddlepaddle==3.2.2
-#
-# 주의: PaddlePaddle-GPU 사용 시 라이브러리 경로 설정이 필요합니다.
-# 가상환경 활성화 후 다음 명령어로 경로를 설정하세요:
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(python -c "import site; print(site.getsitepackages()[0])")/nvidia/cu13/lib:$(python -c "import site; print(site.getsitepackages()[0])")/paddle/libs
-paddleocr>=3.3.0
-paddlex[ocr]>=3.3.0
+# -------------------- NER training (token_cls.py) --------------------
+# span-level F1/P/R 평가 지표.
+seqeval>=1.2.2
+# LoRA fine-tuning ("lora"). "full" 일 땐 import 만 시도 후 graceful skip.
+peft>=0.10.0
+datasets>=4.8.0
+
+# -------------------- 평가 / 시각화 --------------------
+scikit-learn>=1.5.0
+matplotlib>=3.10.0
+seaborn>=0.13.0
+
+# -------------------- 시스템·GPU 모니터링 (full_logger.py 옵션) --------------------
+psutil>=5.9.0
+nvidia-ml-py>=13.0.0

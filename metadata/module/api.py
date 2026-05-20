@@ -1,317 +1,64 @@
-"""API 모듈: main.py에서 사용하는 함수만 노출"""
-import json
+"""공개 API.
 
-from pathlib import Path
-from typing import Optional, Dict, Any, List
-
-from module.extractor import ocr as ocr_module
-from module.parts import directory
-from module.extractor import text as text_module
-from module.extractor.ner import ner_extractor, ner_predict_only
-from module.extractor.ner.base import load_labels_from_yaml, ner_check_and_train
-from module.extractor import regular as regular_module
-from module.extractor.llm import merge_regular_ner
-from module.parts.types import Decision
-
-
-def _aggregate_decisions(
-    decisions: List[Decision],
-    labels: Optional[List[str]] = None,
-) -> Dict[str, List[str]]:
-    if labels is None:
-        labels = sorted({d.label for d in decisions})
-    aggregated = {label: [] for label in labels}
-    for decision in decisions:
-        label = decision.label
-        value = decision.value
-        if not isinstance(value, str):
-            value = str(value)
-        if label in aggregated and value and value.strip() and value not in aggregated[label]:
-            aggregated[label].append(value)
-    for label in aggregated:
-        if not aggregated[label]:
-            aggregated[label] = ["N/A"]
-    return aggregated
+- ocr_extract       : module.extractor.ocr        → PDF/이미지 → 텍스트
+- regex_extract     : module.extractor.regex      → 9 strict-format 라벨
+- ner_predict       : module.extractor.ner.base   → 35-라벨 메타데이터 (regex+NER+후처리+LLM placeholder)
+- ner_train         : module.extractor.ner.base   → NER 학습
+- llm_extract       : module.extractor.llm.llm    → 9 위임 라벨 (미구현)
+- metadata_extract  : ★ OCR + NER + LLM end-to-end 오케스트레이터
+"""
+from module.extractor.ner import base as ner_base
+from module.extractor.llm import llm
+from module.extractor import regex
+from module.extractor import ocr
 
 
-def _aggregate_ocr_metadata(ocr_labeled_metadata: Dict[str, Any]) -> Dict[str, List[str]]:
-    aggregated: Dict[str, List[str]] = {}
-    for label, items in (ocr_labeled_metadata or {}).items():
-        values: List[str] = []
-        if isinstance(items, list):
-            for item in items:
-                if isinstance(item, dict):
-                    content = item.get("content")
-                else:
-                    content = None
-                if content is None:
-                    content = str(item)
-                if isinstance(content, str) and content.strip() and content not in values:
-                    values.append(content)
-        aggregated[label] = values if values else ["N/A"]
-    return aggregated
+def ocr_extract(**kwargs):
+    return ocr.ocr_extract(**kwargs)
 
 
-def _merge_metadata(
-    gliner_metadata: Dict[str, List[str]],
-    ocr_metadata: Dict[str, List[str]],
-) -> Dict[str, List[str]]:
-    merged = {**gliner_metadata}
-    for label, values in ocr_metadata.items():
-        if label not in merged:
-            merged[label] = values
-            continue
-        if merged[label] == ["N/A"]:
-            merged[label] = []
-        for value in values:
-            if value != "N/A" and value not in merged[label]:
-                merged[label].append(value)
-        if not merged[label]:
-            merged[label] = ["N/A"]
-    return merged
+def regex_extract(text):
+    return regex.regex_extract(text)
 
 
-# -----------------------------------------------------------------------------
-# export
-# -----------------------------------------------------------------------------
+def ner_predict(**kwargs):
+    return ner_base.ner_predict(**kwargs)
 
-def ocr_extract(
-    in_path: str,
-    out_path: str,
-    metadata_path: Optional[str] = None,
-) -> None:
+
+def ner_train(**kwargs):
+    return ner_base.ner_train(**kwargs)
+
+
+def llm_extract(*args, **kwargs):
+    return llm.llm_extract(*args, **kwargs)
+
+
+def metadata_extract(**kwargs):
+    """End-to-end: OCR → NER (regex + 후처리 + LLM placeholder 포함) → 35-라벨 JSON.
+
+    인자는 ocr_extract / ner_predict 가 받는 키를 그대로 전달.
+    OCR 캐시 (``ocr_output_path/result/``) 가 입력 문서 수만큼 있으면 OCR 단계 자동 스킵.
     """
-    OCR 추출 API: extractor.ocr.ocr_extract 래퍼.
-    """
-    return ocr_module.ocr_extract(
-        in_path=in_path,
-        out_path=out_path,
-        metadata_path=metadata_path,
-    )
+    ocr_extract(**_ocr_args(kwargs))
+    ner_predict(**_ner_args(kwargs))
+    # llm_extract(...)  # 미구현 — 9 위임 라벨 placeholder 는 ner_predict 내부에서 처리
 
 
-def ner_train(*, force: bool = False) -> Dict[str, Any]:
-    """
-    NER 학습 모듈: 자동학습 검사 + 필요 시 학습 실행.
+# ---------------------------------------------------------------------------
+# 인자 라우팅 (각 stage 가 받는 키만 선별)
+# ---------------------------------------------------------------------------
 
-    학습 데이터의 서명(signature)을 비교하여 변경 사항이 있을 때만 학습합니다.
-    force=True 시 서명과 관계없이 강제 재학습합니다.
-    """
-    return ner_check_and_train(force=force)
-
-
-def ner_predict(
-    text: Optional[str] = None,
-    file_path: Optional[str] = None,
-    sentences: Optional[List[Dict[str, Any]]] = None,
-    tokens: Optional[List[Dict[str, Any]]] = None,
-    out_dir: str = "data/out/results",
-    threshold: Optional[float] = None,
-) -> Dict[str, Any]:
-    """
-    NER 예측 전용 API (자동학습 없음).
-
-    학습이 필요하면 먼저 ner_train()을 호출하세요.
-    최신 어댑터를 자동으로 로드하여 예측합니다.
-    """
-    if text is None and file_path is None and (sentences is None or tokens is None):
-        raise ValueError("text/file_path 또는 sentences/tokens 중 하나는 제공되어야 합니다.")
-
-    file_path_obj = Path(file_path) if file_path else None
-    if text is None and file_path_obj:
-        if file_path_obj.suffix.lower() in [".txt", ".md"]:
-            text = file_path_obj.read_text(encoding="utf-8")
-        else:
-            text, _ = ocr_module.process_file_for_metadata(file_path_obj, use_temp_dir=True)
-
-    if text is not None:
-        struct = text_module.read_text(text)
-        sentences = struct.get("sentences", [])
-        tokens = struct.get("tokens", [])
-
-    decisions = ner_predict_only(
-        sentences=sentences or [], tokens=tokens or [], threshold=threshold,
-    )
-    print(
-        f"NER: sentences={len(sentences or [])}, tokens={len(tokens or [])}, decisions={len(decisions)}"
-    )
-    ner_labels, _ = load_labels_from_yaml()
-    ner_labels = ner_labels or sorted({d.label for d in decisions})
-    aggregated = {label: [] for label in ner_labels}
-
-    for decision in decisions:
-        label = decision.label
-        value = decision.value
-        if not isinstance(value, str):
-            value = str(value)
-        if label in aggregated and value and value.strip() and value not in aggregated[label]:
-            aggregated[label].append(value)
-
-    for label in aggregated:
-        if not aggregated[label]:
-            aggregated[label] = ["N/A"]
-
-    out_dir_path = directory.ensure_outdir(out_dir)
-    out_file = directory.default_outfile(
-        file_path=str(file_path_obj) if file_path_obj else None,
-        out_dir=out_dir_path,
-    )
-    with open(out_file, "w", encoding="utf-8") as f:
-        json.dump(aggregated, f, ensure_ascii=False, indent=2)
-
-    print(f"NER 결과 저장: {out_file}")
-    return aggregated
+_OCR_KEYS = ("in_path", "out_path", "metadata_path", "device")
+_NER_KEYS = (
+    "model_name", "model_path", "input_path", "input_text", "output_path",
+    "threshold", "thresholds", "result_phase", "log_adapter_status",
+    "debug", "debug_path",
+)
 
 
-def ner_metadata_extract(
-    *,
-    text: Optional[str] = None,
-    file_path: Optional[str] = None,
-    out_dir: str = "data/out/results",
-    threshold: Optional[float] = None,
-) -> Dict[str, Any]:
-    """
-    OCR + NER 통합 추출 (metadata_extract 별칭).
-    """
-    return metadata_extract(
-        text=text,
-        file_path=file_path,
-        out_dir=out_dir,
-        threshold=threshold,
-    )
+def _ocr_args(kw):
+    return {k: kw[k] for k in _OCR_KEYS if k in kw}
 
 
-def llm_predict(
-    *,
-    text: Optional[str] = None,
-    file_path: Optional[str] = None,
-    **kwargs,
-) -> Dict[str, Any]:
-    """
-    LLM 단독 추출 (현재는 빈 함수).
-    """
-    print("llm_predict: 아직 구현되지 않았습니다.")
-    return {}
-
-
-def llm_metadata_extract(
-    *,
-    text: Optional[str] = None,
-    file_path: Optional[str] = None,
-    out_dir: str = "data/out/results",
-    **kwargs,
-) -> Dict[str, Any]:
-    """
-    OCR + NER + LLM 통합 추출 (현재는 빈 함수).
-    """
-    print("llm_metadata_extract: 아직 구현되지 않았습니다.")
-    return {}
-
-
-def metadata_extract(
-    *,
-    text: Optional[str] = None,
-    file_path: Optional[str] = None,
-    out_dir: str = "data/out/results",
-    threshold: Optional[float] = None,
-) -> Dict[str, Any]:
-    """
-    메타데이터 추출:
-    - 텍스트 파일은 OCR 없이 GLiNER2 추출
-    - 이미지/PDF는 OCR 후 임시 저장(/temp), GLiNER2 추출과 병합
-    """
-    if text is None and file_path is None:
-        raise ValueError("text 또는 file_path 중 하나는 제공되어야 합니다.")
-
-    file_path_obj = Path(file_path) if file_path else None
-    ocr_labeled_metadata: Dict[str, Any] = {}
-
-    if text is None and file_path_obj and file_path_obj.is_dir():
-        results: Dict[str, Any] = {}
-        text_exts = ["txt", "md"]
-        text_files = list(directory.iter_files_by_ext(file_path_obj, text_exts))
-        doc_files = list(directory.iter_document_files(file_path_obj))
-        all_files = text_files + [f for f in doc_files if f not in text_files]
-        all_files = sorted(set(all_files), key=lambda p: str(p))
-        total = len(all_files)
-        print(f"metadata_extract: 디렉토리 처리 시작 ({total} files) - {file_path_obj}")
-        for idx, fpath in enumerate(all_files, start=1):
-            rel_path = str(fpath.relative_to(file_path_obj))
-            print(f"[{idx}/{total}] 처리 중: {rel_path}")
-            results[rel_path] = metadata_extract(
-                text=None,
-                file_path=str(fpath),
-                out_dir=out_dir,
-                threshold=threshold,
-            )
-        return {
-            "directory": str(file_path_obj),
-            "results": results,
-        }
-
-    ocr_required = (
-        file_path_obj is not None
-        and file_path_obj.is_file()
-        and file_path_obj.suffix.lower() not in [".txt", ".md"]
-    )
-    ocr_performed = False
-
-    if text is None and file_path_obj:
-        if file_path_obj.suffix.lower() in [".txt", ".md"]:
-            text = file_path_obj.read_text(encoding="utf-8")
-        else:
-            ocr_performed = True
-            text, ocr_labeled_metadata = ocr_module.process_file_for_metadata(
-                file_path_obj, use_temp_dir=True, temp_root="temp"
-            )
-
-    raw_text = text or ""
-    struct = text_module.read_text(raw_text)
-    sentences = struct.get("sentences", [])
-    tokens = struct.get("tokens", [])
-
-    regular_decisions = regular_module.regular_extractor(sentences=sentences, tokens=tokens)
-    ner_decisions = ner_predict_only(sentences=sentences, tokens=tokens, threshold=threshold)
-    merged_decisions = merge_regular_ner(regular_decisions, ner_decisions)
-
-    ner_labels, _ = load_labels_from_yaml()
-    gliner_metadata = _aggregate_decisions(ner_decisions, ner_labels)
-    ocr_metadata = _aggregate_ocr_metadata(ocr_labeled_metadata)
-    merged_metadata = _merge_metadata(gliner_metadata, ocr_metadata)
-
-    out_dir_path = directory.ensure_outdir(out_dir)
-    out_file = directory.default_outfile(
-        file_path=str(file_path_obj) if file_path_obj else None,
-        out_dir=out_dir_path,
-    )
-    with open(out_file, "w", encoding="utf-8") as f:
-        json.dump(merged_metadata, f, ensure_ascii=False, indent=2)
-    metadata_saved = out_file.exists()
-
-    if ocr_required:
-        if not ocr_performed:
-            print("⚠️ 검사: OCR가 필요한 파일인데 OCR이 수행되지 않았습니다.")
-        if not metadata_saved:
-            print("⚠️ 검사: 메타데이터 파일이 저장되지 않았습니다.")
-        if ocr_performed and metadata_saved:
-            print("✓ 검사: OCR 수행 후 메타데이터 저장 완료.")
-
-    print(
-        f"metadata_extract: sentences={len(sentences)}, tokens={len(tokens)}, "
-        f"regular={len(regular_decisions)}, ner={len(ner_decisions)}"
-    )
-    print(f"Metadata 저장: {out_file}")
-
-    return {
-        "raw_text": raw_text,
-        "decisions": merged_decisions,
-        "ner_decisions": ner_decisions,
-        "regular_decisions": regular_decisions,
-        "gliner_metadata": gliner_metadata,
-        "ocr_metadata": ocr_metadata,
-        "merged_metadata": merged_metadata,
-        "out_file": str(out_file),
-        "ocr_required": ocr_required,
-        "ocr_performed": ocr_performed,
-        "metadata_saved": metadata_saved,
-    }
+def _ner_args(kw):
+    return {k: kw[k] for k in _NER_KEYS if k in kw}

@@ -1,76 +1,94 @@
-# ======================================
-# labels.yaml
-# 목적: 라벨 스키마와 각 과정에서 사용할 스키마 정의
-# 세부적인 라벨 분류는 ocr.py 등에서 처리
-# ======================================
+# 35-label 메타데이터 스키마 + 3-way 추출 분할.
+# 실제 enforcement 는 module/parts/labels.py (REGEX/NER/LLM 세트).
+# 이 파일은 functional config 의 단일 source — 모든 stage 의 기본 path/디렉터리/모델/임계값.
+# api.py 와 main.py 는 여기 값을 읽기만 함 (하드코딩 금지).
 
-schema_labels:
-  - text
-  - paragraph_title
-  - number
-  - image
-  - table
-  - doc_title
+# ──────────────────────────────────────────────
+# Paths — 인자 미지정 시 stage 가 사용하는 기본 경로
+# ──────────────────────────────────────────────
+paths:
+  # ocr_extract 입력 (PDF/이미지 디렉터리)
+  input: data/in/document
+  # ocr_extract 출력 루트 (안에 result/ 와 result/metadata/ 자동 생성)
+  ocr_output: data/out/ocr
+  # ner_predict 입력 (OCR 평문 텍스트 디렉터리)
+  ner_input: data/out/ocr/result
+  # ner_predict 출력 (35-라벨 JSON 디렉터리)
+  metadata_output: data/out/metadata
 
-# --------------------------------------
-# 각 과정에서 사용할 스키마
-# --------------------------------------
-
-# OCR 단계에서 사용할 스키마
+# ──────────────────────────────────────────────
+# OCR — Qwen3-VL (Apache-2.0, 상업 OK, 한국어 강함)
+# CPU 는 코드에서 거부함. GPU 만 허용.
+# ──────────────────────────────────────────────
 ocr:
-  # OCR 결과에서 나오는 라벨들
+  device: cuda:0
+  qwen3vl:
+    # 12GB VRAM (RTX 5070) 기준. 공식 Apache-2.0 BF16, ~5GB. 양자화 압축해제 spike 없음.
+    # 더 큰 GPU 면 Qwen/Qwen3-VL-4B-Instruct (BF16 ~9GB) 또는 8B BF16 권장.
+    model_id: Qwen/Qwen3-VL-2B-Instruct
+    max_new_tokens: 4096
+    render_zoom: 2.0  # PDF 2x = ~144 DPI
+  # OCR 엔진이 내뱉는 raw label 을 표준 키로 정규화.
+  normalize_map: {}
+
+# ──────────────────────────────────────────────
+# Regex 추출 (9 labels) — module/extractor/regex.py
+# 패턴은 코드 (PATTERNS dict). 여기는 라벨 목록만 (동기화 참조용).
+# ──────────────────────────────────────────────
+regex:
   labels:
-    - text              # 일반 텍스트 - 이게 제일 중요해보이네요
-    - paragraph_title   # 문단 제목 - 텍스트처럼 분류
-    - number            # 숫자 - 텍스트로 분류
-    - image             # 이미지 - 얘도 text로 재분류
-    - table             # 표, 추후에 table은 text로 재분류
-    - doc_title         # 문서 제목 - 더 분류할 필요 없음
+    - phone
+    - email
+    - copyright_url
+    - copyright_uci
+    - date
+    - ri_money
+    - copyright_num
+    - copyright_idnum
+    - copyright_quantity
 
-# 정규식 추출에 사용할 라벨과 패턴 (라벨: 정규식 패턴)
-# regex_extractor에서 사용 (비어있으면 URL만 추출)
-# 각 라벨별로 {label}_extractor 함수로 분리하여 관리
-regex_labels:
-  ch_co_phone: r'\d{2,3}-\d{3,4}-\d{4}|\d{3}-\d{4}-\d{4}|\(\d{2,3}\)\s*\d{3,4}-\d{4}'
-  ch_co_email: r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-  copyright_url: r'https?://(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)'
-  copyright_date: r'\d{4}년\s*\d{1,2}월\s*\d{1,2}일|\d{4}-\d{1,2}-\d{1,2}|\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.|\d{4}\.\d{1,2}\.\d{1,2}|\d{4}/\d{1,2}/\d{1,2}'
-
-
-# NER 단계에서 사용할 스키마
-# NER 단계는 text로 처리된 라벨들과 paragraph_title로 처리된 라벨들 포함해서 추가분류
-# (선택) zero-shot만 쓸 때 트레이닝 없이 조정:
-#   threshold: 전역 confidence 임계값 (기본 0.55). 낮추면 recall↑, 높이면 precision↑
-#   threshold_per_label: 라벨별 임계값. person_name은 낮춰서 더 많이 잡고, date는 높여서 확실한 것만
-# ner:
-#   threshold: 0.55
-#   threshold_per_label:
-#     ch_co_name: 0.45
-#     ch_co_company: 0.48
-#     copyright_date: 0.62
-#     ch_co_phone: 0.60
+# ──────────────────────────────────────────────
+# NER 추출 (17 labels) — module/extractor/ner/
+# threshold / threshold_per_label 는 _runtime.load_ner_thresholds_from_yaml 가 읽음.
+# ──────────────────────────────────────────────
 ner:
-  # auto: configs/gliner/predict/ 에 있는 .txt/.md 파일명으로 라벨 자동 수집.
-  #       predict만 관리하면 train도 같은 라벨 집합으로 동작.
-  labels: auto
-  # 수동 지정 시 예:
-  # labels:
-  #   - ch_co_name
-  #   - ch_co_address
-  #   - ch_co_phone
-  #   - ch_co_company
-  #   - ch_co_email
-  #   - copyright_kotitle
-  #   - copyright_date
-  #   - copyright_url
+  # ner_predict 기본값 (인자 미지정 시 사용)
+  model_name: google-bert/bert-base-multilingual-cased
+  threshold: 0.25
+  result_phase: latest
+  labels:
+    - copyright_kotitle
+    - copyright_status
+    - copyright_description
+    - copyright_Keyword
+    - copyright_language
+    - copyright_type
+    - name
+    - company
+    - address
+    - position
+    - department
+    - ri_data
+    - ri_period
+    - ri_info
+    - ri_contract_type
+    - ri_copyright
+    - ri_law_reference
+  # threshold: 0.25
+  # threshold_per_label:
+  #   name: 0.35
 
-# LLM 단계에서 사용할 스키마
-# LLM 단계는 능동적인 구분이 가능할 수준의 LLM을 사용할 가능성이 높으므로 라벨 분류는 지금 고려하지 않음
+# ──────────────────────────────────────────────
+# LLM 추출 (9 labels, 미구현)
+# ──────────────────────────────────────────────
 llm:
   labels:
-    - doc_title
-
-# 이 주석 아래로 처리하지 않을 라벨만 모아놓음
-# 최종적으로 판단해야 할 때 아니면 사용하지 않을 예정
-# Category(대, 중, 소분류)는 처리하지 않음.
-# 
+    - copyright_id
+    - copyright_Pname
+    - copyright_con_status
+    - ri_cpcheck
+    - ri_uncopyright
+    - ri_workhire
+    - ri_consent_type
+    - ri_jch_conset
+    - ri_portrait

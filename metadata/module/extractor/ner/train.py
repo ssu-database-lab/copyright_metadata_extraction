@@ -1,228 +1,340 @@
-# train.py
+"""NER 학습 — Hugging Face Token Classification (BERT 등) + PEFT LoRA."""
 from __future__ import annotations
 
-import argparse
-import gc
 import json
-import os
-import shutil
-import tempfile
+import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
-from accelerate.utils import find_executable_batch_size
-
-from module.extractor.ner.base import (
-    bio_to_ner_spans,
-    get_adapter_dir,
-    get_adapters_dir,
-    get_gliner_train_dir,
-    get_optimized_dir,
+from module.extractor.ner._runtime import (
+    DEFAULT_MODEL,
+    NER_DEBUG_SESSION_DIR,
+    attach_ner_debug_file_logging,
+    configure_ner_debug,
+    ensure_model_ready,
+    get_train_dir,
     get_training_data_signature,
-    list_adapter_runs,
-    load_labels_from_predict,
-    get_next_run_id,
+    invalidate_model_cache,
+    make_ner_debug_session_dir,
+    model_display_name,
+    ner_debug_print,
+    project_root,
+    read_train_state,
+    resolve_bio_train_dir,
     write_train_state,
 )
 
-try:
-    from gliner2 import GLiNER2
-    from gliner2.training.trainer import GLiNER2Trainer, TrainingConfig
-except ImportError as e:
-    raise RuntimeError("GLiNER2가 필요합니다.") from e
+log = logging.getLogger(__name__)
 
 
-_VRAM_SAFETY_MARGIN_MIB = 1500
-_TARGET_EFFECTIVE_BATCH = 8
+def ner_train(
+    *,
+    model_name: str = DEFAULT_MODEL,
+    force: bool = False,
+    input_path: Optional[Union[str, Path]] = None,
+    model_path: Optional[str] = None,
+    fine_tuning_method: str = "lora",
+    epochs: int = 5,
+    batch_size: int = 8,
+    lr: float = 2e-5,
+    lora_r: int = 8,
+    lora_alpha: int = 16,
+    warmup_ratio: float = 0.0,
+    weight_decay: float = 0.01,
+    train_ratio: float = 8 / 12,
+    val_ratio: float = 2 / 12,
+    test_ratio: float = 2 / 12,
+    split_seed: int = 42,
+    debug: bool = False,
+    debug_path: Optional[str] = None,
+    save_plots: bool = False,
+    early_stopping_patience: int = 0,
+    extra_input_paths: Optional[Sequence[Union[str, Path]]] = None,
+    negative_input_paths: Optional[Sequence[Union[str, Path]]] = None,
+    max_per_label: Optional[int] = None,
+) -> Dict[str, Any]:
+    """NER 학습. model_name = HuggingFace ID 또는 로컬 이름.
+
+    input_path: BIO 학습용 .jsonl이 있는 디렉터리. None이면 ``configs/train`` (하위 ``raw/`` 자동).
+    model_path: 모델 디렉터리 루트. None이면 프로젝트의 ``models``. 절대/상대 경로 모두 지원.
+    fine_tuning_method: "lora" (기본값) | "full"
+    debug_path: debug=True일 때 세션 디렉터리 루트. None이면 프로젝트 ``debug/`` 아래.
+    """
+    ctx_token = None
+    session_dir: Optional[Path] = None
+    if debug:
+        session_dir = make_ner_debug_session_dir(
+            debug_path, model_name, debug_kind="train", threshold_dir="na",
+        )
+        ctx_token = NER_DEBUG_SESSION_DIR.set(session_dir)
+        configure_ner_debug(True)
+        attach_ner_debug_file_logging(session_dir)
+        meta = {
+            "kind": "ner_train",
+            "model_name": model_name,
+            "input_path": str(input_path) if input_path else None,
+            "model_path": model_path,
+            "fine_tuning_method": fine_tuning_method,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "lr": lr,
+            "warmup_ratio": warmup_ratio,
+            "weight_decay": weight_decay,
+            "train_ratio": train_ratio,
+            "val_ratio": val_ratio,
+            "test_ratio": test_ratio,
+            "split_seed": split_seed,
+            "force": force,
+            "debug_path": debug_path,
+            "threshold_dir": "na",
+            "session_dir": str(session_dir),
+        }
+        (session_dir / "session_meta.json").write_text(
+            json.dumps(meta, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        ner_debug_print(
+            f"[NER debug][train] 시작 model={model_name!r} force={force} "
+            f"input_path={input_path!r} model_path={model_path!r} session_dir={session_dir}"
+        )
+
+    try:
+        return _ner_train_impl(
+            model_name=model_name,
+            force=force,
+            input_path=input_path,
+            model_path=model_path,
+            fine_tuning_method=fine_tuning_method,
+            epochs=epochs,
+            batch_size=batch_size,
+            lr=lr,
+            lora_r=lora_r,
+            lora_alpha=lora_alpha,
+            warmup_ratio=warmup_ratio,
+            weight_decay=weight_decay,
+            train_ratio=train_ratio,
+            val_ratio=val_ratio,
+            test_ratio=test_ratio,
+            split_seed=split_seed,
+            debug=debug,
+            save_plots=save_plots,
+            early_stopping_patience=early_stopping_patience,
+            extra_input_paths=extra_input_paths,
+            negative_input_paths=negative_input_paths,
+            max_per_label=max_per_label,
+            debug_session_dir=str(session_dir) if session_dir else None,
+        )
+    finally:
+        if debug and ctx_token is not None:
+            configure_ner_debug(False)
+            NER_DEBUG_SESSION_DIR.reset(ctx_token)
 
 
-def _check_gpu_and_limit_memory() -> None:
-    """GPU VRAM 확인 및 메모리 사용 제한 설정."""
-    import torch
+def _ner_train_impl(
+    *,
+    model_name: str,
+    force: bool,
+    input_path: Optional[Union[str, Path]],
+    model_path: Optional[str],
+    fine_tuning_method: str,
+    epochs: int,
+    batch_size: int,
+    lr: float,
+    lora_r: int,
+    lora_alpha: int,
+    warmup_ratio: float,
+    weight_decay: float,
+    train_ratio: float,
+    val_ratio: float,
+    test_ratio: float,
+    split_seed: int,
+    debug: bool,
+    save_plots: bool,
+    early_stopping_patience: int,
+    extra_input_paths: Optional[Sequence[Union[str, Path]]],
+    negative_input_paths: Optional[Sequence[Union[str, Path]]],
+    max_per_label: Optional[int],
+    debug_session_dir: Optional[str],
+) -> Dict[str, Any]:
+    """실제 학습 구현 (디버그 세션 스캐폴딩 제외)."""
+    _ = debug_session_dir  # 현재 구현은 ContextVar(NER_DEBUG_SESSION_DIR)만 사용
 
-    if not torch.cuda.is_available():
-        print("[GPU] CUDA GPU가 감지되지 않습니다. CPU로 학습합니다.")
-        return
+    display = model_display_name(model_name)
+    model_dir = ensure_model_ready(model_name, model_path=model_path)
 
-    props = torch.cuda.get_device_properties(0)
-    total_mib = props.total_memory / (1024 ** 2)
-    allocated_mib = torch.cuda.memory_allocated(0) / (1024 ** 2)
+    if input_path is not None:
+        train_dir = Path(input_path)
+        if not train_dir.is_absolute():
+            train_dir = project_root() / train_dir
+        train_dir = train_dir.resolve()
+    else:
+        train_dir = get_train_dir()
 
-    print(f"[GPU] {props.name} — VRAM {total_mib:.0f} MiB, 사용 중 {allocated_mib:.0f} MiB")
+    train_dir = resolve_bio_train_dir(train_dir)
+    current_sig = get_training_data_signature(train_dir)
+    state = read_train_state(model_name) or {}
 
-    fraction = min(0.85, (total_mib - _VRAM_SAFETY_MARGIN_MIB) / total_mib)
-    torch.cuda.set_per_process_memory_fraction(fraction, 0)
-    print(f"[GPU] 메모리 제한 {fraction:.0%} ({total_mib * fraction:.0f} MiB) 설정 완료")
+    result: Dict[str, Any] = {
+        "model": display,
+        "model_type": "token_cls",
+        "fine_tuning_method": fine_tuning_method,
+        "training_needed": False,
+        "training_executed": False,
+        "debug": debug,
+    }
 
-    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
-    gc.collect()
-    torch.cuda.empty_cache()
+    if debug:
+        jsonl_files = sorted(train_dir.glob("*.jsonl"))
+        ner_debug_print(
+            f"[NER debug][train] model_dir={model_dir} train_dir={train_dir} "
+            f"jsonl_files={len(jsonl_files)} "
+            f"{[p.name for p in jsonl_files[:12]]}{'...' if len(jsonl_files) > 12 else ''}"
+        )
+        ner_debug_print(f"[NER debug][train] data_signature={current_sig[:16]}... full={current_sig}")
+        ner_debug_print(f"[NER debug][train] train_state={state}")
 
+    if not current_sig:
+        result["message"] = "학습 데이터가 없습니다."
+        print(f"[NER Train] [{display}] {result['message']}")
+        if debug:
+            ner_debug_print("[NER debug][train] 종료: 서명 없음(데이터 없음)")
+        return result
 
-def _line_to_gliner_record(obj: dict) -> Optional[dict]:
-    """한 줄 JSON (tokens, labels BIO) → GLiNER2 학습 형식."""
-    tokens = obj.get("tokens", [])
-    labels = obj.get("labels", [])
-    if not tokens or len(tokens) != len(labels):
-        return None
-    ner = bio_to_ner_spans(labels)
-    entities: dict = {}
-    for start, end, label in ner:
-        mention = " ".join(tokens[int(start) : int(end) + 1])
-        if label not in entities:
-            entities[label] = []
-        entities[label].append(mention)
-    if not entities:
-        return None
-    return {"input": " ".join(tokens), "output": {"entities": entities}}
+    ratio_sum = train_ratio + val_ratio + test_ratio
+    if abs(ratio_sum - 1.0) > 1e-5:
+        result["message"] = (
+            f"train_ratio + val_ratio + test_ratio 합이 1이어야 합니다 (현재 합={ratio_sum})."
+        )
+        print(f"[NER Train] [{display}] {result['message']}")
+        return result
 
+    adapter_dir = model_dir / "adapter"
+    already_trained = adapter_dir.exists() and any(adapter_dir.iterdir())
 
-def _merge_train_dir_to_jsonl(train_dir: Path) -> Path:
-    """라벨별 .jsonl 을 predict 라벨만 병합해 GLiNER2 형식 임시 파일로."""
-    labels, _ = load_labels_from_predict()
-    allowed = set(labels) if labels else None
-    fd, path = tempfile.mkstemp(suffix=".jsonl", prefix="gliner_train_")
-    with open(fd, "w", encoding="utf-8") as out:
-        for p in sorted(train_dir.glob("*.jsonl")):
-            if allowed is not None and p.stem not in allowed:
-                continue
-            for line in open(p, "r", encoding="utf-8"):
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    rec = _line_to_gliner_record(json.loads(line))
-                    if rec:
-                        out.write(json.dumps(rec, ensure_ascii=False) + "\n")
-                except Exception:
-                    continue
-    return Path(path)
+    if debug:
+        ner_debug_print(
+            f"[NER debug][train] adapter_dir={adapter_dir} "
+            f"already_trained={already_trained} force={force}"
+        )
 
+    if not force and state.get("signature") == current_sig and already_trained:
+        result["message"] = "학습 데이터 변경 없음. 학습 불필요."
+        print(f"[NER Train] [{display}] {result['message']}")
+        if debug:
+            ner_debug_print("[NER debug][train] 종료: 스킵(시그니처 동일·어댑터 존재)")
+        return result
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser()
-    p.add_argument("--base_model", default="fastino/gliner2-large-v1")
-    p.add_argument("--train_jsonl", default=None, help="학습 JSONL (--train_dir 없을 때 필수)")
-    p.add_argument("--train_dir", default=None, help="라벨별 .jsonl 디렉터리 (기본: configs/gliner/train)")
-    p.add_argument("--valid_jsonl", default=None)
-    p.add_argument("--out_dir", default=None, help="어댑터 저장 경로 (기본: configs/gliner/train/adapter)")
+    result["training_needed"] = True
+    print(f"[NER Train] [{display}] 학습 시작...")
 
-    p.add_argument("--epochs", type=int, default=5)
-    p.add_argument("--batch_size", type=int, default=8)
-    p.add_argument("--encoder_lr", type=float, default=1e-5)
-    p.add_argument("--task_lr", type=float, default=5e-4)
+    extra_dirs = None
+    if extra_input_paths:
+        extra_dirs = []
+        for p in extra_input_paths:
+            ep = Path(p)
+            if not ep.is_absolute():
+                ep = project_root() / ep
+            extra_dirs.append(resolve_bio_train_dir(ep.resolve()))
 
-    p.add_argument("--lora_r", type=int, default=8)
-    p.add_argument("--lora_alpha", type=float, default=16.0)
-    p.add_argument("--lora_dropout", type=float, default=0.0)
-    p.add_argument("--lora_target", nargs="+", default=["encoder"])
+    neg_dirs = None
+    if negative_input_paths:
+        neg_dirs = []
+        for p in negative_input_paths:
+            ep = Path(p)
+            if not ep.is_absolute():
+                ep = project_root() / ep
+            neg_dirs.append(ep.resolve())
 
-    return p.parse_args()
-
-
-def _make_config(args: argparse.Namespace, out_dir: Path, batch_size: int) -> "TrainingConfig":
-    grad_accum = max(1, _TARGET_EFFECTIVE_BATCH // batch_size)
-    return TrainingConfig(
-        output_dir=str(out_dir),
-        num_epochs=args.epochs,
+    success, eval_info = _train_token_cls(
+        model_dir,
+        train_dir,
+        debug=debug,
+        fine_tuning_method=fine_tuning_method,
+        epochs=epochs,
         batch_size=batch_size,
-        gradient_accumulation_steps=grad_accum,
-        encoder_lr=args.encoder_lr,
-        task_lr=args.task_lr,
-        use_lora=True,
-        lora_r=args.lora_r,
-        lora_alpha=args.lora_alpha,
-        lora_dropout=args.lora_dropout,
-        lora_target_modules=args.lora_target,
-        save_adapter_only=True,
-        num_workers=0,
-        pin_memory=False,
+        lr=lr,
+        lora_r=lora_r,
+        lora_alpha=lora_alpha,
+        warmup_ratio=warmup_ratio,
+        weight_decay=weight_decay,
+        train_ratio=train_ratio,
+        val_ratio=val_ratio,
+        test_ratio=test_ratio,
+        split_seed=split_seed,
+        save_plots=save_plots,
+        early_stopping_patience=early_stopping_patience,
+        extra_input_dirs=extra_dirs,
+        negative_input_dirs=neg_dirs,
+        max_per_label=max_per_label,
     )
 
+    if eval_info:
+        result["evaluation"] = eval_info
 
-def _train_with_auto_batch(
-    args: argparse.Namespace,
-    train_jsonl: str,
-    out_dir: Path,
-    valid_jsonl: Optional[str] = None,
-) -> None:
-    """find_executable_batch_size로 GPU에 맞는 batch_size를 자동 탐색하여 학습."""
-
-    @find_executable_batch_size(starting_batch_size=args.batch_size)
-    def _inner(batch_size: int):
-        import torch
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-        grad_accum = max(1, _TARGET_EFFECTIVE_BATCH // batch_size)
-        print(f"[Auto] batch_size={batch_size}, gradient_accumulation={grad_accum}, "
-              f"effective_batch={batch_size * grad_accum}")
-
-        model = GLiNER2.from_pretrained(args.base_model)
-        config = _make_config(args, out_dir, batch_size)
-        trainer = GLiNER2Trainer(model=model, config=config)
-
-        if valid_jsonl:
-            trainer.train(train_data=train_jsonl, valid_data=valid_jsonl)
-        else:
-            trainer.train(train_data=train_jsonl)
-
-    _inner()
-
-
-def _run_optimization(args: argparse.Namespace, train_dir: Path) -> None:
-    """전체 데이터로 재학습해 optimized/에 저장 후 run_* 삭제."""
-    merged_path = _merge_train_dir_to_jsonl(train_dir)
-    opt_dir = get_optimized_dir()
-    opt_dir.mkdir(parents=True, exist_ok=True)
-    try:
-        _train_with_auto_batch(args, str(merged_path), opt_dir)
-        for run_path in list_adapter_runs():
-            shutil.rmtree(run_path, ignore_errors=True)
-    finally:
-        Path(merged_path).unlink(missing_ok=True)
-
-
-def main() -> None:
-    _check_gpu_and_limit_memory()
-
-    args = parse_args()
-    train_dir_path = Path(args.train_dir) if args.train_dir else get_gliner_train_dir()
-    has_dir_data = train_dir_path.exists() and any(train_dir_path.glob("*.jsonl"))
-
-    if has_dir_data:
-        merged = _merge_train_dir_to_jsonl(train_dir_path)
-        train_jsonl = str(merged)
-        signature = get_training_data_signature(train_dir_path)
-        out_dir = get_adapters_dir() / f"run_{get_next_run_id():06d}"
+    if success:
+        write_train_state(current_sig, str(adapter_dir), model_name)
+        invalidate_model_cache(model_name)
+        result["training_executed"] = True
+        result["message"] = "학습 완료."
     else:
-        train_jsonl = args.train_jsonl
-        signature = ""
-        out_dir = Path(args.out_dir) if args.out_dir else get_adapter_dir()
+        result["message"] = "학습 실패."
 
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    if not train_jsonl:
-        print("[안내] 학습 데이터가 없습니다. --train_dir 또는 --train_jsonl 을 지정하세요.")
-        return
-
-    try:
-        _train_with_auto_batch(args, train_jsonl, out_dir, args.valid_jsonl)
-
-        if signature:
-            write_train_state(signature, out_dir)
-        print(f"[OK] Done. Adapter saved under: {out_dir}")
-
-        if has_dir_data and len(list_adapter_runs()) >= 5:
-            print("[OK] Adapter 5개 이상 → 최적화 수행 중...")
-            _run_optimization(args, train_dir_path)
-            write_train_state(signature, get_optimized_dir())
-            print("[OK] 최적화 완료. optimized/ 사용.")
-    finally:
-        if has_dir_data:
-            Path(train_jsonl).unlink(missing_ok=True)
+    print(f"[NER Train] [{display}] {result['message']}")
+    if debug:
+        ner_debug_print(f"[NER debug][train] 종료 result_keys={list(result.keys())} success={success}")
+    return result
 
 
-if __name__ == "__main__":
-    main()
+def _train_token_cls(
+    model_dir: Path,
+    train_dir: Path,
+    *,
+    debug: bool = False,
+    fine_tuning_method: str = "lora",
+    epochs: int = 5,
+    batch_size: int = 8,
+    lr: float = 2e-5,
+    lora_r: int = 8,
+    lora_alpha: int = 16,
+    warmup_ratio: float = 0.0,
+    weight_decay: float = 0.01,
+    train_ratio: float = 8 / 12,
+    val_ratio: float = 2 / 12,
+    test_ratio: float = 2 / 12,
+    split_seed: int = 42,
+    save_plots: bool = False,
+    early_stopping_patience: int = 0,
+    extra_input_dirs: Optional[List[Path]] = None,
+    negative_input_dirs: Optional[List[Path]] = None,
+    max_per_label: Optional[int] = None,
+) -> Tuple[bool, Dict[str, Any]]:
+    from module.extractor.ner.token_cls import TokenClassNER
+
+    if debug:
+        ner_debug_print(
+            f"[NER debug][train][token_cls] model_dir={model_dir} train_dir={train_dir} "
+            f"method={fine_tuning_method}"
+        )
+    tc = TokenClassNER(model_dir)
+    ok, metrics = tc.train(
+        train_dir,
+        debug=debug,
+        fine_tuning_method=fine_tuning_method,
+        epochs=epochs,
+        batch_size=batch_size,
+        lr=lr,
+        lora_r=lora_r,
+        lora_alpha=lora_alpha,
+        warmup_ratio=warmup_ratio,
+        weight_decay=weight_decay,
+        train_ratio=train_ratio,
+        val_ratio=val_ratio,
+        test_ratio=test_ratio,
+        split_seed=split_seed,
+        save_plots=save_plots,
+        early_stopping_patience=early_stopping_patience,
+        extra_input_dirs=extra_input_dirs,
+        negative_input_dirs=negative_input_dirs,
+        max_per_label=max_per_label,
+    )
+    return ok, metrics

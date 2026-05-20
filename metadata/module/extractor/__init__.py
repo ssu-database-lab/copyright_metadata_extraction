@@ -1,13 +1,4 @@
-"""
-추출기 팩토리 모듈.
-다음 함수를 외부에 노출한다:
-- ner_extractor
-- ocr (extract_text_from_file)
-"""
-# import
-from module.parts.types import Decision
-from .ner import ner_extractor
-from . import ocr
+"""추출기 서브패키지 — ocr / ner / llm (live API surface).
 
-# export
-__all__ = ["Decision", "ner_extractor", "ocr"]
+공개 함수는 module.api에서 노출한다.
+"""
