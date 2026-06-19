@@ -5,7 +5,7 @@
 - ner_predict       : module.extractor.ner.base   → 35-라벨 메타데이터 (regex+NER+후처리+LLM placeholder)
 - ner_train         : module.extractor.ner.base   → NER 학습
 - llm_extract       : module.extractor.llm.llm    → 9 위임 라벨 (미구현)
-- metadata_extract  : ★ OCR + NER + LLM end-to-end 오케스트레이터
+- extract_metadata  : ★ OCR + NER + LLM end-to-end 오케스트레이터
 """
 from module.extractor.ner import base as ner_base
 from module.extractor.llm import llm
@@ -38,10 +38,22 @@ def metadata_extract(**kwargs):
 
     인자는 ocr_extract / ner_predict 가 받는 키를 그대로 전달.
     OCR 캐시 (``ocr_output_path/result/``) 가 입력 문서 수만큼 있으면 OCR 단계 자동 스킵.
+    ``input_text`` 또는 NER용 ``input_path`` 를 직접 넘기면 OCR 단계는 건너뛴다.
+    OCR 입력을 직접 지정하려면 ``in_path`` 를 사용한다.
     """
-    ocr_extract(**_ocr_args(kwargs))
-    ner_predict(**_ner_args(kwargs))
+    ocr_kwargs = _ocr_args(kwargs)
+    should_run_ocr = bool(ocr_kwargs) or (
+        "input_text" not in kwargs and "input_path" not in kwargs
+    )
+    if should_run_ocr:
+        ocr_extract(**ocr_kwargs)
+    return ner_predict(**_ner_args(kwargs))
     # llm_extract(...)  # 미구현 — 9 위임 라벨 placeholder 는 ner_predict 내부에서 처리
+
+
+def extract_metadata(**kwargs):
+    """Public API alias for the end-to-end metadata extraction pipeline."""
+    return metadata_extract(**kwargs)
 
 
 # ---------------------------------------------------------------------------
@@ -51,7 +63,7 @@ def metadata_extract(**kwargs):
 _OCR_KEYS = ("in_path", "out_path", "metadata_path", "device")
 _NER_KEYS = (
     "model_name", "model_path", "input_path", "input_text", "output_path",
-    "threshold", "thresholds", "result_phase", "log_adapter_status",
+    "threshold", "thresholds", "result_phase", "llm_fn", "log_adapter_status",
     "debug", "debug_path",
 )
 

@@ -1,0 +1,6755 @@
+Please	O
+provide	O
+84건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+잠?	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+TITLE?	O
+조?사	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+비상연?망:	O
+010-5889-2206	B-PHONE
+
+91건에	B-QUANTITY
+관한	O
+내용 .	O
+
+작업이	O
+완료되었 습니다.	O
+(11)	O
+
+문?사항이	O
+있으시면	O
+연락주세요.	O
+
+감사합니다.	O
+(84)	O
+
+주민번호:	O
+450101-3******	B-ID_NUM
+
+첨부파일을	O
+확인하세요.	O
+(49)	O
+
+작성일:	O
+2 020년	B-DATE
+11월	I-DATE
+23일	I-DATE
+
+서마아	B-NAME
+-	O
+이사	B-POSITION
+
+다음에	O
+뵙겠습니다.	O
+(39)	O
+
+이것은	O
+QUANTITY	O
+예시인	O
+71건입니다.	B-QUANTITY
+
+?:	O
+주식 회사	B-COMPANY
+서나차,	I-COMPANY
+을:	O
+윤규민,	B-NAME
+계약일:	O
+20?0년	B-DATE
+10월	I-DATE
+?2일	I-DATE
+
+주식회사	B-COMPANY
+전바현	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+황건로	I-ADDRESS
+16	I-ADDRESS
+
+?액:	O
+486만원	B-MONEY
+
+참 고하시기	O
+바랍니다.	O
+(65)	O
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+J100	I-PROJECT_NAME
+
+오늘	O
+날 씨가	O
+참	O
+좋네요.	O
+(8)	O
+
+시스템	O
+점검	O
+중입니 다.	O
+(41)	O
+
+시스템	O
+점검	O
+중입니다.	O
+
+입력된	O
+QUANTITY	O
+값은	O
+48건	B-QUANTITY
+입니다.	O
+
+고객센터:	O
+010-9472-5775	B-PHONE
+
+문서를	O
+검토해	O
+주세요.	O
+
+고객센터:	O
+010-7291-8061	B-PHONE
+
+Plea se	O
+provide	O
+62건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+상세	O
+QUANTI?Y	O
+정보:	O
+52건	B-QUANTITY
+
+확인	O
+부탁드립니다.	O
+
+감사합니다.	O
+(60)	O
+
+문의사항이	O
+있으시 면	O
+연락주세요.	O
+(87)	O
+
+수고하?습니다.	O
+
+작업이	O
+완료되었습니다.	O
+(?2)	O
+
+문의사항이	O
+있으시?	O
+연락주세요.	O
+
+사업장	O
+소재지:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+전가규로	I-ADDRESS
+19	I-ADDRESS
+
+회의는	O
+2시에	O
+시작합니다.	O
+(99)	O
+
+주민번호:	O
+530101-1******	B-ID_NUM
+
+메일:	O
+us?r297@example.com	B-EMAIL
+
+M issing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+N91	I-PROJECT_NAME
+
+식사는	O
+하셨나요?	O
+(48)	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(17)	O
+
+주민번호:	O
+450101-1******	B-ID_NUM
+
+업체명:	O
+주식회사	B-COMPANY
+박다	I-COMPANY
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+박바,	I-COMPANY
+Par?y	O
+B:	O
+안자사,	B-NAME
+Date:	O
+2023년	B-DATE
+12월	I-DATE
+17일	I-DATE
+
+다 음에	O
+뵙겠습니다.	O
+
+작성자:	O
+윤가	B-NAME
+
+시스템	O
+?검	O
+중입니 다.	O
+(17)	O
+
+?라	B-NAME
+-	O
+이사	B-POSITION
+
+비밀?호를	O
+변경해	O
+주세요.	O
+(12)	O
+
+시스템	O
+점검	O
+중입니다.	O
+
+회 의는	O
+2시에	O
+시작합니다.	O
+
+비밀번호를	O
+?경해	O
+주세요.	O
+
+메 일:	O
+user24?example.com	B-EMAIL
+
+이	O
+내용 은	O
+중요합니다.	O
+
+수고하셨 습니다.	O
+(56)	O
+
+메일:	O
+user896@example.com	B-EMAIL
+
+로그인이	O
+필요합니다.	O
+(27)	O
+
+Value	O
+o f	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+L97	I-PROJECT_NAME
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.권성59.com	B-URL
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(74)	O
+
+시스?	O
+점검	O
+중입니다.	O
+(59 )	O
+
+TITLE:	O
+이 규	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+이것 은	O
+PERIOD	O
+예시인	O
+7개월입니다.	B-PERIOD
+
+이것은	O
+QUANT?TY	O
+예 시인	O
+56건입니다.	B-QUANTITY
+
+Value	O
+of	O
+POSITION	O
+?s	O
+대표	B-POSITION
+
+이	O
+내용은	O
+중요합니다.	O
+
+수고하셨습니다.	O
+
+작업이	O
+완료되었습니다.	O
+(26)	O
+
+상세	O
+QUANTITY	O
+정 보:	O
+22건	B-QUANTITY
+
+Va lue	O
+of	O
+POSITION	O
+is	O
+이사	B-POSITION
+
+작업이	O
+완료되었습니다.	O
+(43)	O
+
+H.P:	O
+010-8205-8247	B-PHONE
+
+첨부파일을	O
+확인하세요.	O
+(100)	O
+
+확인	O
+부탁드립니다.	O
+
+다음	O
+URL 을	O
+확인하세요:	O
+http://www.황규98.com	B-URL
+
+본점:	O
+서울시	B-ADDRESS
+강?구	I-ADDRESS
+박바로	I-ADDRESS
+79	I-ADDRESS
+
+문의사항 이	O
+있으시?	O
+연락주세요.	O
+
+이것은	O
+PERIOD	O
+예시인	O
+8개월입니다.	B-PERIOD
+
+다음에	O
+뵙겠습니다.	O
+(19)	O
+
+감사합니다.	O
+(32)	O
+
+수주 처:	O
+주식회사	B-COMPANY
+한?	I-COMPANY
+
+참고하시기	O
+바랍니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(82)	O
+
+감사합니다.	O
+(95 )	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+이것은	O
+QUANTITY	O
+예시인	O
+23건입니다.	B-QUANTITY
+
+78건 에	B-QUANTITY
+관한	O
+내용.	O
+
+ID:	O
+270101?3******	B-ID_NUM
+
+89 건에	B-QUANTITY
+관한	O
+내용.	O
+
+문의사항이	O
+있으시면	O
+연락주세 요.	O
+(9?)	O
+
+정 자	B-NAME
+-	O
+이사	B-POSITION
+
+문의사항이	O
+있으시면	O
+연락?세요.	O
+
+수고하셨습니다.	O
+
+시스 템	O
+점검	O
+중입니다.	O
+
+C C:	O
+user646@example.c?m	B-EMAIL
+
+TYPE :	O
+사진저작물	B-TYPE
+
+ID:	O
+440101-3******	B-ID_NUM
+
+주식회사	B-COMPANY
+조성건	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+안가로	I-ADDRESS
+88	I-ADDRESS
+
+Please	O
+provide	O
+개?정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이?	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+for	O
+CONSENT_TYPE.	O
+
+시스템	O
+점검	O
+중입니다.	O
+(80)	O
+
+확인	O
+부탁드립니다.	O
+(30)	O
+
+작업이	O
+완료되었습니다.	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+사업장	O
+소재지 :	O
+서울 시	B-ADDRESS
+강남구	I-ADDRESS
+서아로	I-ADDRESS
+23	I-ADDRESS
+
+P hone	O
+N?mber:	O
+010-6582-8513	B-PHONE
+
+V alue	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+P54	I-PROJECT_NAME
+
+문서를	O
+검토해	O
+주세요.	O
+
+첨부파일을	O
+확인하세요.	O
+(56)	O
+
+확인	O
+부탁드립니다.	O
+(63)	O
+
+오류가	O
+발생했습니다.	O
+
+안녕하세요,	O
+반갑습니다.	O
+(41)	O
+
+작업?	O
+완료되었습니다.	O
+
+다음에	O
+뵙겠습니다.	O
+
+로그인이	O
+필요합니다?	O
+
+Reach	O
+me	O
+at	O
+010-6038?5139	B-PHONE
+
+오류가	O
+발생했습니다.	O
+(?3)	O
+
+윤사	B-NAME
+-	O
+사원	B-POSITION
+
+문서를	O
+검토해	O
+주세요.	O
+
+?성일:	O
+2021년	B-DATE
+10월	I-DATE
+21일	I-DATE
+
+식사는	O
+?셨나요?	O
+
+이	O
+내용은	O
+중요합니다.	O
+
+Val ue	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+?8	I-PROJECT_NAME
+
+본점:	O
+서 울시	B-ADDRESS
+강남구	I-ADDRESS
+장다로	I-ADDRESS
+9	I-ADDRESS
+
+사업장	O
+소재지:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+윤다로	I-ADDRESS
+?8	I-ADDRESS
+
+Va lue	O
+of	O
+POSITION	O
+is	O
+팀장	B-POSITION
+
+참고하시기	O
+바랍니다.	O
+
+오늘	O
+날씨?	O
+참	O
+좋네요.	O
+
+본점:	O
+서울시	B-ADDRESS
+강남?	I-ADDRESS
+송민로	I-ADDRESS
+63	I-ADDRESS
+
+회원가입을	O
+환영합니다.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+식사는	O
+하셨나요?	O
+(?0)	O
+
+다 음에	O
+뵙겠습니다.	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+식사는	O
+하셨나요?	O
+(14)	O
+
+79건에	B-QUANTITY
+관한	O
+내용.	O
+
+시스템	O
+점검	O
+중입니다.	O
+(7)	O
+
+ID:	O
+9501?1-1******	B-ID_NUM
+
+황사	B-NAME
+-	O
+부장	B-POSITION
+
+H.P:	O
+010-1604-1456	B-PHONE
+
+회의는	O
+2시에	O
+시작합니다.	O
+
+문의사항이	O
+?으시면	O
+연락주세요.	O
+
+다음에	O
+뵙겠습니다.	O
+(69)	O
+
+회의는	O
+2시 에	O
+시작합니다.	O
+(44)	O
+
+?문저작물에	B-TYPE
+?한	O
+내용 .	O
+
+ID :	O
+300101-2******	B-ID_NUM
+
+문서를	O
+검 토해	O
+주세요.	O
+(?7)	O
+
+잠시	O
+후	O
+다시	O
+시 도해	O
+주세요.	O
+?34)	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+Missing	O
+PROJECT_NAME?	O
+프로젝트	B-PROJECT_NAME
+T83	I-PROJECT_NAME
+
+비밀번?를	O
+변경해	O
+주세요.	O
+
+잠시	O
+후	O
+다 시	O
+시도해	O
+주세요.	O
+
+TITLE:	O
+한카	B-TITLE
+관련	I-TITLE
+합의 서	I-TITLE
+
+다음에	O
+뵙겠습니다.	O
+(18)	O
+
+이것은	O
+QUANTITY	O
+예?인	O
+87건입니다.	B-QUANTITY
+
+수고하셨습니다.	O
+
+주 민번호:	O
+140101-2******	B-ID_NUM
+
+오류가	O
+발생했습니다.	O
+
+시스템	O
+점검	O
+중입니다.	O
+
+?음	O
+URL을	O
+확인하세요:	O
+http://www.장건사4.com	B-URL
+
+문서를	O
+검토해	O
+주세요.	O
+
+37건에	B-QUANTITY
+관한	O
+내용.	O
+
+참고하시기	O
+바랍?다.	O
+(80)	O
+
+회의는	O
+?시에	O
+시작합니다.	O
+
+Check	O
+PERIOD:	O
+6개월	B-PERIOD
+
+사업장	O
+소재지:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+류다준로	I-ADDRESS
+31	I-ADDRESS
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+황파?,	I-COMPANY
+Pa rty	O
+B:	O
+정하 민,	B-NAME
+Date:	O
+2025년	B-DATE
+1월	I-DATE
+18일	I-DATE
+
+상세	O
+QUANTITY	O
+정보:	O
+8건	B-QUANTITY
+
+감사합니다 .	O
+(78)	O
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+강파민,	I-COMPANY
+Party	O
+B:	O
+장파,	B-NAME
+Date:	O
+2020년	B-DATE
+9월	I-DATE
+24 일	I-DATE
+
+시스템	O
+점검	O
+중입니다.	O
+
+작성자:	O
+한하	B-NAME
+
+수고하셨습니다.	O
+(43)	O
+
+로그 인이	O
+필요합니다.	O
+(88)	O
+
+56건에	B-QUANTITY
+관한	O
+내용.	O
+
+회원가입을	O
+환영합니다.	O
+
+Please	O
+pro vide	O
+인사팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+Va lue	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+U38	I-PROJECT_NAME
+
+감사합니다.	O
+
+한국어에	B-LANGUAGE
+관 한	O
+내용.	O
+
+Reach	O
+me	O
+at	O
+0?0-7024-5221	B-PHONE
+
+오류 가	O
+발생했습니다.	O
+
+수주처 :	O
+주식회사	B-COMPANY
+박차라	I-COMPANY
+
+주식회사	B-COMPANY
+장타	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+권마로	I-ADDRESS
+49	I-ADDRESS
+
+체결일자:	O
+2023년	B-DATE
+9월	I-DATE
+24일	I-DATE
+
+입력된	O
+QUANTITY	O
+값은	O
+73건	B-QUANTITY
+입니다.	O
+
+Value	O
+o?	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+Z77	I-PROJECT_NAME
+
+시스템	O
+점검	O
+중입니다.	O
+
+안녕하세요 ,	O
+반갑습니다.	O
+(37)	O
+
+비밀번호를	O
+변경해	O
+주세요?	O
+(91)	O
+
+안녕하세요,	O
+반갑습니다.	O
+(96)	O
+
+첨부파일을	O
+확인하세요.	O
+
+안녕하 세요,	O
+반갑습니다.	O
+(52)	O
+
+감사합니다.	O
+(92)	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세?.	O
+(38)	O
+
+문서 를	O
+검토해	O
+주세 요.	O
+
+96건에	B-QUANTITY
+관한	O
+내용.	O
+
+첨부파일을	O
+확인 하세요.	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+오류가	O
+발생했습니다.	O
+(66)	O
+
+Please	O
+provide	O
+?3건	B-QUANTITY
+for	O
+QUANT ITY.	O
+
+상 세	O
+QUANTITY	O
+정보:	O
+86건	B-QUANTITY
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+김라,	I-COMPANY
+Party	O
+B?	O
+김다나,	B-NAME
+Dat?:	O
+2021년	B-DATE
+?월	I-DATE
+26일	I-DATE
+
+오류가	O
+발생했습니다.	O
+(33)	O
+
+H.P:	O
+010-8746-8340	B-PHONE
+
+Please	O
+prov?de	O
+이용허락계약서	B-CONTRACT_TYPE
+f or	O
+CONTRACT_TYPE.	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(94)	O
+
+오류가	O
+발생했습니다.	O
+
+회원가입을	O
+환영합니다.	O
+(71)	O
+
+Phone	O
+Number:	O
+010-9929-9989	B-PHONE
+
+참고 하시기	O
+바랍니다.	O
+
+체결일자:	O
+2022년	B-DATE
+10월	I-DATE
+7일	I-DATE
+
+회원가입을	O
+환영합니?.	O
+
+Missing	O
+PROJECT_NAME:	O
+프로 젝트	B-PROJECT_NAME
+Y 44	I-PROJECT_NAME
+
+비용:	O
+366만원	B-MONEY
+
+참고하시기	O
+바랍니다.	O
+(1 00)	O
+
+오류가	O
+발생했습니다.	O
+(52)	O
+
+상세	O
+QUANTITY	O
+정보:	O
+100건	B-QUANTITY
+
+이것은	O
+POSITION	O
+예시인	O
+대표입니다.	B-POSITION
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+신카아,	I-COMPANY
+Party	O
+B:	O
+류아?	B-NAME
+D?te:	O
+2022년	B-DATE
+5 월	I-DATE
+19 일	I-DATE
+
+이것은	O
+QUANTITY	O
+예시인	O
+28건입니다.	B-QUANTITY
+
+안녕하세요,	O
+반갑습니다.	O
+(37 )	O
+
+입?된	O
+QUANTITY	O
+값은	O
+37건	B-QUANTITY
+입니다.	O
+
+회의는	O
+2시에	O
+시작 합니다.	O
+
+식사 는	O
+하셨나 요?	O
+(7 4)	O
+
+이것은	O
+QUANTITY	O
+예시인	O
+44건입니다.	B-QUANTITY
+
+확인	O
+부탁드립니다.	O
+
+식사는	O
+하셨나요?	O
+
+입력 된	O
+QUANTITY	O
+값은	O
+22 건	B-QUANTITY
+입니다.	O
+
+H.P :	O
+010-9646-8586	B-PHONE
+
+수고하?습니다.	O
+
+Val?e	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+B 29	I-PROJECT_NAME
+
+회원가입을	O
+환영합니다.	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+이	O
+내용은	O
+중요합니다.	O
+
+다음에	O
+뵙겠습?다.	O
+
+수고하셨습니다.	O
+(85)	O
+
+작업?	O
+완료되었습니다.	O
+(50)	O
+
+2020년	B-DATE
+12월	I-DATE
+24일	I-DATE
+현재	O
+
+잠 시	O
+후	O
+다시	O
+시도 해	O
+주세요.	O
+
+CC:	O
+user627@example.com	B-EMAIL
+
+Reach	O
+me	O
+a t	O
+010-4627-8217	B-PHONE
+
+첨부파일?	O
+확인하세요.	O
+(3 )	O
+
+H.P:	O
+010-2712-2645	B-PHONE
+
+회원가입을	O
+환영합니다.	O
+(3)	O
+
+작업이	O
+완료?었습니다.	O
+
+금액:	O
+332만원	B-MONEY
+
+?의는	O
+2시에	O
+시작합니다.	O
+
+잠시	O
+후	O
+다 시	O
+시도해	O
+주세요?	O
+
+확인	O
+부탁드립니다.	O
+(26)	O
+
+확인	O
+부탁드립니다.	O
+(100)	O
+
+주민번호:	O
+810101-3******	B-ID_NUM
+
+감사합니다.	O
+
+이것은	O
+QUANTITY	O
+예시인	O
+7건입니?.	B-QUANTITY
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+안녕하세요,	O
+반 갑습니다.	O
+
+회원가입을	O
+환영합니다.	O
+
+Please	O
+provide	O
+영업팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+ID:	O
+840101-3******	B-ID_NUM
+
+식사는	O
+하셨나요?	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+수주처:	O
+주식회사	B-COMPANY
+오현가	I-COMPANY
+
+오류가	O
+발생했습니다.	O
+(51)	O
+
+신분?	O
+번호:	O
+540101-3******	B-ID_NUM
+
+문서를	O
+검토해	O
+주세요.	O
+(2)	O
+
+문의:	O
+010-1894-3325	B-PHONE
+
+비밀번호?	O
+변경해	O
+주세요.	O
+
+상세	O
+QUANTITY	O
+정보:	O
+98건	B-QUANTITY
+
+Missin g	O
+P?OJECT_NAME:	O
+?로젝트	B-PROJECT_NAME
+?42	I-PROJECT_NAME
+
+Phone	O
+Number:	O
+010-7326-7818	B-PHONE
+
+Missing	O
+PROJECT_NAME:	O
+프로젝 트	B-PROJECT_NAME
+B6	I-PROJECT_NAME
+
+확인	O
+부탁드립니다.	O
+(46)	O
+
+Reach	O
+me	O
+at	O
+010-1131-?998	B-PHONE
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.전차34.com	B-URL
+
+Pl?ase	O
+provide	O
+사진저작물	B-TYPE
+for	O
+TYPE .	O
+
+업체명:	O
+주식회사	B-COMPANY
+윤준파	I-COMPANY
+
+Value	O
+o f	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+?83	I-PROJECT_NAME
+
+비용:	O
+978?원	B-MONEY
+
+?아	B-NAME
+-	O
+대표	B-POSITION
+
+작 성일:	O
+2023?	B-DATE
+5월	I-DATE
+19일	I-DATE
+
+Reach	O
+me	O
+at	O
+010-1024-7414	B-PHONE
+
+신?증	O
+번호:	O
+04010 1-2******	B-ID_NUM
+
+사업장	O
+소재지:	O
+서울 시	B-ADDRESS
+강남구	I-ADDRESS
+정건 로	I-ADDRESS
+27	I-ADDRESS
+
+안녕하세요,	O
+반갑습니다.	O
+
+첨부파일을	O
+확인하세요.	O
+
+65건에	B-QUANTITY
+관 한	O
+내용.	O
+
+첨부파일을	O
+확인하세요.	O
+
+참고하시기	O
+바랍니다?	O
+(58)	O
+
+회의는	O
+2시에	O
+시작합니다.	O
+
+문 서를	O
+검토해	O
+주세요.	O
+(73)	O
+
+부장 에	B-POSITION
+관한	O
+내 용.	O
+
+작업이	O
+완료되었습니다.	O
+
+Reach	O
+me	O
+at	O
+010-8924-5272	B-PHONE
+
+오파	B-NAME
+(010-1833-4855)	B-PHONE
+
+상세	O
+QUANTITY	O
+정?:	O
+92건	B-QUANTITY
+
+수고하셨습니다.	O
+(4)	O
+
+식사는	O
+하?나요?	O
+
+로그인이	O
+필요합니다.	O
+
+사업장	O
+소재지?	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+송바파로	I-ADDRESS
+?5	I-ADDRESS
+
+Value	O
+of	O
+CONTRA CT_TYPE	O
+is	O
+이용허락계약서	B-CONTRACT_TYPE
+
+시스템	O
+점검	O
+중입니다.	O
+?22)	O
+
+?인명:	O
+주식회사	B-COMPANY
+권자	I-COMPANY
+
+ID:	O
+180101-1******	B-ID_NUM
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+E19	I-PROJECT_NAME
+
+Please	O
+provide	O
+96건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+다 음에	O
+뵙겠습니다.	O
+?83)	O
+
+회원가입을	O
+환영합니?.	O
+
+안녕하세요,	O
+반갑습니다.	O
+(65)	O
+
+10건에	B-QUANTITY
+관한	O
+내용.	O
+
+CC:	O
+user424@example.com	B-EMAIL
+
+갑:	O
+주식회사	B-COMPANY
+황나,	I-COMPANY
+을:	O
+송사규,	B-NAME
+계약일:	O
+2024년	B-DATE
+9월	I-DATE
+2일	I-DATE
+
+수주처:	O
+주식회사	B-COMPANY
+신가	I-COMPANY
+
+한 타	B-NAME
+(010-3732-2237)	B-PHONE
+
+일본어에	B-LANGUAGE
+관한	O
+내용.	O
+
+류규자	B-NAME
+-	O
+부장	B-POSITION
+
+다 음에	O
+뵙겠습니다.	O
+
+다음에	O
+뵙겠습니다.	O
+
+Check	O
+TYPE:	O
+소 프트웨어	B-TYPE
+
+사진?작물에	B-TYPE
+?한	O
+내용.	O
+
+회원 가입을	O
+환영합니다.	O
+(15)	O
+
+주민번호:	O
+980 101-2******	B-ID_NUM
+
+회원가입을	O
+환영합니다.	O
+
+?음에	O
+뵙겠습니다.	O
+(28)	O
+
+식사 는	O
+하 셨나요?	O
+(85)	O
+
+잠시	O
+후	O
+다시	O
+시 도해	O
+주세요.	O
+(88)	O
+
+시스템	O
+점검	O
+중입 니다.	O
+?9)	O
+
+입력된	O
+QUANTITY	O
+값은	O
+27건	B-QUANTITY
+입 니다.	O
+
+입력된	O
+QUANTITY	O
+값은	O
+45 건	B-QUANTITY
+입니다.	O
+
+최카	B-NAME
+signed	O
+here.	O
+
+주식회사	B-COMPANY
+송자	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+오민로	I-ADDRESS
+58	I-ADDRESS
+
+작업이	O
+완료되었습니다.	O
+
+작성일:	O
+2024년	B-DATE
+3월	I-DATE
+18일	I-DATE
+
+회원가입을	O
+환영합니다.	O
+(1)	O
+
+이	O
+내용은	O
+중요합니다.	O
+
+Please	O
+provide	O
+17건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+ID:	O
+690101-1******	B-ID_NUM
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+Chec k	O
+PERIOD:	O
+1개월	B-PERIOD
+
+신분증	O
+번호:	O
+370101-3******	B-ID_NUM
+
+이	O
+내 용은	O
+중요합니다.	O
+(85)	O
+
+메일:	O
+user165@example.com	B-EMAIL
+
+표준계약서에	B-CONTRACT_TYPE
+관한	O
+내용.	O
+
+시스템	O
+점검	O
+중입니다.	O
+(66)	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+확 인	O
+부탁드립니다.	O
+
+Missing	O
+PROJECT_NAME:	O
+프로 젝트	B-PROJECT_NAME
+H47	I-PROJECT_NAME
+
+Che ck	O
+PERIOD:	O
+4개월	B-PERIOD
+
+ID :	O
+950101-3******	B-ID_NUM
+
+첨부파일을	O
+확인하세요.	O
+?9)	O
+
+고객센터:	O
+010-6420-9661	B-PHONE
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(43)	O
+
+V alue	O
+o?	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+I1	I-PROJECT_NAME
+
+메일:	O
+user474@example.com	B-EMAIL
+
+작?이	O
+완료되?습니다.	O
+(81)	O
+
+CC:	O
+user655@example.com	B-EMAIL
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+수고하셨습니다 .	O
+(83)	O
+
+전나	B-NAME
+signed	O
+her?.	O
+
+입력된	O
+QUANTITY	O
+값은	O
+1건	B-QUANTITY
+입니다?	O
+
+Valu?	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+R61	I-PROJECT_NAME
+
+입력된	O
+QUANTI TY	O
+값은	O
+82건	B-QUANTITY
+입니다.	O
+
+다?	O
+URL을	O
+확인하세요:	O
+http://www.정준라35.com	B-URL
+
+?arty	O
+A:	O
+주식회사	B-COMPANY
+장성,	I-COMPANY
+Party	O
+B:	O
+서사,	B-NAME
+Date:	O
+2020년	B-DATE
+12월	I-DATE
+12일	I-DATE
+
+?것은	O
+POSITION	O
+예?인	O
+사원입니다.	B-POSITION
+
+본점:	O
+서울?	B-ADDRESS
+?남구	I-ADDRESS
+신자로	I-ADDRESS
+22	I-ADDRESS
+
+김나	B-NAME
+(010-8146-3729)	B-PHONE
+
+문서를	O
+검토해	O
+주세요.	O
+(65?	O
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+Z72	I-PROJECT_NAME
+
+ID:	O
+580101-1******	B-ID_NUM
+
+양도계약서에	B-CONTRACT_TYPE
+관한	O
+내용.	O
+
+?heck	O
+TYPE:	O
+영상저작물	B-TYPE
+
+첨부파 일을	O
+확인하세요.	O
+
+Value	O
+of	O
+PROJ ECT_NAME	O
+is	O
+프로 젝트	B-PROJECT_NAME
+X 58	I-PROJECT_NAME
+
+비상연락망:	O
+010-171?-7647	B-PHONE
+
+TITLE:	O
+황다현	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+다음에	O
+뵙겠습니다.	O
+(10 )	O
+
+신분증	O
+번호:	O
+350101-3******	B-ID_NUM
+
+주식회사	B-COMPANY
+임성현	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+서 하사로	I-ADDRESS
+2	I-ADDRESS
+
+안녕하세요,	O
+반갑습니다.	O
+
+39건 에	B-QUANTITY
+관한	O
+?용.	O
+
+로그인이	O
+필요합니다.	O
+(77)	O
+
+비밀번호를	O
+변경해	O
+주 세요.	O
+
+ID:	O
+030101-1******	B-ID_NUM
+
+?파성	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+정하로	I-ADDRESS
+?7.	I-ADDRESS
+
+?스템	O
+점검	O
+중입니다.	O
+(6?)	O
+
+입력된	O
+QUANTITY	O
+값은	O
+79건	B-QUANTITY
+입니다.	O
+
+Va lue	O
+of	O
+POSITION	O
+is	O
+책임	B-POSITION
+
+주식 회사	B-COMPANY
+전우	I-COMPANY
+-	O
+?울시	B-ADDRESS
+강남구	I-ADDRESS
+박자로	I-ADDRESS
+80	I-ADDRESS
+
+Phone	O
+Number:	O
+010-6005-7211	B-PHONE
+
+감사합니다.	O
+(100)	O
+
+업체명:	O
+주식회사	B-COMPANY
+송준	I-COMPANY
+
+TITLE:	O
+조규	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+금액:	O
+7만원	B-MONEY
+
+다음에	O
+뵙겠습니다.	O
+(73)	O
+
+오 늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+입력된	O
+QUANTITY	O
+값은	O
+66건	B-QUANTITY
+입니다.	O
+
+오류가	O
+발생했습니다.	O
+(77)	O
+
+비상연락망:	O
+010-1913-6540	B-PHONE
+
+법인명:	O
+주식회사	B-COMPANY
+오건	I-COMPANY
+
+회원가입을	O
+환영합니다.	O
+(69?	O
+
+이것은	O
+POSITION	O
+예시인	O
+이사?니다.	B-POSITION
+
+첨부파일을	O
+확인하세요.	O
+(97)	O
+
+25건에	B-QUANTITY
+관한	O
+내용.	O
+
+Please	O
+provide	O
+마케팅	B-CONSENT_TYPE
+?신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+for	O
+CONSENT_TYPE.	O
+
+문의:	O
+010-8823-?804	B-PHONE
+
+수고하셨습 니다.	O
+
+로그인이	O
+필요합니다.	O
+(61)	O
+
+비밀번호를	O
+?경해	O
+주세요.	O
+
+로그인이	O
+필요합니다.	O
+
+문서를	O
+?토해	O
+주세요.	O
+
+이것은	O
+QUANTITY	O
+예시인	O
+5 5건입니다.	B-QUANTITY
+
+이것은	O
+Q?ANTITY	O
+예시인	O
+19건입니다.	B-QUANTITY
+
+다음에	O
+뵙겠습니다.	O
+(44)	O
+
+?마파	B-NAME
+-	O
+팀장	B-POSITION
+
+김가	B-NAME
+-	O
+사원	B-POSITION
+
+오류가	O
+발생했습?다.	O
+(22)	O
+
+회 원가입을	O
+환영합니다.	O
+(41)	O
+
+문서를	O
+검토해	O
+주세요.	O
+(6)	O
+
+확인	O
+부탁드립니다.	O
+
+?스템	O
+점검	O
+중입?다.	O
+(99)	O
+
+팀장에	B-POSITION
+관 한	O
+내용.	O
+
+상세	O
+QUANTITY	O
+정보:	O
+90건	B-QUANTITY
+
+작업이	O
+완료되었습니다.	O
+
+체결일자:	O
+2023년	B-DATE
+8월	I-DATE
+2일	I-DATE
+
+로그인이	O
+필요합니다 .	O
+(32)	O
+
+금액:	O
+47 7만원	B-MONEY
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+D68	I-PROJECT_NAME
+
+주민번호:	O
+230101-1******	B-ID_NUM
+
+식사는	O
+하셨나요?	O
+(8)	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+Missing	O
+TYPE:	O
+어문저작물	B-TYPE
+
+비상연락망:	O
+010-6971-4777	B-PHONE
+
+식사는	O
+하셨나요?	O
+(64)	O
+
+상세	O
+LANGUAGE	O
+정보:	O
+한국?	B-LANGUAGE
+
+Value	O
+of	O
+CONTRACT_TYPE	O
+is	O
+표준계약서	B-CONTRACT_TYPE
+
+?issing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+F54	I-PROJECT_NAME
+
+회원 가입을	O
+환영합니다.	O
+( 60)	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+Phone	O
+Number:	O
+010-12 63-2602	B-PHONE
+
+거주?:	O
+서울시	B-ADDRESS
+강남 구	I-ADDRESS
+한성로	I-ADDRESS
+29	I-ADDRESS
+
+Reach	O
+me	O
+a t	O
+010-8789-3606	B-PHONE
+
+문서 를	O
+검토해	O
+주세 요.	O
+
+이것은	O
+QUANTITY	O
+예시인	O
+54건입니다.	B-QUANTITY
+
+다음	O
+CONSENT_TYPE을	O
+확인하세요:	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동?	I-CONSENT_TYPE
+
+체결일자:	O
+2025년	B-DATE
+8월	I-DATE
+26일	I-DATE
+
+수고하셨습니다.	O
+(80)	O
+
+Please	O
+pr?vide	O
+9건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+CC:	O
+user473@example.com	B-EMAIL
+
+이것?	O
+PERIOD	O
+예?인	O
+4개월입니다.	B-PERIOD
+
+Check	O
+PERIOD:	O
+11개월	B-PERIOD
+
+전마	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+장타로	I-ADDRESS
+80.	I-ADDRESS
+
+회의 는	O
+2시 에	O
+시작합니다.	O
+(95)	O
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+장마,	I-COMPANY
+Party	O
+B :	O
+박차,	B-NAME
+Date:	O
+2?24년	B-DATE
+11월	I-DATE
+2 8일	I-DATE
+
+첨부파일 을	O
+확인하세요.	O
+
+주민번호:	O
+790101-3******	B-ID_NUM
+
+Value	O
+of	O
+PROJECT_NA?E	O
+is	O
+프로 젝트	B-PROJECT_NAME
+G?	I-PROJECT_NAME
+
+주식회사	B-COMPANY
+김현	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+정우로	I-ADDRESS
+19	I-ADDRESS
+
+안녕하세요,	O
+반갑습니다.	O
+
+다음에	O
+뵙겠습니다.	O
+
+법인명:	O
+주식회사	B-COMPANY
+조우사	I-COMPANY
+
+감사합니다.	O
+
+작업이	O
+완료되었습니다.	O
+(11)	O
+
+이	O
+내용은	O
+중요합니다.	O
+(4)	O
+
+로그인이	O
+필요합니다.	O
+(44)	O
+
+참?하시기	O
+바랍니다.	O
+
+업체명:	O
+주식회사	B-COMPANY
+황규	I-COMPANY
+
+Please	O
+provide	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+fo r	O
+CONSENT_TYPE.	O
+
+로그인이	O
+필요합니다.	O
+
+신분증	O
+번호:	O
+620101-2******	B-ID_NUM
+
+첨부파일을	O
+확인하세요?	O
+(39)	O
+
+법인명:	O
+주식회 사	B-COMPANY
+오규	I-COMPANY
+
+17건에	B-QUANTITY
+관?	O
+내용.	O
+
+이	O
+내용은	O
+중요합니다?	O
+(51 )	O
+
+주민번호:	O
+740101-2*** ***	B-ID_NUM
+
+강바	B-NAME
+-	O
+대표	B-POSITION
+
+비상연락망:	O
+010-9258?2073	B-PHONE
+
+오늘	O
+?씨가	O
+참	O
+좋네요.	O
+
+회원가입을	O
+환영합니다.	O
+(88 )	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+비밀?호를	O
+변경해	O
+주세요.	O
+
+Check	O
+PERIO D:	O
+3개월	B-PERIOD
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+B18	I-PROJECT_NAME
+
+주식 회사	B-COMPANY
+송성	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+신사파로	I-ADDRESS
+9?	I-ADDRESS
+
+수고하셨습니다.	O
+
+작업이	O
+완료되었습니다.	O
+
+오 늘	O
+날?가	O
+참	O
+좋네요.	O
+
+시스템	O
+점검	O
+중입니다.	O
+(80)	O
+
+비밀유지서약서에	B-CONTRACT_TYPE
+관 한	O
+내용.	O
+
+Please	O
+provid e	O
+57건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+참고하?기	O
+바랍니다.	O
+(32)	O
+
+H.P:	O
+010-9420-8776	B-PHONE
+
+이것은	O
+POSITION	O
+예시인	O
+책임?니다.	B-POSITION
+
+다음	O
+URL을	O
+확인하세요:	O
+htt p://www.강라7.com	B-URL
+
+안녕하세요,	O
+반갑습니다.	O
+
+참고하시기	O
+바랍니다.	O
+(31)	O
+
+회의는	O
+2시 에	O
+시작합니다.	O
+
+TITLE:	O
+김라	B-TITLE
+관 련	I-TITLE
+합의서	I-TITLE
+
+작업이	O
+완료되었습니다.	O
+
+로그인이	O
+필요 합니다.	O
+
+첨부파일을	O
+확인하세요.	O
+( 22)	O
+
+이것은	O
+QUANTITY	O
+예시인	O
+76건입?다.	B-QUANTITY
+
+시스템	O
+점검	O
+중?니다.	O
+(45)	O
+
+이것은	O
+PERIOD	O
+예시인	O
+6개월입니다.	B-PERIOD
+
+?늘	O
+날씨가	O
+참	O
+좋네요.	O
+(33)	O
+
+Check	O
+PERIOD:	O
+9개월	B-PERIOD
+
+법인명:	O
+주식회 사	B-COMPANY
+강민	I-COMPANY
+
+오류가	O
+발생했습니다.	O
+(83)	O
+
+거주지:	O
+서울시	B-ADDRESS
+강 남구	I-ADDRESS
+?준사로	I-ADDRESS
+9?	I-ADDRESS
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+O11	I-PROJECT_NAME
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+이파마,	I-COMPANY
+Pa rty	O
+B:	O
+전다,	B-NAME
+Date:	O
+2022년	B-DATE
+11월	I-DATE
+5일	I-DATE
+
+H. P:	O
+010-1809-8168	B-PHONE
+
+?부파일을	O
+확인하세 요.	O
+(21)	O
+
+주식회사	B-COMPANY
+서 사	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+김규로	I-ADDRESS
+4?	I-ADDRESS
+
+감사합니다.	O
+(14)	O
+
+Plea se	O
+provide	O
+어문저작물	B-TYPE
+for	O
+TY PE.	O
+
+상세	O
+QUANTITY	O
+정보:	O
+5건	B-QUANTITY
+
+감사합니다.	O
+
+식사는	O
+하셨나요?	O
+(?0)	O
+
+작업이	O
+완료되었습니다.	O
+
+비밀번호를	O
+?경해	O
+주세요.	O
+
+금액:	O
+539만원	B-MONEY
+
+이나	B-NAME
+signed	O
+he re.	O
+
+Please	O
+provide	O
+61건	B-QUANTITY
+for	O
+QU?NTITY.	O
+
+금액:	O
+783만원	B-MONEY
+
+Please	O
+provide	O
+1?	B-QUANTITY
+for	O
+QUANTITY.	O
+
+감사합니다.	O
+
+이	O
+내용은	O
+중요합니다.	O
+
+Check	O
+TY PE:	O
+어문저작물	B-TYPE
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+W42	I-PROJECT_NAME
+
+첨부파일을	O
+확인하?요.	O
+
+확인	O
+부 탁드립니다.	O
+(54)	O
+
+대표에	B-POSITION
+관한	O
+내용.	O
+
+H.P:	O
+010-1516-1577	B-PHONE
+
+이	O
+내용은	O
+중요합니다.	O
+(9 3)	O
+
+안녕하세요,	O
+반갑습 니다.	O
+(47)	O
+
+TYPE:	O
+소프트웨어	B-TYPE
+
+Missing	O
+TYPE:	O
+사진저작물	B-TYPE
+
+감사합니다.	O
+(84)	O
+
+문의사항이	O
+있으시면	O
+연락주세요?	O
+
+이	O
+내용은	O
+중요합니다.	O
+(44)	O
+
+금액:	O
+997만원	B-MONEY
+
+강카	B-NAME
+-	O
+부 장	B-POSITION
+
+이	O
+내 용은	O
+중요합 니다.	O
+
+ID:	O
+020101-2******	B-ID_NUM
+
+Pleas e	O
+provide	O
+28건	B-QUANTITY
+fo?	O
+QUANTITY.	O
+
+회원가입?	O
+환영합니다.	O
+(34)	O
+
+상세	O
+QUANTITY	O
+정보:	O
+65건	B-QUANTITY
+
+오류가	O
+발생했습니다.	O
+
+다음	O
+URL을	O
+확인하세요:	O
+http: //www.류민30.com	B-URL
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+다음	O
+URL을	O
+확인하 세요:	O
+http://www.류파자35.com	B-URL
+
+비상연락망:	O
+010-8783-5647	B-PHONE
+
+비밀번호를	O
+변경해	O
+주 세요.	O
+
+갑:	O
+주?회사	B-COMPANY
+신차하,	I-COMPANY
+을:	O
+조건카,	B-NAME
+계약일:	O
+2022년	B-DATE
+1월	I-DATE
+22일	I-DATE
+
+회원가입을	O
+환영합?다.	O
+
+참고하시기	O
+바랍니?.	O
+
+로그인이	O
+필요합니다.	O
+(74)	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(38)	O
+
+비상연락망:	O
+010-5111-1071	B-PHONE
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+정다자,	I-COMPANY
+Party	O
+B:	O
+?성,	B-NAME
+Date:	O
+2?23년	B-DATE
+8?	I-DATE
+10일	I-DATE
+
+Pleas e	O
+provide	O
+양도계약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYPE.	O
+
+체결일자:	O
+2023년	B-DATE
+9월	I-DATE
+?7일	I-DATE
+
+회의는	O
+2시에	O
+시작합니다.	O
+(38)	O
+
+오류가	O
+발생했습니다.	O
+(14)	O
+
+회원가입을	O
+환영합니다.	O
+
+?사	B-NAME
+-	O
+이사	B-POSITION
+
+비밀번호를	O
+변 경해	O
+주 세요.	O
+
+Please	O
+provide	O
+40건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+이것은	O
+PE RIOD	O
+예시인	O
+2개월입니다.	B-PERIOD
+
+Party	O
+A?	O
+주식?사	B-COMPANY
+서라,	I-COMPANY
+Par ty	O
+?:	O
+서바,	B-NAME
+Date:	O
+20 21년	B-DATE
+11월	I-DATE
+14일	I-DATE
+
+회원가입을	O
+환영합니다.	O
+
+확인	O
+부탁드립 니다.	O
+(29)	O
+
+시스템	O
+점검	O
+중입니다.	O
+(49)	O
+
+Please	O
+provide	O
+49건	B-QUANTITY
+for	O
+QUANTIT?.	O
+
+작성자:	O
+오하	B-NAME
+
+안바마	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+?남구	I-ADDRESS
+박하가로	I-ADDRESS
+51.	I-ADDRESS
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+이것은	O
+QUANTITY	O
+예?인	O
+49건입니다.	B-QUANTITY
+
+이	O
+내용은	O
+중요합니다.	O
+
+첨부파일을	O
+확인하세요.	O
+?50)	O
+
+Va?ue	O
+o f	O
+PROJECT_N?ME	O
+i?	O
+프로젝트	B-PROJECT_NAME
+N55	I-PROJECT_NAME
+
+감사합니다.	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+수주?:	O
+주식회사	B-COMPANY
+강현아	I-COMPANY
+
+비상연락망:	O
+0 10-6128-9996	B-PHONE
+
+다음	O
+?RL을	O
+확인하세요 :	O
+http://www.서우하45.com	B-URL
+
+식사는	O
+하셨나요?	O
+
+메?:	O
+user937@example.com	B-EMAIL
+
+수고하셨습니다.	O
+(2)	O
+
+참고하시기	O
+바랍니다.	O
+
+식사는	O
+하?나요?	O
+
+주민번호:	O
+850101-1******	B-ID_NUM
+
+갑:	O
+주식회사	B-COMPANY
+황현사,	I-COMPANY
+을:	O
+이하,	B-NAME
+계약일:	O
+2020년	B-DATE
+?월	I-DATE
+16일	I-DATE
+
+문의사항이	O
+있으?면	O
+연락주세요.	O
+(96)	O
+
+TITLE:	O
+송 타	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+거주?:	O
+?울시	B-ADDRESS
+강남구	I-ADDRESS
+정준로	I-ADDRESS
+97	I-ADDRESS
+
+시스템	O
+점검	O
+중입니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(32?	O
+
+이	O
+내용은	O
+중요합니다.	O
+
+94 건에	B-QUANTITY
+관한	O
+내용.	O
+
+식사 는	O
+하셨나요?	O
+
+오류가	O
+발생했 습니다.	O
+
+참고하시기	O
+바랍니다.	O
+(42)	O
+
+참고하시기	O
+바랍니다.	O
+(5)	O
+
+주민번호:	O
+710101-2******	B-ID_NUM
+
+ID:	O
+690101-3******	B-ID_NUM
+
+다음	O
+URL을	O
+확인하세요 :	O
+http://www.박현92.com	B-URL
+
+이것은	O
+PER?OD	O
+?시인	O
+10개월입니다.	B-PERIOD
+
+TYPE:	O
+영상저작물	B-TYPE
+
+Pa rty	O
+A:	O
+주식회사	B-COMPANY
+임건건,	I-COMPANY
+Party	O
+?:	O
+김다?,	B-NAME
+Da te:	O
+2023년	B-DATE
+6월	I-DATE
+2일	I-DATE
+
+로그인이	O
+필요합니다.	O
+(37)	O
+
+회원?입을	O
+환영합니다.	O
+(78)	O
+
+다 음	O
+U RL을	O
+확인하세요:	O
+http://www.장우준73.com	B-URL
+
+안차	B-NAME
+signed	O
+here.	O
+
+Missing	O
+TYPE:	O
+영상저작물	B-TYPE
+
+신우	B-NAME
+-	O
+책 임	B-POSITION
+
+?가	B-NAME
+-	O
+부 장	B-POSITION
+
+시스템	O
+점검	O
+중입니다.	O
+(7)	O
+
+회원가입을	O
+환영합니다.	O
+
+잠시	O
+후	O
+다시	O
+시도 해	O
+주세요.	O
+( 15)	O
+
+법인명:	O
+주 식회사	B-COMPANY
+강?현	I-COMPANY
+
+주식회사	B-COMPANY
+서카	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강 남구	I-ADDRESS
+강우건로	I-ADDRESS
+8 8	I-ADDRESS
+
+문서를	O
+검토해	O
+주세요.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+다음에	O
+뵙겠습니다.	O
+(89)	O
+
+회의는	O
+2시에	O
+시작합 니다.	O
+(96)	O
+
+문서를	O
+검토해	O
+주세?.	O
+
+오 늘	O
+날씨가	O
+참	O
+?네요.	O
+
+Value	O
+of	O
+PROJECT_NAM E	O
+?s	O
+프로젝트	B-PROJECT_NAME
+G99	I-PROJECT_NAME
+
+입력된	O
+QUANTITY	O
+값은	O
+30?	B-QUANTITY
+입니다.	O
+
+안하규	B-NAME
+signed	O
+here.	O
+
+TY PE:	O
+어문저작 물	B-TYPE
+
+작업이	O
+완료되었습니다.	O
+(95)	O
+
+확인	O
+부탁드립니다.	O
+(8)	O
+
+식사는	O
+하셨나요?	O
+(96)	O
+
+주식회사	B-COMPANY
+이카	I-COMPANY
+-	O
+?울시	B-ADDRESS
+강남구	I-ADDRESS
+장파로	I-ADDRESS
+1	I-ADDRESS
+
+작업이	O
+완료되었습니다.	O
+
+다음에	O
+뵙겠습니다.	O
+
+Please	O
+provide	O
+개발 팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+Value	O
+?f	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+P27	I-PROJECT_NAME
+
+회원가입을	O
+환영합니다.	O
+
+금액:	O
+750만원	B-MONEY
+
+회원 가입을	O
+환영합니다.	O
+(90)	O
+
+로그인이	O
+필요합니다.	O
+
+식사는	O
+하셨나요?	O
+
+CC:	O
+user5@example.com	B-EMAIL
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.장차13.com	B-URL
+
+감사합니다.	O
+(71)	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(70)	O
+
+갑 :	O
+주식회?	B-COMPANY
+?하,	I-COMPANY
+을:	O
+정나,	B-NAME
+계약일:	O
+2020년	B-DATE
+8월	I-DATE
+5일	I-DATE
+
+?고하시기	O
+바랍니다.	O
+(57)	O
+
+문의사항이	O
+있으 시면	O
+연락주세요.	O
+(1 9)	O
+
+작업이	O
+완료되었습니다?	O
+(4 1)	O
+
+한파 자	B-NAME
+(010-2647-8119)	B-PHONE
+
+다음	O
+URL을	O
+확인하?요:	O
+http://www.임성87.com	B-URL
+
+이것은	O
+QUANTIT Y	O
+예시인	O
+40건입니다.	B-QUANTITY
+
+수고하셨습니다.	O
+(2?)	O
+
+상세	O
+QUANTITY	O
+정보:	O
+49건	B-QUANTITY
+
+71건에	B-QUANTITY
+관한	O
+내용.	O
+
+CC:	O
+user874@exa?ple.com	B-EMAIL
+
+신 분증	O
+번호:	O
+480101-4******	B-ID_NUM
+
+비상연락망:	O
+010-7526-8567	B-PHONE
+
+로그인이	O
+필요합니다.	O
+(99 )	O
+
+금액:	O
+94 5만원	B-MONEY
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.이자15.com	B-URL
+
+수고하셨 습니다.	O
+
+첨부파일을	O
+확인하세요.	O
+
+갑:	O
+주식회사	B-COMPANY
+윤규타,	I-COMPANY
+을 :	O
+오건바,	B-NAME
+계약일:	O
+2025년	B-DATE
+10월	I-DATE
+8일	I-DATE
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+I93	I-PROJECT_NAME
+
+Missing	O
+PROJECT_NAME:	O
+프로 젝트	B-PROJECT_NAME
+P57	I-PROJECT_NAME
+
+P hone	O
+Number:	O
+010-7809-1142	B-PHONE
+
+업체명:	O
+주식회사	B-COMPANY
+서사	I-COMPANY
+
+Missing	O
+PROJECT_NAME:	O
+프로젝 트	B-PROJECT_NAME
+P41	I-PROJECT_NAME
+
+확인	O
+부탁드립니다.	O
+
+2021년	B-DATE
+3월	I-DATE
+1일	I-DATE
+현재	O
+
+잠 시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+참고하시기	O
+바랍니다.	O
+(16)	O
+
+수고하셨?니다.	O
+(91)	O
+
+로그인이	O
+필요합니다.	O
+
+강민	B-NAME
+lives	O
+in	O
+서?시	B-ADDRESS
+강남구	I-ADDRESS
+송건?	I-ADDRESS
+21.	I-ADDRESS
+
+회의는	O
+2시에	O
+시작합니다.	O
+(32)	O
+
+수고하 셨습니다.	O
+(94)	O
+
+이것은	O
+QUANT?TY	O
+예시인	O
+16건입니다.	B-QUANTITY
+
+오류 가	O
+발생했습니다.	O
+
+문의사 항이	O
+있으시면	O
+연락주 세요.	O
+?91)	O
+
+문서를	O
+검토 해	O
+주세요.	O
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+류마,	I-COMPANY
+Party	O
+B :	O
+윤가,	B-NAME
+Date:	O
+2025년	B-DATE
+8?	I-DATE
+17일	I-DATE
+
+?사합니다.	O
+(98)	O
+
+입력된	O
+QUANTI TY	O
+값은	O
+41건	B-QUANTITY
+입니다.	O
+
+이	O
+내용은	O
+중요합니다.	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+안녕하세요,	O
+반갑습니?.	O
+(6 2)	O
+
+문의사항 이	O
+있 으시면	O
+연락주세요.	O
+
+이	O
+내용은	O
+중요합니다?	O
+(68)	O
+
+상?	O
+QUANTITY	O
+정 보:	O
+91건	B-QUANTITY
+
+감사합?다.	O
+(48)	O
+
+CC:	O
+user801@example.com	B-EMAIL
+
+비상연락망:	O
+010-7118-348 5	B-PHONE
+
+안녕하세요,	O
+반갑습니다.	O
+
+작업이	O
+완료되었습니다.	O
+
+상세	O
+QUANTITY	O
+정보:	O
+57 건	B-QUANTITY
+
+수고하셨습니다.	O
+(74)	O
+
+이것은	O
+PERIOD	O
+예시인	O
+3개월입니다.	B-PERIOD
+
+감사합니다.	O
+
+회원가입을	O
+환영합니다.	O
+(?7)	O
+
+상세	O
+QUANTITY	O
+정보 :	O
+4?건	B-QUANTITY
+
+입력?	O
+Q?ANTITY	O
+값은	O
+13건	B-QUANTITY
+입니다.	O
+
+다음에	O
+뵙겠습니다.	O
+(80)	O
+
+2023년	B-DATE
+11 월	I-DATE
+12일	I-DATE
+현재	O
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+오민,	I-COMPANY
+Party	O
+B:	O
+류라,	B-NAME
+Date:	O
+2025년	B-DATE
+9월	I-DATE
+8일	I-DATE
+
+서 나	B-NAME
+(010-9534-8 696)	B-PHONE
+
+식사는	O
+하셨나요?	O
+(3)	O
+
+ID:	O
+490101-4******	B-ID_NUM
+
+식사는	O
+하셨나요?	O
+
+CC:	O
+user509@example.com	B-EMAIL
+
+문서를	O
+검토?	O
+주세요.	O
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+Z100	I-PROJECT_NAME
+
+식사는	O
+하셨나요?	O
+
+Value	O
+of	O
+CONTRACT_TYPE	O
+is	O
+근로계약서	B-CONTRACT_TYPE
+
+입력된	O
+QUANTITY	O
+값은	O
+57건	B-QUANTITY
+입니다.	O
+
+Check	O
+PERIOD:	O
+12개월	B-PERIOD
+
+이것은	O
+POSITION	O
+예시인	O
+부장입니다.	B-POSITION
+
+신분증	O
+번 호:	O
+380101-3******	B-ID_NUM
+
+Reach	O
+?e	O
+?t	O
+010-6796-7693	B-PHONE
+
+회원가입을	O
+환?합니다.	O
+(3 1)	O
+
+수고하셨?니다.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+첨부파일을	O
+확인하세요.	O
+
+Please	O
+provide	O
+76건	B-QUANTITY
+fo r	O
+?UANTITY.	O
+
+비밀번호를	O
+?경해	O
+주세요.	O
+
+Please	O
+prov?de	O
+기획 팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+황 하준	B-NAME
+-	O
+책임	B-POSITION
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+권민마,	I-COMPANY
+Party	O
+B :	O
+송사,	B-NAME
+Date:	O
+2021년	B-DATE
+5?	I-DATE
+7일	I-DATE
+
+이	O
+내용은	O
+중요합니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세?.	O
+
+본점:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+전 우로	I-ADDRESS
+41	I-ADDRESS
+
+주식회사	B-COMPANY
+황현규	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+류아로	I-ADDRESS
+13	I-ADDRESS
+
+Missing	O
+TYPE:	O
+소프트웨어	B-TYPE
+
+입력된	O
+QUANTITY	O
+값은	O
+100건	B-QUANTITY
+입니다 .	O
+
+사업장	O
+소재 지:	O
+서울시	B-ADDRESS
+강남?	I-ADDRESS
+황라우로	I-ADDRESS
+35	I-ADDRESS
+
+잠시	O
+후	O
+다 시	O
+?도해	O
+주세요.	O
+
+잠시	O
+후	O
+다?	O
+시도해	O
+주세요.	O
+(?6)	O
+
+66건에	B-QUANTITY
+관한	O
+내용.	O
+
+회의 는	O
+2시에	O
+시작합니다.	O
+
+식사는	O
+하셨나요?	O
+
+Value	O
+o f	O
+?ROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+F?1	I-PROJECT_NAME
+
+비상연락망:	O
+010-5169-7937	B-PHONE
+
+주민번?:	O
+2?0101-1******	B-ID_NUM
+
+문의사항이	O
+있?시면	O
+연락주세요.	O
+
+감사합 니다.	O
+(6 0)	O
+
+확인	O
+부탁드립니다.	O
+
+감사합니다.	O
+(8?)	O
+
+비용:	O
+464만원	B-MONEY
+
+강현준	B-NAME
+-	O
+부장	B-POSITION
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+조현 ,	I-COMPANY
+Party	O
+B :	O
+정다,	B-NAME
+Date:	O
+20 23년	B-DATE
+7월	I-DATE
+17일	I-DATE
+
+수고하셨습니다.	O
+
+TITLE:	O
+신바	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+식사는	O
+하셨나요?	O
+(94)	O
+
+다?	O
+URL을	O
+확인하세요:	O
+http://www.전?88.com	B-URL
+
+감사합니다.	O
+(76)	O
+
+감사합니다.	O
+(3)	O
+
+회원가입을	O
+환영?니다.	O
+
+문서를	O
+검 토해	O
+주세요?	O
+
+신 분증	O
+번호:	O
+290101-2******	B-ID_NUM
+
+로그인이	O
+필요합니다.	O
+(3 8)	O
+
+김다	B-NAME
+-	O
+팀장	B-POSITION
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(49)	O
+
+?식회사	B-COMPANY
+강자타	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+안타로	I-ADDRESS
+94	I-ADDRESS
+
+주식회사	B-COMPANY
+박다	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+?하로	I-ADDRESS
+39	I-ADDRESS
+
+갑:	O
+주식회사	B-COMPANY
+류 가,	I-COMPANY
+을 :	O
+?바,	B-NAME
+계약일:	O
+2022년	B-DATE
+6월	I-DATE
+1?	I-DATE
+
+상세	O
+LANGUAG?	O
+정보:	O
+일본어	B-LANGUAGE
+
+문의사항?	O
+있으시 면	O
+연락주세요.	O
+(1?)	O
+
+비밀번호 를	O
+변경해	O
+주세요.	O
+
+ID:	O
+120101-4******	B-ID_NUM
+
+감사합니다.	O
+
+주식회사	B-COMPANY
+최하우	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+조 준성로	I-ADDRESS
+70	I-ADDRESS
+
+참고하시기	O
+바랍니다.	O
+(38)	O
+
+Phone	O
+?umber:	O
+010-7493-4644	B-PHONE
+
+업체명:	O
+주식회사	B-COMPANY
+최 나아	I-COMPANY
+
+회원가입을	O
+환영합니다.	O
+(59)	O
+
+P?ease	O
+provide	O
+?9건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+비밀번호 를	O
+변경해	O
+주세요.	O
+
+이것은	O
+QUANTI TY	O
+예시인	O
+57건입니다.	B-QUANTITY
+
+첨부파일을	O
+확인하세요.	O
+
+오류가	O
+발생했습니다.	O
+(20)	O
+
+CC:	O
+use?803@example.com	B-EMAIL
+
+황건	B-NAME
+-	O
+책 임	B-POSITION
+
+회원가입을	O
+환영합니다.	O
+(33)	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(99)	O
+
+법인명:	O
+주식회사	B-COMPANY
+장아	I-COMPANY
+
+참고하시기	O
+바랍니다.	O
+(44)	O
+
+다음에	O
+뵙겠습니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(89)	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+이것은	O
+QUANTITY	O
+예 시인	O
+35건입니다.	B-QUANTITY
+
+이	O
+내용은	O
+중요합니다.	O
+(87)	O
+
+다 음	O
+URL을	O
+확인하세요:	O
+http://www.전하47.com	B-URL
+
+TITLE:	O
+권?	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+황가준	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+한바하로	I-ADDRESS
+8.	I-ADDRESS
+
+비밀번호를	O
+변경?	O
+주세요.	O
+(8 4)	O
+
+거주지?	O
+서?시	B-ADDRESS
+?남구	I-ADDRESS
+조준로	I-ADDRESS
+88	I-ADDRESS
+
+Please	O
+provide	O
+85건	B-QUANTITY
+for	O
+Q UANTITY.	O
+
+?녕하세요,	O
+반갑습니다.	O
+
+신?증	O
+번호:	O
+690101-3******	B-ID_NUM
+
+회원가입을	O
+환영합니다.	O
+(8 )	O
+
+Pleas?	O
+provid e	O
+39건	B-QUANTITY
+for	O
+QUANT ITY.	O
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+?52	I-PROJECT_NAME
+
+갑:	O
+주식회사	B-COMPANY
+강우나,	I-COMPANY
+을:	O
+한하,	B-NAME
+계약일:	O
+2022년	B-DATE
+5월	I-DATE
+25일	I-DATE
+
+잠시	O
+후	O
+다?	O
+시도해	O
+주세요.	O
+(4)	O
+
+신분증	O
+번호:	O
+550101-1******	B-ID_NUM
+
+시스템	O
+점검	O
+중입니다.	O
+(7 8)	O
+
+참고하시기	O
+바랍니다.	O
+
+로그인이	O
+필요합니다.	O
+
+?인명:	O
+주식회사	B-COMPANY
+임자	I-COMPANY
+
+첨부파일을	O
+?인하세요.	O
+
+입력된	O
+QUANTITY	O
+값은	O
+16건	B-QUANTITY
+입니 다.	O
+
+Chec?	O
+PERIOD:	O
+10개월	B-PERIOD
+
+본점:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+신가다로	I-ADDRESS
+93	I-ADDRESS
+
+작업이	O
+완료되었습니다.	O
+(49)	O
+
+식사는	O
+하셨나요?	O
+(45)	O
+
+이	O
+내용 은	O
+중요합니다.	O
+
+오?	O
+날씨가	O
+참	O
+좋네요.	O
+(15)	O
+
+Reach	O
+me	O
+at	O
+010-6845-6942	B-PHONE
+
+주민번호:	O
+090101-2******	B-ID_NUM
+
+회원가입을	O
+환영합니다.	O
+(73)	O
+
+감사합니다.	O
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.한현99.com	B-URL
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+황차,	I-COMPANY
+Pa rty	O
+B:	O
+김가자,	B-NAME
+Date :	O
+2025년	B-DATE
+11월	I-DATE
+16일	I-DATE
+
+ID :	O
+800101-?******	B-ID_NUM
+
+?인	O
+부탁드립니다.	O
+(84)	O
+
+참고하시기	O
+바 랍니다.	O
+
+다음에	O
+뵙겠습니다.	O
+
+?의는	O
+2시에	O
+시작합니다.	O
+(73)	O
+
+문?사항이	O
+?으시면	O
+연락주세요.	O
+(95)	O
+
+작업이	O
+완료되었습니다.	O
+
+식사 는	O
+하셨나요?	O
+
+TI?LE:	O
+신파자	B-TITLE
+관련	I-TITLE
+합 의서	I-TITLE
+
+TITLE:	O
+권마	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+안녕하세 요,	O
+반갑습니다.	O
+
+수고하셨습니다.	O
+(28)	O
+
+최민	B-NAME
+si gned	O
+he?e.	O
+
+Please	O
+provide	O
+20건	B-QUANTITY
+f or	O
+QUANTITY.	O
+
+식 사는	O
+하셨나요?	O
+
+?음에	O
+뵙겠습니다.	O
+
+주식회사	B-COMPANY
+이파	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+조 차규로	I-ADDRESS
+38	I-ADDRESS
+
+문서를	O
+검토해	O
+주세요.	O
+
+입력된	O
+QUANTITY	O
+값은	O
+7?건	B-QUANTITY
+입니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(27)	O
+
+비용:	O
+444만원	B-MONEY
+
+회의 는	O
+2?에	O
+시작합니다.	O
+
+신하	B-NAME
+signed	O
+here.	O
+
+문의:	O
+010-3851-9530	B-PHONE
+
+이	O
+내?은	O
+중요합니다.	O
+(99)	O
+
+이것은	O
+QUANTITY	O
+예시?	O
+43건입니다.	B-QUANTITY
+
+참고하시기	O
+바랍니다.	O
+
+작업 이	O
+완료?었습니다.	O
+(42 )	O
+
+입력된	O
+QUANTITY	O
+값 은	O
+70건	B-QUANTITY
+입니다.	O
+
+주민번호:	O
+020101-1******	B-ID_NUM
+
+다음에	O
+뵙겠습니다.	O
+(8)	O
+
+참고하시기	O
+바랍니다.	O
+(35)	O
+
+?인	O
+부탁드립니다.	O
+
+첨부파일을	O
+확인하세요.	O
+
+Please	O
+?rovide	O
+근로계약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYPE.	O
+
+참고하시기	O
+바랍니다.	O
+(10 )	O
+
+비용:	O
+31만원	B-MONEY
+
+금액:	O
+5?9만원	B-MONEY
+
+?고하시기	O
+바랍니다.	O
+
+첨?파일을	O
+확인하세요.	O
+(17)	O
+
+로그인이	O
+필요합니다.	O
+
+오류가	O
+발생했습니다.	O
+
+다음	O
+U RL을	O
+확인하세요:	O
+http://www.안자다67.com	B-URL
+
+회의는	O
+2시에	O
+시작합니다.	O
+(77)	O
+
+비상연?망:	O
+010-9697-8868	B-PHONE
+
+CC:	O
+user251@example.com	B-EMAIL
+
+Check	O
+TYPE :	O
+사진저작물	B-TYPE
+
+안녕하세요,	O
+반갑습니다.	O
+
+회원가 입을	O
+환영합니다.	O
+
+회원가입을	O
+환영합니다.	O
+
+오 늘	O
+날?가	O
+참	O
+좋?요.	O
+(59)	O
+
+Please	O
+provide	O
+8 0건	B-QUANTITY
+?or	O
+QUANTITY.	O
+
+로그?이	O
+필요합니 다.	O
+(60)	O
+
+36건에	B-QUANTITY
+관 한	O
+내용.	O
+
+법인명:	O
+주식회사	B-COMPANY
+전마 파	I-COMPANY
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+장바,	I-COMPANY
+Party	O
+B:	O
+한다하,	B-NAME
+Date:	O
+2022년	B-DATE
+3월	I-DATE
+2?일	I-DATE
+
+Value	O
+?f	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+A22	I-PROJECT_NAME
+
+문의:	O
+010-7166-3845	B-PHONE
+
+윤성	B-NAME
+signe?	O
+he?e.	O
+
+시스템	O
+점검	O
+중입니다.	O
+(52)	O
+
+시스템	O
+점검	O
+중입니다.	O
+(26)	O
+
+입력된	O
+QU?NTITY	O
+값?	O
+84건	B-QUANTITY
+입니다.	O
+
+잠시	O
+후	O
+다?	O
+시도해	O
+주세요.	O
+
+오류?	O
+발생했습니다?	O
+
+참고하시기	O
+바랍니다.	O
+(1?)	O
+
+고객센터:	O
+010-3358-8168	B-PHONE
+
+수주처:	O
+주식회사	B-COMPANY
+김라	I-COMPANY
+
+수고하셨습니다.	O
+(68 )	O
+
+Value	O
+o f	O
+PROJECT_N AME	O
+is	O
+프로젝트	B-PROJECT_NAME
+Y12	I-PROJECT_NAME
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(64)	O
+
+문의:	O
+010-7534-3925	B-PHONE
+
+고객센터:	O
+010-3656-9192	B-PHONE
+
+로그인이	O
+필요합니다.	O
+
+오늘	O
+날씨 가	O
+참	O
+좋네요.	O
+(48)	O
+
+법?명:	O
+주식회사	B-COMPANY
+김타	I-COMPANY
+
+회원가입을	O
+환영합니다 .	O
+
+상세	O
+QUANTIT Y	O
+정?:	O
+31건	B-QUANTITY
+
+?부파일을	O
+확인하세요.	O
+
+본점:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+최하 로	I-ADDRESS
+26	I-ADDRESS
+
+회의는	O
+2?에	O
+시작합니다.	O
+(76)	O
+
+참고하시기	O
+바랍니다.	O
+
+이 사성	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+송차로	I-ADDRESS
+29.	I-ADDRESS
+
+거주지:	O
+서울시	B-ADDRESS
+강 남구	I-ADDRESS
+황하로	I-ADDRESS
+23	I-ADDRESS
+
+로그인이	O
+필요합니다.	O
+
+Please	O
+pro vide	O
+2건	B-QUANTITY
+f?r	O
+QUANT?TY.	O
+
+조 하	B-NAME
+-	O
+팀장	B-POSITION
+
+?시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+Please	O
+p?ovide	O
+98건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+다음에	O
+뵙겠습니다.	O
+(32)	O
+
+수고하셨습니다.	O
+
+오류가	O
+발생했습니다.	O
+(24)	O
+
+이	O
+내용은	O
+중요합니다.	O
+(99)	O
+
+식사는	O
+하셨나요?	O
+
+문의사항이	O
+있으시 면	O
+연락주세요.	O
+
+비밀번호를	O
+변경해	O
+주세요 .	O
+
+고객센터:	O
+010-1939-1690	B-PHONE
+
+TITLE:	O
+윤차	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+문서를	O
+검토 해	O
+주세요.	O
+(76)	O
+
+이것은	O
+QUANTITY	O
+예시 인	O
+72건입니다.	B-QUANTITY
+
+참고하시기	O
+바랍니다.	O
+
+작성자:	O
+최?	B-NAME
+
+상세	O
+QUANTITY	O
+정보:	O
+6건	B-QUANTITY
+
+이	O
+내 용은	O
+중요합니다.	O
+(24)	O
+
+회원가입을	O
+환영합니다.	O
+
+수고하셨습니다.	O
+
+Phone	O
+Number:	O
+010-8619-4583	B-PHONE
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+Y5?	I-PROJECT_NAME
+
+이것은	O
+QUANTITY	O
+예 시인	O
+77건입니다.	B-QUANTITY
+
+TITLE:	O
+황차	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+오 늘	O
+날씨가	O
+참	O
+좋네요 .	O
+(85)	O
+
+갑:	O
+주식회?	B-COMPANY
+류민,	I-COMPANY
+을:	O
+김 자,	B-NAME
+계약일:	O
+2021년	B-DATE
+3월	I-DATE
+5일	I-DATE
+
+메일:	O
+user500@example.com	B-EMAIL
+
+법인명:	O
+주식회 사	B-COMPANY
+임카	I-COMPANY
+
+CC?	O
+user21@example.com	B-EMAIL
+
+오류가	O
+발생했습니다 .	O
+(26)	O
+
+작업이	O
+완료되었습니다.	O
+
+갑:	O
+주식회사	B-COMPANY
+장민,	I-COMPANY
+을:	O
+박나,	B-NAME
+계약일:	O
+2024년	B-DATE
+4월	I-DATE
+12일	I-DATE
+
+다음	O
+URL을	O
+확인하세요:	O
+http://w?w.류라카75.com	B-URL
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(83)	O
+
+작업이	O
+완료되었습니다.	O
+(27?	O
+
+다음에	O
+뵙겠습니다.	O
+(19)	O
+
+감사합니다.	O
+(95)	O
+
+작업 이	O
+완료되었습니다.	O
+(12)	O
+
+다 음	O
+CON?ENT_TYPE을	O
+확인하세요:	O
+제3 자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+본점:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+?사로	I-ADDRESS
+2	I-ADDRESS
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+N16	I-PROJECT_NAME
+
+Phone	O
+Number:	O
+010-1314-89?4	B-PHONE
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+시 스템	O
+점 검	O
+중입니다.	O
+(68)	O
+
+식 사는	O
+하셨나요?	O
+(19)	O
+
+식사는	O
+하셨나요?	O
+?75)	O
+
+최규	B-NAME
+(010-4533-6525)	B-PHONE
+
+거주지:	O
+서?시	B-ADDRESS
+강남구	I-ADDRESS
+이바로	I-ADDRESS
+?4	I-ADDRESS
+
+주식회사	B-COMPANY
+오차	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+오가로	I-ADDRESS
+4?	I-ADDRESS
+
+사업장	O
+소재지:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+황?로	I-ADDRESS
+18	I-ADDRESS
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+다음에	O
+뵙겠습니다.	O
+
+오늘	O
+날씨가	O
+참	O
+?네요.	O
+
+오류가	O
+발생했습니다.	O
+(79)	O
+
+첨부파일을	O
+확인하세요.	O
+
+시스템	O
+점검	O
+중입니다.	O
+(8?)	O
+
+메일:	O
+user472@example.com	B-EMAIL
+
+식사는	O
+하셨나요?	O
+
+작 업이	O
+완료되었습니다.	O
+(34)	O
+
+첨부파일을	O
+확인하세요.	O
+(76)	O
+
+참고하시기	O
+바랍니다.	O
+(41)	O
+
+회의는	O
+2시에	O
+시작합?다.	O
+
+비용:	O
+145만원	B-MONEY
+
+작성?:	O
+2024년	B-DATE
+2?	I-DATE
+6일	I-DATE
+
+안녕하세요,	O
+반갑습니다.	O
+(37?	O
+
+참고하시기	O
+바랍니다.	O
+
+6건에	B-QUANTITY
+관 한	O
+내용.	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(5?)	O
+
+시 스템	O
+점검	O
+중입니다.	O
+
+다음에	O
+뵙겠습니다.	O
+(61)	O
+
+TITLE:	O
+임카	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+Va?ue	O
+o f	O
+POSITION	O
+is	O
+사원	B-POSITION
+
+M issing	O
+PROJEC?_NAME:	O
+프로젝트	B-PROJECT_NAME
+C63	I-PROJECT_NAME
+
+CC:	O
+user252@example.com	B-EMAIL
+
+식사는	O
+하셨나요?	O
+(4 )	O
+
+비상연락망:	O
+010-9398?5514	B-PHONE
+
+한파카	B-NAME
+(010-8482-5097)	B-PHONE
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+안녕하세요,	O
+반갑 습니다.	O
+
+Miss ing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+R8	I-PROJECT_NAME
+
+오류가	O
+발생했습니다.	O
+
+?2건에	B-QUANTITY
+관한	O
+내용.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요 .	O
+(42)	O
+
+?음에	O
+?겠습니다.	O
+
+시스템	O
+점검	O
+중입니다 .	O
+
+P arty	O
+A?	O
+주식회사	B-COMPANY
+이현,	I-COMPANY
+Party	O
+B:	O
+전마,	B-NAME
+Da te:	O
+2?21년	B-DATE
+2 월	I-DATE
+4일	I-DATE
+
+안녕하세요,	O
+반갑습니다.	O
+(54)	O
+
+상세	O
+LANGUAGE	O
+정보:	O
+영어	B-LANGUAGE
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+임카,	I-COMPANY
+Party	O
+B:	O
+윤나파,	B-NAME
+Date:	O
+202?년	B-DATE
+10월	I-DATE
+2일	I-DATE
+
+ID?	O
+890101-1******	B-ID_NUM
+
+시스템	O
+점검	O
+중입 니다.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요?	O
+
+Phone	O
+Number :	O
+010-7406-3905	B-PHONE
+
+본점:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+안민로	I-ADDRESS
+?1	I-ADDRESS
+
+회원가입을	O
+환영합니다.	O
+( 97)	O
+
+문서를	O
+검?해	O
+주세요.	O
+
+Please	O
+provide	O
+42건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+작업이	O
+완료되었습니다.	O
+(91)	O
+
+시스템	O
+점검	O
+중입니다.	O
+
+신분증	O
+번호:	O
+230101-3******	B-ID_NUM
+
+Re?ch	O
+m e	O
+at	O
+010 -9264-4985	B-PHONE
+
+정준마	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+강남 구	I-ADDRESS
+윤사로	I-ADDRESS
+94.	I-ADDRESS
+
+Missing	O
+PROJECT_NAME:	O
+프로젝 트	B-PROJECT_NAME
+S36	I-PROJECT_NAME
+
+이	O
+내용은	O
+중요합니다.	O
+(64)	O
+
+오늘	O
+날씨가	O
+참	O
+?네요.	O
+
+이	O
+내용은	O
+중요합니 다.	O
+(70)	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+?issing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+V95	I-PROJECT_NAME
+
+첨부파일을	O
+확인하세요.	O
+(67)	O
+
+이것은	O
+QUANTITY	O
+예시?	O
+58건입니다.	B-QUANTITY
+
+오늘	O
+날씨 가	O
+참	O
+좋네요?	O
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+강 하,	I-COMPANY
+Party	O
+B:	O
+오나파,	B-NAME
+Date:	O
+2020년	B-DATE
+2?	I-DATE
+1일	I-DATE
+
+최가차	B-NAME
+si gned	O
+here.	O
+
+다음에	O
+뵙겠습니다.	O
+
+비용:	O
+612만원	B-MONEY
+
+문서를	O
+검토해	O
+주세요.	O
+(18)	O
+
+오류가	O
+발생했습니다.	O
+
+첨부파일을	O
+확인하세요.	O
+
+주민번 호:	O
+280101-1******	B-ID_NUM
+
+로그인이	O
+필요합니다.	O
+(26)	O
+
+로그인이	O
+필요합니다 .	O
+(35)	O
+
+시스템	O
+점검	O
+중입니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+사 업장	O
+소재지 :	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+권라로	I-ADDRESS
+95	I-ADDRESS
+
+잠시	O
+후	O
+다 시	O
+시도해	O
+주세요.	O
+(1)	O
+
+Chec k	O
+PERIOD:	O
+7?월	B-PERIOD
+
+이	O
+내용은	O
+중요합니다.	O
+(54)	O
+
+이것은	O
+QUANT?TY	O
+예시 인	O
+42건입니다.	B-QUANTITY
+
+Please	O
+pr?vide	O
+55건	B-QUANTITY
+for	O
+QUAN TITY.	O
+
+ID:	O
+660101-4******	B-ID_NUM
+
+금액:	O
+778만 원	B-MONEY
+
+감사합니다.	O
+( 45)	O
+
+회의는	O
+2 시에	O
+시작합니다.	O
+
+문 의:	O
+010-1082-2558	B-PHONE
+
+잠시	O
+후	O
+다시	O
+시?해	O
+주세요.	O
+
+오늘	O
+날 씨가	O
+참	O
+좋네요.	O
+
+감사합니다.	O
+
+감사합니다.	O
+(91)	O
+
+잠시	O
+후	O
+다시	O
+시 도해	O
+주세요.	O
+
+?의:	O
+010-6470-7336	B-PHONE
+
+금?:	O
+900만원	B-MONEY
+
+갑:	O
+주식회사	B-COMPANY
+송하우,	I-COMPANY
+?:	O
+송카 ,	B-NAME
+계약일:	O
+2022년	B-DATE
+4월	I-DATE
+19일	I-DATE
+
+권아하	B-NAME
+-	O
+이사	B-POSITION
+
+체결 일자:	O
+2021년	B-DATE
+12월	I-DATE
+2 7일	I-DATE
+
+법인명:	O
+주식회사	B-COMPANY
+강가우	I-COMPANY
+
+Please	O
+provide	O
+소프트웨어	B-TYPE
+for	O
+TYPE.	O
+
+이	O
+내용은	O
+중요합니다.	O
+
+Please	O
+provide	O
+30건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네?.	O
+(57)	O
+
+확 인	O
+부탁드립니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+신분증	O
+번호:	O
+440101-3****?*	B-ID_NUM
+
+주식회사	B-COMPANY
+임우	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+김자하로	I-ADDRESS
+86	I-ADDRESS
+
+주민번호 :	O
+900101-4******	B-ID_NUM
+
+신분증	O
+번호:	O
+680101-4******	B-ID_NUM
+
+소프트웨어에	B-TYPE
+관한	O
+내용 .	O
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.임마99.com	B-URL
+
+다음에	O
+뵙겠습 니다.	O
+
+회원가입을	O
+환영합니다 .	O
+
+신분증	O
+번?:	O
+520101-3******	B-ID_NUM
+
+확인	O
+부탁드립니다.	O
+
+영상저작물에	B-TYPE
+관 한	O
+내용.	O
+
+문의사항이	O
+있으 시면	O
+연락주세요.	O
+
+체결일자:	O
+2023년	B-DATE
+7월	I-DATE
+25일	I-DATE
+
+문의:	O
+010-3009-6934	B-PHONE
+
+확 인	O
+부탁드립니다.	O
+
+Phone	O
+Number:	O
+010-7093-5741	B-PHONE
+
+이	O
+내용은	O
+중요합 니다.	O
+
+시스템	O
+점검	O
+중입니다.	O
+(?7)	O
+
+식사는	O
+하?나요?	O
+
+장나	B-NAME
+liv?s	O
+in	O
+서울 시	B-ADDRESS
+강남구	I-ADDRESS
+류차사로	I-ADDRESS
+78.	I-ADDRESS
+
+CC:	O
+user203@example.com	B-EMAIL
+
+작업이	O
+완?되었습니다.	O
+(86)	O
+
+문의:	O
+010-6964-9323	B-PHONE
+
+시스템	O
+점검	O
+중입니다.	O
+
+첨부파일을	O
+확인하세요.	O
+
+업체명:	O
+주 식회사	B-COMPANY
+최사	I-COMPANY
+
+체결일자:	O
+2024년	B-DATE
+7?	I-DATE
+18일	I-DATE
+
+윤성자	B-NAME
+-	O
+대표	B-POSITION
+
+상?	O
+DESCR IPTION	O
+정보:	O
+본	B-DESCRIPTION
+계약의	I-DESCRIPTION
+상 세	I-DESCRIPTION
+내용 은	I-DESCRIPTION
+별첨?	I-DESCRIPTION
+같다.	I-DESCRIPTION
+
+식사는	O
+하셨나요?	O
+( 32)	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+식사는	O
+하?나요?	O
+(71)	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+ID:	O
+420101-3******	B-ID_NUM
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(1?)	O
+
+식사는	O
+하셨나요?	O
+(35)	O
+
+오?	B-NAME
+-	O
+팀장	B-POSITION
+
+입력된	O
+QUANTITY	O
+값은	O
+55건	B-QUANTITY
+입니다.	O
+
+Please	O
+provide	O
+비밀유지서약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYPE.	O
+
+윤성라	B-NAME
+-	O
+책임	B-POSITION
+
+감사합니다.	O
+
+문서를	O
+검 토해	O
+주세요?	O
+(94)	O
+
+안?카	B-NAME
+-	O
+팀?	B-POSITION
+
+확인	O
+부탁드립니다.	O
+
+비용:	O
+192만원	B-MONEY
+
+다음에	O
+뵙겠습니다.	O
+
+갑:	O
+주식회사	B-COMPANY
+황카,	I-COMPANY
+을?	O
+정성바,	B-NAME
+계약 일:	O
+2023년	B-DATE
+9월	I-DATE
+19일	I-DATE
+
+이용허락계약서에	B-CONTRACT_TYPE
+관한	O
+내용.	O
+
+비상연락망:	O
+010-3015-8974	B-PHONE
+
+오늘	O
+날씨가	O
+참	O
+좋?요.	O
+(52)	O
+
+오?	O
+날씨가	O
+참	O
+좋네요.	O
+
+다음에	O
+뵙겠습니다.	O
+
+사업장	O
+소재지:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+윤파로	I-ADDRESS
+100	I-ADDRESS
+
+감사합니다.	O
+(51 )	O
+
+P hone	O
+Number:	O
+010-4220-2646	B-PHONE
+
+신 성	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+이파로	I-ADDRESS
+99.	I-ADDRESS
+
+문서 를	O
+검토해	O
+주세요.	O
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.황나11.com	B-URL
+
+비용:	O
+562?원	B-MONEY
+
+Value	O
+of	O
+POSITION	O
+is	O
+부장	B-POSITION
+
+법인명:	O
+주 식회사	B-COMPANY
+송사	I-COMPANY
+
+9건에	B-QUANTITY
+관한	O
+내용.	O
+
+?세	O
+QUANTITY	O
+정보:	O
+11건	B-QUANTITY
+
+ID:	O
+310101-4******	B-ID_NUM
+
+첨부파일을	O
+확인하세요.	O
+
+사원에	B-POSITION
+관?	O
+내용.	O
+
+확인	O
+부탁드립니다.	O
+?27)	O
+
+TITLE:	O
+임파	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+비밀번호를	O
+변경해	O
+주세 요.	O
+(35)	O
+
+첨부파일을	O
+확인하세요.	O
+
+식사는	O
+하셨나요?	O
+
+본점:	O
+서 울시	B-ADDRESS
+강남구	I-ADDRESS
+류파로	I-ADDRESS
+29	I-ADDRESS
+
+61건에	B-QUANTITY
+관한	O
+내용 .	O
+
+회?는	O
+2시에	O
+시작?니다.	O
+( 63)	O
+
+?그인이	O
+필요합니다.	O
+
+수고하셨습니다.	O
+
+이것은	O
+QUANTITY	O
+예시인	O
+68건입니다 .	B-QUANTITY
+
+Value	O
+of	O
+PROJECT_NAME	O
+i?	O
+프로젝트	B-PROJECT_NAME
+C79	I-PROJECT_NAME
+
+안녕하세요,	O
+반갑습니다.	O
+
+잠시	O
+후	O
+다시	O
+시도?	O
+주세요.	O
+
+Please	O
+provide	O
+16건	B-QUANTITY
+?or	O
+QUANTITY.	O
+
+업체명:	O
+주식회 사	B-COMPANY
+강성	I-COMPANY
+
+사업장	O
+소재지:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+이성로	I-ADDRESS
+57	I-ADDRESS
+
+이것은	O
+PERIOD	O
+예시인	O
+5개월입니다.	B-PERIOD
+
+수고하셨습니다.	O
+(50)	O
+
+이	O
+내용은	O
+중 요합니다.	O
+(9)	O
+
+사업장	O
+소재지:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+전차로	I-ADDRESS
+32	I-ADDRESS
+
+회원가입을	O
+환영합니다?	O
+(86)	O
+
+신규타	B-NAME
+signed	O
+here.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요?	O
+
+윤현 가	B-NAME
+lives	O
+i?	O
+서울?	B-ADDRESS
+강남구	I-ADDRESS
+권다로	I-ADDRESS
+63.	I-ADDRESS
+
+문의사항 이	O
+있으시면	O
+연락주세 요.	O
+
+입력된	O
+QUANTITY	O
+값은	O
+5 4건	B-QUANTITY
+입니다.	O
+
+?.P:	O
+010-3831-3224	B-PHONE
+
+회원가입을	O
+환영합니다.	O
+
+금액:	O
+125만원	B-MONEY
+
+오늘	O
+날씨?	O
+참	O
+좋네요.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+(87)	O
+
+상?	O
+QUANTITY	O
+정보:	O
+37건	B-QUANTITY
+
+Phone	O
+Number:	O
+010-9661-3374	B-PHONE
+
+시스템	O
+점검	O
+중입니다.	O
+
+주식회사	B-COMPANY
+한바성	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+류가로	I-ADDRESS
+20	I-ADDRESS
+
+2 024년	B-DATE
+9 월	I-DATE
+12일	I-DATE
+현재	O
+
+신분증	O
+번호 :	O
+680101-1******	B-ID_NUM
+
+감사합니다.	O
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝?	B-PROJECT_NAME
+P84	I-PROJECT_NAME
+
+로 그인이	O
+필요합니다.	O
+(20)	O
+
+다 음에	O
+뵙겠습니다.	O
+(80)	O
+
+TITLE:	O
+서다	B-TITLE
+관?	I-TITLE
+합의서	I-TITLE
+
+확인	O
+부탁드립니다.	O
+
+체결일자:	O
+2024년	B-DATE
+2월	I-DATE
+10일	I-DATE
+
+이것은	O
+QUA NTITY	O
+예시인	O
+96건입니다.	B-QUANTITY
+
+영어에	B-LANGUAGE
+관?	O
+내 용.	O
+
+수고하셨습니다.	O
+
+안녕하세요,	O
+반갑습니다.	O
+(84)	O
+
+이	O
+?용은	O
+중요합니다.	O
+
+Par?y	O
+A:	O
+주식회사	B-COMPANY
+전카,	I-COMPANY
+Party	O
+B:	O
+윤자나,	B-NAME
+Date:	O
+2024년	B-DATE
+10월	I-DATE
+25일	I-DATE
+
+참고하시기	O
+바랍니 다.	O
+
+안녕하세요,	O
+반갑습니?.	O
+(37)	O
+
+Pl ease	O
+provide	O
+22건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+체결일자:	O
+2021?	B-DATE
+2월	I-DATE
+9일	I-DATE
+
+첨부파일을	O
+확인하세요.	O
+
+식사?	O
+하셨나요?	O
+(100)	O
+
+H.P:	O
+010-593?-1948	B-PHONE
+
+비밀 번호를	O
+변경해	O
+주세요.	O
+
+식?는	O
+하셨나요?	O
+
+2 023년	B-DATE
+1월	I-DATE
+8일	I-DATE
+현 재	O
+
+거주지:	O
+서 울시	B-ADDRESS
+강남구	I-ADDRESS
+안파규로	I-ADDRESS
+?6	I-ADDRESS
+
+체결일자:	O
+20?5년	B-DATE
+3 월	I-DATE
+27일	I-DATE
+
+식사는	O
+하셨나요?	O
+
+문?:	O
+010-1942-3119	B-PHONE
+
+참고하시기	O
+바랍니다?	O
+
+확인	O
+부탁드립니다.	O
+
+참고하시기	O
+바랍니다 .	O
+(26)	O
+
+법 인명:	O
+주식?사	B-COMPANY
+임 라마	I-COMPANY
+
+오늘	O
+날씨가	O
+참	O
+좋네?.	O
+
+작성자:	O
+박타	B-NAME
+
+메일:	O
+user666@?xample.com	B-EMAIL
+
+이것은	O
+PERIOD	O
+예시인	O
+12개월입니다.	B-PERIOD
+
+안녕하세요 ,	O
+반갑습니다.	O
+
+주민번호:	O
+070 101-2******	B-ID_NUM
+
+오늘	O
+날씨 가	O
+참	O
+좋네요.	O
+(13)	O
+
+회원?입을	O
+환영합니다.	O
+
+회의는	O
+2시에	O
+시작합니다.	O
+
+이것은	O
+QUANTITY	O
+예시인	O
+60건입니다.	B-QUANTITY
+
+상세	O
+QUANTITY	O
+정보:	O
+48건	B-QUANTITY
+
+수주처:	O
+주식회사	B-COMPANY
+류?라	I-COMPANY
+
+비밀번호를	O
+변 경해	O
+주세요?	O
+
+법인명:	O
+주식 회사	B-COMPANY
+류건	I-COMPANY
+
+오 늘	O
+날씨가	O
+참	O
+?네요.	O
+(35)	O
+
+시스템	O
+점 검	O
+중입니 다.	O
+
+체결일자:	O
+202?년	B-DATE
+5?	I-DATE
+7일	I-DATE
+
+권다 나	B-NAME
+-	O
+이사	B-POSITION
+
+다음에	O
+뵙겠?니다.	O
+(75)	O
+
+2건에	B-QUANTITY
+관한	O
+내?.	O
+
+이것?	O
+PERIOD	O
+예 시인	O
+11개월입니다.	B-PERIOD
+
+문의사항이	O
+있?시면	O
+연락주세요.	O
+
+H.P:	O
+0?0-3877-5898	B-PHONE
+
+수고하셨 습니다.	O
+(37)	O
+
+이 것은	O
+QUANTITY	O
+예시인	O
+30건입니다.	B-QUANTITY
+
+수고하셨습니다.	O
+(42)	O
+
+입력된	O
+QUANTITY	O
+값은	O
+31건	B-QUANTITY
+입니다.	O
+
+수고하셨습 니다.	O
+(29)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+회 의는	O
+2시에	O
+시작합니다.	O
+
+회원가입을	O
+환영합니다.	O
+
+93건에	B-QUANTITY
+관한	O
+?용.	O
+
+작업이	O
+완료되었습니다.	O
+(12)	O
+
+?자	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+강남 구	I-ADDRESS
+한 마로	I-ADDRESS
+1?	I-ADDRESS
+
+오류가	O
+발생했습니다.	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+잠?	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+감사합니다.	O
+(35)	O
+
+첨부파일을	O
+확인하세요.	O
+
+수고하셨습니 다.	O
+(1)	O
+
+입력된	O
+QUANTITY	O
+값은	O
+10건	B-QUANTITY
+입니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(46)	O
+
+Please	O
+provide	O
+영상저작물	B-TYPE
+for	O
+TYPE.	O
+
+이	O
+내용은	O
+중요합니다.	O
+
+안녕하 세요,	O
+반갑습니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(76)	O
+
+갑:	O
+주식회사	B-COMPANY
+오 하,	I-COMPANY
+을:	O
+송타차,	B-NAME
+계약일:	O
+?021년	B-DATE
+10월	I-DATE
+1 3일	I-DATE
+
+주식회사	B-COMPANY
+서성카	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+황규로	I-ADDRESS
+?9	I-ADDRESS
+
+첨부파일을	O
+확인하세요.	O
+(16)	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(?1)	O
+
+CC:	O
+user689@example.com	B-EMAIL
+
+Please	O
+provid?	O
+표준계약서	B-CONTRACT_TYPE
+fo?	O
+CONTRACT_TYPE.	O
+
+메일:	O
+user943@example.com	B-EMAIL
+
+다음에	O
+뵙겠습니다.	O
+(28)	O
+
+김파	B-NAME
+(010-7410-12?9)	B-PHONE
+
+문서를	O
+검토해	O
+주세요.	O
+(50)	O
+
+회원가입을	O
+환영합니다 .	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+식사는	O
+하셨나요?	O
+
+주식회?	B-COMPANY
+장가	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+임 하로	I-ADDRESS
+65	I-ADDRESS
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.서사우95.com	B-URL
+
+고객센터:	O
+010-3188-3207	B-PHONE
+
+확인	O
+부탁드립니다.	O
+(2)	O
+
+김현라	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+서하로	I-ADDRESS
+70.	I-ADDRESS
+
+거주지:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+최바아로	I-ADDRESS
+87	I-ADDRESS
+
+Ple ase	O
+provid e	O
+33건	B-QUANTITY
+f?r	O
+QUANTITY.	O
+
+Val?e	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝 트	B-PROJECT_NAME
+I32	I-PROJECT_NAME
+
+주식회사	B-COMPANY
+신파타	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+한바규로	I-ADDRESS
+18	I-ADDRESS
+
+전가	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+조하로	I-ADDRESS
+38.	I-ADDRESS
+
+수고하셨습니다.	O
+(50)	O
+
+수고하셨습니다.	O
+
+이것?	O
+QUANTITY	O
+예시인	O
+18건입 니다.	B-QUANTITY
+
+Please	O
+pro vide	O
+90건	B-QUANTITY
+f?r	O
+QUANTITY.	O
+
+회원가입을	O
+환영합니다.	O
+(7 7)	O
+
+오 류가	O
+발생했습니다.	O
+(57)	O
+
+회원가입을	O
+환영합니다?	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+참고하시기	O
+바랍니다.	O
+(36)	O
+
+오류가	O
+발생했습니다.	O
+(48)	O
+
+거주지:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+신?로	I-ADDRESS
+69	I-ADDRESS
+
+고객 센터:	O
+010-6507-1615	B-PHONE
+
+상세	O
+QUANTITY	O
+정 보:	O
+16건	B-QUANTITY
+
+비밀번호를	O
+변경해	O
+주세 요.	O
+
+수주처:	O
+주식회사	B-COMPANY
+류성	I-COMPANY
+
+이	O
+내 용은	O
+중요합니다.	O
+(13)	O
+
+다음	O
+CONSENT_TYPE을	O
+확인하세요:	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+오늘	O
+날씨가	O
+참	O
+좋?요.	O
+(62)	O
+
+한자자	B-NAME
+-	O
+책임	B-POSITION
+
+체결일자:	O
+2024년	B-DATE
+8월	I-DATE
+13일	I-DATE
+
+잠시	O
+후	O
+다 시	O
+시도해	O
+주세요.	O
+
+작업이	O
+완료되었?니다.	O
+
+오 류가	O
+발생했습?다.	O
+(?3)	O
+
+문서를	O
+?토해	O
+주세요.	O
+(37)	O
+
+갑:	O
+주식회사	B-COMPANY
+정아카,	I-COMPANY
+을 :	O
+이파라,	B-NAME
+계약일:	O
+2025년	B-DATE
+5월	I-DATE
+1일	I-DATE
+
+갑 :	O
+주식회사	B-COMPANY
+박현,	I-COMPANY
+을:	O
+정민성,	B-NAME
+계약일:	O
+2024년	B-DATE
+?월	I-DATE
+5일	I-DATE
+
+Missing	O
+PROJECT_NAME:	O
+프로?트	B-PROJECT_NAME
+I7	I-PROJECT_NAME
+
+수고하셨습니다.	O
+(13)	O
+
+감사합니?.	O
+
+로그인이	O
+필요합니 다.	O
+(85)	O
+
+수주처:	O
+주식회사	B-COMPANY
+황사	I-COMPANY
+
+비밀 번호를	O
+변경해	O
+주세요.	O
+(6)	O
+
+시스템	O
+점검	O
+중입니다?	O
+(19)	O
+
+이	O
+내 용은	O
+중요합니다.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+상세	O
+QUANTITY	O
+정보:	O
+10 건	B-QUANTITY
+
+주식회사	B-COMPANY
+장규다	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+안준?	I-ADDRESS
+34	I-ADDRESS
+
+갑:	O
+주식회사	B-COMPANY
+정건,	I-COMPANY
+을 :	O
+송가,	B-NAME
+계약일:	O
+2024년	B-DATE
+6?	I-DATE
+10일	I-DATE
+
+작업이	O
+완료되었습니다.	O
+
+Phone	O
+Numb?r:	O
+010-3335-9639	B-PHONE
+
+이	O
+내용은	O
+중요합니다.	O
+(25)	O
+
+작업이	O
+완료되었습니다.	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+메일:	O
+user298@example.com	B-EMAIL
+
+첨부?일을	O
+확인하세요.	O
+
+문의사항 이	O
+있으 시면	O
+연락주세요.	O
+
+식사는	O
+하셨나요?	O
+(73)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+Please	O
+provide	O
+41건	B-QUANTITY
+for	O
+QUANTITY.	O
+
+메일:	O
+u ser913@example.com	B-EMAIL
+
+참고하시기	O
+바랍니다 .	O
+(38)	O
+
+주민번호:	O
+710101-1******	B-ID_NUM
+
+고객센터:	O
+01 0-7404-8962	B-PHONE
+
+수고하셨습니다.	O
+
+감사합니다.	O
+(43)	O
+
+오 늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+시스템	O
+점검	O
+중입니다.	O
+
+상세	O
+QUANTITY	O
+정보:	O
+44건	B-QUANTITY
+
+회 원가입을	O
+환영합니다.	O
+(44)	O
+
+Check	O
+PERIOD:	O
+8개?	B-PERIOD
+
+이것은	O
+PERIOD	O
+예시인	O
+9개월입니다.	B-PERIOD
+
+주민번호:	O
+250101-1******	B-ID_NUM
+
+참고하시기	O
+바랍니다.	O
+(76)	O
+
+비밀번호를	O
+변경해	O
+?세요.	O
+(15?	O
+
+Value	O
+of	O
+CONTRACT_TYPE	O
+is	O
+비밀유지서약서	B-CONTRACT_TYPE
+
+확인	O
+부탁드립니다.	O
+(32)	O
+
+갑:	O
+주식회사	B-COMPANY
+최우?	I-COMPANY
+을:	O
+이다바?	B-NAME
+계약일:	O
+2022년	B-DATE
+8월	I-DATE
+4 일	I-DATE
+
+로?인이	O
+필요합니다.	O
+
+작성일:	O
+2022년	B-DATE
+4월	I-DATE
+6일	I-DATE
+
+문서를	O
+검토해	O
+주세요.	O
+
+감사합니다.	O
+(9)	O
+
+메일:	O
+user40@example.com	B-EMAIL
+
+오류가	O
+발생했습니다.	O
+(67)	O
+
+식사는	O
+하셨나요?	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+회의는	O
+2시에	O
+시작합니다.	O
+
+이	O
+내용은	O
+중?합니다.	O
+
+로그인이	O
+필요 합니다.	O
+?78)	O
+
+회의는	O
+2시에	O
+시작합니다.	O
+(45)	O
+
+오류가	O
+발생했습니다.	O
+
+수고하셨습니다.	O
+(36)	O
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.안나34.com	B-URL
+
+회원가입을	O
+환영합니다.	O
+(32)	O
+
+사 업장	O
+소재지:	O
+서울 시	B-ADDRESS
+강남구	I-ADDRESS
+오가로	I-ADDRESS
+94	I-ADDRESS
+
+식사는	O
+하셨나요?	O
+(5)	O
+
+오류가	O
+?생했습니다.	O
+(48)	O
+
+안녕 하세요,	O
+반갑습니다.	O
+(58)	O
+
+주민번호:	O
+990101-3******	B-ID_NUM
+
+Value	O
+o?	O
+CONTRACT_TYPE	O
+is	O
+양도계약서	B-CONTRACT_TYPE
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+문의 :	O
+010-2385-3327	B-PHONE
+
+로그인이	O
+필요합니다.	O
+
+문의사항이	O
+있으시면	O
+연락주?요.	O
+(55)	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+H.P:	O
+010-3173-7605	B-PHONE
+
+첨부파일을	O
+확인하세요.	O
+?9)	O
+
+H?P:	O
+010-5703-5737	B-PHONE
+
+수고하셨습니다.	O
+
+오류가	O
+발생했습니다.	O
+
+식사는	O
+하셨나요?	O
+
+본점:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+한차로	I-ADDRESS
+90	I-ADDRESS
+
+이것은	O
+PERIOD	O
+예시인	O
+1개월입 니다.	B-PERIOD
+
+참고하시기	O
+바랍니다.	O
+(26)	O
+
+메일:	O
+user575@example.com	B-EMAIL
+
+임건타	B-NAME
+lives	O
+i n	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+정바로	I-ADDRESS
+43.	I-ADDRESS
+
+메일:	O
+user852@example.com	B-EMAIL
+
+로그인이	O
+필요합 니다.	O
+
+신건하	B-NAME
+lives	O
+in	O
+?울시	B-ADDRESS
+강남구	I-ADDRESS
+안파로	I-ADDRESS
+78.	I-ADDRESS
+
+수고하셨습니다.	O
+(85)	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(45)	O
+
+Missin g	O
+PROJECT_NAME:	O
+프로 젝트	B-PROJECT_NAME
+B72	I-PROJECT_NAME
+
+문서를	O
+검토해	O
+주세요.	O
+
+문서를	O
+검토해	O
+주세요.	O
+(73)	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(77)	O
+
+갑 :	O
+주 식회사	B-COMPANY
+김마다,	I-COMPANY
+을 :	O
+조우나,	B-NAME
+계약일:	O
+202 1년	B-DATE
+?월	I-DATE
+2일	I-DATE
+
+이	O
+내용은	O
+중요합니다.	O
+(71)	O
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+A30	I-PROJECT_NAME
+
+첨부파일을	O
+확인하세요.	O
+
+TITLE:	O
+윤 준	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(19)	O
+
+갑:	O
+주식회사	B-COMPANY
+오건아,	I-COMPANY
+을?	O
+류성성,	B-NAME
+계 약일:	O
+2025년	B-DATE
+1월	I-DATE
+26일	I-DATE
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+조자?	I-COMPANY
+Pa rty	O
+B:	O
+신카,	B-NAME
+D ate:	O
+2022년	B-DATE
+8월	I-DATE
+4일	I-DATE
+
+이것은	O
+QUANTITY	O
+예시인	O
+21건입니다.	B-QUANTITY
+
+로그인이	O
+필?합니다.	O
+(1 9)	O
+
+비용 :	O
+754만 원	B-MONEY
+
+작업이	O
+완료되었습니다.	O
+(38)	O
+
+메일:	O
+user199@example.com	B-EMAIL
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(33)	O
+
+오 류가	O
+발생했습니다.	O
+
+작업이	O
+완료되었습니다 .	O
+(46)	O
+
+Value	O
+of	O
+PROJ?CT_NAME	O
+i s	O
+프로젝트	B-PROJECT_NAME
+A4 7	I-PROJECT_NAME
+
+갑?	O
+주식회사	B-COMPANY
+신자,	I-COMPANY
+을:	O
+임사하,	B-NAME
+계약일:	O
+2021년	B-DATE
+2월	I-DATE
+24일	I-DATE
+
+회원가입을	O
+환영합니다.	O
+
+Phone	O
+Number:	O
+010-3675-3069	B-PHONE
+
+시스템	O
+점검	O
+중입니다?	O
+(41)	O
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.장사아29.com	B-URL
+
+메일:	O
+user466@example.com	B-EMAIL
+
+이 것은	O
+QUANTITY	O
+예시인	O
+69건입니다.	B-QUANTITY
+
+비밀번호를	O
+변?해	O
+주세요.	O
+(51)	O
+
+거주지:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+정현하로	I-ADDRESS
+68	I-ADDRESS
+
+회의 는	O
+2시에	O
+시작합니다.	O
+
+다음에	O
+뵙겠?니다.	O
+(90)	O
+
+비상연락망:	O
+010-5088-2751	B-PHONE
+
+근로계약서에	B-CONTRACT_TYPE
+관한	O
+내?.	O
+
+회원가입을	O
+환영합니다.	O
+(12 )	O
+
+ID :	O
+6 10101-2******	B-ID_NUM
+
+Chec k	O
+PERIOD:	O
+2개월	B-PERIOD
+
+이 것은	O
+?OSITION	O
+예시인	O
+팀장?니다.	B-POSITION
+
+안녕하세요,	O
+반갑습니다.	O
+
+Please	O
+provide	O
+법?팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.장아51.com	B-URL
+
+참고하시기	O
+바 랍니다.	O
+
+H.P:	O
+010-3112-8?30	B-PHONE
+
+문서를	O
+검토해	O
+주 세요.	O
+?51)	O
+
+안녕하세요,	O
+반갑습니다.	O
+(73)	O
+
+CC:	O
+us er269@example.com	B-EMAIL
+
+업체명:	O
+?식회사	B-COMPANY
+류바바	I-COMPANY
+
+오류가	O
+발 생했습니다.	O
+(75 )	O
+
+Valu e	O
+of	O
+PRO?ECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+S71	I-PROJECT_NAME
+
+2024년	B-DATE
+?월	I-DATE
+4일	I-DATE
+현재	O
+
+문서를	O
+검토해	O
+주세요.	O
+(35)	O
+
+Please	O
+provide	O
+6 9건	B-QUANTITY
+for	O
+QUAN TITY.	O
+
+회의는	O
+?시에	O
+시작합니다.	O
+(59)	O
+
+감사합니다.	O
+
+신분 증	O
+번호:	O
+580101-4******	B-ID_NUM
+
+로그인이	O
+필요합니다.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+신분증	O
+번호:	O
+450101-3******	B-ID_NUM
+
+정자	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+강남?	I-ADDRESS
+조?로	I-ADDRESS
+48.	I-ADDRESS
+
+TITLE:	O
+정파사	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+메일:	O
+user386@example.com	B-EMAIL
+
+갑:	O
+주식회사	B-COMPANY
+안카,	I-COMPANY
+을:	O
+신우준,	B-NAME
+계약일?	O
+2024년	B-DATE
+2월	I-DATE
+23일	I-DATE
+
+입력된	O
+QUANTITY	O
+값은	O
+52건	B-QUANTITY
+입니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주 세요.	O
+(85)	O
+
+?류가	O
+발생했습니다.	O
+
+Please	O
+provide	O
+37건	B-QUANTITY
+for	O
+QU?NTITY.	O
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+K94	I-PROJECT_NAME
+
+비상연락망:	O
+010-3310-8317	B-PHONE
+
+Pho ne	O
+Number:	O
+010-5466-1977	B-PHONE
+
+이규	B-NAME
+signed	O
+here.	O
+
+수고하셨습니다.	O
+
+CC:	O
+user150@example.com	B-EMAIL
+
+이	O
+내용은	O
+중요합니다?	O
+
+오류가	O
+발생했습니다.	O
+(77)	O
+
+사업장	O
+소재지:	O
+서 울시	B-ADDRESS
+강남?	I-ADDRESS
+김건로	I-ADDRESS
+8	I-ADDRESS
+
+Check	O
+PERIOD:	O
+5개월	B-PERIOD
+
+시스템	O
+점검	O
+중입니다.	O
+(36)	O
+
+시스템	O
+점검	O
+?입니다.	O
+(22?	O
+
+오류가	O
+발생했습니다.	O
+(44)	O
+
+업체 명:	O
+주?회사	B-COMPANY
+조사 카	I-COMPANY
+
+?식회사	B-COMPANY
+윤하	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강?구	I-ADDRESS
+송사로	I-ADDRESS
+76	I-ADDRESS
+
+CC:	O
+user700@example.com	B-EMAIL
+
+본점:	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+전차민로	I-ADDRESS
+42	I-ADDRESS
+
+이 사에	B-POSITION
+관한	O
+내용.	O
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.한아바98.com	B-URL
+
+Please	O
+pr?vide	O
+?9건	B-QUANTITY
+for	O
+QUA?TITY.	O
+
+비상연락망:	O
+010-8127-2178	B-PHONE
+
+?사는	O
+하셨나요?	O
+
+한 바	B-NAME
+-	O
+책임	B-POSITION
+
+회의는	O
+2시에	O
+시작합니다.	O
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www?조자86.com	B-URL
+
+문서를	O
+검토해	O
+주세요.	O
+
+이	O
+내용 은	O
+중요합니다.	O
+
+Missing	O
+PROJE?T_NAME:	O
+프로 젝트	B-PROJECT_NAME
+X 52	I-PROJECT_NAME
+
+확인	O
+부탁드립니다.	O
+
+작업이	O
+완료되었습 니다.	O
+(8 )	O
+
+TITLE:	O
+강차	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+첨부파일을	O
+확인하세요.	O
+
+식사는	O
+하셨나요?	O
+(11)	O
+
+고객센터:	O
+010-7567-1645	B-PHONE
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(2)	O
+
+회원가입을	O
+환영합니다.	O
+(86)	O
+
+?D:	O
+310101-1******	B-ID_NUM
+
+참고하시기	O
+바 랍니다.	O
+
+비 용:	O
+94만원	B-MONEY
+
+로그인이	O
+필요합니다.	O
+
+Phone	O
+Number:	O
+010-1649-9182	B-PHONE
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www. 신타준16.com	B-URL
+
+다음에	O
+뵙겠습니다.	O
+(94)	O
+
+주식회사	B-COMPANY
+조사	I-COMPANY
+-	O
+서울시	B-ADDRESS
+강남구	I-ADDRESS
+안나로	I-ADDRESS
+80	I-ADDRESS
+
+다음에	O
+뵙겠습니다.	O
+
+85건에	B-QUANTITY
+관한	O
+내용.	O
+
+회?는	O
+2시에	O
+시작합니다.	O
+(66)	O
+
+수고하셨습니다.	O
+
+신분증	O
+번호:	O
+350101-1******	B-ID_NUM
+
+이것은	O
+QUA?TITY	O
+예시인	O
+86건입니다.	B-QUANTITY
+
+감 사합니다.	O
+(63)	O
+

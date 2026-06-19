@@ -1,0 +1,912 @@
+Expires:	O
+201?년	B-DATE
+5월	I-DATE
+15일	I-DATE
+
+Please	O
+provide	O
+음악저?물	B-TYPE
+for	O
+TYPE.	O
+
+상 세	O
+PROJECT_NAME	O
+정보:	O
+프로젝트	B-PROJECT_NAME
+O95	I-PROJECT_NAME
+
+삭제된	O
+LANGUAGE:	O
+스페인어	B-LANGUAGE
+
+기존	O
+CONSENT_TYPE:	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+비밀번호를	O
+변경해	O
+주세요?	O
+
+다 음	O
+CONSENT_TYPE을	O
+확인하세요:	O
+제3자	B-CONSENT_TYPE
+제 공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+회의는	O
+2시에	O
+시작합니 다.	O
+(38)	O
+
+다음	O
+CONSENT_TYPE을	O
+확인하세요:	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+이	O
+내용은	O
+중요합니다.	O
+(69)	O
+
+(주)	B-COMPANY
+송준홀딩스의	I-COMPANY
+주소는	O
+전라남도	B-ADDRESS
+옥마?	I-ADDRESS
+조지로	I-ADDRESS
+839-15입니다.	I-ADDRESS
+
+작업이	O
+완료되었습니다.	O
+
+변경된	O
+DESCRIPTION:	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실의	I-DESCRIPTION
+원칙에	I-DESCRIPTION
+따?	I-DESCRIPTION
+이행한다?	I-DESCRIPTION
+
+안녕하세요,	O
+반갑습니다.	O
+(2 0)	O
+
+문의사항이	O
+있으시?	O
+연락주세요.	O
+(77)	O
+
+작업이	O
+완료되었습니다.	O
+(11)	O
+
+안녕하세요,	O
+반갑습니다.	O
+?3)	O
+
+ID:	O
+310222-3******	B-ID_NUM
+
+?장:	B-POSITION
+소철	B-NAME
+
+회원가입을	O
+환영합니다.	O
+
+오류가	O
+발생했습니다.	O
+
+다음	O
+PROJECT_NAME을	O
+확인하세요:	O
+프로젝트	B-PROJECT_NAME
+Q29	I-PROJECT_NAME
+
+추가된	O
+URL:	O
+http://www.hyundai922.com	B-URL
+
+비밀번호를	O
+변경해	O
+주 세요.	O
+(59 )	O
+
+기한:	O
+202 2년	B-DATE
+6 월	I-DATE
+27?	I-DATE
+
+2 011년	B-DATE
+11월	I-DATE
+3일	I-DATE
+강홍안	B-TITLE
+관 련	I-TITLE
+기획서	I-TITLE
+도급계약서	B-CONTRACT_TYPE
+체 결	B-STATUS
+완료	I-STATUS
+588?원	B-MONEY
+
+Che?k	O
+DEPARTMENT:	O
+인사팀	B-DEPARTMENT
+
+안녕하세요,	O
+반갑습니다.	O
+(53)	O
+
+식사는	O
+하셨나요?	O
+
+일금	O
+7006억원정	B-MONEY
+
+총액	O
+8595만원	B-MONEY
+?VAT	O
+별도)	O
+
+잠 시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+작?이	O
+완료되었습니다.	O
+
+Check	O
+DEP ARTMENT:	O
+CS 팀	B-DEPARTMENT
+
+문의사 항이	O
+있으시면	O
+연락주세 요.	O
+(28)	O
+
+회원가입을	O
+환영합니다.	O
+
+안녕하세요,	O
+반갑습니다.	O
+(64)	O
+
+이	O
+내용?	O
+중요합니다.	O
+( 71)	O
+
+선택	O
+입력	O
+항 목	O
+(PROJECT_NAME):	O
+프로젝트	B-PROJECT_NAME
+I4	I-PROJECT_NAME
+
+비밀번호를	O
+변경 해	O
+주세요.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(8 7)	O
+
+다음에	O
+뵙겠습니다.	O
+(99)	O
+
+회원가입을	O
+환영합니다.	O
+(3 8)	O
+
+Miss?ng	O
+POSITION:	O
+연구원	B-POSITION
+
+?제된	O
+CONSENT_TYPE:	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동?	I-CONSENT_TYPE
+
+Missing	O
+TITLE:	O
+주애	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+
+?issing	O
+TITLE:	O
+유세건	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+
+자격증	O
+번호:	O
+760314-3*****?	B-ID_NUM
+
+어창	B-NAME
+님	O
+안녕하세요.	O
+
+제출처:	O
+user553@example.com	B-EMAIL
+
+필수	O
+입력	O
+항목	O
+(LAW_REFERENCE):	O
+저작권법	B-LAW_REFERENCE
+제72조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+
+채권자 :	O
+구환차	B-NAME
+
+변경된	O
+DESCRIPTI ON:	O
+기타	B-DESCRIPTION
+사항은	I-DESCRIPTION
+상호	I-DESCRIPTION
+협의하여	I-DESCRIPTION
+결정한다.	I-DESCRIPTION
+
+필수	O
+입 력	O
+항목	O
+(PERIOD):	O
+35개월	B-PERIOD
+
+Mail:	O
+user247@example.com	B-EMAIL
+
+백석	B-NAME
+부장은	B-POSITION
+2024년	B-DATE
+3월	I-DATE
+6일에	I-DATE
+위?정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동 의에	I-CONSENT_TYPE
+서명하고	O
+user819@example.com로	B-EMAIL
+제출했다.	O
+
+상세	O
+PROJECT_?AME	O
+정보:	O
+프로젝?	B-PROJECT_NAME
+Z 60	I-PROJECT_NAME
+
+TITLE:	O
+변차차	B-TITLE
+관련	I-TITLE
+계약?	I-TITLE
+
+상담문의?	O
+010-5240-9265	B-PHONE
+
+수고하 셨습니다.	O
+
+변경된	O
+STATUS:	O
+승인	B-STATUS
+대기	I-STATUS
+
+Che?k	O
+DEP?RTMENT:	O
+생산팀	B-DEPARTMENT
+
+합계:	O
+78 31천만원	B-MONEY
+
+Mobile:	O
+010-1002-2697	B-PHONE
+
+로그인이	O
+필요합니다.	O
+
+개발 사:	O
+주?회사	B-COMPANY
+왕?그룹	I-COMPANY
+
+업무협약서	B-CONTRACT_TYPE
+-	O
+보류	B-STATUS
+
+삭제된	O
+LANGUAGE:	O
+독일어	B-LANGUAGE
+
+Missing	O
+TIT LE:	O
+탁빈현	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+
+감사합니다.	O
+
+프로젝트	B-PROJECT_NAME
+T83	I-PROJECT_NAME
+예산 은	O
+3604억원입니다.	B-MONEY
+
+삭제된	O
+TYPE:	O
+2차적저작물	B-TYPE
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(9?)	O
+
+감사합니다.	O
+
+수 고하셨습니다.	O
+
+로그인이	O
+필요합니다.	O
+(24)	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+ID:	O
+640507-1******	B-ID_NUM
+
+안 녕하세요,	O
+반갑습니다.	O
+(78)	O
+
+다음	O
+DEPARTMENT을	O
+확인하세요:	O
+인 사팀	B-DEPARTMENT
+
+진 건	B-NAME
+사장은	B-POSITION
+2015 년	B-DATE
+?월	I-DATE
+28일에	I-DATE
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약 관	I-CONSENT_TYPE
+동의에	I-CONSENT_TYPE
+서명하고	O
+user62@example.com로	B-EMAIL
+제출했다.	O
+
+시스?	O
+점검	O
+중입 니다.	O
+(68 )	O
+
+감사합니다.	O
+(5)	O
+
+다?에	O
+뵙겠습니다.	O
+(75)	O
+
+user764@example.com	B-EMAIL
+(?무용)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+(85)	O
+
+M obile:	O
+010-2821-8029	B-PHONE
+
+발신:	O
+류소	B-NAME
+
+이	O
+내?은	O
+중요합니다.	O
+(30)	O
+
+수고하셨습니다.	O
+(?4)	O
+
+확인	O
+부탁드립니다.	O
+
+로그인이	O
+필요합니다.	O
+(52)	O
+
+식 사는	O
+하셨나요?	O
+(76 )	O
+
+근로계약서	B-CONTRACT_TYPE
+-	O
+보류	B-STATUS
+
+문서를	O
+검토해	O
+주세요.	O
+(21)	O
+
+Date:	O
+2007년	B-DATE
+3월	I-DATE
+21일	I-DATE
+
+비밀번호를	O
+변경?	O
+주세요.	O
+
+납부기한:	O
+2006년	B-DATE
+6월	I-DATE
+9일	I-DATE
+
+Phone	O
+Number:	O
+010-4064-2505	B-PHONE
+
+문서를	O
+검토해	O
+주세요.	O
+(21)	O
+
+기존	O
+CONSENT_TYPE:	O
+전자금융거래	B-CONSENT_TYPE
+?관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+다음에	O
+뵙겠습니다.	O
+
+변경된	O
+DESCRIPTION:	O
+세 부	B-DESCRIPTION
+사항은	I-DESCRIPTION
+첨부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다.	I-DESCRIPTION
+
+정자	B-NAME
+님	O
+안녕하세요.	O
+
+감사합니다.	O
+
+총액	O
+7079만원	B-MONEY
+(VAT	O
+별도)	O
+
+M?il:	O
+user945@example.com	B-EMAIL
+
+확인	O
+부탁드립니다.	O
+
+세부	B-DESCRIPTION
+사항은	I-DESCRIPTION
+첨 부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다.에	I-DESCRIPTION
+관한	O
+내용.	O
+
+작업이	O
+완료되었습니다.	O
+(36)	O
+
+식사는	O
+하셨?요?	O
+
+수고하셨습니다.	O
+(6)	O
+
+recruit:	O
+user532@example.com	B-EMAIL
+
+문의사항이	O
+있으시면	O
+?락주세요.	O
+(43)	O
+
+다음에	O
+뵙겠습니다.	O
+(23)	O
+
+오류?	O
+발생했습니다.	O
+
+비밀번호 를	O
+변경해	O
+주세요.	O
+(2 4)	O
+
+안녕하?요,	O
+?갑습니다.	O
+
+참고하시 기	O
+바랍니다.	O
+(4)	O
+
+업무협약서	B-CONTRACT_TYPE
+-	O
+검토	B-STATUS
+중	I-STATUS
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+문서?	O
+검토 해	O
+주 세요.	O
+(53)	O
+
+공사	O
+현장:	O
+인천시	B-ADDRESS
+장성군	I-ADDRESS
+진화옥길	I-ADDRESS
+75	I-ADDRESS
+
+?액	O
+3099억원	B-MONEY
+(VAT	O
+별도)	O
+
+기존	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제52조	I-LAW_REFERENCE
+7항	I-LAW_REFERENCE
+
+오 늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+이	O
+내용은	O
+중요합니다.	O
+
+로?인이	O
+필요합니다.	O
+(69 )	O
+
+모바일:	O
+010-8581-2401	B-PHONE
+
+Copyri?ht	O
+사단법?	B-COMPANY
+강솔식전자	I-COMPANY
+
+운영사:	O
+재단법인	B-COMPANY
+문진아스튜디오	I-COMPANY
+
+오늘	O
+날씨가	O
+참	O
+좋네 요.	O
+
+작업이	O
+완료되었습니다.	O
+(67 )	O
+
+?늘	O
+날씨 가	O
+참	O
+좋네요.	O
+(9 )	O
+
+참고하시기	O
+바랍니다.	O
+(27)	O
+
+?end	O
+t?	O
+user379@example.com	B-EMAIL
+
+수고하셨습니다.	O
+
+사?:	B-POSITION
+문?	B-NAME
+
+다음	O
+CONSENT_TYPE을	O
+확인하세요 :	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+이	O
+내용은	O
+중요합니다.	O
+(42)	O
+
+문의사항이	O
+있으시면	O
+연락주 세요.	O
+
+Amo unt:	O
+9339억원	B-MONEY
+
+필수	O
+입력	O
+항목	O
+(STATU S):	O
+해지	B-STATUS
+
+삭제된	O
+CONSENT_TYPE:	O
+?케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+다음에	O
+뵙겠습니다.	O
+(77)	O
+
+문서를	O
+검토?	O
+주세요.	O
+?71)	O
+
+회원가입을	O
+?영합니다.	O
+
+납부기한:	O
+2009년	B-DATE
+4월	I-DATE
+23일	I-DATE
+
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의에	I-CONSENT_TYPE
+관한	O
+내용.	O
+
+P hone	O
+Number:	O
+010-7310-8115	B-PHONE
+
+오류가	O
+발생했습니다.	O
+(90)	O
+
+로그인이	O
+필요합니다.	O
+(33 )	O
+
+오류가	O
+발생했습니다.	O
+(84)	O
+
+Expires:	O
+2008년	B-DATE
+2 월	I-DATE
+3일	I-DATE
+
+감사합니다.	O
+
+회원가입을	O
+환영합니다.	O
+
+이 것은	O
+LANGUAGE	O
+예시인	O
+아랍어입니다.	B-LANGUAGE
+
+총액	O
+3394만원	B-MONEY
+?VAT	O
+별도)	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요 .	O
+(92)	O
+
+?의는	O
+2시에	O
+시작합니다.	O
+(42)	O
+
+2014년	B-DATE
+4 월	I-DATE
+20일	I-DATE
+접수	O
+
+상호:	O
+사단법 인	B-COMPANY
+육웅실엔터테인먼트	I-COMPANY
+
+안녕하세요,	O
+반갑습니다.	O
+(48)	O
+
+Amount:	O
+3359만원	B-MONEY
+
+문서를	O
+검토해	O
+주세요.	O
+
+2013년	B-DATE
+12월	I-DATE
+18일	I-DATE
+위채	B-TITLE
+관?	I-TITLE
+계약서	I-TITLE
+양도계약서	B-CONTRACT_TYPE
+검토	B-STATUS
+중	I-STATUS
+5985만원	B-MONEY
+
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실의	I-DESCRIPTION
+?칙에	I-DESCRIPTION
+따 라	I-DESCRIPTION
+이행한다.에	I-DESCRIPTION
+관한	O
+내용.	O
+
+작업이	O
+완료되었습니다.	O
+(?)	O
+
+식사는	O
+하셨나요?	O
+(8)	O
+
+로그인이	O
+필요합니다.	O
+(32)	O
+
+Copyright	O
+(주)	B-COMPANY
+주재디자인	I-COMPANY
+
+문 의사항이	O
+있으시면	O
+연락주 세요.	O
+(47)	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+Organization:	O
+사단법인	B-COMPANY
+제재디자인	I-COMPANY
+
+참고하시기	O
+바랍니 다.	O
+(78)	O
+
+오 류가	O
+발생?습니다.	O
+
+공사	O
+현장:	O
+대전시	B-ADDRESS
+함환효시	I-ADDRESS
+은위옥로	I-ADDRESS
+570-29	I-ADDRESS
+
+필수	O
+입력	O
+항 목	O
+(LAW_REFERENCE):	O
+저작권법	B-LAW_REFERENCE
+제64조	I-LAW_REFERENCE
+3항	I-LAW_REFERENCE
+
+위치:	O
+울산시	B-ADDRESS
+편태구	I-ADDRESS
+신장대로	I-ADDRESS
+495	I-ADDRESS
+
+recruit:	O
+user166@example.com	B-EMAIL
+
+작업이	O
+완료되었습니다.	O
+(74)	O
+
+변경된	O
+RIGH?_INFO:	O
+초상권	B-RIGHT_INFO
+
+삭제된	O
+CONTRACT_TYPE:	O
+근로계약서	B-CONTRACT_TYPE
+
+시스템	O
+점검	O
+중입니다.	O
+(15 )	O
+
+감사합니다.	O
+(30)	O
+
+센터장:	B-POSITION
+황식	B-NAME
+
+첨부파일을	O
+확인하세요.	O
+
+Please	O
+provide	O
+어문저작물	B-TYPE
+for	O
+TYPE.	O
+
+Mis sing	O
+POSITION:	O
+회장	B-POSITION
+
+Mail:	O
+user222@example.com	B-EMAIL
+
+로그인 이	O
+필요합니?.	O
+(80)	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+수정일:	O
+?021년	B-DATE
+8월	I-DATE
+?3일	I-DATE
+
+행사	O
+장소:	O
+경상남도	B-ADDRESS
+탁파홍군	I-ADDRESS
+류채대?	I-ADDRESS
+17?	I-ADDRESS
+
+ID?	O
+481202-4******	B-ID_NUM
+
+변경된	O
+RIGHT_INFO:	O
+공연 권	B-RIGHT_INFO
+
+비밀번호를	O
+변경해	O
+주 세요.	O
+
+마우	B-NAME
+(010-9525-3564)	B-PHONE
+
+참고하시기	O
+바랍니다.	O
+(23)	O
+

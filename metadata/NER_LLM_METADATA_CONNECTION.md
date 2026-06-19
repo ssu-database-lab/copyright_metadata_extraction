@@ -143,7 +143,7 @@ from REGEX, the LLM/export stage assigns each value to `ch_co`, `ch_ja`, or
 
 ```text
 1. Run regex extraction for strict-format labels.
-2. Run NER for the 26 clean span labels.
+2. Run NER for the 17 clean span labels.
 3. Merge regex and NER values into the clean schema.
 4. Rename `date` to `copyright_date` for export.
 5. Use the LLM/export stage to:
@@ -158,7 +158,9 @@ from REGEX, the LLM/export stage assigns each value to `ch_co`, `ch_ja`, or
 `module/parts/labels.py` should keep these invariants true:
 
 ```text
-NER_LABEL_SET union LLM_DELEGATED_LABEL_SET == ALL_LABELS
+REGEX_LABEL_SET union NER_LABEL_SET union LLM_DELEGATED_LABEL_SET == ALL_LABELS
+REGEX_LABEL_SET intersection NER_LABEL_SET == empty
+REGEX_LABEL_SET intersection LLM_DELEGATED_LABEL_SET == empty
 NER_LABEL_SET intersection LLM_DELEGATED_LABEL_SET == empty
 copyright_entitle not in ALL_LABELS
 ```

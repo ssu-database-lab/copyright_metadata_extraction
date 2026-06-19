@@ -28,6 +28,8 @@ python main.py
 
 OCR 캐시(`data/out/ocr/result`)가 입력 문서 수만큼 있으면 OCR 단계 자동 스킵.
 강제 재실행: `FORCE_OCR=1 python main.py`.
+`extract_metadata(input_text=...)` 또는 NER용 `input_path=...` 를 직접 넘기면 OCR을 건너뜁니다.
+OCR 입력을 직접 지정할 때는 `in_path=...` 를 사용합니다.
 
 ## Pipeline
 
@@ -39,7 +41,7 @@ OCR 평문 텍스트 (data/out/ocr/result/*.txt)
      │
      ├──▶ regex (9 strict-format 라벨)            module/extractor/regex.py
      ├──▶ NER  (17 free-form 라벨, mBERT fine-tune) module/extractor/ner/
-     ├──▶ post-process                            module/api.py::postprocess_metadata
+     ├──▶ post-process                            module/extractor/ner/postprocess.py::postprocess_metadata
      │     ├─ closed-vocab keyword 매칭 (ri_copyright, ri_info, copyright_type 등)
      │     ├─ form-cue line capture (성명:, 주소:, 전화번호:, 기관명: 등)
      │     ├─ length/한글 필터 (노이즈 컷)
@@ -63,15 +65,16 @@ metadata/
 ├── eval/
 │   └── eval_audit.py             # line-cue ground truth 기반 전수 recall 평가
 ├── module/
-│   ├── api.py                    # ★ extract_metadata + postprocess_metadata
+│   ├── api.py                    # ★ extract_metadata public facade
 │   ├── extractor/
 │   │   ├── ocr/ocr.py            # Qwen3-VL-2B 래퍼 (PyMuPDF + transformers)
 │   │   ├── regex.py              # 9-라벨 정규식 추출
 │   │   ├── ner/                  # BERT 계열 token classification
 │   │   │   ├── base.py           # 모델 경로/다운로드/라벨/디버그/predict 공통
 │   │   │   ├── train.py          # ner_train()
-│   │   │   ├── predict.py        # ner_predict() 오케스트레이터
+│   │   │   ├── predict.py        # ner_predict() 오케스트레이터 + LLM callback hook
 │   │   │   ├── token_cls.py      # TokenClassNER (HF Trainer + LoRA/full)
+│   │   │   ├── postprocess.py    # closed-vocab/form-cue deterministic cleanup
 │   │   │   └── full_logger.py    # step·layer 학습 로깅
 │   │   └── llm/llm.py            # LLM 추출 (NotImplementedError stub)
 │   └── parts/
@@ -85,7 +88,7 @@ metadata/
 │   ├── labels.yaml               # OCR 모델 ID, NER threshold, 라벨 목록 (참조용)
 │   └── integrated/
 │       ├── gold/                 # 외부 gold 평가 데이터 (라벨별 jsonl)
-│       └── silver/               # NER 학습 silver (267k BIO 레코드)
+│       └── silver/               # NER 학습 silver (654,377 BIO 레코드)
 ├── models/                       # 학습된 NER 어댑터 (7개 backbone)
 │   └── <hf_id_with_dashes>/
 │       ├── config.json / model.safetensors / tokenizer.* (베이스)
@@ -149,7 +152,8 @@ NER 단독 결과는 한국 양식 (성명:, 주소:, 기관명:) 의 entity 를
 
 ### NER — 7개 backbone 학습 완료, mBERT 기본
 
-`configs/integrated/silver/` (267,307 BIO 레코드, 26 만 + 노이즈) 로 fine-tune.
+`configs/integrated/silver/` (654,377 BIO 레코드; 논문 실험은 `paper/configs/integrated/silver/`
+사본 657,377건 — copyright_status 합성 3,000 포함 — 사용) 로 fine-tune.
 silver validation split (seed=42) best-epoch:
 
 | Alias | HuggingFace ID | eval_accuracy | eval_F1 | 학습 |
@@ -208,9 +212,9 @@ company (line-cue 가 명확). description/status/info 등은 cue 가 없어 자
 | 35-라벨 스키마 (REGEX/NER/LLM 분할) | `module/parts/labels.py` |
 | Regex 패턴 | `module/extractor/regex.py::PATTERNS` |
 | OCR 모델·설정 | `configs/labels.yaml::ocr.qwen3vl` |
-| NER threshold 기본값 | `module/extractor/ner/base.py::DEFAULT_THRESHOLD` |
+| NER threshold 기본값 | `module/extractor/ner/_runtime.py::DEFAULT_THRESHOLD` |
 | 진입점 기본값 | `main.py` (mBERT + threshold 0.25) |
-| Post-process 규칙 | `module/api.py::CLOSED_VOCAB`, `FORM_CUE_PATTERNS`, `postprocess_metadata` |
+| Post-process 규칙 | `module/extractor/ner/postprocess.py::CLOSED_VOCAB`, `FORM_CUE_PATTERNS`, `postprocess_metadata` |
 | 50-필드 xlsx 매핑 | `NER_LLM_METADATA_CONNECTION.md` |
 | Recall 평가 | `eval/eval_audit.py` |
 

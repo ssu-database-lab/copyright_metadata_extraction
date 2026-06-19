@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, cast
 
 from module.parts import text as text_module
 from module.extractor.ner._runtime import (
@@ -115,7 +115,26 @@ def _aggregate_decisions(
 # ═══════════════════════════════════════════════════════════════════════
 
 
-def _build_full_metadata(text: str, ner_aggregated: Dict[str, List[str]]) -> Dict[str, List[str]]:
+def _normalize_llm_values(value: Any) -> List[str]:
+    if value is None:
+        return ["N/A"]
+    if isinstance(value, str):
+        values = [value]
+    else:
+        try:
+            values = [str(v) for v in value if v is not None]
+        except TypeError:
+            values = [str(value)]
+    cleaned = [v.strip() for v in values if v.strip() and v.strip() != "N/A"]
+    return cleaned or ["N/A"]
+
+
+def _build_full_metadata(
+    text: str,
+    ner_aggregated: Dict[str, List[str]],
+    *,
+    llm_fn: Optional[Callable[[str, Dict[str, List[str]]], Dict[str, Any]]] = None,
+) -> Dict[str, List[str]]:
     """NER aggregation + regex(9) + post-process + LLM placeholder(9) → 35-라벨 dict."""
     from module.extractor.regex import regex_extract
     from module.extractor.ner.postprocess import postprocess_metadata
@@ -125,6 +144,15 @@ def _build_full_metadata(text: str, ner_aggregated: Dict[str, List[str]]) -> Dic
     for label in NER_LABEL_SET:
         out[label] = ner_aggregated.get(label, ["N/A"])
     out = postprocess_metadata(out, text)
+    if llm_fn is not None:
+        llm_updates = llm_fn(text, {k: list(v) for k, v in out.items()})
+        if llm_updates is None:
+            llm_updates = {}
+        if not isinstance(llm_updates, dict):
+            raise TypeError("llm_fn must return a dict[label, list[str] | str].")
+        for label in LLM_DELEGATED_LABEL_SET:
+            if label in llm_updates:
+                out[label] = _normalize_llm_values(llm_updates[label])
     for label in LLM_DELEGATED_LABEL_SET:
         out.setdefault(label, ["N/A"])
     return out
@@ -136,6 +164,7 @@ def _predict_one_text(
     threshold: Optional[float],
     *,
     model_path: Optional[str] = None,
+    llm_fn: Optional[Callable[[str, Dict[str, List[str]]], Dict[str, Any]]] = None,
     debug: bool = False,
 ) -> Tuple[Dict[str, List[str]], int, int, int]:
     """텍스트 입력 → (35-라벨 메타데이터, 문장 수, 토큰 수, decision 수)."""
@@ -152,7 +181,7 @@ def _predict_one_text(
     )
     from module.parts.labels import NER_LABEL_SET
     ner_aggregated = _aggregate_decisions(decisions, sorted(NER_LABEL_SET))
-    aggregated = _build_full_metadata(text, ner_aggregated)
+    aggregated = _build_full_metadata(text, ner_aggregated, llm_fn=llm_fn)
     return aggregated, len(sentences), len(tokens), len(decisions)
 
 
@@ -162,6 +191,7 @@ def _predict_one_file(
     threshold: Optional[float],
     *,
     model_path: Optional[str] = None,
+    llm_fn: Optional[Callable[[str, Dict[str, List[str]]], Dict[str, Any]]] = None,
     debug: bool = False,
 ) -> Tuple[Dict[str, List[str]], int, int, int]:
     """단일 파일 → (35-라벨 메타데이터, 문장 수, 토큰 수, decision 수)."""
@@ -193,7 +223,7 @@ def _predict_one_file(
     )
     from module.parts.labels import NER_LABEL_SET
     ner_aggregated = _aggregate_decisions(decisions, sorted(NER_LABEL_SET))
-    aggregated = _build_full_metadata(text, ner_aggregated)
+    aggregated = _build_full_metadata(text, ner_aggregated, llm_fn=llm_fn)
     return aggregated, len(sentences), len(tokens), len(decisions)
 
 
@@ -245,6 +275,7 @@ def ner_predict(
     threshold: Optional[float] = None,
     thresholds: Optional[Sequence[float]] = None,
     result_phase: Optional[str] = None,
+    llm_fn: Optional[Callable[[str, Dict[str, List[str]]], Dict[str, Any]]] = None,
     log_adapter_status: bool = True,
     debug: bool = False,
     debug_path: Optional[str] = None,
@@ -302,6 +333,7 @@ def ner_predict(
             "thresholds": list(thr_list) if sweep_mode else None,
             "threshold_sweep": sweep_mode,
             "result_phase": result_phase,
+            "llm_callback": llm_fn is not None,
             "log_adapter_status": log_adapter_status,
             "debug_path": debug_path,
             "threshold_dir": debug_threshold_dir,
@@ -331,6 +363,7 @@ def ner_predict(
                 aggregated, ns, nt, nd = _predict_one_text(
                     input_text, model_name, thr,
                     model_path=model_path,
+                    llm_fn=llm_fn,
                     debug=debug,
                 )
                 if log_adapter_status and thr == thr_list[0]:
@@ -409,6 +442,7 @@ def ner_predict(
                     aggregated, ns, nt, nd = _predict_one_file(
                         fpath, model_name, thr,
                         model_path=model_path,
+                        llm_fn=llm_fn,
                         debug=debug,
                     )
                     if log_adapter_status and not adapter_runtime_logged:
@@ -441,6 +475,7 @@ def ner_predict(
                 aggregated, ns, nt, nd = _predict_one_file(
                     root, model_name, thr,
                     model_path=model_path,
+                    llm_fn=llm_fn,
                     debug=debug,
                 )
                 if log_adapter_status and not adapter_runtime_logged:

@@ -1,0 +1,46 @@
+# Run started: 2026-06-19T22:47:18
+# Log format: [section] blocks with key = value pairs
+
+[meta]
+source = rule
+mode = m1_answer
+cfg_id = rule_m1_answer
+model = klue/bert-base
+method = full
+training_mode = integrated
+n_labels = 26
+silver_dir = /home/peppermint/shared/Documents/Coding/copyright_metadata_extraction/kcc2026paper/paper1/configs/rule/m1_answer
+silver_total_records = 193752
+silver_per_label_min = 4000
+silver_per_label_max = 10000
+
+[hparams]
+epochs = 3
+batch_size = 32
+lr = 4e-05
+early_stopping_patience = 3
+warmup_ratio = 0.1
+weight_decay = 0.01
+train_ratio = 8/12
+val_ratio = 2/12
+test_ratio = 2/12
+split_seed = 42
+max_per_label = 10000
+neg_ratio_m3 = 0.25
+
+[train_result]
+train_time_sec = 467.3
+
+[eval_result]
+n_labels = 26
+accuracy_overall = 0.491
+per_class = {'format-regular': {'n': 14, 'mean_acc': 0.338}, 'format-semi-regular': {'n': 6, 'mean_acc': 0.9595}, 'format-free': {'n': 6, 'mean_acc': 0.3798}}
+per_label = {'address': {'n_gold': 203, 'hit': 56, 'accuracy': 0.2759, 'class': 'format-regular'}, 'company': {'n_gold': 1721, 'hit': 1110, 'accuracy': 0.645, 'class': 'format-free'}, 'copyright_Keyword': {'n_gold': 1924, 'hit': 1850, 'accuracy': 0.9615, 'class': 'format-semi-regular'}, 'copyright_description': {'n_gold': 2000, 'hit': 1848, 'accuracy': 0.924, 'class': 'format-free'}, 'copyright_idnum': {'n_gold': 2000, 'hit': 750, 'accuracy': 0.375, 'class': 'format-regular'}, 'copyright_kotitle': {'n_gold': 14937, 'hit': 14162, 'accuracy': 0.9481, 'class': 'format-semi-regular'}, 'copyright_language': {'n_gold': 191, 'hit': 35, 'accuracy': 0.1832, 'class': 'format-regular'}, 'copyright_num': {'n_gold': 6943, 'hit': 6323, 'accuracy': 0.9107, 'class': 'format-regular'}, 'copyright_quantity': {'n_gold': 752, 'hit': 212, 'accuracy': 0.2819, 'class': 'format-regular'}, 'copyright_status': {'n_gold': 2000, 'hit': 0, 'accuracy': 0.0, 'class': 'format-regular'}, 'copyright_type': {'n_gold': 198, 'hit': 106, 'accuracy': 0.5354, 'class': 'format-free'}, 'copyright_uci': {'n_gold': 2789, 'hit': 2789, 'accuracy': 1.0, 'class': 'format-regular'}, 'copyright_url': {'n_gold': 2000, 'hit': 579, 'accuracy': 0.2895, 'class': 'format-regular'}, 'date': {'n_gold': 2067, 'hit': 174, 'accuracy': 0.0842, 'class': 'format-regular'}, 'department': {'n_gold': 149, 'hit': 17, 'accuracy': 0.1141, 'class': 'format-free'}, 'email': {'n_gold': 532, 'hit': 0, 'accuracy': 0.0, 'class': 'format-regular'}, 'name': {'n_gold': 2366, 'hit': 109, 'accuracy': 0.0461, 'class': 'format-free'}, 'phone': {'n_gold': 1000, 'hit': 0, 'accuracy': 0.0, 'class': 'format-regular'}, 'position': {'n_gold': 211, 'hit': 3, 'accuracy': 0.0142, 'class': 'format-free'}, 'ri_contract_type': {'n_gold': 120, 'hit': 119, 'accuracy': 0.9917, 'class': 'format-semi-regular'}, 'ri_copyright': {'n_gold': 97, 'hit': 85, 'accuracy': 0.8763, 'class': 'format-semi-regular'}, 'ri_data': {'n_gold': 2797, 'hit': 457, 'accuracy': 0.1634, 'class': 'format-regular'}, 'ri_info': {'n_gold': 100, 'hit': 98, 'accuracy': 0.98, 'class': 'format-semi-regular'}, 'ri_law_reference': {'n_gold': 2034, 'hit': 2033, 'accuracy': 0.9995, 'class': 'format-semi-regular'}, 'ri_money': {'n_gold': 1590, 'hit': 1590, 'accuracy': 1.0, 'class': 'format-regular'}, 'ri_period': {'n_gold': 2000, 'hit': 335, 'accuracy': 0.1675, 'class': 'format-regular'}}
+per_source = {'address': {'kogl': {'n': 53, 'hit': 6, 'accuracy': 0.1132}, 'tr01': {'n': 2, 'hit': 0, 'accuracy': 0.0}, 'tr02': {'n': 51, 'hit': 9, 'accuracy': 0.1765}, 'wondb': {'n': 97, 'hit': 41, 'accuracy': 0.4227}}, 'company': {'kogl': {'n': 3, 'hit': 3, 'accuracy': 1.0}, 'tr01': {'n': 33, 'hit': 30, 'accuracy': 0.9091}, 'tr02': {'n': 852, 'hit': 555, 'accuracy': 0.6514}, 'wondb': {'n': 64, 'hit': 32, 'accuracy': 0.5}, 'gongu': {'n': 361, 'hit': 91, 'accuracy': 0.2521}, 'kcc': {'n': 408, 'hit': 399, 'accuracy': 0.9779}}, 'copyright_Keyword': {'kogl': {'n': 251, 'hit': 250, 'accuracy': 0.996}, 'tr02': {'n': 60, 'hit': 1, 'accuracy': 0.0167}, 'wondb': {'n': 1608, 'hit': 1594, 'accuracy': 0.9913}, 'gongu': {'n': 5, 'hit': 5, 'accuracy': 1.0}}, 'copyright_description': {'tr02': {'n': 1990, 'hit': 1840, 'accuracy': 0.9246}, 'kogl': {'n': 10, 'hit': 8, 'accuracy': 0.8}}, 'copyright_idnum': {'wondb': {'n': 1318, 'hit': 295, 'accuracy': 0.2238}, 'kogl': {'n': 228, 'hit': 50, 'accuracy': 0.2193}, 'gongu': {'n': 454, 'hit': 405, 'accuracy': 0.8921}}, 'copyright_kotitle': {'tr01': {'n': 1851, 'hit': 1781, 'accuracy': 0.9622}, 'tr02': {'n': 165, 'hit': 120, 'accuracy': 0.7273}, 'wondb': {'n': 7, 'hit': 6, 'accuracy': 0.8571}, 'gongu': {'n': 8078, 'hit': 7890, 'accuracy': 0.9767}, 'kcc': {'n': 4836, 'hit': 4365, 'accuracy': 0.9026}}, 'copyright_language': {'tr02': {'n': 4, 'hit': 2, 'accuracy': 0.5}, 'pattern': {'n': 187, 'hit': 33, 'accuracy': 0.1765}}, 'copyright_num': {'pattern': {'n': 2000, 'hit': 1567, 'accuracy': 0.7835}, 'kcc': {'n': 4943, 'hit': 4756, 'accuracy': 0.9622}}, 'copyright_quantity': {'tr02': {'n': 81, 'hit': 9, 'accuracy': 0.1111}, 'pattern': {'n': 671, 'hit': 203, 'accuracy': 0.3025}}, 'copyright_status': {'wondb': {'n': 1752, 'hit': 0, 'accuracy': 0.0}, 'kogl': {'n': 248, 'hit': 0, 'accuracy': 0.0}}, 'copyright_type': {'kogl': {'n': 2, 'hit': 1, 'accuracy': 0.5}, 'tr02': {'n': 11, 'hit': 4, 'accuracy': 0.3636}, 'wondb': {'n': 6, 'hit': 5, 'accuracy': 0.8333}, 'gongu': {'n': 47, 'hit': 40, 'accuracy': 0.8511}, 'law:§4-6-91': {'n': 64, 'hit': 35, 'accuracy': 0.5469}, 'kogl.or.kr': {'n': 13, 'hit': 1, 'accuracy': 0.0769}, 'kogl.or.kr/categories': {'n': 55, 'hit': 20, 'accuracy': 0.3636}}, 'copyright_uci': {'gongu': {'n': 2789, 'hit': 2789, 'accuracy': 1.0}}, 'copyright_url': {'tr01': {'n': 1994, 'hit': 573, 'accuracy': 0.2874}, 'kogl': {'n': 6, 'hit': 6, 'accuracy': 1.0}}, 'date': {'tr01': {'n': 1908, 'hit': 149, 'accuracy': 0.0781}, 'tr02': {'n': 76, 'hit': 14, 'accuracy': 0.1842}, 'kogl': {'n': 3, 'hit': 3, 'accuracy': 1.0}, 'wondb': {'n': 11, 'hit': 1, 'accuracy': 0.0909}, 'gongu': {'n': 69, 'hit': 7, 'accuracy': 0.1014}}, 'department': {'tr02': {'n': 1, 'hit': 0, 'accuracy': 0.0}, 'copyright.or.kr/organization': {'n': 92, 'hit': 17, 'accuracy': 0.1848}, 'mcst.go.kr/organization': {'n': 56, 'hit': 0, 'accuracy': 0.0}}, 'email': {'pattern': {'n': 532, 'hit': 0, 'accuracy': 0.0}}, 'name': {'tr02': {'n': 744, 'hit': 109, 'accuracy': 0.1465}, 'gongu': {'n': 456, 'hit': 0, 'accuracy': 0.0}, 'wondb': {'n': 1, 'hit': 0, 'accuracy': 0.0}, 'kcc': {'n': 1165, 'hit': 0, 'accuracy': 0.0}}, 'phone': {'pattern': {'n': 1000, 'hit': 0, 'accuracy': 0.0}}, 'position': {'tr02': {'n': 211, 'hit': 3, 'accuracy': 0.0142}}, 'ri_contract_type': {'tr02': {'n': 6, 'hit': 6, 'accuracy': 1.0}, 'copyright.or.kr/standard-contract': {'n': 12, 'hit': 11, 'accuracy': 0.9167}, 'mcst.go.kr/popculture-contract': {'n': 21, 'hit': 21, 'accuracy': 1.0}, 'mcst.go.kr/performing-arts-contract': {'n': 15, 'hit': 15, 'accuracy': 1.0}, 'mcst.go.kr/digital-contents-contract': {'n': 6, 'hit': 6, 'accuracy': 1.0}, 'mcst.go.kr/publishing-contract': {'n': 18, 'hit': 18, 'accuracy': 1.0}, 'mcst.go.kr/broadcast-contract': {'n': 18, 'hit': 18, 'accuracy': 1.0}, 'mcst.go.kr/webtoon-contract-2024': {'n': 24, 'hit': 24, 'accuracy': 1.0}}, 'ri_copyright': {'kogl': {'n': 5, 'hit': 5, 'accuracy': 1.0}, 'tr02': {'n': 1, 'hit': 1, 'accuracy': 1.0}, 'law:easylaw.go.kr/§16-22': {'n': 21, 'hit': 21, 'accuracy': 1.0}, 'copyright.or.kr/standard-contract': {'n': 6, 'hit': 6, 'accuracy': 1.0}, 'law:§66-77': {'n': 32, 'hit': 20, 'accuracy': 0.625}, 'law:§78-83': {'n': 16, 'hit': 16, 'accuracy': 1.0}, 'law:§84-85': {'n': 12, 'hit': 12, 'accuracy': 1.0}, 'law:§93': {'n': 4, 'hit': 4, 'accuracy': 1.0}}, 'ri_data': {'pattern': {'n': 1493, 'hit': 356, 'accuracy': 0.2384}, 'kcc': {'n': 1304, 'hit': 101, 'accuracy': 0.0775}}, 'ri_info': {'kogl': {'n': 4, 'hit': 4, 'accuracy': 1.0}, 'tr01': {'n': 7, 'hit': 7, 'accuracy': 1.0}, 'tr02': {'n': 1, 'hit': 1, 'accuracy': 1.0}, 'gongu': {'n': 4, 'hit': 4, 'accuracy': 1.0}, 'kogl.or.kr/info/license.do': {'n': 20, 'hit': 20, 'accuracy': 1.0}, 'creativecommons.org/licenses': {'n': 35, 'hit': 34, 'accuracy': 0.9714}, 'kogl.or.kr/type0-2023': {'n': 9, 'hit': 9, 'accuracy': 1.0}, 'kogl.or.kr/ai-type-2025': {'n': 9, 'hit': 9, 'accuracy': 1.0}, 'kogl.or.kr/status': {'n': 11, 'hit': 10, 'accuracy': 0.9091}}, 'ri_law_reference': {'law:casenote.kr': {'n': 1930, 'hit': 1929, 'accuracy': 0.9995}, 'law:casenote.kr/민법': {'n': 60, 'hit': 60, 'accuracy': 1.0}, 'law:casenote.kr/상표법': {'n': 24, 'hit': 24, 'accuracy': 1.0}, 'law:casenote.kr/부정경쟁방지법': {'n': 20, 'hit': 20, 'accuracy': 1.0}}, 'ri_money': {'pattern': {'n': 1590, 'hit': 1590, 'accuracy': 1.0}}, 'ri_period': {'tr02': {'n': 2000, 'hit': 335, 'accuracy': 0.1675}}}
+eval_time_sec = 106.4
+
+[final]
+accuracy = 0.491
+total_time_sec = 574.4
+
+# Run ended: 2026-06-19T22:56:52

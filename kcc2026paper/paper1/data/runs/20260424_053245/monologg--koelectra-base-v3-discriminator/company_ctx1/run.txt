@@ -1,0 +1,34 @@
+# Run started: 2026-04-24T11:40:08
+# Log format: [section] blocks with key = value pairs
+
+[meta]
+model = monologg/koelectra-base-v3-discriminator
+label = company
+ctx = ctx1
+silver_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/ctx_ablation/silver/company_ctx1
+gold_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/ctx_ablation/gold/company_ctx1
+
+[hparams]
+epochs = 2
+batch_size = 8
+lr = 2e-05
+train_ratio = 8/12
+val_ratio = 2/12
+test_ratio = 2/12
+split_seed = 42
+
+[train_result]
+train_time_sec = 160.7
+model_path = /home/peppermint/copyright_metadata_extraction/metadata/data/out/paper1_20260424_053245/monologg--koelectra-base-v3-discriminator/company_ctx1/model
+
+[eval_result]
+n_gold = 814
+hit = 809
+accuracy = 0.9939
+eval_time_sec = 5.3
+
+[final]
+accuracy = 0.9939
+total_time_sec = 166.6
+
+# Run ended: 2026-04-24T11:42:55

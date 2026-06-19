@@ -1,0 +1,31 @@
+--- Training Data Samples (Seen Patterns) ---
+주식회사 권아 기획팀의 조가 대표입니다.
+정건의 전화번호는 010-1899-6567입니다.
+위치: 서울시 강남구 안가현로 39
+2021년 7월 9일까지 user555@example.com로 제출하세요.
+주식회사 이나에서 왔습니다.
+이메일 user90@example.com로 보내주세요.
+주식회사 정파 기획팀의 전우가 사원입니다.
+CONTRACT_TYPE: 비밀유지서약서
+가격은 947만원입니다.
+PERIOD: 8개월
+
+--- Validation Data Samples (Unseen Patterns) ---
+Please contact 강하 at 010-1373-7712.
+Please contact 조타하 at 010-6206-9844.
+Check ADDRESS: 서울시 강남구 권사로 88
+Check DATE: 2020년 6월 11일
+Check COMPANY: 주식회사 황바
+Check EMAIL: user61@example.com
+권가 (사원) from 주식회사 조아 영업팀.
+Check CONTRACT_TYPE: 이용허락계약서
+Check MONEY: 32만원
+Check PERIOD: 2개월
+
+--- OCR Noise Simulation (Noise Prob: 30%) ---
+Original: 홍길동의 전화번호는 010-1234-5678이며, 계약일은 2025년 1월 1일입니다.
+Noisy 1: 홍길동의 전화번호는 0 10 -1234-567 8이며, 계약 일은 2 025년 1월 1 일 입니다.
+Noisy 2: 홍 길동의 전 화번호는 010-1234-567 8이며, 계약일은 202 5년 1월 1 일 입니다.
+Noisy 3: 홍길동의 전화번호 는 010-1234-5678 이며, 계약일은 2025년 1 월 1일입니다.
+Noisy 4: 홍길동의 전화 번호는 010- 12 34-5678이 며, 계약일은 2025년 1월 1일입니다.
+Noisy 5: 홍길동의 전 화번호는 01 0-1234-567 8 이며, 계약일 은  2025년 1월 1일 입니 다.

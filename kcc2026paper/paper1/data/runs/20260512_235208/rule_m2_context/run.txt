@@ -1,0 +1,31 @@
+# Run started: 2026-05-12T23:56:11
+# Log format: [section] blocks with key = value pairs
+
+[meta]
+source = rule
+mode = m2_context
+cfg_id = rule_m2_context
+model = klue/bert-base
+method = full
+training_mode = integrated
+n_labels = 26
+silver_dir = /home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/configs/paper1/rule/m2_context
+silver_total_records = 192927
+silver_per_label_min = 4000
+silver_per_label_max = 10000
+
+[hparams]
+epochs = 3
+batch_size = 32
+lr = 4e-05
+early_stopping_patience = 3
+warmup_ratio = 0.1
+weight_decay = 0.01
+train_ratio = 8/12
+val_ratio = 2/12
+test_ratio = 2/12
+split_seed = 42
+max_per_label = 10000
+neg_ratio_m3 = 0.25
+
+# Run ended: 2026-05-12T23:58:59

@@ -1,0 +1,5351 @@
+Please	O
+provide	O
+1개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Check	O
+TYPE:	O
+소프트웨어	B-TYPE
+
+유한회 사	B-COMPANY
+장자여통상	I-COMPANY
+@	O
+제주시	B-ADDRESS
+최판소시	I-ADDRESS
+명연대로	I-ADDRESS
+905,	I-ADDRESS
+Tel:	O
+010-7825-8178,	B-PHONE
+Web:	O
+http://www.amazon796.com.	B-URL
+
+Missing	O
+DESCRIPTION:	O
+기타	B-DESCRIPTION
+사항은	I-DESCRIPTION
+상호	I-DESCRIPTION
+협의하여	I-DESCRIPTION
+결정한다.	I-DESCRIPTION
+
+중도금:	O
+5054천원	B-MONEY
+
+입력된	O
+TYPE	O
+값은	O
+사진저작물	B-TYPE
+입니다.	O
+
+POSITION:	O
+대표	B-POSITION
+
+선택	O
+입력	O
+항 목	O
+(PERIOD):	O
+6개월	B-PERIOD
+
+입력된	O
+QUANTITY	O
+값 은	O
+938개	B-QUANTITY
+입니다.	O
+
+구세	B-NAME
+(?D:	O
+160709-3******)	B-ID_NUM
+resid es	O
+at	O
+제주시	B-ADDRESS
+곽 타군	I-ADDRESS
+차차훈로	I-ADDRESS
+464,	I-ADDRESS
+phone:	O
+010-7921-3?72.	B-PHONE
+
+CC:	O
+user802@example.com	B-EMAIL
+
+Missing	O
+CONSENT_TYPE:	O
+마케 팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Transfer	O
+fee	O
+for	O
+전송 권	B-RIGHT_INFO
+is	O
+5316천원.	B-MONEY
+
+Missing	O
+DESCRIPTION:	O
+세부	B-DESCRIPTION
+사 항은	I-DESCRIPTION
+첨부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다.	I-DESCRIPTION
+
+보안팀에	B-DEPARTMENT
+관한	O
+내용.	O
+
+선택	O
+입력	O
+항목	O
+(LANGUAGE):	O
+독일어	B-LANGUAGE
+
+Please	O
+pr ovide	O
+368시간	B-QUANTITY
+f?r	O
+QUANTITY.	O
+
+표연	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+(사진저작물,	B-TYPE
+아랍어,	B-LANGUAGE
+757점)에	B-QUANTITY
+대한	O
+복제권	B-RIGHT_INFO
+양도.	O
+
+저작권법	B-LAW_REFERENCE
+제54조	I-LAW_REFERENCE
+7 항	I-LAW_REFERENCE
+저작재산권	B-RIGHT_INFO
+어문저작물	B-TYPE
+4?0개	B-QUANTITY
+1042억원	B-MONEY
+
+Please	O
+provid e	O
+본	B-DESCRIPTION
+계약의	I-DESCRIPTION
+상세	I-DESCRIPTION
+내용 은	I-DESCRIPTION
+별첨과	I-DESCRIPTION
+같다.	I-DESCRIPTION
+for	O
+DESCRIPTION.	O
+
+On	O
+2000년	B-DATE
+6월	I-DATE
+2 2일,	I-DATE
+(주)	B-COMPANY
+?카은산업	I-COMPANY
+and	O
+권조	B-NAME
+s?gned	O
+전속계약서.	B-CONTRACT_TYPE
+
+입력된	O
+STATUS	O
+값은	O
+검 토	B-STATUS
+중	I-STATUS
+입니다?	O
+
+Please	O
+provide	O
+저작권법	B-LAW_REFERENCE
+제30조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+for	O
+LAW_REFERENCE.	O
+
+유한회사	B-COMPANY
+진조명무역	I-COMPANY
+물류팀	B-DEPARTMENT
+프로젝?	B-PROJECT_NAME
+U?1	I-PROJECT_NAME
+2020년	B-DATE
+1?	I-DATE
+?6일	I-DATE
+승인	B-STATUS
+대기	I-STATUS
+
+필수	O
+입력	O
+항?	O
+(CONSENT_TYPE):	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Value	O
+o?	O
+RIGHT_?NFO	O
+?s	O
+전송권	B-RIGHT_INFO
+
+user222@example.com	B-EMAIL
+/	O
+010-1200-?772	B-PHONE
+
+Va?ue	O
+of	O
+LANGUAGE	O
+i s	O
+일본어	B-LANGUAGE
+
+필수	O
+입력	O
+항목	O
+(PROJECT?NAME):	O
+프로젝 트	B-PROJECT_NAME
+A20	I-PROJECT_NAME
+
+Value	O
+of	O
+LANGUAGE	O
+?s	O
+한국어	B-LANGUAGE
+
+수석연구원	B-POSITION
+하종성	B-NAME
+
+Check	O
+STATUS:	O
+해 지	B-STATUS
+
+Residence:	O
+울산시	B-ADDRESS
+노설군	I-ADDRESS
+?안대로	I-ADDRESS
+406	I-ADDRESS
+
+입 력된	O
+STATUS	O
+값은	O
+만료	B-STATUS
+입니다.	O
+
+심유훈	B-NAME
+(책임)	B-POSITION
+signed	O
+전자금융 거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동 의	I-CONSENT_TYPE
+on	O
+2015년	B-DATE
+1월	I-DATE
+20 일	I-DATE
+->	O
+user820@example.com.	B-EMAIL
+
+유홍	B-NAME
+(인)	O
+
+입력된	O
+TITLE	O
+?은	O
+정지	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+입니다.	O
+
+Missing	O
+LANGUAGE :	O
+일본어	B-LANGUAGE
+
+신진원	B-NAME
+lives	O
+in	O
+전라북도	B-ADDRESS
+?세두군	I-ADDRESS
+조마회길	I-ADDRESS
+672.	I-ADDRESS
+
+Deposit	O
+7097만원	B-MONEY
+?n	O
+2020년	B-DATE
+7월	I-DATE
+13일,	I-DATE
+B alance	O
+7097만원	O
+on	O
+2020년	O
+7월	O
+1?일.	O
+
+010-8702- 4909	B-PHONE
+(여하)	B-NAME
+
+기존	O
+PERIOD:	O
+21개월	B-PERIOD
+
+Client:	O
+(주)	B-COMPANY
+윤광디자인	I-COMPANY
+
+Please	O
+pr?vide	O
+만 료	B-STATUS
+for	O
+STATU S.	O
+
+본	O
+임대차계약서은	B-CONTRACT_TYPE
+2024년	B-DATE
+2월	I-DATE
+23 일부터	I-DATE
+1개월간	B-PERIOD
+유효하며	O
+금액은	O
+8028만원이다.	B-MONEY
+
+http://www.line559.com	B-URL
+-	O
+분 쟁	B-DESCRIPTION
+발생	I-DESCRIPTION
+시	I-DESCRIPTION
+?할	I-DESCRIPTION
+법원?	I-DESCRIPTION
+판결에	I-DESCRIPTION
+따른다.	I-DESCRIPTION
+
+이것은	O
+DESCRIPTION	O
+예시인	O
+분쟁	B-DESCRIPTION
+발생	I-DESCRIPTION
+시	I-DESCRIPTION
+관할	I-DESCRIPTION
+법원의	I-DESCRIPTION
+판결?	I-DESCRIPTION
+따른다.입니다.	I-DESCRIPTION
+
+Reg	O
+No:	O
+621103-4**?***	B-ID_NUM
+
+문의	O
+사항은	O
+user126@example.com로.	B-EMAIL
+
+?EPARTMENT:	O
+구매팀	B-DEPARTMENT
+
+방주	B-TITLE
+관련	I-TITLE
+신청서에	I-TITLE
+명 시된	O
+전송권는	B-RIGHT_INFO
+저작권법	B-LAW_REFERENCE
+제3조	I-LAW_REFERENCE
+5항에	I-LAW_REFERENCE
+따라	O
+사단법인	B-COMPANY
+모성광시스템에	I-COMPANY
+귀속?다.	O
+
+Mis sing	O
+TYPE:	O
+편 집저작물	B-TYPE
+
+Pl?ase	O
+provide	O
+일본어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+?악저작물	B-TYPE
+501건	B-QUANTITY
+(독일어)	B-LANGUAGE
+-	O
+전시 권	B-RIGHT_INFO
+321 3억원	B-MONEY
+(30개월)	B-PERIOD
+
+기존	O
+POSITION?	O
+사장	B-POSITION
+
+변상 차	B-NAME
+(주 임)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+?용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2000년	B-DATE
+3월	I-DATE
+7일	I-DATE
+->	O
+user691@example.com.	B-EMAIL
+
+임 철	B-NAME
+(센터장)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2025년	B-DATE
+3월	I-DATE
+27일	I-DATE
+->	O
+user29@example.com.	B-EMAIL
+
+Missing	O
+DESCRIPTION:	O
+특약	B-DESCRIPTION
+사항은	I-DESCRIPTION
+별도?	I-DESCRIPTION
+정한다.	I-DESCRIPTION
+
+직통번호:	O
+010-2668-3 182	B-PHONE
+
+user777@example.com,	B-EMAIL
+010-8915-9264	B-PHONE
+
+염영	B-NAME
+(주민번호?	O
+830925-2******,	B-ID_NUM
+주소:	O
+대전시	B-ADDRESS
+노창시	I-ADDRESS
+여사수길	I-ADDRESS
+41 6-10)	I-ADDRESS
+
+삭제된	O
+PROJECT_NAME:	O
+프로젝?	B-PROJECT_NAME
+U6	I-PROJECT_NAME
+
+Check	O
+STATUS:	O
+수정	B-STATUS
+요청	I-STATUS
+
+security:	O
+user969@example.com	B-EMAIL
+
+Missing	O
+TYPE:	O
+어문저작물	B-TYPE
+
+Missing	O
+TYPE:	O
+도형저작물	B-TYPE
+
+Check	O
+LANGUAGE:	O
+아랍어	B-LANGUAGE
+
+수 정	B-STATUS
+요청에	I-STATUS
+관한	O
+내용.	O
+
+설치	O
+장소:	O
+충청북도	B-ADDRESS
+신종시	I-ADDRESS
+오원형로	I-ADDRESS
+309	I-ADDRESS
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제10조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+
+만료에	B-STATUS
+관 한	O
+내용.	O
+
+2008년	B-DATE
+9월	I-DATE
+16일	I-DATE
+유한 회사	B-COMPANY
+김의제약	I-COMPANY
+생산팀	B-DEPARTMENT
+공 창혁	B-NAME
+?원	B-POSITION
+010-2579-3535	B-PHONE
+user663@example.com	B-EMAIL
+
+?제된	O
+RIGHT_INFO:	O
+저작재산 권	B-RIGHT_INFO
+
+Missing	O
+Q UANTITY:	O
+348일	B-QUANTITY
+
+서웅안	B-TITLE
+관련	I-TITLE
+제안서에	I-TITLE
+명시된	O
+퍼블리시티권는	B-RIGHT_INFO
+?작권법	B-LAW_REFERENCE
+제15조	I-LAW_REFERENCE
+3항에	I-LAW_REFERENCE
+따라	O
+(주)	B-COMPANY
+반천기획에	I-COMPANY
+귀속된다.	O
+
+Val?e	O
+of	O
+TITLE	O
+i?	O
+추훈	B-TITLE
+관련	I-TITLE
+계획?	I-TITLE
+
+Check	O
+TYPE:	O
+2차적저작물	B-TYPE
+
+추가된	O
+RIGHT_INFO:	O
+저작재산권	B-RIGHT_INFO
+
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+U60	I-PROJECT_NAME
+
+Check	O
+POSITION:	O
+수석연구원	B-POSITION
+
+주민번호:	O
+700921-2******	B-ID_NUM
+
+2005년	B-DATE
+6월	I-DATE
+3일에	I-DATE
+?한회사	B-COMPANY
+김찬소프트 와	I-COMPANY
+모설위은	B-NAME
+라이선스계약서을	B-CONTRACT_TYPE
+체결했다.	O
+
+삭제된	O
+POSITION:	O
+주임	B-POSITION
+
+http://www.woowahan562.com	B-URL
+-	O
+세 부	B-DESCRIPTION
+사 항은	I-DESCRIPTION
+첨부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다.	I-DESCRIPTION
+
+선?	O
+입력	O
+항목	O
+(CONSENT_TYPE):	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+기존	O
+LANGUAGE:	O
+중국어	B-LANGUAGE
+
+다음	O
+LANGUAGE을	O
+확인하세요:	O
+프랑스어	B-LANGUAGE
+
+재단법인	B-COMPANY
+안동미디어	I-COMPANY
+CEO	O
+임 화	B-NAME
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+R56	I-PROJECT_NAME
+
+이름:	O
+신지	B-NAME
+
+Missing	O
+QUANTITY:	O
+?66부	B-QUANTITY
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+U?5	I-PROJECT_NAME
+
+영상저작물	B-TYPE
+443일	B-QUANTITY
+(프랑스어)	B-LANGUAGE
+-	O
+저작재산권	B-RIGHT_INFO
+4298천원	B-MONEY
+(3 6개월)	B-PERIOD
+
+접수번호:	O
+740312-1******	B-ID_NUM
+
+대표	B-POSITION
+임명?	B-NAME
+
+주식회?	B-COMPANY
+남회건설	I-COMPANY
+@	O
+전라남도	B-ADDRESS
+금종구	I-ADDRESS
+방춘대로	I-ADDRESS
+505-17,	I-ADDRESS
+?el:	O
+010-7950-7385,	B-PHONE
+Web:	O
+htt p://www.sk618.com.	B-URL
+
+발행일:	O
+202 5년	B-DATE
+3월	I-DATE
+21일	I-DATE
+
+스?인어	B-LANGUAGE
+-	O
+어문저작물	B-TYPE
+
+?택	O
+입력	O
+항목	O
+(URL):	O
+http://www.sk233.com	B-URL
+
+이것은	O
+PROJECT_NAME	O
+예시인	O
+프로젝트	B-PROJECT_NAME
+H63입니다.	I-PROJECT_NAME
+
+박원요	B-NAME
+(본부장)	B-POSITION
+can	O
+be	O
+reached	O
+a t	O
+010-4296-2784.	B-PHONE
+
+저작권법	B-LAW_REFERENCE
+제?조	I-LAW_REFERENCE
+8항	I-LAW_REFERENCE
+공연권	B-RIGHT_INFO
+연극저작물	B-TYPE
+552매	B-QUANTITY
+?372천원	B-MONEY
+
+주민등록번호:	O
+561012-4******	B-ID_NUM
+
+License:	O
+750220-1******	B-ID_NUM
+
+민철환	B-NAME
+wor?s	O
+at	O
+물류팀.	B-DEPARTMENT
+
+날짜:	O
+2020년	B-DATE
+2월	I-DATE
+2일	I-DATE
+
+조회	B-NAME
+(980422-2******)	B-ID_NUM
+-	O
+부산시	B-ADDRESS
+왕섭시	I-ADDRESS
+신성?대로	I-ADDRESS
+544-38,	I-ADDRESS
+010-3117-8842,	B-PHONE
+user217@example.com	B-EMAIL
+
+추가된	O
+CONTRACT_TYPE:	O
+임대차계약서	B-CONTRACT_TYPE
+
+Reach	O
+m e	O
+?t	O
+010-3369-5106	B-PHONE
+
+Missing	O
+TYPE:	O
+연극저작?	B-TYPE
+
+염현	B-NAME
+(ID:	O
+790720-4******)	B-ID_NUM
+resid?s	O
+at	O
+경상남도	B-ADDRESS
+?창시	I-ADDRESS
+노?길	I-ADDRESS
+316,	I-ADDRESS
+phone:	O
+010-8200-7361.	B-PHONE
+
+Transfer	O
+방 송권	B-RIGHT_INFO
+of	O
+3 00일	B-QUANTITY
+연극저작물	B-TYPE
+for	O
+7328 만원.	B-MONEY
+
+Value	O
+of	O
+TYPE	O
+is	O
+소프트웨어	B-TYPE
+
+지체상금:	O
+863억원	B-MONEY
+
+Va lue	O
+of	O
+LANGUAGE	O
+is	O
+프랑스어	B-LANGUAGE
+
+Transfer	O
+fee	O
+for	O
+방송권	B-RIGHT_INFO
+is	O
+7608만원.	B-MONEY
+
+변경된	O
+PROJECT_NAME?	O
+프로 젝트	B-PROJECT_NAME
+K84	I-PROJECT_NAME
+
+Made	O
+?y	O
+주 식회사	B-COMPANY
+김시엔터테인먼트	I-COMPANY
+
+2023년	B-DATE
+9월	I-DATE
+6일에	I-DATE
+사단법인	B-COMPANY
+황마전자와	I-COMPANY
+노승은	B-NAME
+출판권설정계약서을	B-CONTRACT_TYPE
+체결했다.	O
+
+배우	B-NAME
+-	O
+사원	B-POSITION
+
+추가된	O
+PERIOD:	O
+20개월	B-PERIOD
+
+Value	O
+of	O
+DEPARTMENT	O
+i?	O
+마케팅팀	B-DEPARTMENT
+
+석일	B-NAME
+(271210-2******)	B-ID_NUM
+-	O
+경?북도	B-ADDRESS
+배해인구	I-ADDRESS
+나광길	I-ADDRESS
+111,	I-ADDRESS
+010-2832-4697,	B-PHONE
+user110@example.com	B-EMAIL
+
+Check	O
+URL:	O
+http://www.coupang448.com	B-URL
+
+추가된	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제90조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+
+본	O
+전속계약서은	B-CONTRACT_TYPE
+202?년	B-DATE
+8월	I-DATE
+12일부터	I-DATE
+14개월간	B-PERIOD
+유효하며	O
+금액은	O
+3115억원이다.	B-MONEY
+
+2006년	B-DATE
+4월	I-DATE
+1?일	I-DATE
+-	O
+비밀유?서약서	B-CONTRACT_TYPE
+
+기존	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+V70	I-PROJECT_NAME
+
+Che ck	O
+CONSENT_TYPE:	O
+제3?	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+해 외사업팀	B-DEPARTMENT
+소속	O
+여운입니다.	B-NAME
+
+성월	B-NAME
+(821104-1******)	B-ID_NUM
+-	O
+대전 시	B-ADDRESS
+권훈구	I-ADDRESS
+백석로	I-ADDRESS
+?04-14,	I-ADDRESS
+010-5666-2398,	B-PHONE
+user857@example.com	B-EMAIL
+
+Please	O
+provide	O
+스페인어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+Details:	O
+심 나영,	B-NAME
+510728-2******,	B-ID_NUM
+충청북 도	B-ADDRESS
+소비종군	I-ADDRESS
+민환예 대로	I-ADDRESS
+157-39	I-ADDRESS
+
+B udget	O
+for	O
+프로젝트	B-PROJECT_NAME
+G30:	I-PROJECT_NAME
+834억원.	B-MONEY
+
+금제	B-NAME
+works	O
+at	O
+연구소.	B-DEPARTMENT
+
+user309@example.com,	B-EMAIL
+010-8261-8532	B-PHONE
+
+(주)	B-COMPANY
+전창연스튜디오	I-COMPANY
+invests	O
+17?1천원	B-MONEY
+in	O
+프로 젝트	B-PROJECT_NAME
+A26,	I-PROJECT_NAME
+com?letion	O
+2017년	B-DATE
+8월	I-DATE
+19일.	I-DATE
+
+저작권법	B-LAW_REFERENCE
+제78조	I-LAW_REFERENCE
+6?	I-LAW_REFERENCE
+-	O
+고해동	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+
+신?증	O
+번호:	O
+190504-1******	B-ID_NUM
+
+S?ip	O
+to:	O
+강원도	B-ADDRESS
+현 택군	I-ADDRESS
+정훈대대로	I-ADDRESS
+36 2	I-ADDRESS
+
+신의종	B-TITLE
+?련	I-TITLE
+명세서	I-TITLE
+(편집저작물,	B-TYPE
+중국어,	B-LANGUAGE
+552점)에	B-QUANTITY
+대한	O
+대여권	B-RIGHT_INFO
+양도.	O
+
+user951@exampl?.com,	B-EMAIL
+010-7637-5425	B-PHONE
+
+Value	O
+of	O
+QUANTITY	O
+i s	O
+311편	B-QUANTITY
+
+접수처:	O
+user179@example.com	B-EMAIL
+
+등록 기준지:	O
+광주시	B-ADDRESS
+강자엄구	I-ADDRESS
+변율?	I-ADDRESS
+33 9-36	I-ADDRESS
+
+편집저작물	B-TYPE
+83 2점	B-QUANTITY
+(영어)	B-LANGUAGE
+-	O
+2차적저작물작성권	B-RIGHT_INFO
+1001억원	B-MONEY
+(18개월)	B-PERIOD
+
+2023년	B-DATE
+1월	I-DATE
+23일	I-DATE
+시 행	O
+
+Please	O
+provide	O
+연구소	B-DEPARTMENT
+for	O
+DEPARTMENT?	O
+
+변경된	O
+PERIOD:	O
+1개월	B-PERIOD
+
+Pleas e	O
+contact	O
+서?	B-NAME
+at	O
+010-8497-1123.	B-PHONE
+
+Identity	O
+verified:	O
+홍카,	B-NAME
+620502-4****** .	B-ID_NUM
+
+Please	O
+provide	O
+http://www.sk974.com	B-URL
+for	O
+URL.	O
+
+Check	O
+STATUS:	O
+보류	B-STATUS
+
+(주)	B-COMPANY
+추재바이오	I-COMPANY
+@	O
+광주시	B-ADDRESS
+국나군	I-ADDRESS
+편 진길	I-ADDRESS
+788,	I-ADDRESS
+Tel :	O
+010-6103-?441,	B-PHONE
+Web:	O
+http://www.google524.com.	B-URL
+
+Missing	O
+Q UANTITY:	O
+369회	B-QUANTITY
+
+Submit	O
+to	O
+user992@example.com	B-EMAIL
+by	O
+2012년	B-DATE
+5월	I-DATE
+12?.	I-DATE
+
+M?ssing	O
+CONSENT_TYPE:	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동 의	I-CONSENT_TYPE
+
+P?ice:	O
+6917억원	B-MONEY
+
+SSN:	O
+791012-2******	B-ID_NUM
+
+License:	O
+600211-1******	B-ID_NUM
+
+Call	O
+010-8888-9285	B-PHONE
+now.	O
+
+선택	O
+입력	O
+?목	O
+(DEPARTMENT):	O
+개발 팀	B-DEPARTMENT
+
+SM S:	O
+01 0-1604-2310	B-PHONE
+
+Attn:	O
+모임	B-NAME
+사원 ,	B-POSITION
+마케팅팀,	B-DEPARTMENT
+유한 회사	B-COMPANY
+양하원홀딩스	I-COMPANY
+
+Email	O
+address:	O
+user347@example.com	B-EMAIL
+
+Pleas e	O
+provide	O
+http://www.coupang560.com	B-URL
+fo r	O
+URL.	O
+
+유통사:	O
+유한회사	B-COMPANY
+유 다전자	I-COMPANY
+
+재단?인	B-COMPANY
+문연엔터테인먼트	I-COMPANY
+전략팀	B-DEPARTMENT
+?로젝트	B-PROJECT_NAME
+Y78	I-PROJECT_NAME
+?011년	B-DATE
+12월	I-DATE
+3일	I-DATE
+해지	B-STATUS
+
+조하석	B-NAME
+?사장)	B-POSITION
+can	O
+b?	O
+reached	O
+at	O
+010-4405-7088.	B-PHONE
+
+전원철	B-NAME
+(선임연구원)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2013년	B-DATE
+7월	I-DATE
+19일	I-DATE
+->	O
+user398@example.com.	B-EMAIL
+
+필수	O
+입력	O
+항목	O
+(RIGHT_INFO):	O
+퍼블리시티권	B-RIGHT_INFO
+
+선택	O
+입력	O
+항?	O
+( LAW_REFERENCE):	O
+저작권법	B-LAW_REFERENCE
+제99조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+
+작성일:	O
+2005년	B-DATE
+11월	I-DATE
+26일	I-DATE
+
+QA팀	B-DEPARTMENT
+소속	O
+배오오입니다.	B-NAME
+
+유한회사	B-COMPANY
+성재컨설팅	I-COMPANY
+i s	O
+l ocated	O
+at	O
+서울시	B-ADDRESS
+홍?시	I-ADDRESS
+홍성대로	I-ADDRESS
+5 .	I-ADDRESS
+
+2011년	B-DATE
+2월	I-DATE
+?9일	I-DATE
+재단법인	B-COMPANY
+황학바이오	I-COMPANY
+보안팀	B-DEPARTMENT
+황유다	B-NAME
+실 장	B-POSITION
+010-2415-2790	B-PHONE
+user528@example.com	B-EMAIL
+
+Value	O
+of	O
+TITLE	O
+is	O
+맹?민	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+
+사단법인	B-COMPANY
+하바시스템	I-COMPANY
+invests	O
+4969천원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+X42,	I-PROJECT_NAME
+comple tion	O
+2025년	B-DATE
+1월	I-DATE
+19 일.	I-DATE
+
+2?25년	B-DATE
+1 2월	I-DATE
+28일	I-DATE
+-	O
+MOU	B-CONTRACT_TYPE
+
+Please	O
+provide	O
+영어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+상세	O
+CONSENT_TYPE	O
+정보:	O
+전자금융거래	B-CONSENT_TYPE
+약 관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+2024년	B-DATE
+3월	I-DATE
+27일	I-DATE
+-	O
+용역계약서	B-CONTRACT_TYPE
+
+SMS:	O
+010-4509-7187	B-PHONE
+
+상세	O
+DEPARTMENT	O
+정보 :	O
+법 무팀	B-DEPARTMENT
+
+추가된	O
+DESCRIPTION:	O
+분쟁	B-DESCRIPTION
+발생	I-DESCRIPTION
+시	I-DESCRIPTION
+관 할	I-DESCRIPTION
+법원의	I-DESCRIPTION
+판결에	I-DESCRIPTION
+따른다.	I-DESCRIPTION
+
+사업 장	O
+소재지:	O
+전?남도	B-ADDRESS
+조완군	I-ADDRESS
+박천길	I-ADDRESS
+4 3	I-ADDRESS
+
+Since	O
+2007년	B-DATE
+1월	I-DATE
+20일	I-DATE
+
+Effecti ve	O
+from	O
+2?00년	B-DATE
+11월	I-DATE
+4일	I-DATE
+
+상세	O
+PERIOD	O
+정보:	O
+21개월	B-PERIOD
+
+2009?	B-DATE
+1 1월	I-DATE
+3일	I-DATE
+-	O
+비밀유지서 약서	B-CONTRACT_TYPE
+
+가 입	O
+문의:	O
+010-4204-5052	B-PHONE
+
+추가된	O
+TYPE :	O
+영상저작물	B-TYPE
+
+Check	O
+URL:	O
+ht tp://www.lg114.com	B-URL
+
+수령	O
+장소:	O
+충청북도	B-ADDRESS
+차중훈군	I-ADDRESS
+용예대로	I-ADDRESS
+3	I-ADDRESS
+
+QUANTITY:	O
+108편	B-QUANTITY
+
+Check	O
+PERIOD:	O
+32개월	B-PERIOD
+
+Value	O
+of	O
+DEPARTMENT	O
+is	O
+디자인팀	B-DEPARTMENT
+
+영상저작물	B-TYPE
+(러시아어)	B-LANGUAGE
+
+삭제된	O
+POSITION:	O
+부장	B-POSITION
+
+2차적저작물	B-TYPE
+207회	B-QUANTITY
+(일본어)	B-LANGUAGE
+-	O
+2차적저작물작성권	B-RIGHT_INFO
+7271천원	B-MONEY
+( 12개월)	B-PERIOD
+
+?가된	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+O74	I-PROJECT_NAME
+
+변경된	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제59조	I-LAW_REFERENCE
+2항	I-LAW_REFERENCE
+
+LA?GUAGE:	O
+스페인어	B-LANGUAGE
+
+Transfer	O
+fee	O
+for	O
+성명표시권	B-RIGHT_INFO
+is	O
+5289천원.	B-MONEY
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제84조	I-LAW_REFERENCE
+3항,	I-LAW_REFERENCE
+we	O
+sign	O
+양?계약서.	B-CONTRACT_TYPE
+
+Th?s	O
+용역계약?	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2015년	B-DATE
+9월	I-DATE
+?2일	I-DATE
+for	O
+12개월,	B-PERIOD
+value	O
+5815억원.	B-MONEY
+
+Check	O
+CONSENT_TYPE:	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동 의	I-CONSENT_TYPE
+
+2008 년	B-DATE
+8월	I-DATE
+6일	I-DATE
+/	O
+437 0천원	B-MONEY
+
+Eff ective	O
+from	O
+2008년	B-DATE
+12월	I-DATE
+17일	I-DATE
+
+Tota?:	O
+2928천만원	B-MONEY
+
+Value	O
+of	O
+STATUS	O
+is	O
+갱 신	B-STATUS
+
+Please	O
+pro?ide	O
+갱신	B-STATUS
+for	O
+STATUS.	O
+
+Price:	O
+1737천원	B-MONEY
+
+Check	O
+DESCRIPTION:	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실의	I-DESCRIPTION
+원칙에	I-DESCRIPTION
+따라	I-DESCRIPTION
+이행한?.	I-DESCRIPTION
+
+Value	O
+o f	O
+PERIOD	O
+is	O
+17개월	B-PERIOD
+
+Please	O
+provide	O
+왕이	B-TITLE
+관련	I-TITLE
+계획서	I-TITLE
+for	O
+TIT LE.	O
+
+Under	O
+저작권 법	B-LAW_REFERENCE
+제20조	I-LAW_REFERENCE
+1항,	I-LAW_REFERENCE
+we	O
+sign	O
+양도계약서.	B-CONTRACT_TYPE
+
+Value	O
+o f	O
+URL	O
+is	O
+http://www.apple3?4.com	B-URL
+
+입력된	O
+TITLE	O
+값은	O
+여준혁	B-TITLE
+관련	I-TITLE
+동의서	I-TITLE
+입니다.	O
+
+공영우	B-NAME
+(선임연?원)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이 용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2019년	B-DATE
+3월	I-DATE
+3 일	I-DATE
+->	O
+user371@example.com.	B-EMAIL
+
+Value	O
+of	O
+LANGUAGE	O
+is	O
+독일어	B-LANGUAGE
+
+Party	O
+A:	O
+사단법인	B-COMPANY
+임자건설 ,	I-COMPANY
+Party	O
+B:	O
+도석,	B-NAME
+Date:	O
+2005년	B-DATE
+8월	I-DATE
+5일	I-DATE
+
+2019년	B-DATE
+9?	I-DATE
+7일까지	I-DATE
+user184@example.?om로	B-EMAIL
+제출하세요?	O
+
+저작권법	B-LAW_REFERENCE
+?84조	I-LAW_REFERENCE
+4항에	I-LAW_REFERENCE
+의거하여	O
+양도계약서을	B-CONTRACT_TYPE
+체결합니다.	O
+
+법인등록번호:	O
+990502-1******	B-ID_NUM
+
+User:	O
+도정	B-NAME
+
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제23?	I-LAW_REFERENCE
+5항	I-LAW_REFERENCE
+
+Made	O
+b y	O
+주식회사	B-COMPANY
+강요무역	I-COMPANY
+
+다음	O
+PERIOD을	O
+확인하세요:	O
+19개월	B-PERIOD
+
+Check	O
+POSITION:	O
+대?	B-POSITION
+
+재단 법인	B-COMPANY
+변장디자인	I-COMPANY
+@	O
+경상남도	B-ADDRESS
+진민구	I-ADDRESS
+성시로	I-ADDRESS
+530-4 2,	I-ADDRESS
+Tel :	O
+010-4524-7653,	B-PHONE
+W eb:	O
+http://www.lg136.com.	B-URL
+
+장의장	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+(영상저작물,	B-TYPE
+중국어?	B-LANGUAGE
+261부)에	B-QUANTITY
+대한	O
+전송 권	B-RIGHT_INFO
+양도.	O
+
+함종보	B-NAME
+?차장)	B-POSITION
+signed	O
+마케 팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+?017년	B-DATE
+9월	I-DATE
+3일	I-DATE
+->	O
+user530@example.com.	B-EMAIL
+
+선택	O
+입력	O
+항목	O
+(URL):	O
+http://www.sk711.com	B-URL
+
+Missing	O
+PERIOD:	O
+33개월	B-PERIOD
+
+다음	O
+TYPE을	O
+확인하세요:	O
+음악저작물	B-TYPE
+
+추가된	O
+QUANTITY:	O
+495곡	B-QUANTITY
+
+주종	B-NAME
+(연구원)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+01?-8008-4482.	B-PHONE
+
+재단법 인	B-COMPANY
+길회월물산	I-COMPANY
+-	O
+광주시	B-ADDRESS
+여형채구	I-ADDRESS
+공진대로	I-ADDRESS
+30 2	I-ADDRESS
+
+Contact:	O
+010-4352-2372	B-PHONE
+
+Missin g	O
+STATUS:	O
+보류	B-STATUS
+
+Transfer	O
+?ee	O
+for	O
+초상권	B-RIGHT_INFO
+is	O
+2699천원.	B-MONEY
+
+프로젝트	B-PROJECT_NAME
+Z63:	I-PROJECT_NAME
+재단법인	B-COMPANY
+임광가스튜디오,	I-COMPANY
+2024년	B-DATE
+8월	I-DATE
+?일,	I-DATE
+7147천만원,	B-MONEY
+기 타	B-DESCRIPTION
+사?은	I-DESCRIPTION
+상 호	I-DESCRIPTION
+협의하여	I-DESCRIPTION
+결정한다.	I-DESCRIPTION
+
+Please	O
+provide	O
+차승	B-TITLE
+관 련	I-TITLE
+각서	I-TITLE
+fo r	O
+TI?LE.	O
+
+선택	O
+입 력	O
+항목	O
+(CONTRACT_TYPE):	O
+라이선스계약서	B-CONTRACT_TYPE
+
+필수	O
+입력	O
+항목	O
+(LANGUAGE):	O
+프랑스어	B-LANGUAGE
+
+상 세	O
+L?W_REFERENCE	O
+정보:	O
+저작권법	B-LAW_REFERENCE
+제61조	I-LAW_REFERENCE
+5 항	I-LAW_REFERENCE
+
+2차적저작물	B-TYPE
+366건	B-QUANTITY
+(스?인어)	B-LANGUAGE
+-	O
+?송권	B-RIGHT_INFO
+8673천원	B-MONEY
+(32개월)	B-PERIOD
+
+Payment	O
+of	O
+3695천만원	B-MONEY
+due	O
+on	O
+2015년	B-DATE
+11월	I-DATE
+7일 .	I-DATE
+
+Party	O
+A:	O
+재단법인	B-COMPANY
+맹옥 컨설팅,	I-COMPANY
+Party	O
+B:	O
+남해춘,	B-NAME
+Date:	O
+2006년	B-DATE
+?월	I-DATE
+9일	I-DATE
+
+상세	O
+QUANTITY	O
+정보:	O
+389매	B-QUANTITY
+
+?로젝트	B-PROJECT_NAME
+B52	I-PROJECT_NAME
+수행을	O
+위 해	O
+사단?인	B-COMPANY
+표준한디자인는	I-COMPANY
+738만원를	B-MONEY
+투자하고	O
+2016 년	B-DATE
+2월	I-DATE
+14일에	I-DATE
+완료한다.	O
+
+Check	O
+TY PE:	O
+영상저 작물	B-TYPE
+
+Value	O
+of	O
+TITLE	O
+i?	O
+백자 훈	B-TITLE
+관련	I-TITLE
+신청?	I-TITLE
+
+다음	O
+LAW_REFERENCE을	O
+확인하세요:	O
+저작 권법	B-LAW_REFERENCE
+?10조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+
+Valu e	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+T98	I-PROJECT_NAME
+
+선택	O
+입 력	O
+항목	O
+(LANGUAGE):	O
+영어	B-LANGUAGE
+
+Missing	O
+PERIOD:	O
+35개월	B-PERIOD
+
+황환	B-NAME
+(user731@example.com)	B-EMAIL
+
+21개월에	B-PERIOD
+관한	O
+내용.	O
+
+이용허락계약서:	B-CONTRACT_TYPE
+양민익	B-TITLE
+관련	I-TITLE
+확약서,	I-TITLE
+2007년	B-DATE
+6 월	I-DATE
+23일,	I-DATE
+5?1억원,	B-MONEY
+협의	B-STATUS
+중	I-STATUS
+
+Check	O
+LANGUAGE:	O
+러시아어	B-LANGUAGE
+
+반신	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+(연극저작물,	B-TYPE
+독일어,	B-LANGUAGE
+655건)에	B-QUANTITY
+대한	O
+전송권	B-RIGHT_INFO
+양도?	O
+
+Site:	O
+대전시	B-ADDRESS
+?조시	I-ADDRESS
+조광로	I-ADDRESS
+225-27	I-ADDRESS
+
+Missing	O
+LANGUAGE:	O
+영어	B-LANGUAGE
+
+상세	O
+QUANTITY	O
+정보:	O
+711일	B-QUANTITY
+
+전 라남도	B-ADDRESS
+임근시	I-ADDRESS
+표민재길	I-ADDRESS
+25?	I-ADDRESS
+(010-4247- 6047)	B-PHONE
+
+Missing	O
+DEPARTMENT:	O
+QA팀	B-DEPARTMENT
+
+(주)	B-COMPANY
+전바미디어	I-COMPANY
+기획팀	B-DEPARTMENT
+프로젝트	B-PROJECT_NAME
+R29	I-PROJECT_NAME
+2023년	B-DATE
+8월	I-DATE
+25?	I-DATE
+수정	B-STATUS
+요 청	I-STATUS
+
+모식라	B-NAME
+(파트장)	B-POSITION
+can	O
+?e	O
+reached	O
+a?	O
+010-9584-4270.	B-PHONE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제68조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+
+Value	O
+of	O
+DESCRIPT?ON	O
+?s	O
+분쟁	B-DESCRIPTION
+발?	I-DESCRIPTION
+시	I-DESCRIPTION
+관할	I-DESCRIPTION
+법원 의	I-DESCRIPTION
+판결에	I-DESCRIPTION
+따른다.	I-DESCRIPTION
+
+전주	B-TITLE
+관련	I-TITLE
+각 서	I-TITLE
+(사진저작물,	B-TYPE
+독일어,	B-LANGUAGE
+842일)에	B-QUANTITY
+대한	O
+초상권	B-RIGHT_INFO
+양도.	O
+
+추가된	O
+RIGHT_INFO:	O
+방송권	B-RIGHT_INFO
+
+?heck	O
+URL:	O
+http://www.instagram199.com	B-URL
+
+재단법인	B-COMPANY
+도웅전자	I-COMPANY
+inv ests	O
+7?21천만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+M81,	I-PROJECT_NAME
+completion	O
+2021년	B-DATE
+10월	I-DATE
+21일.	I-DATE
+
+삭제된	O
+U RL:	O
+?ttp://www.microsoft962.com	B-URL
+
+Please	O
+provid e	O
+도급계약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYP E.	O
+
+Missing	O
+DEPARTMENT:	O
+연구소	B-DEPARTMENT
+
+재단법인	B-COMPANY
+방두환무역	I-COMPANY
+@	O
+?청남도	B-ADDRESS
+조인군	I-ADDRESS
+방월 대로	I-ADDRESS
+71?14,	I-ADDRESS
+Tel:	O
+010-1151-5112,	B-PHONE
+Web:	O
+http://www.google679.com.	B-URL
+
+Value	O
+o?	O
+PERIOD	O
+is	O
+8개월	B-PERIOD
+
+입력된	O
+U?L	O
+값 은	O
+http://www.samsung195.com	B-URL
+입니다.	O
+
+SSN:	O
+980123-1******	B-ID_NUM
+
+상세	O
+TY PE	O
+정보:	O
+소프트웨어	B-TYPE
+
+기존	O
+DESCRIPTION:	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실의	I-DESCRIPTION
+원칙에	I-DESCRIPTION
+따라	I-DESCRIPTION
+이행한다.	I-DESCRIPTION
+
+Check	O
+RIGHT_INFO:	O
+방 송권	B-RIGHT_INFO
+
+Missing	O
+TYPE:	O
+사진저작물	B-TYPE
+
+Check	O
+CONTRACT_TYPE:	O
+근로계약서	B-CONTRACT_TYPE
+
+소프트웨어	B-TYPE
+907시간	B-QUANTITY
+(러시아어)	B-LANGUAGE
+-	O
+전송권	B-RIGHT_INFO
+6537백만원	B-MONEY
+(?개월)	B-PERIOD
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+저작재산권	B-RIGHT_INFO
+
+필수	O
+입력	O
+항목	O
+(POSITION):	O
+주임	B-POSITION
+
+편안	B-TITLE
+관련	I-TITLE
+제안서	I-TITLE
+(건축저작물,	B-TYPE
+영어,	B-LANGUAGE
+183부)에	B-QUANTITY
+대한	O
+저작?산권	B-RIGHT_INFO
+양도.	O
+
+Please	O
+provide	O
+구 매팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+휴대전화	O
+010-4224-3689	B-PHONE
+기재	O
+요망?	O
+
+선택	O
+입력	O
+항목	O
+(DEPARTMENT):	O
+전략팀	B-DEPARTMENT
+
+유석홍	B-NAME
+(?장)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동 의	I-CONSENT_TYPE
+on	O
+2024년	B-DATE
+4월	I-DATE
+20일	I-DATE
+->	O
+user377@example.com.	B-EMAIL
+
+Transfer	O
+퍼블리시티권	B-RIGHT_INFO
+o?	O
+615년	B-QUANTITY
+사진저작물	B-TYPE
+f or	O
+9397천원.	B-MONEY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+57 9회	B-QUANTITY
+
+Check	O
+CONSENT_TYPE:	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Please	O
+p rovide	O
+신천	B-TITLE
+관련	I-TITLE
+동의서	I-TITLE
+for	O
+TITLE.	O
+
+추가된	O
+STATUS:	O
+체결	B-STATUS
+완료	I-STATUS
+
+전송권	B-RIGHT_INFO
+in	O
+전희	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+belongs	O
+to	O
+재단법 인	B-COMPANY
+전재기획	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제63조	I-LAW_REFERENCE
+6항.	I-LAW_REFERENCE
+
+본	O
+라이선스계약서은	B-CONTRACT_TYPE
+2010년	B-DATE
+1 2월	I-DATE
+1?일부터	I-DATE
+15개월간	B-PERIOD
+유효하며	O
+금액은	O
+645백만원이다.	B-MONEY
+
+Missing	O
+RIGHT_INFO:	O
+퍼블리시티권	B-RIGHT_INFO
+
+선 택	O
+입력	O
+항목	O
+(POSITION):	O
+부장	B-POSITION
+
+임대차계약서:	B-CONTRACT_TYPE
+황?임	B-TITLE
+관련	I-TITLE
+합의서,	I-TITLE
+2008년	B-DATE
+1 0월	I-DATE
+23일,	I-DATE
+5574억원,	B-MONEY
+?지	B-STATUS
+
+변경된	O
+PERIOD:	O
+20개월	B-PERIOD
+
+유한회사	B-COMPANY
+진재그룹	I-COMPANY
+@	O
+대전시	B-ADDRESS
+장소호구	I-ADDRESS
+맹옥로	I-ADDRESS
+169-2 4,	I-ADDRESS
+Tel:	O
+010-8101-1397,	B-PHONE
+Web:	O
+http://www.sk134.com.	B-URL
+
+저작권법	B-LAW_REFERENCE
+제?0조	I-LAW_REFERENCE
+6항	I-LAW_REFERENCE
+-	O
+백진우	B-TITLE
+관련	I-TITLE
+계약?	I-TITLE
+
+육철학님(850206-3******)	B-NAME
+확인되 었습니다.	O
+
+This	O
+도급계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2014년	B-DATE
+4월	I-DATE
+8일	I-DATE
+?or	O
+5개월,	B-PERIOD
+value	O
+9098백 만원.	B-MONEY
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+동일성유지권	B-RIGHT_INFO
+
+입력된	O
+TITLE	O
+값?	O
+손동	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+입니다.	O
+
+이것은	O
+TITLE	O
+예시 인	O
+임택	B-TITLE
+?련	I-TITLE
+?정서입니다.	I-TITLE
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+W 6	I-PROJECT_NAME
+
+인천시	B-ADDRESS
+성현창구	I-ADDRESS
+신서길	I-ADDRESS
+431로	I-ADDRESS
+배송	O
+바랍니다.	O
+
+O?fice:	O
+제주?	B-ADDRESS
+인준빈시	I-ADDRESS
+민장로	I-ADDRESS
+633-42	I-ADDRESS
+
+36개월에	B-PERIOD
+?한	O
+내용.	O
+
+Fax:	O
+010-1958-9236	B-PHONE
+
+This	O
+용역계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2012년	B-DATE
+4월	I-DATE
+1?일	I-DATE
+fo?	O
+28?월,	B-PERIOD
+value	O
+4240천만?.	B-MONEY
+
+Pl?ase	O
+provide	O
+http://www.google623.com	B-URL
+for	O
+URL.	O
+
+Missing	O
+DEPARTMENT:	O
+총무팀	B-DEPARTMENT
+
+Value	O
+of	O
+STATUS	O
+is	O
+반려	B-STATUS
+
+Lice?se:	O
+441219-1******	B-ID_NUM
+
+Missing	O
+STATUS:	O
+체?	B-STATUS
+완 료	I-STATUS
+
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제52조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+
+고유번호:	O
+431?16-1******	B-ID_NUM
+
+주식회사	B-COMPANY
+유차시스템	I-COMPANY
+@	O
+광주시	B-ADDRESS
+마우두시	I-ADDRESS
+정요라대로	I-ADDRESS
+8 58,	I-ADDRESS
+Tel:	O
+010-8028-8586,	B-PHONE
+W eb:	O
+http://www.microsoft632.com.	B-URL
+
+다음	O
+URL을	O
+확인하세요:	O
+http://www.amazon598.com	B-URL
+
+필수	O
+입력	O
+항목	O
+(TITLE):	O
+남혁천	B-TITLE
+관 련	I-TITLE
+계약서	I-TITLE
+
+Va?ue	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제87조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+
+Certificate:	O
+양임 율	B-NAME
+joined	O
+유한회사	B-COMPANY
+염마카통상	I-COMPANY
+o n	O
+2007년	B-DATE
+11월	I-DATE
+15일.	I-DATE
+
+변경된	O
+LANGUAGE:	O
+일본어	B-LANGUAGE
+
+이 것은	O
+TITLE	O
+예시인	O
+신시서	B-TITLE
+관련	I-TITLE
+보고서입니다.	I-TITLE
+
+전송권	B-RIGHT_INFO
+in	O
+윤해임	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+belongs	O
+?o	O
+(주)	B-COMPANY
+남하?엔터테인먼트	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제70조	I-LAW_REFERENCE
+2항.	I-LAW_REFERENCE
+
+필수	O
+입?	O
+항목	O
+(DEPARTMENT):	O
+해외 사업팀	B-DEPARTMENT
+
+Chec?	O
+POSI?ION:	O
+연구원	B-POSITION
+
+2024년	B-DATE
+7월	I-DATE
+9일부터	I-DATE
+효력이	O
+발생합니다.	O
+
+Please	O
+provide	O
+http://www.sk391.com	B-URL
+for	O
+URL.	O
+
+사단법인	B-COMPANY
+장신주무역	I-COMPANY
+디자인팀	B-DEPARTMENT
+기치	B-NAME
+
+CONTRACT_TYPE:	O
+비밀유지서약서	B-CONTRACT_TYPE
+
+변경된	O
+TYPE:	O
+음악저작물	B-TYPE
+
+입력된	O
+DEPARTMENT	O
+값은	O
+디자인팀	B-DEPARTMENT
+입니다.	O
+
+곽성	B-TITLE
+관련	I-TITLE
+명세서에	I-TITLE
+관한	O
+내용 .	O
+
+Transfer	O
+전송권	B-RIGHT_INFO
+of	O
+49 6개	B-QUANTITY
+연극저작물	B-TYPE
+for	O
+3303만원.	B-MONEY
+
+?음	O
+P ERIOD을	O
+확인하세요?	O
+28개월	B-PERIOD
+
+하만마	B-NAME
+(선임연구원)	B-POSITION
+from	O
+주식회사	B-COMPANY
+임진전홀딩스	I-COMPANY
+해외사업팀.	B-DEPARTMENT
+
+이메일	O
+user960?example.com로	B-EMAIL
+보내주세요.	O
+
+Va?ue	O
+of	O
+TITLE	O
+is	O
+원예혁	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+
+추 가된	O
+CONSE?T_TYPE:	O
+마케 팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+음악저작물	B-TYPE
+-	O
+3 61매	B-QUANTITY
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+D93:	I-PROJECT_NAME
+8512백만원.	B-MONEY
+
+Value	O
+of	O
+ST?TUS	O
+is	O
+협의	B-STATUS
+중	I-STATUS
+
+문의	O
+사항은	O
+user78@example.com로.	B-EMAIL
+
+Agreement	O
+MOU	B-CONTRACT_TYPE
+signed	O
+on	O
+2023년	B-DATE
+11월	I-DATE
+2 7일.	I-DATE
+
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+Q18	I-PROJECT_NAME
+
+주임에	B-POSITION
+관한	O
+내 용.	O
+
+선택	O
+입력	O
+항목	O
+(STATUS):	O
+보류	B-STATUS
+
+저작권법	B-LAW_REFERENCE
+제 95조	I-LAW_REFERENCE
+6 항	I-LAW_REFERENCE
+(동일성유지권)	B-RIGHT_INFO
+
+필수	O
+입력	O
+항목	O
+(POSITION):	O
+파트장	B-POSITION
+
+Deposit	O
+4907백만원	B-MONEY
+o n	O
+2015년	B-DATE
+8월	I-DATE
+25일,	I-DATE
+Balance	O
+490?백만원	O
+o?	O
+2015년	O
+8월	O
+25일.	O
+
+변경된	O
+LA W_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제8조	I-LAW_REFERENCE
+4?	I-LAW_REFERENCE
+
+2003년	B-DATE
+8?	I-DATE
+17일에	I-DATE
+사단법인	B-COMPANY
+노옥설산업와	I-COMPANY
+옥 재선은	B-NAME
+비밀유지서약서을	B-CONTRACT_TYPE
+체결했다.	O
+
+This	O
+이용허락 계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+fr om	O
+2023년	B-DATE
+1 월	I-DATE
+10일	I-DATE
+for	O
+3개월,	B-PERIOD
+value	O
+8466백만원.	B-MONEY
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제100조	I-LAW_REFERENCE
+6항,	I-LAW_REFERENCE
+we	O
+?ign	O
+전속계약서.	B-CONTRACT_TYPE
+
+(주 )	B-COMPANY
+제휘제약	I-COMPANY
+inv ests	O
+383 0억원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+T13,	I-PROJECT_NAME
+completion	O
+2016년	B-DATE
+8월	I-DATE
+17일.	I-DATE
+
+?otal:	O
+1551백만원	B-MONEY
+
+프로젝트	B-PROJECT_NAME
+L63:	I-PROJECT_NAME
+유한회사	B-COMPANY
+육택재디자인,	I-COMPANY
+2008년	B-DATE
+1 월	I-DATE
+9일,	I-DATE
+1201억원,	B-MONEY
+기타	B-DESCRIPTION
+사항은	I-DESCRIPTION
+상 호	I-DESCRIPTION
+협의하여	I-DESCRIPTION
+결정한다.	I-DESCRIPTION
+
+Value	O
+o f	O
+LAW_REFERENCE	O
+is	O
+저작권 법	B-LAW_REFERENCE
+제?6조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+
+2011년	B-DATE
+?0월	I-DATE
+12일에	I-DATE
+유한회사	B-COMPANY
+지만무역와	I-COMPANY
+방서상은	B-NAME
+MO U을	B-CONTRACT_TYPE
+체결했다.	O
+
+Missing	O
+PERIOD:	O
+10개월	B-PERIOD
+
+사 단법인	B-COMPANY
+유희진디자인	I-COMPANY
+@	O
+강원도	B-ADDRESS
+최?군	I-ADDRESS
+구운판로	I-ADDRESS
+710-17,	I-ADDRESS
+Tel:	O
+010-1267-2?92,	B-PHONE
+Web:	O
+http://www.lg?55.com.	B-URL
+
+전자금융거래	B-CONSENT_TYPE
+약 관	I-CONSENT_TYPE
+동의:	I-CONSENT_TYPE
+황천 ,	B-NAME
+2018년	B-DATE
+7월	I-DATE
+26일,	I-DATE
+010-4919-5572,	B-PHONE
+user362@example. com	B-EMAIL
+
+Please	O
+provide	O
+과장	B-POSITION
+for	O
+PO?ITION.	O
+
+법인등 록번호:	O
+560719-1?*****	B-ID_NUM
+
+내선번호:	O
+010-3081-4936	B-PHONE
+
+Transfer	O
+2차적저작 물작성권	B-RIGHT_INFO
+of	O
+40편	B-QUANTITY
+편집저작물	B-TYPE
+?or	O
+6160만원.	B-MONEY
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+Q2?:	I-PROJECT_NAME
+7024억 원.	B-MONEY
+
+프로젝트	B-PROJECT_NAME
+Z20:	I-PROJECT_NAME
+재단법인	B-COMPANY
+공성찬컨설팅,	I-COMPANY
+2025년	B-DATE
+7 월	I-DATE
+3일,	I-DATE
+83 99억원,	B-MONEY
+세부	B-DESCRIPTION
+사항은	I-DESCRIPTION
+?부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다?	I-DESCRIPTION
+
+변경된	O
+LANGUAGE:	O
+한국어	B-LANGUAGE
+
+상세	O
+PERIOD	O
+정보:	O
+13개월	B-PERIOD
+
+Details:	O
+국택,	B-NAME
+670216-1******,	B-ID_NUM
+경상북도	B-ADDRESS
+함만구	I-ADDRESS
+신운길	I-ADDRESS
+616-26	I-ADDRESS
+
+변경된	O
+PERIOD:	O
+?1개월	B-PERIOD
+
+Attn:	O
+육 전	B-NAME
+?장,	B-POSITION
+?사팀,	B-DEPARTMENT
+(주)	B-COMPANY
+인수현디자인	I-COMPANY
+
+전라북도	B-ADDRESS
+여일석구	I-ADDRESS
+민요호대로	I-ADDRESS
+?40-48	I-ADDRESS
+(010-4006-4491)	B-PHONE
+
+Reg	O
+No:	O
+110307-4******	B-ID_NUM
+
+Transfer	O
+퍼블리시티권	B-RIGHT_INFO
+o f	O
+637매	B-QUANTITY
+사진저작물	B-TYPE
+f or	O
+6140백만원.	B-MONEY
+
+배포?	B-RIGHT_INFO
+i?	O
+류아	B-TITLE
+관 련	I-TITLE
+합의서	I-TITLE
+b?longs	O
+to	O
+사단법인	B-COMPANY
+구효컨설팅	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제96조	I-LAW_REFERENCE
+8항.	I-LAW_REFERENCE
+
+변경된	O
+TITLE:	O
+손동	B-TITLE
+관 련	I-TITLE
+보고?	I-TITLE
+
+재단법인	B-COMPANY
+김해컨설팅는	I-COMPANY
+1085천원를	B-MONEY
+2001년	B-DATE
+6월	I-DATE
+6일에	I-DATE
+지급한 다.	O
+
+주식회사	B-COMPANY
+전세?상	I-COMPANY
+연구소의	B-DEPARTMENT
+국해만	B-NAME
+사장입 니다.	B-POSITION
+
+Cell:	O
+010-7218-2787	B-PHONE
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+T36	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+저작권법	B-LAW_REFERENCE
+제36조	I-LAW_REFERENCE
+3항	I-LAW_REFERENCE
+복제권	B-RIGHT_INFO
+미술저작물	B-TYPE
+312건	B-QUANTITY
+9349만원	B-MONEY
+
+추가된	O
+DESCRIPTION:	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실의	I-DESCRIPTION
+원칙에	I-DESCRIPTION
+따라	I-DESCRIPTION
+이행한다.	I-DESCRIPTION
+
+A greement	O
+가맹계약?	B-CONTRACT_TYPE
+signed	O
+on	O
+2003년	B-DATE
+6 월	I-DATE
+12일.	I-DATE
+
+청구인:	O
+윤수인	B-NAME
+
+Value	O
+of	O
+LA NGUAGE	O
+i s	O
+영?	B-LANGUAGE
+
+Missing	O
+LAW_REFERENCE:	O
+저?권법	B-LAW_REFERENCE
+제64조	I-LAW_REFERENCE
+4항	I-LAW_REFERENCE
+
+Value	O
+of	O
+DESCRIPTION	O
+is	O
+본	B-DESCRIPTION
+?약의	I-DESCRIPTION
+상 세	I-DESCRIPTION
+내용은	I-DESCRIPTION
+별첨과	I-DESCRIPTION
+같다?	I-DESCRIPTION
+
+어파자	B-NAME
+(ID:	O
+330824-2******)	B-ID_NUM
+resides	O
+at	O
+경상북도	B-ADDRESS
+위영안구	I-ADDRESS
+유만광길	I-ADDRESS
+502-42,	I-ADDRESS
+phone:	O
+010-8395-6771.	B-PHONE
+
+인가번호:	O
+780303-4******	B-ID_NUM
+
+편집저작물	B-TYPE
+923일	B-QUANTITY
+(독일어)	B-LANGUAGE
+-	O
+동?성유지권	B-RIGHT_INFO
+7233만원	B-MONEY
+(32개월 )	B-PERIOD
+
+Please	O
+provide	O
+인익	B-TITLE
+관 련	I-TITLE
+계획서	I-TITLE
+for	O
+TITLE.	O
+
+Made	O
+b y	O
+주식회사	B-COMPANY
+소건윤바이오	I-COMPANY
+
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+?의	I-CONSENT_TYPE
+(?020년	B-DATE
+1월	I-DATE
+5일)	I-DATE
+
+Check	O
+PROJECT_NAME:	O
+프로젝 트	B-PROJECT_NAME
+P 98	I-PROJECT_NAME
+
+Please	O
+provide	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실의	I-DESCRIPTION
+원칙 에	I-DESCRIPTION
+따라	I-DESCRIPTION
+이행한다.	I-DESCRIPTION
+f or	O
+DESCRIPTION.	O
+
+Located	O
+at	O
+?산시	B-ADDRESS
+진제운구	I-ADDRESS
+하웅대로	I-ADDRESS
+10	I-ADDRESS
+
+2008년	B-DATE
+12월	I-DATE
+4일	I-DATE
+/	O
+3767만원	B-MONEY
+
+표준계약서	B-CONTRACT_TYPE
+(2020년	B-DATE
+8월	I-DATE
+24일)	I-DATE
+
+편집저작물	B-TYPE
+저작물	O
+533개에	B-QUANTITY
+대한	O
+방송권를	B-RIGHT_INFO
+6705억원 에	B-MONEY
+양도한다.	O
+
+여시	B-NAME
+(책임)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2006년	B-DATE
+9월	I-DATE
+5일	I-DATE
+->	O
+user105@ example.com.	B-EMAIL
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+697건	B-QUANTITY
+
+On	O
+2014년	B-DATE
+6월	I-DATE
+21일,	I-DATE
+(주)	B-COMPANY
+방진규그?	I-COMPANY
+and	O
+한가운	B-NAME
+signed	O
+가?계약서.	B-CONTRACT_TYPE
+
+퍼블리시티권	B-RIGHT_INFO
+in	O
+금훈	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+심자서스튜디오	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제93조	I-LAW_REFERENCE
+7 항.	I-LAW_REFERENCE
+
+여효?	B-NAME
+(ID:	O
+281222-?******)	B-ID_NUM
+resides	O
+at	O
+강?도	B-ADDRESS
+임만시	I-ADDRESS
+심호길	I-ADDRESS
+6 27-3,	I-ADDRESS
+phone:	O
+010-?743-7221.	B-PHONE
+
+추가된	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제77조	I-LAW_REFERENCE
+6항	I-LAW_REFERENCE
+
+갑 :	O
+재단법인	B-COMPANY
+진식환디자인,	I-COMPANY
+을:	O
+원소휘?	B-NAME
+?약일:	O
+20 01년	B-DATE
+1 월	I-DATE
+16일	I-DATE
+
+Check	O
+DESCRIPTI?N:	O
+특약	B-DESCRIPTION
+사항은	I-DESCRIPTION
+별도로	I-DESCRIPTION
+정한다.	I-DESCRIPTION
+
+추가된	O
+POSITION:	O
+사원	B-POSITION
+
+Total:	O
+2109천원	B-MONEY
+
+1 .	O
+한신	B-NAME
+2.	O
+010-4583-4952	B-PHONE
+3.	O
+user381@example.com	B-EMAIL
+
+Missing	O
+PROJECT_NAME:	O
+?로젝트	B-PROJECT_NAME
+D16	I-PROJECT_NAME
+
+AS	O
+접수:	O
+010-8376-4338	B-PHONE
+
+?ransfer	O
+복제권	B-RIGHT_INFO
+of	O
+897매	B-QUANTITY
+도형저작물	B-TYPE
+for	O
+100만원.	B-MONEY
+
+사단법인	B-COMPANY
+길섭무 역	I-COMPANY
+@	O
+광주 시	B-ADDRESS
+한성구	I-ADDRESS
+전충조길	I-ADDRESS
+104,	I-ADDRESS
+Tel:	O
+010-18 73-9104,	B-PHONE
+Web:	O
+http://www.facebook657.com.	B-URL
+
+Details:	O
+표환,	B-NAME
+491215-3******,	B-ID_NUM
+전라남도	B-ADDRESS
+안두구	I-ADDRESS
+용이로	I-ADDRESS
+304-16	I-ADDRESS
+
+Value	O
+o f	O
+QUANTITY	O
+?s	O
+178건	B-QUANTITY
+
+변 경된	O
+TYPE:	O
+소프트웨어	B-TYPE
+
+유마주	B-NAME
+(ID:	O
+130424-2******)	B-ID_NUM
+resides	O
+at	O
+경상남도	B-ADDRESS
+주은구	I-ADDRESS
+성전상대로	I-ADDRESS
+735,	I-ADDRESS
+phone:	O
+010-4456-7695.	B-PHONE
+
+이것은	O
+CONTRACT_TYPE	O
+예시 인	O
+가맹계약서입니다.	B-CONTRACT_TYPE
+
+선택	O
+?력	O
+항목	O
+(CONSENT_TYPE):	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동?	I-CONSENT_TYPE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저 작권법	B-LAW_REFERENCE
+제83조	I-LAW_REFERENCE
+3항	I-LAW_REFERENCE
+
+Missing	O
+TYPE:	O
+소프트 웨어	B-TYPE
+
+M?de	O
+by	O
+(주)	B-COMPANY
+차이시스템	I-COMPANY
+
+200 8년	B-DATE
+2?	I-DATE
+?일	I-DATE
+자로	O
+사단법 인	B-COMPANY
+신설그룹와	I-COMPANY
+계약함	O
+
+저작권법	B-LAW_REFERENCE
+제7?	I-LAW_REFERENCE
+10항	I-LAW_REFERENCE
+-	O
+국태	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+
+2023년	B-DATE
+9월	I-DATE
+11일	I-DATE
+/	O
+5603억원	B-MONEY
+
+엄환창	B-NAME
+?임	B-POSITION
+((주)	B-COMPANY
+나가은기획)	I-COMPANY
+-	O
+010-2990-7375,	B-PHONE
+user896@exam ple.com,	B-EMAIL
+강원도	B-ADDRESS
+표유훈군	I-ADDRESS
+우?대로	I-ADDRESS
+819	I-ADDRESS
+
+상세	O
+LANGUAGE	O
+정보?	O
+중국어	B-LANGUAGE
+
+Missing	O
+PERIOD:	O
+23개월	B-PERIOD
+
+Si?ned	O
+on	O
+2006년	B-DATE
+8월	I-DATE
+2일	I-DATE
+
+사단법인	B-COMPANY
+차동통상	I-COMPANY
+해?사업팀	B-DEPARTMENT
+프로젝 트	B-PROJECT_NAME
+N13	I-PROJECT_NAME
+20?8년	B-DATE
+8 월	I-DATE
+21일	I-DATE
+수정	B-STATUS
+요청	I-STATUS
+
+Missing	O
+URL:	O
+http://www.daum822.com	B-URL
+
+Missing	O
+DESCRIPTION:	O
+본	B-DESCRIPTION
+계약의	I-DESCRIPTION
+상세	I-DESCRIPTION
+내용은	I-DESCRIPTION
+별첨과	I-DESCRIPTION
+같다.	I-DESCRIPTION
+
+Who	O
+is	O
+지우택?	B-NAME
+
+Value	O
+of	O
+DEPARTMENT	O
+is	O
+연구소	B-DEPARTMENT
+
+?것은	O
+TITLE	O
+예시인	O
+주창	B-TITLE
+관련	I-TITLE
+계약서입니다.	I-TITLE
+
+근로계약서	B-CONTRACT_TYPE
+체결일은	O
+2014년	B-DATE
+3월	I-DATE
+4일입니다.	I-DATE
+
+Value	O
+of	O
+PROJECT_NAME	O
+i?	O
+프로젝트	B-PROJECT_NAME
+I39	I-PROJECT_NAME
+
+삭제된	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+H69	I-PROJECT_NAME
+
+퍼블 리시티권	B-RIGHT_INFO
+i n	O
+장자	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+be longs	O
+t o	O
+사단법인	B-COMPANY
+소초 서시스템	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제22조	I-LAW_REFERENCE
+1?.	I-LAW_REFERENCE
+
+추가된	O
+POSITION:	O
+대표	B-POSITION
+
+이것은	O
+TYPE	O
+예시인	O
+2차적저작물 입니다.	B-TYPE
+
+추가된	O
+STATUS:	O
+승 인	B-STATUS
+대기	I-STATUS
+
+선택	O
+입력	O
+항목	O
+(POSITION):	O
+실장	B-POSITION
+
+Please	O
+provide	O
+원차	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+for	O
+TITLE.	O
+
+Missing	O
+CONSENT_TYPE:	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이?	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Transfer	O
+2차적저작물작성권	B-RIGHT_INFO
+of	O
+184?	B-QUANTITY
+도형저작물	B-TYPE
+for	O
+4434억원.	B-MONEY
+
+사단법인	B-COMPANY
+구설전산 업는	I-COMPANY
+경기도	B-ADDRESS
+우병시	I-ADDRESS
+주현길	I-ADDRESS
+354?34에	I-ADDRESS
+위치하며	O
+대표전화는	O
+010-3848-2828,	B-PHONE
+홈페이지는	O
+http://www.line918.com 이다.	B-URL
+
+입력된	O
+TI TLE	O
+값 은	O
+편택다	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+입니다.	O
+
+Pl ease	O
+provide	O
+초 상권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+(주)	B-COMPANY
+구형소프트	I-COMPANY
+영업팀	B-DEPARTMENT
+프로젝트	B-PROJECT_NAME
+I64	I-PROJECT_NAME
+2001년	B-DATE
+4월	I-DATE
+?0일	I-DATE
+작성	B-STATUS
+중	I-STATUS
+
+서울시	B-ADDRESS
+신월군	I-ADDRESS
+신채대?	I-ADDRESS
+187-3?로	I-ADDRESS
+배송	O
+바랍니다.	O
+
+Missing	O
+STATUS:	O
+검토	B-STATUS
+중	I-STATUS
+
+반선	B-NAME
+(ID:	O
+011028-2******)	B-ID_NUM
+resides	O
+at	O
+전라북도	B-ADDRESS
+소요구	I-ADDRESS
+신천익로	I-ADDRESS
+568-12,	I-ADDRESS
+phone:	O
+010-49?1-5170.	B-PHONE
+
+C all	O
+010-6248-3380	B-PHONE
+now.	O
+
+양재	B-NAME
+(선임연구 원)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2010년	B-DATE
+5월	I-DATE
+25 일	I-DATE
+->	O
+user251@example.com.	B-EMAIL
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+O47:	I-PROJECT_NAME
+8209천만원.	B-MONEY
+
+2001년	B-DATE
+5월	I-DATE
+1일	I-DATE
+-	O
+업무협약서	B-CONTRACT_TYPE
+
+Ple ase	O
+provide	O
+http://www.youtube580.com	B-URL
+for	O
+URL.	O
+
+문의	O
+사항은	O
+user678@example.com로.	B-EMAIL
+
+Rep?y-To:	O
+user627@example.com	B-EMAIL
+
+주식회사	B-COMPANY
+강율운네트웍스	I-COMPANY
+(대표:	O
+김화?	B-NAME
+
+소바	B-NAME
+매니저	B-POSITION
+(주 식회사	B-COMPANY
+편상시스템)	I-COMPANY
+-	O
+010-2199-7222,	B-PHONE
+user926@example .com,	B-EMAIL
+충?북도	B-ADDRESS
+인지설구	I-ADDRESS
+문천길	I-ADDRESS
+763	I-ADDRESS
+
+저작권법	B-LAW_REFERENCE
+제2 2조	I-LAW_REFERENCE
+2 항에	I-LAW_REFERENCE
+의거하여	O
+전속계약서을	B-CONTRACT_TYPE
+체결합니다.	O
+
+사단법인	B-COMPANY
+진두훈컨설팅	I-COMPANY
+is	O
+located	O
+at	O
+전라남도	B-ADDRESS
+조재시	I-ADDRESS
+남원혁대로	I-ADDRESS
+79-49.	I-ADDRESS
+
+수석연구원에	B-POSITION
+관 한	O
+내용.	O
+
+서조연님(440712-3******)	B-NAME
+확인되었습니다.	O
+
+계약금	O
+6672만원는	B-MONEY
+2?01년	B-DATE
+6월	I-DATE
+17일에	I-DATE
+입금하고	O
+잔금	O
+6672만원는	O
+2001년	O
+6월	O
+17일에	O
+지급한다.	O
+
+Please	O
+provide	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+fo r	O
+CONSENT_TYPE.	O
+
+Check	O
+DESCRIPTION:	O
+분쟁	B-DESCRIPTION
+발생	I-DESCRIPTION
+시	I-DESCRIPTION
+관할	I-DESCRIPTION
+법원의	I-DESCRIPTION
+판결에	I-DESCRIPTION
+따른다.	I-DESCRIPTION
+
+다음	O
+URL을	O
+확인하세?:	O
+http://www.apple43.com	B-URL
+
+security:	O
+user83@example.com	B-EMAIL
+
+다음	O
+QUANTITY을	O
+확인하세요:	O
+588매	B-QUANTITY
+
+1.	O
+우철	B-NAME
+2 .	O
+010-4721-2269	B-PHONE
+3.	O
+user756@example.com	B-EMAIL
+
+?행사:	O
+주식회사	B-COMPANY
+심두홍소프트	I-COMPANY
+
+Missing	O
+DESCRIPTION:	O
+분쟁	B-DESCRIPTION
+발생	I-DESCRIPTION
+시	I-DESCRIPTION
+관할	I-DESCRIPTION
+법원의	I-DESCRIPTION
+판결에	I-DESCRIPTION
+따른다.	I-DESCRIPTION
+
+이규영	B-NAME
+(책임)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-1414-6291.	B-PHONE
+
+Missing	O
+LANGUAGE:	O
+독일어	B-LANGUAGE
+
+초상권	B-RIGHT_INFO
+-	O
+8934천만원	B-MONEY
+
+본	O
+가맹계약서은	B-CONTRACT_TYPE
+2015년	B-DATE
+1월	I-DATE
+24일부터	I-DATE
+8개?간	B-PERIOD
+유효?며	O
+금액은	O
+6?97억원이다.	B-MONEY
+
+Price:	O
+6767백만원	B-MONEY
+
+Please	O
+provide	O
+배포권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제55조	I-LAW_REFERENCE
+6항	I-LAW_REFERENCE
+
+Payment:	O
+4950백만원	B-MONEY
+
+김전	B-NAME
+(대리)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동 의	I-CONSENT_TYPE
+on	O
+2013년	B-DATE
+12월	I-DATE
+20일	I-DATE
+?>	O
+user446@example.com.	B-EMAIL
+
+전하	B-TITLE
+관련	I-TITLE
+?약서	I-TITLE
+(도형저작물,	B-TYPE
+한국어,	B-LANGUAGE
+467시간)에	B-QUANTITY
+?한	O
+?상권	B-RIGHT_INFO
+양도.	O
+
+htt p://www.woowahan950.com	B-URL
+-	O
+기타	B-DESCRIPTION
+사항 은	I-DESCRIPTION
+상호	I-DESCRIPTION
+협의하여	I-DESCRIPTION
+결정한다.	I-DESCRIPTION
+
+Valu?	O
+?f	O
+QUANTITY	O
+i s	O
+441일	B-QUANTITY
+
+Missing	O
+LAN GUAGE:	O
+러시?어	B-LANGUAGE
+
+Reply-To:	O
+user52@example.com	B-EMAIL
+
+Pleas e	O
+prov?de	O
+개인정 보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동 의	I-CONSENT_TYPE
+for	O
+CONSENT_TYPE.	O
+
+허가번호:	O
+040?08-3******	B-ID_NUM
+
+제 주시	B-ADDRESS
+남은조구	I-ADDRESS
+반석 길	I-ADDRESS
+7?7	I-ADDRESS
+(재단법인	B-COMPANY
+장서소프트)	I-COMPANY
+
+저작권법	B-LAW_REFERENCE
+제89조	I-LAW_REFERENCE
+6항	I-LAW_REFERENCE
+(배포권)	B-RIGHT_INFO
+
+http://www.woowahan287.com	B-URL
+-	O
+특약	B-DESCRIPTION
+사항은	I-DESCRIPTION
+별도로	I-DESCRIPTION
+정한다.	I-DESCRIPTION
+
+필 수	O
+입력	O
+항목	O
+(RIGH?_INFO):	O
+방 송권	B-RIGHT_INFO
+
+Check	O
+RIGHT_INFO:	O
+성명표시권	B-RIGHT_INFO
+
+재단법인	B-COMPANY
+홍수산업	I-COMPANY
+is	O
+l ocated	O
+at	O
+울산시	B-ADDRESS
+탁?시	I-ADDRESS
+차 운로	I-ADDRESS
+510.	I-ADDRESS
+
+신만상	B-TITLE
+관련	I-TITLE
+신청서	I-TITLE
+-	O
+2025년	B-DATE
+3월	I-DATE
+26일	I-DATE
+
+Transfer	O
+동일성유지권	B-RIGHT_INFO
+?f	O
+8?3건	B-QUANTITY
+?형저작물	B-TYPE
+for	O
+628천원.	B-MONEY
+
+관리번호:	O
+361125-2******	B-ID_NUM
+
+이용허락계약서:	B-CONTRACT_TYPE
+전장학	B-TITLE
+관 련	I-TITLE
+신청서,	I-TITLE
+201?년	B-DATE
+6월	I-DATE
+7일,	I-DATE
+2010천만원 ,	B-MONEY
+?성	B-STATUS
+중	I-STATUS
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+N3	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+재단법인	B-COMPANY
+윤위엔터테인먼트	I-COMPANY
+(881208-2******?	B-ID_NUM
+-	O
+경상북도	B-ADDRESS
+표환철시	I-ADDRESS
+백이타대로	I-ADDRESS
+67,	I-ADDRESS
+010-5075-8810,	B-PHONE
+http://www.facebook645.com	B-URL
+
+This	O
+라이선스계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+200?년	B-DATE
+4월	I-DATE
+?0일	I-DATE
+for	O
+26개월,	B-PERIOD
+val ue	O
+9846천원.	B-MONEY
+
+엄우	B-NAME
+(전무)	B-POSITION
+from	O
+(주)	B-COMPANY
+공훈차미디어	I-COMPANY
+홍보 팀.	B-DEPARTMENT
+
+기존	O
+DEPARTMENT:	O
+영업팀	B-DEPARTMENT
+
+Missing	O
+LANGUAGE:	O
+스페인어	B-LANGUAGE
+
+V?lue	O
+of	O
+CONTRACT_TYPE	O
+is	O
+가맹계약서	B-CONTRACT_TYPE
+
+Emai l	O
+address:	O
+user393@example.com	B-EMAIL
+
+제 광	B-NAME
+(차장)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이?	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2003년	B-DATE
+1월	I-DATE
+12일	I-DATE
+->	O
+user804@example.com.	B-EMAIL
+
+날짜:	O
+20?9년	B-DATE
+8월	I-DATE
+?4일	I-DATE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작 권법	B-LAW_REFERENCE
+제16조	I-LAW_REFERENCE
+4항	I-LAW_REFERENCE
+
+문의:	O
+010-1005-2042	B-PHONE
+
+Detai?s:	O
+진지,	B-NAME
+910523-1******,	B-ID_NUM
+전라남도	B-ADDRESS
+엄종나군	I-ADDRESS
+최민지로	I-ADDRESS
+533-27	I-ADDRESS
+
+Please	O
+provide	O
+?2개월	B-PERIOD
+for	O
+PERIOD.	O
+
+삭제된	O
+TITLE:	O
+명장선	B-TITLE
+관 련	I-TITLE
+기획서	I-TITLE
+
+Check	O
+STATUS :	O
+만료	B-STATUS
+
+Missin g	O
+QUANTITY:	O
+568개	B-QUANTITY
+
+상세	O
+TYPE	O
+정보:	O
+어문저작물	B-TYPE
+
+2016년	B-DATE
+1월	I-DATE
+2일	I-DATE
+/	O
+8339 천만원	B-MONEY
+
+Missing	O
+CONSENT_TYPE:	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+상세	O
+URL	O
+정보:	O
+http://w?w.daum235.com	B-URL
+
+다 음	O
+URL을	O
+확인하세요:	O
+http://www.woowahan956.com	B-URL
+
+금액:	O
+2412천만원	B-MONEY
+
+사단법인	B-COMPANY
+변지바소프트	I-COMPANY
+@	O
+부산시	B-ADDRESS
+양우시	I-ADDRESS
+윤여?대로	I-ADDRESS
+500,	I-ADDRESS
+Tel:	O
+010-6494-8766,	B-PHONE
+Web:	O
+http://www.instagram153.com.	B-URL
+
+추가된	O
+TYPE:	O
+소프트웨어	B-TYPE
+
+이것?	O
+QUANTITY	O
+?시인	O
+408건입니다.	B-QUANTITY
+
+양도계약서:	B-CONTRACT_TYPE
+국 타	B-TITLE
+관련	I-TITLE
+청구서,	I-TITLE
+2005년	B-DATE
+7월	I-DATE
+18일,	I-DATE
+8340천원,	B-MONEY
+보 류	B-STATUS
+
+선택	O
+입력	O
+항목	O
+(QUANTITY):	O
+866개월	B-QUANTITY
+
+변대은	B-NAME
+2?12년	B-DATE
+6월	I-DATE
+6 일에	I-DATE
+사단법인	B-COMPANY
+주운네트웍스와	I-COMPANY
+가맹계약서을	B-CONTRACT_TYPE
+체결하고	O
+4485천만원를	B-MONEY
+수령했다.	O
+
+Value	O
+of	O
+TITLE	O
+is	O
+곽사	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+
+연극저작물	B-TYPE
+387년	B-QUANTITY
+(독일어)	B-LANGUAGE
+-	O
+배포권	B-RIGHT_INFO
+2166천만원	B-MONEY
+(11개월)	B-PERIOD
+
+사단법인	B-COMPANY
+임종초무역	I-COMPANY
+@	O
+광주시	B-ADDRESS
+오임군	I-ADDRESS
+임창하로	I-ADDRESS
+716,	I-ADDRESS
+Tel:	O
+010-3682-5319,	B-PHONE
+Web:	O
+http://www.hyundai599.com.	B-URL
+
+Value	O
+of	O
+DES CRIPTION	O
+is	O
+특약	B-DESCRIPTION
+사항은	I-DESCRIPTION
+별도로	I-DESCRIPTION
+정한다.	I-DESCRIPTION
+
+본	O
+업무협약서은	B-CONTRACT_TYPE
+2020년	B-DATE
+8월	I-DATE
+18일부터	I-DATE
+18개월간	B-PERIOD
+유효하며	O
+금액은	O
+605천만원이다.	B-MONEY
+
+전시권	B-RIGHT_INFO
+in	O
+한준보	B-TITLE
+관련	I-TITLE
+합 의서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+구보천물산	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제47?	I-LAW_REFERENCE
+8항 .	I-LAW_REFERENCE
+
+Please	O
+provide	O
+http://www.instagram20.com	B-URL
+for	O
+URL.	O
+
+기아산	B-NAME
+(팀장)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+20?5년	B-DATE
+9 월	I-DATE
+26일	I-DATE
+->	O
+user611@example.com.	B-EMAIL
+
+http://www.woowahan830.com	B-URL
+-	O
+세부	B-DESCRIPTION
+사항은	I-DESCRIPTION
+첨부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다?	I-DESCRIPTION
+
+O?	O
+2001년	B-DATE
+10월	I-DATE
+10일,	I-DATE
+유한회사	B-COMPANY
+최형컨설팅	I-COMPANY
+an d	O
+표사	B-NAME
+signed	O
+전속계약서.	B-CONTRACT_TYPE
+
+Check	O
+LANGUAGE:	O
+스페인어	B-LANGUAGE
+
+변경된	O
+URL :	O
+http://www.netflix397.com	B-URL
+
+PERIOD:	O
+13개월	B-PERIOD
+
+재단법인	B-COMPANY
+진사미디어	I-COMPANY
+-	O
+대구시	B-ADDRESS
+구준홍시	I-ADDRESS
+?훈대로	I-ADDRESS
+814	I-ADDRESS
+
+Missing	O
+DESCRIPTION:	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실 의	I-DESCRIPTION
+원칙 에	I-DESCRIPTION
+따 라	I-DESCRIPTION
+이행 한다.	I-DESCRIPTION
+
+출판권	B-RIGHT_INFO
+in	O
+유병	B-TITLE
+관련	I-TITLE
+동의서	I-TITLE
+belongs	O
+to	O
+재?법인	B-COMPANY
+신호디자인	I-COMPANY
+per	O
+저작 권법	B-LAW_REFERENCE
+제2조	I-LAW_REFERENCE
+8항.	I-LAW_REFERENCE
+
+Please	O
+provide	O
+12 개월	B-PERIOD
+for	O
+PER IOD.	O
+
+위약금:	O
+9616억원	B-MONEY
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+Y73:	I-PROJECT_NAME
+2 787만원.	B-MONEY
+
+대표자:	O
+변호차	B-NAME
+
+2025년	B-DATE
+12월	I-DATE
+1일	I-DATE
+(주)	B-COMPANY
+이신안산업	I-COMPANY
+Q?팀	B-DEPARTMENT
+김조	B-NAME
+과장	B-POSITION
+010-342 3-8979	B-PHONE
+user164@example.com	B-EMAIL
+
+최판	B-NAME
+(ID:	O
+391208-2******)	B-ID_NUM
+resides	O
+at	O
+충청북도	B-ADDRESS
+주천창시	I-ADDRESS
+장승대로	I-ADDRESS
+365-45,	I-ADDRESS
+phone?	O
+010-4144-1939.	B-PHONE
+
+?일어	B-LANGUAGE
+-	O
+도형저작물	B-TYPE
+
+Info:	O
+1.백파대	B-NAME
+2.010-9942-1888	B-PHONE
+3.user534@example.com	B-EMAIL
+
+Val?e	O
+of	O
+PERIOD	O
+is	O
+6개월	B-PERIOD
+
+삭제된	O
+DEPARTMENT:	O
+총무 팀	B-DEPARTMENT
+
+Please	O
+provid?	O
+반려	B-STATUS
+for	O
+STATUS.	O
+
+이것은	O
+DEPARTMENT	O
+예시인	O
+회계팀 입니다.	B-DEPARTMENT
+
+This	O
+근?계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2014년	B-DATE
+10월	I-DATE
+2?일	I-DATE
+for	O
+33개월,	B-PERIOD
+value	O
+387억원.	B-MONEY
+
+C heck	O
+DESCRIPTION :	O
+세부	B-DESCRIPTION
+사항은	I-DESCRIPTION
+첨부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다.	I-DESCRIPTION
+
+Check	O
+RIGHT_INFO:	O
+2차적저작 물작성권	B-RIGHT_INFO
+
+저작인접권자:	O
+유 바	B-NAME
+
+성명표시권	B-RIGHT_INFO
+양도	O
+대가는	O
+1214천만원입니다.	B-MONEY
+
+프랑스어	B-LANGUAGE
+-	O
+미술저작물	B-TYPE
+
+교환	O
+주소:	O
+경상남도	B-ADDRESS
+도전 준시	I-ADDRESS
+남연윤대로	I-ADDRESS
+745	I-ADDRESS
+
+2006년	B-DATE
+7월	I-DATE
+27일	I-DATE
+-	O
+도급계약서	B-CONTRACT_TYPE
+
+추가된	O
+RIGHT_INFO:	O
+동일성유지권	B-RIGHT_INFO
+
+?업자번호	O
+340718-4******	B-ID_NUM
+기 재.	O
+
+Please	O
+contact	O
+옥학	B-NAME
+at	O
+010-387?-4949.	B-PHONE
+
+저작권법	B-LAW_REFERENCE
+?64조	I-LAW_REFERENCE
+1 0항	I-LAW_REFERENCE
+-	O
+심진임	B-TITLE
+관련	I-TITLE
+동의서	I-TITLE
+
+기존	O
+RIGHT_INFO:	O
+배포권	B-RIGHT_INFO
+
+Certificate:	O
+장효	B-NAME
+joined	O
+사단법인	B-COMPANY
+주근주전자	I-COMPANY
+on	O
+2003년	B-DATE
+6월	I-DATE
+3일.	I-DATE
+
+Check	O
+STATUS:	O
+승인	B-STATUS
+대기	I-STATUS
+
+Info:	O
+1.남해소	B-NAME
+2.010-8492-3379	B-PHONE
+3.user739@example.com	B-EMAIL
+
+Please	O
+provide	O
+분쟁	B-DESCRIPTION
+발생	I-DESCRIPTION
+시	I-DESCRIPTION
+관?	I-DESCRIPTION
+법원의	I-DESCRIPTION
+판결에	I-DESCRIPTION
+따른다.	I-DESCRIPTION
+f?r	O
+DESCRIPTION.	O
+
+경상북도	B-ADDRESS
+손성시	I-ADDRESS
+명타길	I-ADDRESS
+671	I-ADDRESS
+(유한회사	B-COMPANY
+제은지기획)	I-COMPANY
+
+백성님(841022-1******)	B-NAME
+확인되었습니다.	O
+
+Tr?nsfer	O
+?일성유지권	B-RIGHT_INFO
+of	O
+709개월	B-QUANTITY
+음악저작물	B-TYPE
+?or	O
+5645천만원.	B-MONEY
+
+양 성	B-NAME
+?매니저)	B-POSITION
+from	O
+유한회사	B-COMPANY
+류선엔터테인먼트	I-COMPANY
+홍보팀.	B-DEPARTMENT
+
+(주)	B-COMPANY
+장여식네트웍스	I-COMPANY
+(대표:	O
+양사)	B-NAME
+
+Missing	O
+QU ANTITY:	O
+381부	B-QUANTITY
+
+재단법인	B-COMPANY
+전의옥네트웍스	I-COMPANY
+생산 팀의	B-DEPARTMENT
+원대식	B-NAME
+본부장입니다 .	B-POSITION
+
+상세	O
+URL	O
+정보:	O
+http://www.kakao99.com	B-URL
+
+Check	O
+UR?:	O
+http://www.woowahan70.com	B-URL
+
+?ost:	O
+7584만원	B-MONEY
+
+안희	B-TITLE
+관련	I-TITLE
+신청서	I-TITLE
+(편집저작물,	B-TYPE
+독일어,	B-LANGUAGE
+118개)에	B-QUANTITY
+대한	O
+대여권	B-RIGHT_INFO
+양도.	O
+
+다음	O
+POSI TION을	O
+확인?세요:	O
+실장	B-POSITION
+
+Value	O
+o?	O
+LANGUAGE	O
+is	O
+아랍어	B-LANGUAGE
+
+고유번호:	O
+72032 1-2******	B-ID_NUM
+
+1534백만원	B-MONEY
+(785부)	B-QUANTITY
+
+RIGHT_INFO:	O
+방송권	B-RIGHT_INFO
+
+L?cated	O
+at	O
+충청남도	B-ADDRESS
+신시빈군	I-ADDRESS
+서솔 종로	I-ADDRESS
+430 -36	I-ADDRESS
+
+임대차계약서:	B-CONTRACT_TYPE
+오재철	B-TITLE
+관련	I-TITLE
+보고서,	I-TITLE
+2020년	B-DATE
+3월	I-DATE
+1일,	I-DATE
+8860억원,	B-MONEY
+승인	B-STATUS
+대기	I-STATUS
+
+다음	O
+STATUS을	O
+확인하세요:	O
+협 의	B-STATUS
+중	I-STATUS
+
+Please	O
+provide	O
+성명표시권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+프로 젝트	B-PROJECT_NAME
+W71:	I-PROJECT_NAME
+유한회사	B-COMPANY
+손훈스튜디오,	I-COMPANY
+2024년	B-DATE
+2월	I-DATE
+?일,	I-DATE
+2727백만원,	B-MONEY
+특약	B-DESCRIPTION
+사항은	I-DESCRIPTION
+별도로	I-DESCRIPTION
+정한다.	I-DESCRIPTION
+
+M?U:	B-CONTRACT_TYPE
+함연성	B-TITLE
+?련	I-TITLE
+?의서,	I-TITLE
+2018년	B-DATE
+4?	I-DATE
+8일,	I-DATE
+7887천만원,	B-MONEY
+협의	B-STATUS
+중	I-STATUS
+
+(주)	B-COMPANY
+황타혜스튜디오	I-COMPANY
+디자인팀	B-DEPARTMENT
+프로젝트	B-PROJECT_NAME
+U76	I-PROJECT_NAME
+2?09년	B-DATE
+1 1월	I-DATE
+25일	I-DATE
+보류	B-STATUS
+
+Val?e	O
+?f	O
+STATUS	O
+is	O
+해?	B-STATUS
+
+선택	O
+입력	O
+항 목	O
+(URL):	O
+http://www.facebook119.com	B-URL
+
+복제권에	B-RIGHT_INFO
+관한	O
+내용 .	O
+
+상기	O
+하만 은	B-NAME
+2022년	B-DATE
+9?	I-DATE
+28일에	I-DATE
+(주)	B-COMPANY
+맹창통상?	I-COMPANY
+입사하였음을	O
+증명함.	O
+
+Please	O
+provide	O
+저작권법	B-LAW_REFERENCE
+제45조	I-LAW_REFERENCE
+10항	I-LAW_REFERENCE
+for	O
+LAW_REFERENCE.	O
+
+필수	O
+입력	O
+?목	O
+(DESCRIPTION):	O
+세 부	B-DESCRIPTION
+사항은	I-DESCRIPTION
+첨?	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다.	I-DESCRIPTION
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제1조	I-LAW_REFERENCE
+4항	I-LAW_REFERENCE
+
+복제권	B-RIGHT_INFO
+in	O
+석산	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+belongs	O
+to	O
+(주)	B-COMPANY
+유하기획	I-COMPANY
+?er	O
+저작권법	B-LAW_REFERENCE
+제63조	I-LAW_REFERENCE
+2항.	I-LAW_REFERENCE
+
+임차인:	O
+성화다	B-NAME
+
+추가된	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+P24	I-PROJECT_NAME
+
+http://www.lg739.com	B-URL
+-	O
+본	B-DESCRIPTION
+계약의	I-DESCRIPTION
+상세	I-DESCRIPTION
+내?은	I-DESCRIPTION
+별첨과	I-DESCRIPTION
+같다.	I-DESCRIPTION
+
+Ple ase	O
+provid e	O
+해지	B-STATUS
+fo r	O
+STATUS.	O
+
+S?bmit	O
+to	O
+user850@example.com	B-EMAIL
+by	O
+2023년	B-DATE
+4월	I-DATE
+11일.	I-DATE
+
+010-7372-2034	B-PHONE
+(구진)	B-NAME
+
+user936@example.com,	B-EMAIL
+010-6153-1583	B-PHONE
+
+저작권법	B-LAW_REFERENCE
+제47조	I-LAW_REFERENCE
+7항에	I-LAW_REFERENCE
+따라	O
+전유은	B-NAME
+주식회사	B-COMPANY
+전호소프트에게	I-COMPANY
+저작재산 권를	B-RIGHT_INFO
+허락한다 .	O
+
+Reg	O
+?o:	O
+440524-3******	B-ID_NUM
+
+Check	O
+QUANTITY:	O
+544점	B-QUANTITY
+
+Value	O
+?f	O
+DEPARTMENT	O
+is	O
+회계팀	B-DEPARTMENT
+
+주?회사	B-COMPANY
+문하디자인	I-COMPANY
+@	O
+울?시	B-ADDRESS
+노회?	I-ADDRESS
+백치로	I-ADDRESS
+710 -47,	I-ADDRESS
+Tel:	O
+010-3526-6170,	B-PHONE
+Web:	O
+http://www.coupang5.com.	B-URL
+
+하 용	B-NAME
+(상무)	B-POSITION
+can	O
+?e	O
+reached	O
+at	O
+010-2806-7218.	B-PHONE
+
+CONSENT_TYPE:	O
+서비 스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+사단법인	B-COMPANY
+진충컨설팅	I-COMPANY
+귀중.	O
+참조:	O
+인사팀	B-DEPARTMENT
+심 태	B-NAME
+센터장	B-POSITION
+
+O n	O
+20 18년	B-DATE
+8월	I-DATE
+13일,	I-DATE
+(주)	B-COMPANY
+심선전 자	I-COMPANY
+and	O
+석 예	B-NAME
+sig?ed	O
+비밀유지서약서.	B-CONTRACT_TYPE
+
+필수	O
+입력	O
+항목	O
+(QUANTITY):	O
+636년	B-QUANTITY
+
+탁오솔	B-NAME
+(연구 원)	B-POSITION
+fr?m	O
+주식회사	B-COMPANY
+편진태전?	I-COMPANY
+마케팅팀.	B-DEPARTMENT
+
+기존	O
+URL:	O
+http://www.kakao737.com	B-URL
+
+Value	O
+of	O
+RIGHT_INFO	O
+?s	O
+2차적저작물작성권	B-RIGHT_INFO
+
+Agreement	O
+매매계약서	B-CONTRACT_TYPE
+signed	O
+on	O
+20 08년	B-DATE
+1월	I-DATE
+15 일.	I-DATE
+
+저작권법	B-LAW_REFERENCE
+제64조	I-LAW_REFERENCE
+2?에	I-LAW_REFERENCE
+의거하여	O
+용역계약서을	B-CONTRACT_TYPE
+체결합니다.	O
+
+주희	B-NAME
+(매니저)	B-POSITION
+sig ned	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+?의	I-CONSENT_TYPE
+on	O
+2 003년	B-DATE
+1월	I-DATE
+6일	I-DATE
+->	O
+user900@example.com.	B-EMAIL
+
+Missing	O
+URL:	O
+http://www.t?itter963.com	B-URL
+
+?명표시권	B-RIGHT_INFO
+in	O
+김지가	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+belongs	O
+to	O
+사단법인	B-COMPANY
+소회?역	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제68조	I-LAW_REFERENCE
+10항.	I-LAW_REFERENCE
+
+등록기준지:	O
+전라남도	B-ADDRESS
+조연구	I-ADDRESS
+허운길	I-ADDRESS
+701	I-ADDRESS
+
+Please	O
+provide	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+for	O
+CONSENT_TYPE.	O
+
+Missing	O
+QUA?TITY:	O
+229개월	B-QUANTITY
+
+신선	B-NAME
+(국장)	B-POSITION
+can	O
+?e	O
+reached	O
+?t	O
+010 -6596-8343.	B-PHONE
+
+주관사:	O
+유한회사	B-COMPANY
+성혁그룹	I-COMPANY
+
+정동	B-NAME
+(실장)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2008년	B-DATE
+1월	I-DATE
+?7일	I-DATE
+->	O
+user584@example.com.	B-EMAIL
+
+DESCRIPTION:	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실의	I-DESCRIPTION
+원칙?	I-DESCRIPTION
+따라	I-DESCRIPTION
+이행한다.	I-DESCRIPTION
+
+상세	O
+TI TLE	O
+정보:	O
+여연	B-TITLE
+관련	I-TITLE
+신청서	I-TITLE
+
+Please	O
+provide	O
+차 실	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+for	O
+TITLE.	O
+
+?his	O
+MOU	B-CONTRACT_TYPE
+is	O
+valid	O
+fr?m	O
+2 023년	B-DATE
+2월	I-DATE
+15일	I-DATE
+for	O
+6개월,	B-PERIOD
+value	O
+392만원.	B-MONEY
+
+Missing	O
+STATUS:	O
+수정	B-STATUS
+요?	I-STATUS
+
+Reply-To:	O
+user544@example.com	B-EMAIL
+
+Identity	O
+verified:	O
+육택 ,	B-NAME
+250605-4******.	B-ID_NUM
+
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동 의	I-CONSENT_TYPE
+(2014년	B-DATE
+5월	I-DATE
+27일)	I-DATE
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.apple282.com	B-URL
+
+Please	O
+provi de	O
+아?어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+H90:	I-PROJECT_NAME
+3310천만원.	B-MONEY
+
+주식회사	B-COMPANY
+변진 산업	I-COMPANY
+is	O
+loca?ed	O
+at	O
+충청남도	B-ADDRESS
+오일구	I-ADDRESS
+하휘타 길	I-ADDRESS
+247-49.	I-ADDRESS
+
+주식회사	B-COMPANY
+정동철바이오	I-COMPANY
+-	O
+대구 시	B-ADDRESS
+채나시	I-ADDRESS
+우상로	I-ADDRESS
+422-30	I-ADDRESS
+
+변경된	O
+CONTRACT_TYPE:	O
+도급 계약서	B-CONTRACT_TYPE
+
+프로젝트	B-PROJECT_NAME
+M23	I-PROJECT_NAME
+( 2000년	B-DATE
+1월	I-DATE
+7일	I-DATE
+~	O
+2000년	O
+1월	O
+7일):	O
+주식회사	B-COMPANY
+구은네트웍?	I-COMPANY
+주관,	O
+3599백만원	B-MONEY
+예산.	O
+
+Missing	O
+CONSENT_TYPE:	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+?관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+변경된	O
+CONSENT_TYPE:	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+인가번호:	O
+910521-1******	B-ID_NUM
+
+Please	O
+provide	O
+?12점	B-QUANTITY
+for	O
+QUANTITY .	O
+
+다음	O
+T YPE을	O
+확인하세요:	O
+미술저작물	B-TYPE
+
+Missing	O
+URL:	O
+h?tp://www.sk263.com	B-URL
+
+다?	O
+DESCRIPTION을	O
+확?하세요:	O
+본	B-DESCRIPTION
+계약의	I-DESCRIPTION
+상세	I-DESCRIPTION
+내용은	I-DESCRIPTION
+별첨과	I-DESCRIPTION
+같다.	I-DESCRIPTION
+
+Chec?	O
+L?NGUAGE:	O
+중국어	B-LANGUAGE
+
+프로젝트	B-PROJECT_NAME
+U91	I-PROJECT_NAME
+(2025?	B-DATE
+?월	I-DATE
+27일	I-DATE
+~	O
+2025년	O
+6월	O
+27일) :	O
+재단법인	B-COMPANY
+채자그룹	I-COMPANY
+주관,	O
+2866억원	B-MONEY
+예산.	O
+
+기존	O
+POSITION:	O
+수석연구원	B-POSITION
+
+영상저작물	B-TYPE
+저작물	O
+473건에	B-QUANTITY
+대?	O
+공연권를	B-RIGHT_INFO
+1617천원에	B-MONEY
+양도 한다.	O
+
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의:	I-CONSENT_TYPE
+변춘,	B-NAME
+2017년	B-DATE
+8월	I-DATE
+2일,	I-DATE
+010-7640-7107,	B-PHONE
+user431@example.com	B-EMAIL
+
+이것은	O
+DESCRIPTION	O
+예시인	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성?의	I-DESCRIPTION
+원?에	I-DESCRIPTION
+따라	I-DESCRIPTION
+이 행한다.입니다.	I-DESCRIPTION
+
+추가?	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+N26	I-PROJECT_NAME
+
+반품	O
+주소:	O
+부산시	B-ADDRESS
+주보판구	I-ADDRESS
+왕순근대로	I-ADDRESS
+915	I-ADDRESS
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제18조	I-LAW_REFERENCE
+4 항,	I-LAW_REFERENCE
+we	O
+sign	O
+이용허락계약서.	B-CONTRACT_TYPE
+
+주식 회사	B-COMPANY
+인설바이오	I-COMPANY
+(950324-3******)	B-ID_NUM
+-	O
+제주시	B-ADDRESS
+추우연구	I-ADDRESS
+장 해로	I-ADDRESS
+282,	I-ADDRESS
+010-1542-5561,	B-PHONE
+http://www.twitter689.com	B-URL
+
+위약금:	O
+4738억원	B-MONEY
+
+저작권법	B-LAW_REFERENCE
+제71조	I-LAW_REFERENCE
+1 0항에	I-LAW_REFERENCE
+의거?여	O
+MOU을	B-CONTRACT_TYPE
+체결합니다.	O
+
+Missing	O
+DEPARTMENT:	O
+개발팀	B-DEPARTMENT
+
+A?reement	O
+전속계 약서	B-CONTRACT_TYPE
+signed	O
+on	O
+2007년	B-DATE
+6월	I-DATE
+8일 .	I-DATE
+
+이것은	O
+DESCRIPTION	O
+예시인	O
+특약	B-DESCRIPTION
+사항?	I-DESCRIPTION
+별도로	I-DESCRIPTION
+정한다.입니다.	I-DESCRIPTION
+
+저작권법	B-LAW_REFERENCE
+제6조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+초상권	B-RIGHT_INFO
+편집저작물	B-TYPE
+591편	B-QUANTITY
+8347천만원	B-MONEY
+
+삭제된	O
+QUANTITY:	O
+861 매	B-QUANTITY
+
+Missing	O
+TYPE:	O
+2차적저작물	B-TYPE
+
+Ch eck	O
+QUANTITY:	O
+45 6점	B-QUANTITY
+
+이것은	O
+CONTRACT_TYPE	O
+예시인	O
+근로계약서입니다.	B-CONTRACT_TYPE
+
+Details:	O
+지사,	B-NAME
+580421- 2******,	B-ID_NUM
+전라남도	B-ADDRESS
+금예자구	I-ADDRESS
+류진길	I-ADDRESS
+528-41	I-ADDRESS
+
+유한회사	B-COMPANY
+장위건전자	I-COMPANY
+홍보팀	B-DEPARTMENT
+프로젝트	B-PROJECT_NAME
+I77	I-PROJECT_NAME
+2008년	B-DATE
+9?	I-DATE
+19일	I-DATE
+만료	B-STATUS
+
+(주)	B-COMPANY
+노월 물산	I-COMPANY
+귀중.	O
+참조:	O
+물류팀	B-DEPARTMENT
+류근	B-NAME
+매 니저	B-POSITION
+
+긴 급	O
+연락처:	O
+010-9932-2608	B-PHONE
+
+한윤초은	B-NAME
+2005년	B-DATE
+1월	I-DATE
+3일에	I-DATE
+(주)	B-COMPANY
+양순무역와	I-COMPANY
+양도계약서을	B-CONTRACT_TYPE
+체결하고	O
+996?만원를	B-MONEY
+수령했다.	O
+
+어문저작물	B-TYPE
+-	O
+19점	B-QUANTITY
+
+강제은	B-NAME
+2000년	B-DATE
+7월	I-DATE
+3일에	I-DATE
+사단법인	B-COMPANY
+현현바이오와	I-COMPANY
+출판권설정계약서을	B-CONTRACT_TYPE
+체결하고	O
+172천원를	B-MONEY
+수령했다.	O
+
+Info:	O
+1.명다	B-NAME
+2.010 -4690-2421	B-PHONE
+3.user206@example.com	B-EMAIL
+
+차장에	B-POSITION
+관한	O
+내용.	O
+
+재단법인	B-COMPANY
+황호예그룹	I-COMPANY
+CEO	O
+나희천	B-NAME
+
+Check	O
+PERIOD:	O
+6개월	B-PERIOD
+
+기판효	B-NAME
+(상무)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동 의	I-CONSENT_TYPE
+on	O
+2011년	B-DATE
+2월	I-DATE
+27?	I-DATE
+->	O
+user824@example.com.	B-EMAIL
+
+장연	B-NAME
+(상무)	B-POSITION
+can	O
+be	O
+reached	O
+?t	O
+010-1724-2561.	B-PHONE
+
+Party	O
+A:	O
+유한회사	B-COMPANY
+류충소무역,	I-COMPANY
+Party	O
+B:	O
+신지,	B-NAME
+Date:	O
+2020년	B-DATE
+1월	I-DATE
+16일	I-DATE
+
+권리금:	O
+19만원	B-MONEY
+
+추가?	O
+CONSENT_TYPE:	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+위여	B-NAME
+(ID:	O
+580326- 3******)	B-ID_NUM
+resides	O
+at	O
+충청북도	B-ADDRESS
+홍파승구	I-ADDRESS
+주 유로	I-ADDRESS
+618-6,	I-ADDRESS
+phone:	O
+010-6735-8288.	B-PHONE
+
+2004년	B-DATE
+7월	I-DATE
+1?일:	I-DATE
+사단법인	B-COMPANY
+제완무역	I-COMPANY
+
+Please	O
+provide	O
+검토	B-STATUS
+중	I-STATUS
+fo r	O
+STATUS.	O
+
+내선 번호:	O
+010-5721-4383	B-PHONE
+
+Please	O
+provide	O
+752회	B-QUANTITY
+for	O
+QUANTITY.	O
+
+(주)	B-COMPANY
+천환여엔 터테인먼트	I-COMPANY
+?nvests	O
+4594천원	B-MONEY
+i?	O
+프로젝트	B-PROJECT_NAME
+Q59,	I-PROJECT_NAME
+completion	O
+201 4년	B-DATE
+8월	I-DATE
+3일.	I-DATE
+
+기획팀	B-DEPARTMENT
+소속	O
+민훈?입니다.	B-NAME
+
+Check	O
+TI?LE:	O
+장 일	B-TITLE
+관련	I-TITLE
+?획서	I-TITLE
+
+김섭	B-NAME
+매니저님의	B-POSITION
+연락처는	O
+010-1566-7599입니다.	B-PHONE
+
+DEPARTMEN T:	O
+총무팀	B-DEPARTMENT
+
+Value	O
+o f	O
+RIGHT_INFO	O
+is	O
+배포권	B-RIGHT_INFO
+
+V?lue	O
+of	O
+PERIOD	O
+i?	O
+23개월	B-PERIOD
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제5?	I-LAW_REFERENCE
+6항	I-LAW_REFERENCE
+
+진건	B-NAME
+(선임연구원)	B-POSITION
+from	O
+(주)	B-COMPANY
+기초동건설	I-COMPANY
+영업팀.	B-DEPARTMENT
+
+아랍어	B-LANGUAGE
+-	O
+연극저작물	B-TYPE
+
+1.	O
+강호회	B-NAME
+2 .	O
+010-6408-2747	B-PHONE
+?.	O
+user222@example.com	B-EMAIL
+
+Certificate:	O
+정하학	B-NAME
+joined	O
+주식회?	B-COMPANY
+탁?통상	I-COMPANY
+on	O
+2004년	B-DATE
+9?	I-DATE
+5일 .	I-DATE
+
+Reg	O
+No:	O
+38 0510-4******	B-ID_NUM
+
+사단법인	B-COMPANY
+전예근물산	I-COMPANY
+물류팀	B-DEPARTMENT
+프로젝트	B-PROJECT_NAME
+U95	I-PROJECT_NAME
+2?01년	B-DATE
+1월	I-DATE
+2 3일	I-DATE
+협의	B-STATUS
+중	I-STATUS
+
+Check	O
+TYPE:	O
+편집저작물	B-TYPE
+
+공마	B-NAME
+(ID:	O
+331120-2***** *)	B-ID_NUM
+resides	O
+at	O
+전라남도	B-ADDRESS
+명전다구	I-ADDRESS
+여준정대로	I-ADDRESS
+48,	I-ADDRESS
+phone:	O
+010-1843-6099.	B-PHONE
+
+Plea?e	O
+provide	O
+세부	B-DESCRIPTION
+사항은	I-DESCRIPTION
+첨부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다.	I-DESCRIPTION
+for	O
+DES CRIPTION.	O
+
+Un?er	O
+저?권법	B-LAW_REFERENCE
+제53조	I-LAW_REFERENCE
+10항,	I-LAW_REFERENCE
+we	O
+s?gn	O
+라이선스계약서.	B-CONTRACT_TYPE
+
+Bud get	O
+for	O
+프로젝트	B-PROJECT_NAME
+X80:	I-PROJECT_NAME
+1680천만원 .	B-MONEY
+
+추가된	O
+RIGHT_INFO:	O
+전시권	B-RIGHT_INFO
+
+저작재산권	B-RIGHT_INFO
+i n	O
+손엄위	B-TITLE
+?련	I-TITLE
+계약서	I-TITLE
+belongs	O
+to	O
+유?회사	B-COMPANY
+공찬디자인	I-COMPANY
+pe r	O
+저작권법	B-LAW_REFERENCE
+제66조	I-LAW_REFERENCE
+?항.	I-LAW_REFERENCE
+
+Office:	O
+충청남도	B-ADDRESS
+채연구	I-ADDRESS
+전월오길	I-ADDRESS
+65	I-ADDRESS
+
+사단법인	B-COMPANY
+옥판시스템	I-COMPANY
+CEO	O
+왕학	B-NAME
+
+Transfer	O
+fee	O
+for	O
+공연권	B-RIGHT_INFO
+is	O
+7375천원.	B-MONEY
+
+날짜:	O
+2011년	B-DATE
+3월	I-DATE
+10일	I-DATE
+
+2차적저작물작성권에	B-RIGHT_INFO
+관한	O
+내용.	O
+
+CC:	O
+user850@example.co m	B-EMAIL
+
+이것은	O
+CONSENT_TYPE	O
+예시인	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의입니다.	I-CONSENT_TYPE
+
+저작?법	B-LAW_REFERENCE
+제1조	I-LAW_REFERENCE
+7항	I-LAW_REFERENCE
+퍼블리시티권	B-RIGHT_INFO
+건축저작물	B-TYPE
+572매	B-QUANTITY
+6513천만원	B-MONEY
+
+Missing	O
+STATUS:	O
+반려	B-STATUS
+
+Residence:	O
+대구시	B-ADDRESS
+엄재구	I-ADDRESS
+천성창로	I-ADDRESS
+142	I-ADDRESS
+
+Transfer	O
+퍼블리시티권	B-RIGHT_INFO
+of	O
+307일	B-QUANTITY
+도형저작물	B-TYPE
+for	O
+451백만원.	B-MONEY
+
+user2 12@example.com	B-EMAIL
+(재단법인	B-COMPANY
+백해식바이오)	I-COMPANY
+
+담당 자	O
+이메일:	O
+us er801@example.com	B-EMAIL
+
+(주)	B-COMPANY
+임임바이오	I-COMPANY
+QA 팀의	B-DEPARTMENT
+강판	B-NAME
+매니저입니다.	B-POSITION
+
+LAW_REFERENCE:	O
+저?권법	B-LAW_REFERENCE
+제90조	I-LAW_REFERENCE
+3?	I-LAW_REFERENCE
+
+Mis sing	O
+RIGHT_INFO:	O
+?연권	B-RIGHT_INFO
+
+저작권법	B-LAW_REFERENCE
+제88조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+출판권	B-RIGHT_INFO
+음악저작물	B-TYPE
+305개	B-QUANTITY
+?554백만원	B-MONEY
+
+상세	O
+DEPARTMEN?	O
+정보:	O
+마케팅팀	B-DEPARTMENT
+
+Missing	O
+PERIOD:	O
+31개월	B-PERIOD
+
+Certificate:	O
+이창현	B-NAME
+joined	O
+주식회사	B-COMPANY
+노일그룹	I-COMPANY
+on	O
+20 24년	B-DATE
+5월	I-DATE
+15일.	I-DATE
+
+동일성유지권	B-RIGHT_INFO
+양도	O
+대?는	O
+8399억원입니다.	B-MONEY
+
+필수	O
+입력	O
+항목	O
+(QUANTITY):	O
+586매	B-QUANTITY
+
+Value	O
+o f	O
+CONSENT_TYPE	O
+is	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Reg	O
+No:	O
+061228-3******	B-ID_NUM
+
+Check	O
+T?TLE:	O
+권위	B-TITLE
+관련	I-TITLE
+신청서	I-TITLE
+
+Tra nsfer	O
+출?권	B-RIGHT_INFO
+of	O
+1 2매	B-QUANTITY
+사진저작 물	B-TYPE
+for	O
+6001천원.	B-MONEY
+
+Value	O
+of	O
+DESCRIPTION	O
+is	O
+기타	B-DESCRIPTION
+사항은	I-DESCRIPTION
+상호	I-DESCRIPTION
+협의하여	I-DESCRIPTION
+결정한다.	I-DESCRIPTION
+
+Ch?ck	O
+LANGUAGE:	O
+일본 어	B-LANGUAGE
+
+이름:	O
+옥서	B-NAME
+
+billing:	O
+us er650@example.com	B-EMAIL
+
+우편물	O
+수령지:	O
+광주시	B-ADDRESS
+함주군	I-ADDRESS
+원지대로	I-ADDRESS
+309-5	I-ADDRESS
+
+유보금 :	O
+6121백만원	B-MONEY
+
+Missing	O
+PERIOD:	O
+21개월	B-PERIOD
+
+다음	O
+PERIOD을	O
+확인하세요:	O
+3개월	B-PERIOD
+
+Budget	O
+f or	O
+프로젝트	B-PROJECT_NAME
+X31:	I-PROJECT_NAME
+3733만원.	B-MONEY
+
+청구인:	O
+금신 전	B-NAME
+
+체결일자:	O
+2002년	B-DATE
+1월	I-DATE
+1?일	I-DATE
+
+업체 명:	O
+(주)	B-COMPANY
+양산바이오	I-COMPANY
+
+Please	O
+provide	O
+용역계약서	B-CONTRACT_TYPE
+f or	O
+CONTRACT_TYPE.	O
+
+Missing	O
+PERIOD:	O
+13개월	B-PERIOD
+
+문원제님(980225-3******)	B-NAME
+확인되었습니다.	O
+
+허이	B-NAME
+(실장)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2014년	B-DATE
+10월	I-DATE
+5일	I-DATE
+->	O
+user849@example.com.	B-EMAIL
+
+맹훈?	B-NAME
+(본부장)	B-POSITION
+f?om	O
+재단법인	B-COMPANY
+주화익기획	I-COMPANY
+영업팀.	B-DEPARTMENT
+
+선택	O
+입 력	O
+항목	O
+(DEPAR TMENT):	O
+기획팀	B-DEPARTMENT
+
+Tran?fer	O
+동일성유지권	B-RIGHT_INFO
+o f	O
+958개월	B-QUANTITY
+건축저작물	B-TYPE
+for	O
+61 19억원.	B-MONEY
+
+Please	O
+provide	O
+26개?	B-PERIOD
+for	O
+PERIOD.	O
+
+Check	O
+TYPE:	O
+?술저작물	B-TYPE
+
+B udget	O
+for	O
+프로젝트	B-PROJECT_NAME
+H55:	I-PROJECT_NAME
+8904천만원.	B-MONEY
+
+편종빈	B-NAME
+(주민 번호:	O
+731121-2******,	B-ID_NUM
+주?:	O
+제주시	B-ADDRESS
+옥호구	I-ADDRESS
+노월대로	I-ADDRESS
+99-28)	I-ADDRESS
+
+주식회사	B-COMPANY
+편창스튜디오	I-COMPANY
+CEO	O
+석율	B-NAME
+
+Va?ue	O
+of	O
+DEPARTMENT	O
+is	O
+구매팀	B-DEPARTMENT
+
+Transfer	O
+fee	O
+for	O
+전송권	B-RIGHT_INFO
+is	O
+921천원.	B-MONEY
+
+현타이	B-NAME
+(매니저)	B-POSITION
+?an	O
+be	O
+reache?	O
+a?	O
+010-7760-3480.	B-PHONE
+
+Please	O
+provide	O
+표준계약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYPE.	O
+
+Check	O
+QUANTITY:	O
+70개	B-QUANTITY
+
+저작권법	B-LAW_REFERENCE
+제 4조	I-LAW_REFERENCE
+5항	I-LAW_REFERENCE
+-	O
+오현승	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+
+반품	O
+주소:	O
+전라남도	B-ADDRESS
+전섭화시	I-ADDRESS
+강광대로	I-ADDRESS
+1?1-50	I-ADDRESS
+
+회원번 호:	O
+180905-2**?***	B-ID_NUM
+
+Value	O
+of	O
+STAT?S	O
+is	O
+승인	B-STATUS
+대기	I-STATUS
+
+편집저작물	B-TYPE
+724회	B-QUANTITY
+(영어)	B-LANGUAGE
+-	O
+방송권	B-RIGHT_INFO
+4855천만원	B-MONEY
+(23개월)	B-PERIOD
+
+변해	B-NAME
+(주임)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이 용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2017년	B-DATE
+3 월	I-DATE
+4일	I-DATE
+->	O
+user740@example.com.	B-EMAIL
+
+Please	O
+provide	O
+특약	B-DESCRIPTION
+사항은	I-DESCRIPTION
+별도로	I-DESCRIPTION
+?한다.	I-DESCRIPTION
+for	O
+DESCRIPTIO?.	O
+
+추가된	O
+RIG HT_INFO:	O
+대여 권	B-RIGHT_INFO
+
+유한회사	B-COMPANY
+송영제약	I-COMPANY
+QA팀의	B-DEPARTMENT
+홍화애	B-NAME
+대표입니다.	B-POSITION
+
+입력된	O
+URL	O
+값은	O
+http://www.coupang155.com	B-URL
+입니다.	O
+

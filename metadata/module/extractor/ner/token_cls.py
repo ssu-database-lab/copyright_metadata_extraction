@@ -791,13 +791,15 @@ class TokenClassNER:
             logging_steps=1 if debug else 50,
             report_to="none",
             gradient_checkpointing=GRADIENT_CHECKPOINTING,
-            save_safetensors=True,
             dataloader_num_workers=DATALOADER_NUM_WORKERS,
             dataloader_pin_memory=DATALOADER_PIN_MEMORY,
             optim="adamw_torch_fused" if (torch is not None and torch.cuda.is_available()) else "adamw_torch",
             **_amp_kwargs(),
         )
-        if "save_only_model" in inspect.signature(TrainingArguments.__init__).parameters:
+        _ta_params = inspect.signature(TrainingArguments.__init__).parameters
+        if "save_safetensors" in _ta_params:
+            training_kwargs["save_safetensors"] = True
+        if "save_only_model" in _ta_params:
             training_kwargs["save_only_model"] = True
         training_args = TrainingArguments(**training_kwargs)
 

@@ -1,0 +1,34 @@
+# Run started: 2026-04-24T11:57:44
+# Log format: [section] blocks with key = value pairs
+
+[meta]
+model = monologg/koelectra-base-v3-discriminator
+label = copyright_kotitle
+ctx = ctx1
+silver_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/ctx_ablation/silver/copyright_kotitle_ctx1
+gold_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/ctx_ablation/gold/copyright_kotitle_ctx1
+
+[hparams]
+epochs = 2
+batch_size = 8
+lr = 2e-05
+train_ratio = 8/12
+val_ratio = 2/12
+test_ratio = 2/12
+split_seed = 42
+
+[train_result]
+train_time_sec = 22.6
+model_path = /home/peppermint/copyright_metadata_extraction/metadata/data/out/paper1_20260424_053245/monologg--koelectra-base-v3-discriminator/copyright_kotitle_ctx1/model
+
+[eval_result]
+n_gold = 2026
+hit = 1943
+accuracy = 0.959
+eval_time_sec = 10.8
+
+[final]
+accuracy = 0.959
+total_time_sec = 34.0
+
+# Run ended: 2026-04-24T11:58:18

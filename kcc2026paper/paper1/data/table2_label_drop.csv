@@ -1,0 +1,12 @@
+label,class,case0,case1,case2,case3,casefull,drop_case0_casefull
+address,format-regular,1.0,1.0,1.0,1.0,1.0,0.0
+company,format-free,0.998105,0.996684,0.995578,0.994473,0.912406,0.085699
+copyright_Keyword,format-semi-regular,0.995842,0.995842,0.995842,0.995842,0.995712,0.00013
+copyright_description,format-free,0.963646,0.963518,0.963646,0.963518,0.941,0.022646
+copyright_kotitle,format-semi-regular,0.997021,0.994293,0.99692,0.996853,0.996602,0.000418
+copyright_url,format-regular,1.0,1.0,1.0,1.0,1.0,0.0
+date,format-regular,1.0,1.0,1.0,1.0,1.0,0.0
+email,format-regular,1.0,1.0,1.0,1.0,1.0,0.0
+name,format-free,1.0,0.999769,0.999191,0.998614,0.959742,0.040258
+phone,format-regular,1.0,1.0,1.0,1.0,1.0,0.0
+ri_period,format-regular,1.0,1.0,1.0,1.0,1.0,0.0

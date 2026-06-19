@@ -1,0 +1,35 @@
+# Run started: 2026-05-12T23:52:08
+# Log format: [section] blocks with key = value pairs
+
+[meta]
+source = rule
+mode = m1_answer
+cfg_id = rule_m1_answer
+model = klue/bert-base
+method = full
+training_mode = integrated
+n_labels = 26
+silver_dir = /home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/configs/paper1/rule/m1_answer
+silver_total_records = 193752
+silver_per_label_min = 4000
+silver_per_label_max = 10000
+
+[hparams]
+epochs = 3
+batch_size = 32
+lr = 4e-05
+early_stopping_patience = 3
+warmup_ratio = 0.1
+weight_decay = 0.01
+train_ratio = 8/12
+val_ratio = 2/12
+test_ratio = 2/12
+split_seed = 42
+max_per_label = 10000
+neg_ratio_m3 = 0.25
+
+[error]
+exc = "The `metric_for_best_model` training argument is set to 'eval_f1', which is not found in the evaluation metrics. The available evaluation metrics are: ['eval_accuracy', 'eval_loss', 'eval_runtime', 'eval_samples_per_second', 'eval_steps_per_second', 'epoch']. Consider changing the `metric_for_best_model` via the TrainingArguments."
+trace = Traceback (most recent call last):   File "/home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/.venv/lib/python3.12/site-packages/transformers/trainer.py", line 3165, in _determine_best_metric     metric_value = metrics[metric_to_check]                    ~~~~~~~^^^^^^^^^^^^^^^^^ KeyError: 'eval_f1'  The above exception was the direct cause of the following exception:  Traceback (most recent call last):   File "/home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/paper1.py", line 372, in run_one     ner_train(   File "/home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/paper_module/core/ner/train.py", line 102, in ner_train     return _ner_train_impl(            ^^^^^^^^^^^^^^^^   File "/home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/paper_module/core/ner/train.py", line 248, in _ner_train_impl     success, eval_info = _train_token_cls(                          ^^^^^^^^^^^^^^^^^   File "/home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/paper_module/core/ner/train.py", line 319, in _train_token_cls     ok, metrics = tc.train(                   ^^^^^^^^^   File "/home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/paper_module/core/ner/token_cls.py", line 1967, in train     train_out = trainer.train()                 ^^^^^^^^^^^^^^^   File "/home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/.venv/lib/python3.12/site-packages/transformers/trainer.py", line 2245, in train     return inner_training_loop(            ^^^^^^^^^^^^^^^^^^^^   File "/home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/.venv/lib/python3.12/site-packages/transformers/trainer.py", line 2661, in _inner_training_loop     self._maybe_log_save_evaluate(   File "/home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/.venv/lib/python3.12/site-packages/transformers/trainer.py", line 3097, in _maybe_log_save_evaluate     is_new_best_metric = self._determine_best_metric(metrics=metrics, trial=trial)                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   File "/home/peppermint/Documents/Coding/copyright_metadata_extraction/metadata/.venv/lib/python3.12/site-packages/transformers/trainer.py", line 3167, in _determine_best_metric     raise KeyError( KeyError: "The `metric_for_best_model` training argument is set to 'eval_f1', which is not found in the evaluation metrics. The available evaluation metrics are: ['eval_accuracy', 'eval_loss', 'eval_runtime', 'eval_samples_per_second', 'eval_steps_per_second', 'epoch']. Consider changing the `metric_for_best_model` via the TrainingArguments." 
+
+# Run ended: 2026-05-12T23:56:11

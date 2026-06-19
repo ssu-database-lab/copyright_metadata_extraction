@@ -6,8 +6,7 @@ End-to-end 파이프라인: OCR → regex(9) → NER(17) → LLM(9, placeholder)
 OCR 캐시(``data/out/ocr/result/*.txt``)가 입력 문서 수만큼 있으면 OCR 단계 자동 스킵.
 ``FORCE_OCR=1 python main.py`` 로 강제 재실행 가능.
 """
-from module.api import metadata_extract
+from module.api import extract_metadata
 
 if __name__ == "__main__":
-    metadata_extract()
-
+    extract_metadata()

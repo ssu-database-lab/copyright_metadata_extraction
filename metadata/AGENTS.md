@@ -19,10 +19,11 @@ archived under `../paper/old/metadata/`.
 - The public API facade is `module/api.py`.
 - Live extractors live under `module/extractor/`.
 - Shared schema/path helpers live under `module/parts/`.
-- `main.py` is the single local training entry point for the current NER model.
+- `main.py` is the single local inference entry point for the current extraction pipeline.
 - Current OCR inputs and derived OCR metadata are under `data/out/ocr/`.
-- Current NER metadata outputs are under `data/out/ner/`, including the
-  `bert-base/clean_20260516` snapshot currently used for review.
+- Current 35-label metadata outputs are under `data/out/metadata/`.
+- Historical/review NER metadata snapshots remain under `data/out/ner/`,
+  including the `bert-base/clean_20260516` snapshot currently used for review.
 - Current product model artifacts remain under `models/`.
 - Downloaded base models remain under `model_downloaded/`.
 

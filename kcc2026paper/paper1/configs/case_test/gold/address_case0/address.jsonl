@@ -1,0 +1,203 @@
+{"text": "경상북도", "answer": "경상북도", "source": "kogl"}
+{"text": "경상남도", "answer": "경상남도", "source": "tr01"}
+{"text": "대구광역시", "answer": "대구광역시", "source": "tr01"}
+{"text": "거창군", "answer": "거창군", "source": "tr02"}
+{"text": "광주시", "answer": "광주시", "source": "tr02"}
+{"text": "경주시", "answer": "경주시", "source": "tr02"}
+{"text": "고령군", "answer": "고령군", "source": "tr02"}
+{"text": "공주시", "answer": "공주시", "source": "tr02"}
+{"text": "괴산군", "answer": "괴산군", "source": "tr02"}
+{"text": "목포시", "answer": "목포시", "source": "tr02"}
+{"text": "구례군", "answer": "구례군", "source": "tr02"}
+{"text": "구미시", "answer": "구미시", "source": "tr02"}
+{"text": "경기도", "answer": "경기도", "source": "tr02"}
+{"text": "대전광역시", "answer": "대전광역시", "source": "tr02"}
+{"text": "밀양시", "answer": "밀양시", "source": "tr02"}
+{"text": "부여군", "answer": "부여군", "source": "tr02"}
+{"text": "상주시", "answer": "상주시", "source": "tr02"}
+{"text": "서산시", "answer": "서산시", "source": "tr02"}
+{"text": "서울특별시", "answer": "서울특별시", "source": "tr02"}
+{"text": "방이동고분군", "answer": "방이동고분군", "source": "tr02"}
+{"text": "서천군", "answer": "서천군", "source": "tr02"}
+{"text": "속초시", "answer": "속초시", "source": "tr02"}
+{"text": "수원시", "answer": "수원시", "source": "tr02"}
+{"text": "안동시", "answer": "안동시", "source": "tr02"}
+{"text": "양구군", "answer": "양구군", "source": "tr02"}
+{"text": "양주시", "answer": "양주시", "source": "tr02"}
+{"text": "여주시", "answer": "여주시", "source": "tr02"}
+{"text": "울주군", "answer": "울주군", "source": "tr02"}
+{"text": "익산시", "answer": "익산시", "source": "tr02"}
+{"text": "인천시 서구", "answer": "인천시 서구", "source": "tr02"}
+{"text": "인천광역시", "answer": "인천광역시", "source": "tr02"}
+{"text": "장성군", "answer": "장성군", "source": "tr02"}
+{"text": "전주시", "answer": "전주시", "source": "tr02"}
+{"text": "제주시", "answer": "제주시", "source": "tr02"}
+{"text": "제주특별자치도", "answer": "제주특별자치도", "source": "tr02"}
+{"text": "제천시", "answer": "제천시", "source": "tr02"}
+{"text": "춘천시", "answer": "춘천시", "source": "tr02"}
+{"text": "강원특별자치도", "answer": "강원특별자치도", "source": "wondb"}
+{"text": "부산광역시", "answer": "부산광역시", "source": "wondb"}
+{"text": "제주특별자치도", "answer": "제주특별자치도", "source": "wondb"}
+{"text": "인천광역시", "answer": "인천광역시", "source": "wondb"}
+{"text": "대전광역시", "answer": "대전광역시", "source": "wondb"}
+{"text": "경상남도", "answer": "경상남도", "source": "wondb"}
+{"text": "충청남도", "answer": "충청남도", "source": "wondb"}
+{"text": "경기도", "answer": "경기도", "source": "wondb"}
+{"text": "아산시", "answer": "아산시", "source": "wondb"}
+{"text": "시흥시", "answer": "시흥시", "source": "wondb"}
+{"text": "서울특별시", "answer": "서울특별시", "source": "wondb"}
+{"text": "광주광역시", "answer": "광주광역시", "source": "wondb"}
+{"text": "대구광역시", "answer": "대구광역시", "source": "wondb"}
+{"text": "전라남도", "answer": "전라남도", "source": "wondb"}
+{"text": "고양시", "answer": "고양시", "source": "wondb"}
+{"text": "세종특별자치시", "answer": "세종특별자치시", "source": "wondb"}
+{"text": "경상북도", "answer": "경상북도", "source": "wondb"}
+{"text": "울산광역시 중구", "answer": "울산광역시 중구", "source": "kogl"}
+{"text": "대전광역시 서구", "answer": "대전광역시 서구", "source": "kogl"}
+{"text": "경상남도 거제시", "answer": "경상남도 거제시", "source": "kogl"}
+{"text": "강원특별자치도 고성군", "answer": "강원특별자치도 고성군", "source": "kogl"}
+{"text": "서울특별시 강동구", "answer": "서울특별시 강동구", "source": "kogl"}
+{"text": "광주광역시 남구", "answer": "광주광역시 남구", "source": "kogl"}
+{"text": "충청북도 옥천군", "answer": "충청북도 옥천군", "source": "kogl"}
+{"text": "광주광역시 서구", "answer": "광주광역시 서구", "source": "kogl"}
+{"text": "경상남도 합천군", "answer": "경상남도 합천군", "source": "kogl"}
+{"text": "전라남도 화순군", "answer": "전라남도 화순군", "source": "kogl"}
+{"text": "인천광역시 연수구", "answer": "인천광역시 연수구", "source": "kogl"}
+{"text": "광주광역시 북구", "answer": "광주광역시 북구", "source": "kogl"}
+{"text": "경기도 의정부시", "answer": "경기도 의정부시", "source": "kogl"}
+{"text": "서울특별시 동작구", "answer": "서울특별시 동작구", "source": "kogl"}
+{"text": "전라남도 고흥군", "answer": "전라남도 고흥군", "source": "kogl"}
+{"text": "전북특별자치도 진안군", "answer": "전북특별자치도 진안군", "source": "kogl"}
+{"text": "경상남도 함양군", "answer": "경상남도 함양군", "source": "kogl"}
+{"text": "서울특별시 송파구", "answer": "서울특별시 송파구", "source": "kogl"}
+{"text": "경기도 고양시", "answer": "경기도 고양시", "source": "kogl"}
+{"text": "전라남도 광양시", "answer": "전라남도 광양시", "source": "kogl"}
+{"text": "경기도 포천시", "answer": "경기도 포천시", "source": "kogl"}
+{"text": "충청남도 서산시", "answer": "충청남도 서산시", "source": "kogl"}
+{"text": "강원특별자치도 인제군", "answer": "강원특별자치도 인제군", "source": "kogl"}
+{"text": "강원특별자치도 영월군", "answer": "강원특별자치도 영월군", "source": "kogl"}
+{"text": "인천광역시 계양구", "answer": "인천광역시 계양구", "source": "kogl"}
+{"text": "경기도 화성시", "answer": "경기도 화성시", "source": "kogl"}
+{"text": "충청북도 영동군", "answer": "충청북도 영동군", "source": "kogl"}
+{"text": "충청북도 진천군", "answer": "충청북도 진천군", "source": "kogl"}
+{"text": "경기도 시흥시", "answer": "경기도 시흥시", "source": "kogl"}
+{"text": "경상남도 통영시", "answer": "경상남도 통영시", "source": "kogl"}
+{"text": "경기도 부천시", "answer": "경기도 부천시", "source": "kogl"}
+{"text": "경상남도 함안군", "answer": "경상남도 함안군", "source": "kogl"}
+{"text": "경상남도 창원시", "answer": "경상남도 창원시", "source": "kogl"}
+{"text": "경기도 광명시", "answer": "경기도 광명시", "source": "kogl"}
+{"text": "경상북도 울릉군", "answer": "경상북도 울릉군", "source": "kogl"}
+{"text": "광주광역시 광산구", "answer": "광주광역시 광산구", "source": "kogl"}
+{"text": "충청남도 당진시", "answer": "충청남도 당진시", "source": "kogl"}
+{"text": "전라남도 진도군", "answer": "전라남도 진도군", "source": "kogl"}
+{"text": "경상북도 김천시", "answer": "경상북도 김천시", "source": "kogl"}
+{"text": "전라남도 나주시", "answer": "전라남도 나주시", "source": "kogl"}
+{"text": "인천광역시 강화군", "answer": "인천광역시 강화군", "source": "kogl"}
+{"text": "경상북도 구미시", "answer": "경상북도 구미시", "source": "kogl"}
+{"text": "경상남도 고성군", "answer": "경상남도 고성군", "source": "kogl"}
+{"text": "충청남도 청양군", "answer": "충청남도 청양군", "source": "kogl"}
+{"text": "강원특별자치도 정선군", "answer": "강원특별자치도 정선군", "source": "kogl"}
+{"text": "경상남도 밀양시", "answer": "경상남도 밀양시", "source": "kogl"}
+{"text": "서울특별시 용산구", "answer": "서울특별시 용산구", "source": "kogl"}
+{"text": "부산광역시 사하구", "answer": "부산광역시 사하구", "source": "kogl"}
+{"text": "경기도 여주시", "answer": "경기도 여주시", "source": "kogl"}
+{"text": "충청북도 괴산군", "answer": "충청북도 괴산군", "source": "kogl"}
+{"text": "부산광역시 서구", "answer": "부산광역시 서구", "source": "kogl"}
+{"text": "충청남도 예산군", "answer": "충청남도 예산군", "source": "kogl"}
+{"text": "강원도 강릉시", "answer": "강원도 강릉시", "source": "tr02"}
+{"text": "강원도 동해시", "answer": "강원도 동해시", "source": "tr02"}
+{"text": "강원도 삼척시", "answer": "강원도 삼척시", "source": "tr02"}
+{"text": "서울특별시 종로구", "answer": "서울특별시 종로구", "source": "tr02"}
+{"text": "강원도 양양군", "answer": "강원도 양양군", "source": "tr02"}
+{"text": "강원도 영월군", "answer": "강원도 영월군", "source": "tr02"}
+{"text": "강원도 원주시", "answer": "강원도 원주시", "source": "tr02"}
+{"text": "강원도 철원군", "answer": "강원도 철원군", "source": "tr02"}
+{"text": "강원도 화천군", "answer": "강원도 화천군", "source": "tr02"}
+{"text": "강원도 횡성군", "answer": "강원도 횡성군", "source": "tr02"}
+{"text": "서울특별시 강남구", "answer": "서울특별시 강남구", "source": "wondb"}
+{"text": "경상남도 진주시", "answer": "경상남도 진주시", "source": "wondb"}
+{"text": "서울특별시 광진구", "answer": "서울특별시 광진구", "source": "wondb"}
+{"text": "전라남도 함평군", "answer": "전라남도 함평군", "source": "wondb"}
+{"text": "경상남도 남해군", "answer": "경상남도 남해군", "source": "wondb"}
+{"text": "전라남도 강진군", "answer": "전라남도 강진군", "source": "wondb"}
+{"text": "부산광역시 영도구", "answer": "부산광역시 영도구", "source": "wondb"}
+{"text": "전라남도 무안군", "answer": "전라남도 무안군", "source": "wondb"}
+{"text": "강원특별자치도 양구군", "answer": "강원특별자치도 양구군", "source": "wondb"}
+{"text": "인천광역시 옹진군", "answer": "인천광역시 옹진군", "source": "wondb"}
+{"text": "경기도 가평군", "answer": "경기도 가평군", "source": "wondb"}
+{"text": "대구광역시 달서구", "answer": "대구광역시 달서구", "source": "wondb"}
+{"text": "부산광역시 동구", "answer": "부산광역시 동구", "source": "wondb"}
+{"text": "경상북도 구미시", "answer": "경상북도 구미시", "source": "wondb"}
+{"text": "서울특별시 강서구", "answer": "서울특별시 강서구", "source": "wondb"}
+{"text": "경기도 안성시", "answer": "경기도 안성시", "source": "wondb"}
+{"text": "충청남도 천안시", "answer": "충청남도 천안시", "source": "wondb"}
+{"text": "강원특별자치도 인제군", "answer": "강원특별자치도 인제군", "source": "wondb"}
+{"text": "전라남도 순천시", "answer": "전라남도 순천시", "source": "wondb"}
+{"text": "울산광역시 동구", "answer": "울산광역시 동구", "source": "wondb"}
+{"text": "서울특별시 금천구", "answer": "서울특별시 금천구", "source": "wondb"}
+{"text": "충청남도 보령시", "answer": "충청남도 보령시", "source": "wondb"}
+{"text": "경기도 동두천시", "answer": "경기도 동두천시", "source": "wondb"}
+{"text": "경상북도 영주시", "answer": "경상북도 영주시", "source": "wondb"}
+{"text": "충청남도 홍성군", "answer": "충청남도 홍성군", "source": "wondb"}
+{"text": "전라남도 완도군", "answer": "전라남도 완도군", "source": "wondb"}
+{"text": "경기도 여주시", "answer": "경기도 여주시", "source": "wondb"}
+{"text": "전라남도 담양군", "answer": "전라남도 담양군", "source": "wondb"}
+{"text": "전라남도 광양시", "answer": "전라남도 광양시", "source": "wondb"}
+{"text": "전라남도 고흥군", "answer": "전라남도 고흥군", "source": "wondb"}
+{"text": "전북특별자치도 정읍시", "answer": "전북특별자치도 정읍시", "source": "wondb"}
+{"text": "경상남도 거제시", "answer": "경상남도 거제시", "source": "wondb"}
+{"text": "경상북도 울릉군", "answer": "경상북도 울릉군", "source": "wondb"}
+{"text": "강원특별자치도 양양군", "answer": "강원특별자치도 양양군", "source": "wondb"}
+{"text": "경기도 시흥시", "answer": "경기도 시흥시", "source": "wondb"}
+{"text": "충청남도 금산군", "answer": "충청남도 금산군", "source": "wondb"}
+{"text": "부산광역시 사상구", "answer": "부산광역시 사상구", "source": "wondb"}
+{"text": "인천광역시 미추홀구", "answer": "인천광역시 미추홀구", "source": "wondb"}
+{"text": "경기도 고양시", "answer": "경기도 고양시", "source": "wondb"}
+{"text": "전라남도 화순군", "answer": "전라남도 화순군", "source": "wondb"}
+{"text": "경기도 남양주시", "answer": "경기도 남양주시", "source": "wondb"}
+{"text": "전라남도 곡성군", "answer": "전라남도 곡성군", "source": "wondb"}
+{"text": "인천광역시 연수구", "answer": "인천광역시 연수구", "source": "wondb"}
+{"text": "강원특별자치도 속초시", "answer": "강원특별자치도 속초시", "source": "wondb"}
+{"text": "충청남도 예산군", "answer": "충청남도 예산군", "source": "wondb"}
+{"text": "울산광역시 남구", "answer": "울산광역시 남구", "source": "wondb"}
+{"text": "서울특별시 영등포구", "answer": "서울특별시 영등포구", "source": "wondb"}
+{"text": "전라남도 여수시", "answer": "전라남도 여수시", "source": "wondb"}
+{"text": "경상남도 고성군", "answer": "경상남도 고성군", "source": "wondb"}
+{"text": "경상남도 합천군", "answer": "경상남도 합천군", "source": "wondb"}
+{"text": "대전광역시 중구", "answer": "대전광역시 중구", "source": "wondb"}
+{"text": "서울특별시 서대문구", "answer": "서울특별시 서대문구", "source": "wondb"}
+{"text": "대구광역시 수성구", "answer": "대구광역시 수성구", "source": "wondb"}
+{"text": "경기도 성남시", "answer": "경기도 성남시", "source": "wondb"}
+{"text": "경기도 포천시", "answer": "경기도 포천시", "source": "wondb"}
+{"text": "경기도 구리시", "answer": "경기도 구리시", "source": "wondb"}
+{"text": "경상남도 양산시", "answer": "경상남도 양산시", "source": "wondb"}
+{"text": "전라남도 나주시", "answer": "전라남도 나주시", "source": "wondb"}
+{"text": "전라남도 장성군", "answer": "전라남도 장성군", "source": "wondb"}
+{"text": "부산광역시 연제구", "answer": "부산광역시 연제구", "source": "wondb"}
+{"text": "경상남도 의령군", "answer": "경상남도 의령군", "source": "wondb"}
+{"text": "전북특별자치도 군산시", "answer": "전북특별자치도 군산시", "source": "wondb"}
+{"text": "경기도 안양시", "answer": "경기도 안양시", "source": "wondb"}
+{"text": "강원특별자치도 원주시", "answer": "강원특별자치도 원주시", "source": "wondb"}
+{"text": "충청북도 증평군", "answer": "충청북도 증평군", "source": "wondb"}
+{"text": "전라남도 신안군", "answer": "전라남도 신안군", "source": "wondb"}
+{"text": "충청북도 보은군", "answer": "충청북도 보은군", "source": "wondb"}
+{"text": "충청남도 서천군", "answer": "충청남도 서천군", "source": "wondb"}
+{"text": "강원특별자치도 고성군", "answer": "강원특별자치도 고성군", "source": "wondb"}
+{"text": "경기도 김포시", "answer": "경기도 김포시", "source": "wondb"}
+{"text": "서울특별시 성북구", "answer": "서울특별시 성북구", "source": "wondb"}
+{"text": "대전광역시 서구", "answer": "대전광역시 서구", "source": "wondb"}
+{"text": "경기도 평택시", "answer": "경기도 평택시", "source": "wondb"}
+{"text": "강원특별자치도 강릉시", "answer": "강원특별자치도 강릉시", "source": "wondb"}
+{"text": "경기도 화성시", "answer": "경기도 화성시", "source": "wondb"}
+{"text": "제주특별자치도 서귀포시", "answer": "제주특별자치도 서귀포시", "source": "wondb"}
+{"text": "강원특별자치도 화천군", "answer": "강원특별자치도 화천군", "source": "wondb"}
+{"text": "경기도 파주시", "answer": "경기도 파주시", "source": "wondb"}
+{"text": "경상북도 청송군", "answer": "경상북도 청송군", "source": "wondb"}
+{"text": "전북특별자치도 김제시", "answer": "전북특별자치도 김제시", "source": "wondb"}
+{"text": "경상북도 안동시 송천동 388", "answer": "경상북도 안동시 송천동 388", "source": "tr02"}
+{"text": "경상북도 안동시 도산면 서부리 산33", "answer": "경상북도 안동시 도산면 서부리 산33", "source": "tr02"}
+{"text": "경상북도 안동시 도산면 퇴계로 1997", "answer": "경상북도 안동시 도산면 퇴계로 1997", "source": "tr02"}
+{"text": "경상북도 안동시 도산면 서부리 220", "answer": "경상북도 안동시 도산면 서부리 220", "source": "tr02"}
+{"text": "서울특별시 서초구 반포동 산60-1", "answer": "서울특별시 서초구 반포동 산60-1", "source": "tr02"}
+{"text": "서울특별시 중구 장충동2가 26", "answer": "서울특별시 중구 장충동2가 26", "source": "tr02"}
+{"text": "서울특별시 용산구 용산동6가 168-6", "answer": "서울특별시 용산구 용산동6가 168-6", "source": "tr02"}

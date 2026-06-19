@@ -1,0 +1,11 @@
+{"text": "보호여부 : 보호저작물", "answer": "보호저작물", "source": "tr02"}
+{"text": "보호여부 : 만료저작물", "answer": "만료저작물", "source": "tr02"}
+{"text": "보호여부 : 비보호저작물", "answer": "비보호저작물", "source": "tr02"}
+{"text": "비보호저작물 : 보호저작물", "answer": "보호저작물", "source": "law:§7+tr02"}
+{"text": "저작물 보호 여부 : 보호저작물", "answer": "보호저작물", "source": "law:§7+tr02"}
+{"text": "비보호저작물 : 만료저작물", "answer": "만료저작물", "source": "law:§7+tr02"}
+{"text": "저작물 보호 여부 : 만료저작물", "answer": "만료저작물", "source": "law:§7+tr02"}
+{"text": "비보호저작물 : 만료공공저작물", "answer": "만료공공저작물", "source": "law:§7+tr02"}
+{"text": "저작물 보호 여부 : 만료공공저작물", "answer": "만료공공저작물", "source": "law:§7+tr02"}
+{"text": "비보호저작물 : 비보호저작물", "answer": "비보호저작물", "source": "law:§7+tr02"}
+{"text": "저작물 보호 여부 : 비보호저작물", "answer": "비보호저작물", "source": "law:§7+tr02"}

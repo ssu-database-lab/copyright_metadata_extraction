@@ -1,0 +1,27 @@
+label,format_class,extraction_lane,gloss_ko
+phone,regular,REGEX,전화번호
+email,regular,REGEX,이메일
+date,regular,REGEX,날짜
+ri_data,regular,NER,권리 데이터/대상
+ri_period,regular,NER,이용 기간
+ri_money,regular,REGEX,금액
+address,regular,NER,주소
+copyright_url,regular,REGEX,원문 URL
+copyright_uci,regular,REGEX,UCI 식별자
+copyright_num,regular,REGEX,저작물 번호
+copyright_idnum,regular,REGEX,식별 번호
+copyright_status,regular,NER,저작물 상태
+copyright_quantity,regular,REGEX,수량
+copyright_language,regular,NER,언어
+copyright_Keyword,semi-regular,NER,키워드
+copyright_kotitle,semi-regular,NER,저작물 제목(국문)
+ri_law_reference,semi-regular,NER,법 조항 인용
+ri_info,semi-regular,NER,권리 정보(설명)
+ri_contract_type,semi-regular,NER,계약 유형
+ri_copyright,semi-regular,NER,권리/이용조건
+name,free,NER,인명(저작자 등)
+company,free,NER,기관·회사명
+department,free,NER,부서명
+position,free,NER,직책
+copyright_description,free,NER,저작물 설명
+copyright_type,free,NER,저작물 종별/유형

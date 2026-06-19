@@ -1,0 +1,34 @@
+# Run started: 2026-04-25T04:08:05
+# Log format: [section] blocks with key = value pairs
+
+[meta]
+model = klue/bert-base
+label = copyright_Keyword
+case = case2
+silver_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/case_test/silver/copyright_Keyword_case2
+gold_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/case_test/gold/copyright_Keyword_case2
+
+[hparams]
+epochs = 5
+batch_size = 24
+lr = 2e-05
+train_ratio = 8/12
+val_ratio = 2/12
+test_ratio = 2/12
+split_seed = 42
+max_silver_per_label = 10000
+
+[train_result]
+train_time_sec = 29.6
+
+[eval_result]
+n_gold = 1924
+hit = 1916
+accuracy = 0.9958
+eval_time_sec = 10.8
+
+[final]
+accuracy = 0.9958
+total_time_sec = 40.8
+
+# Run ended: 2026-04-25T04:08:46

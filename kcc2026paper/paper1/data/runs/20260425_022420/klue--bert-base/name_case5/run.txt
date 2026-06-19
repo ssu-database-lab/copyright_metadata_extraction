@@ -1,0 +1,25 @@
+# Run started: 2026-04-25T02:24:22
+# Log format: [section] blocks with key = value pairs
+
+[meta]
+model = klue/bert-base
+label = name
+case = case5
+silver_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/case_test/silver/name_case5
+gold_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/case_test/gold/name_case5
+
+[hparams]
+epochs = 2
+batch_size = 8
+lr = 2e-05
+train_ratio = 8/12
+val_ratio = 2/12
+test_ratio = 2/12
+split_seed = 42
+
+[error]
+type = BrokenPipeError
+message = [Errno 32] Broken pipe
+traceback_first_line = BrokenPipeError: [Errno 32] Broken pipe
+
+# Run ended: 2026-04-25T02:24:23

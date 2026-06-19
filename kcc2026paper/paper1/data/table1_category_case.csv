@@ -1,0 +1,4 @@
+category,case0,case1,case2,case3,casefull,delta_case0_casefull
+format-regular,1.0,1.0,1.0,1.0,1.0,0.0
+format-semi-regular,0.996431,0.995067,0.996381,0.996348,0.996157,0.000274
+format-free,0.98725,0.986657,0.986138,0.985535,0.937716,0.049534

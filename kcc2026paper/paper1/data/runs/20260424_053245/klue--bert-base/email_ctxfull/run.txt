@@ -1,0 +1,34 @@
+# Run started: 2026-04-24T06:06:30
+# Log format: [section] blocks with key = value pairs
+
+[meta]
+model = klue/bert-base
+label = email
+ctx = ctxfull
+silver_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/ctx_ablation/silver/email_ctxfull
+gold_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/ctx_ablation/gold/email_ctxfull
+
+[hparams]
+epochs = 2
+batch_size = 8
+lr = 2e-05
+train_ratio = 8/12
+val_ratio = 2/12
+test_ratio = 2/12
+split_seed = 42
+
+[train_result]
+train_time_sec = 133.5
+model_path = /home/peppermint/copyright_metadata_extraction/metadata/data/out/paper1_20260424_053245/klue--bert-base/email_ctxfull/model
+
+[eval_result]
+n_gold = 532
+hit = 532
+accuracy = 1.0
+eval_time_sec = 2.0
+
+[final]
+accuracy = 1.0
+total_time_sec = 135.8
+
+# Run ended: 2026-04-24T06:08:46

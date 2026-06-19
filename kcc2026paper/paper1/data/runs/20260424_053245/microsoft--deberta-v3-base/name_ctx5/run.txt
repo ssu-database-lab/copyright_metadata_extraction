@@ -1,0 +1,34 @@
+# Run started: 2026-04-24T08:35:40
+# Log format: [section] blocks with key = value pairs
+
+[meta]
+model = microsoft/deberta-v3-base
+label = name
+ctx = ctx5
+silver_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/ctx_ablation/silver/name_ctx5
+gold_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/ctx_ablation/gold/name_ctx5
+
+[hparams]
+epochs = 2
+batch_size = 8
+lr = 2e-05
+train_ratio = 8/12
+val_ratio = 2/12
+test_ratio = 2/12
+split_seed = 42
+
+[train_result]
+train_time_sec = 244.4
+model_path = /home/peppermint/copyright_metadata_extraction/metadata/data/out/paper1_20260424_053245/microsoft--deberta-v3-base/name_ctx5/model
+
+[eval_result]
+n_gold = 550
+hit = 543
+accuracy = 0.9873
+eval_time_sec = 5.8
+
+[final]
+accuracy = 0.9873
+total_time_sec = 251.2
+
+# Run ended: 2026-04-24T08:39:51

@@ -1,0 +1,5 @@
+backbone,case0,case1,case2,case3,casefull,overall_mean
+distilbert-base-multilingual-cased,0.995877,0.995257,0.995573,0.9954,0.982485,0.992918
+google-bert/bert-base-multilingual-cased,0.995877,0.99542,0.995657,0.995645,0.982478,0.993015
+klue/bert-base,0.995877,0.995542,0.995391,0.995186,0.98206,0.992811
+monologg/koelectra-base-v3-discriminator,0.995865,0.995638,0.995626,0.995332,0.982236,0.992939

@@ -1,0 +1,1583 @@
+{"text": "기관 : 경기도파주교육지원청", "answer": "경기도파주교육지원청", "source": "kogl"}
+{"text": "기관 : 서초구립방배숲환경도서관", "answer": "서초구립방배숲환경도서관", "source": "kogl"}
+{"text": "기관 : 경기도일자리재단", "answer": "경기도일자리재단", "source": "kogl"}
+{"text": "기관 : 경상남도청", "answer": "경상남도청", "source": "tr01"}
+{"text": "기관 : 안성시청", "answer": "안성시청", "source": "tr01"}
+{"text": "기관 : 광주광역시 북구청", "answer": "광주광역시 북구청", "source": "tr01"}
+{"text": "기관 : 광주광역시 북구 남도향토음식박물관", "answer": "광주광역시 북구 남도향토음식박물관", "source": "tr01"}
+{"text": "기관 : 수성구청", "answer": "수성구청", "source": "tr01"}
+{"text": "기관 : 수성구의회", "answer": "수성구의회", "source": "tr01"}
+{"text": "기관 : 대구광역시 수성구청", "answer": "대구광역시 수성구청", "source": "tr01"}
+{"text": "기관 : 수성구청 보건소", "answer": "수성구청 보건소", "source": "tr01"}
+{"text": "기관 : 수성구청 행정복지센터", "answer": "수성구청 행정복지센터", "source": "tr01"}
+{"text": "기관 : 수성문화관광", "answer": "수성문화관광", "source": "tr01"}
+{"text": "기관 : 행복수성뉴스", "answer": "행복수성뉴스", "source": "tr01"}
+{"text": "기관 : 강진군청", "answer": "강진군청", "source": "tr01"}
+{"text": "기관 : 강진군 시문학파기념관", "answer": "강진군 시문학파기념관", "source": "tr01"}
+{"text": "기관 : 국립대전현충원", "answer": "국립대전현충원", "source": "tr01"}
+{"text": "기관 : 한국교육개발원", "answer": "한국교육개발원", "source": "tr01"}
+{"text": "기관 : 한국스포츠정책과학원", "answer": "한국스포츠정책과학원", "source": "tr01"}
+{"text": "기관 : 국립무형유산원", "answer": "국립무형유산원", "source": "tr01"}
+{"text": "기관 : 국립해양문화재연구소", "answer": "국립해양문화재연구소", "source": "tr01"}
+{"text": "기관 : 중소벤처기업연구원", "answer": "중소벤처기업연구원", "source": "tr01"}
+{"text": "기관 : 한국영상자료원", "answer": "한국영상자료원", "source": "tr01"}
+{"text": "기관 : 한국지역정보개발원", "answer": "한국지역정보개발원", "source": "tr01"}
+{"text": "기관 : 철도산업정보센터", "answer": "철도산업정보센터", "source": "tr01"}
+{"text": "기관 : 아리랑국제방송", "answer": "아리랑국제방송", "source": "tr01"}
+{"text": "기관 : 한국보육진흥원", "answer": "한국보육진흥원", "source": "tr01"}
+{"text": "기관 : 세종학당재단", "answer": "세종학당재단", "source": "tr01"}
+{"text": "기관 : 진주시청", "answer": "진주시청", "source": "tr01"}
+{"text": "기관 : 부안군립도서관", "answer": "부안군립도서관", "source": "tr01"}
+{"text": "기관 : 국회전자도서관", "answer": "국회전자도서관", "source": "tr01"}
+{"text": "기관 : 국회기록보존소", "answer": "국회기록보존소", "source": "tr01"}
+{"text": "기관 : 국회도서관", "answer": "국회도서관", "source": "tr01"}
+{"text": "기관 : NIA 한국지능정보사회진흥원", "answer": "NIA 한국지능정보사회진흥원", "source": "tr01"}
+{"text": "기관 : 광진구청", "answer": "광진구청", "source": "tr01"}
+{"text": "기관 : 아차산메아리", "answer": "아차산메아리", "source": "tr01"}
+{"text": "저작권자 : 경상남도청", "answer": "경상남도청", "source": "tr02"}
+{"text": "기관 : 경남관광 길잡이", "answer": "경남관광", "source": "tr02"}
+{"text": "저작권자 : 대구광역시청", "answer": "대구광역시청", "source": "tr02"}
+{"text": "기관 : 대구광역시 뉴스룸", "answer": "대구광역시 뉴스룸", "source": "tr02"}
+{"text": "기관 : 안성 문화관광", "answer": "안성 문화관광", "source": "tr02"}
+{"text": "소속 : 안성시청", "answer": "안성시청", "source": "tr02"}
+{"text": "저작권자 : 안성시청", "answer": "안성시청", "source": "tr02"}
+{"text": "저작인접권자 : 안성시청", "answer": "안성시청", "source": "tr02"}
+{"text": "저작인접권자 : 광주광역시 북구청", "answer": "광주광역시 북구청", "source": "tr02"}
+{"text": "저작권자 : 수성구청", "answer": "수성구청", "source": "tr02"}
+{"text": "기관 : 강진문화관광", "answer": "강진문화관광", "source": "tr02"}
+{"text": "기관 : 다산박물관", "answer": "다산박물관", "source": "tr02"}
+{"text": "저작인접권자 : 국립극장", "answer": "국립극장", "source": "tr02"}
+{"text": "저작권자 : 국립극장", "answer": "국립극장", "source": "tr02"}
+{"text": "소속 : 국립대전현충원", "answer": "국립대전현충원", "source": "tr02"}
+{"text": "저작권자 : 국립대전현충원", "answer": "국립대전현충원", "source": "tr02"}
+{"text": "기관 : 사이버교과서박물관", "answer": "사이버교과서박물관", "source": "tr02"}
+{"text": "저작권자 : 한국스포츠정책과학원", "answer": "한국스포츠정책과학원", "source": "tr02"}
+{"text": "저작권자 : 국립무형유산원", "answer": "국립무형유산원", "source": "tr02"}
+{"text": "저작권자 : 국립해양문화재연구소", "answer": "국립해양문화재연구소", "source": "tr02"}
+{"text": "기관 : 한국민족문화대백과사전", "answer": "한국민족문화대백과사전", "source": "tr02"}
+{"text": "저작권자 : 문화재청", "answer": "문화재청", "source": "tr02"}
+{"text": "저작권자 : 한국연구원", "answer": "한국연구원", "source": "tr02"}
+{"text": "저작권자 : 성균관대학교 박물관", "answer": "성균관대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 독립기념관", "answer": "독립기념관", "source": "tr02"}
+{"text": "저작인접권자 : 독립기념관", "answer": "독립기념관", "source": "tr02"}
+{"text": "저작권자 : 중앙일보", "answer": "중앙일보", "source": "tr02"}
+{"text": "저작권자 : 국방군사연구소", "answer": "국방군사연구소", "source": "tr02"}
+{"text": "저작권자 : 한중문화협회", "answer": "한중문화협회", "source": "tr02"}
+{"text": "저작권자 : 국방부전사편찬위원회", "answer": "국방부전사편찬위원회", "source": "tr02"}
+{"text": "저작권자 : 밀양시청", "answer": "밀양시청", "source": "tr02"}
+{"text": "저작권자 : 양산문화원", "answer": "양산문화원", "source": "tr02"}
+{"text": "저작권자 : 한국여성개발원", "answer": "한국여성개발원", "source": "tr02"}
+{"text": "저작권자 : 국립중앙도서관", "answer": "국립중앙도서관", "source": "tr02"}
+{"text": "저작권자 : 국립진주박물관", "answer": "국립진주박물관", "source": "tr02"}
+{"text": "저작권자 : 호림박물관", "answer": "호림박물관", "source": "tr02"}
+{"text": "저작권자 : 궁중음식연구원", "answer": "궁중음식연구원", "source": "tr02"}
+{"text": "저작권자 : 규장각 한국학연구원", "answer": "규장각 한국학연구원", "source": "tr02"}
+{"text": "저작인접권자 : 규장각 한국학연구원", "answer": "규장각 한국학연구원", "source": "tr02"}
+{"text": "저작권자 : 서울대학교 규장각", "answer": "서울대학교 규장각", "source": "tr02"}
+{"text": "저작권자 : 조선미술박물관", "answer": "조선미술박물관", "source": "tr02"}
+{"text": "저작권자 : 세계백과대사전", "answer": "세계백과대사전", "source": "tr02"}
+{"text": "저작권자 : 함안군청", "answer": "함안군청", "source": "tr02"}
+{"text": "저작권자 : 가천박물관", "answer": "가천박물관", "source": "tr02"}
+{"text": "저작인접권자 : 가천박물관", "answer": "가천박물관", "source": "tr02"}
+{"text": "저작권자 : 서울역사박물관", "answer": "서울역사박물관", "source": "tr02"}
+{"text": "저작권자 : 연세대학교", "answer": "연세대학교", "source": "tr02"}
+{"text": "저작권자 : 양천구청", "answer": "양천구청", "source": "tr02"}
+{"text": "저작권자 : 삼성미술관 리움", "answer": "삼성미술관 리움", "source": "tr02"}
+{"text": "저작인접권자 : 삼성미술관 리움", "answer": "삼성미술관 리움", "source": "tr02"}
+{"text": "저작권자 : 코리아나화장박물관", "answer": "코리아나화장박물관", "source": "tr02"}
+{"text": "저작인접권자 : 국립경주박물관", "answer": "국립경주박물관", "source": "tr02"}
+{"text": "저작권자 : 문화재보호협회", "answer": "문화재보호협회", "source": "tr02"}
+{"text": "저작인접권자 : 국립중앙박물관", "answer": "국립중앙박물관", "source": "tr02"}
+{"text": "저작권자 : 동아대학교석당박물관", "answer": "동아대학교석당박물관", "source": "tr02"}
+{"text": "저작인접권자 : 동아대학교 석당박물관", "answer": "동아대학교 석당박물관", "source": "tr02"}
+{"text": "저작권자 : 이화여자대학교 박물관", "answer": "이화여자대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 숭례원", "answer": "숭례원", "source": "tr02"}
+{"text": "저작권자 : 체신부", "answer": "체신부", "source": "tr02"}
+{"text": "저작권자 : 국립민속박물관", "answer": "국립민속박물관", "source": "tr02"}
+{"text": "저작권자 : 조선일보사", "answer": "조선일보사", "source": "tr02"}
+{"text": "저작권자 : 한양원", "answer": "한양원", "source": "tr02"}
+{"text": "저작권자 : 강릉문화원", "answer": "강릉문화원", "source": "tr02"}
+{"text": "저작인접권자 : 오죽헌시립박물관", "answer": "오죽헌시립박물관", "source": "tr02"}
+{"text": "저작권자 : 강릉시청", "answer": "강릉시청", "source": "tr02"}
+{"text": "저작인접권자 : 성균관대학교박물관", "answer": "성균관대학교박물관", "source": "tr02"}
+{"text": "저작권자 : 강북구청", "answer": "강북구청", "source": "tr02"}
+{"text": "저작권자 : 국립문화재연구소", "answer": "국립문화재연구소", "source": "tr02"}
+{"text": "저작인접권자 : 경덕사", "answer": "경덕사", "source": "tr02"}
+{"text": "저작인접권자 : 규장각한국학연구원", "answer": "규장각한국학연구원", "source": "tr02"}
+{"text": "저작권자 : 속초시청", "answer": "속초시청", "source": "tr02"}
+{"text": "저작권자 : 강원일보", "answer": "강원일보", "source": "tr02"}
+{"text": "저작인접권자 : 고성사", "answer": "고성사", "source": "tr02"}
+{"text": "저작인접권자 : 무위사", "answer": "무위사", "source": "tr02"}
+{"text": "저작권자 : 한국국학진흥원 유학문화박물관", "answer": "한국국학진흥원 유학문화박물관", "source": "tr02"}
+{"text": "저작권자 : 강화군청", "answer": "강화군청", "source": "tr02"}
+{"text": "저작권자 : 서울대학교 박물관", "answer": "서울대학교 박물관", "source": "tr02"}
+{"text": "저작인접권자 : 서울대학교박물관", "answer": "서울대학교박물관", "source": "tr02"}
+{"text": "저작권자 : 수덕사근역성보관", "answer": "수덕사근역성보관", "source": "tr02"}
+{"text": "저작권자 : 함양군청", "answer": "함양군청", "source": "tr02"}
+{"text": "저작권자 : 서울시립관현악단", "answer": "서울시립관현악단", "source": "tr02"}
+{"text": "저작권자 : 국립국악원", "answer": "국립국악원", "source": "tr02"}
+{"text": "저작권자 : 공군본부", "answer": "공군본부", "source": "tr02"}
+{"text": "저작권자 : 총무처", "answer": "총무처", "source": "tr02"}
+{"text": "저작권자 : 한국문화재사진연구소", "answer": "한국문화재사진연구소", "source": "tr02"}
+{"text": "저작권자 : 일본 동경박물관", "answer": "일본 동경박물관", "source": "tr02"}
+{"text": "저작권자 : 숭실대학교 박물관", "answer": "숭실대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 국회도서관", "answer": "국회도서관", "source": "tr02"}
+{"text": "저작권자 : 한국도로공사", "answer": "한국도로공사", "source": "tr02"}
+{"text": "저작권자 : 정부기록물보존소", "answer": "정부기록물보존소", "source": "tr02"}
+{"text": "저작권자 : 한독의약박물관", "answer": "한독의약박물관", "source": "tr02"}
+{"text": "저작권자 : 혜화전신전화국", "answer": "혜화전신전화국", "source": "tr02"}
+{"text": "저작권자 : 국립경주박물관", "answer": "국립경주박물관", "source": "tr02"}
+{"text": "저작권자 : 경주군청", "answer": "경주군청", "source": "tr02"}
+{"text": "저작권자 : 문화재연구소", "answer": "문화재연구소", "source": "tr02"}
+{"text": "저작인접권자 : 경주 불국사", "answer": "경주 불국사", "source": "tr02"}
+{"text": "저작인접권자 : 불교중앙박물관", "answer": "불교중앙박물관", "source": "tr02"}
+{"text": "저작권자 : 불교중앙박물관", "answer": "불교중앙박물관", "source": "tr02"}
+{"text": "저작인접권자 : 경주 사라리 고분군", "answer": "경주 사라리 고분군", "source": "tr02"}
+{"text": "저작인접권자 : 석굴암", "answer": "석굴암", "source": "tr02"}
+{"text": "저작권자 : 경희대학교 박물관", "answer": "경희대학교 박물관", "source": "tr02"}
+{"text": "저작인접권자 : 경희대박물관", "answer": "경희대박물관", "source": "tr02"}
+{"text": "저작권자 : 연세대학교 도서관 자료 복제", "answer": "연세대학교 도서관 자료 복제", "source": "tr02"}
+{"text": "저작인접권자 : 조선미술박물관", "answer": "조선미술박물관", "source": "tr02"}
+{"text": "저작권자 : 치안국공보계", "answer": "치안국공보계", "source": "tr02"}
+{"text": "저작권자 : 경향신문사", "answer": "경향신문사", "source": "tr02"}
+{"text": "저작권자 : 단국대학교 석주선기념박물관", "answer": "단국대학교 석주선기념박물관", "source": "tr02"}
+{"text": "저작권자 : 경기도박물관", "answer": "경기도박물관", "source": "tr02"}
+{"text": "저작인접권자 : 경기도박물관", "answer": "경기도박물관", "source": "tr02"}
+{"text": "저작권자 : 한양대학교 박물관", "answer": "한양대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 경북도청", "answer": "경북도청", "source": "tr02"}
+{"text": "저작권자 : 세광음악출판사", "answer": "세광음악출판사", "source": "tr02"}
+{"text": "저작권자 : 문화재관리국", "answer": "문화재관리국", "source": "tr02"}
+{"text": "저작인접권자 : 동방화랑", "answer": "동방화랑", "source": "tr02"}
+{"text": "저작권자 : 고성군청", "answer": "고성군청", "source": "tr02"}
+{"text": "저작권자 : 국가보훈처", "answer": "국가보훈처", "source": "tr02"}
+{"text": "저작권자 : 청도군청", "answer": "청도군청", "source": "tr02"}
+{"text": "저작권자 : 육군박물관", "answer": "육군박물관", "source": "tr02"}
+{"text": "저작권자 : 고창군청", "answer": "고창군청", "source": "tr02"}
+{"text": "저작권자 : 보훈처", "answer": "보훈처", "source": "tr02"}
+{"text": "저작권자 : 대전시사편찬위", "answer": "대전시사편찬위", "source": "tr02"}
+{"text": "저작권자 : 고흥군청", "answer": "고흥군청", "source": "tr02"}
+{"text": "저작인접권자 : 곡성 관음사", "answer": "곡성 관음사", "source": "tr02"}
+{"text": "저작권자 : 곡성군청", "answer": "곡성군청", "source": "tr02"}
+{"text": "저작권자 : 문예진흥원", "answer": "문예진흥원", "source": "tr02"}
+{"text": "저작권자 : 세종대학교 박물관", "answer": "세종대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 세종대학교", "answer": "세종대학교", "source": "tr02"}
+{"text": "저작권자 : 서울대학교", "answer": "서울대학교", "source": "tr02"}
+{"text": "저작인접권자 : 성균관대학교 도서관", "answer": "성균관대학교 도서관", "source": "tr02"}
+{"text": "저작인접권자 : 제동사", "answer": "제동사", "source": "tr02"}
+{"text": "저작권자 : 대구시청", "answer": "대구시청", "source": "tr02"}
+{"text": "저작권자 : 서울대공원", "answer": "서울대공원", "source": "tr02"}
+{"text": "저작권자 : 공주시청", "answer": "공주시청", "source": "tr02"}
+{"text": "저작권자 : 국립공주박물관", "answer": "국립공주박물관", "source": "tr02"}
+{"text": "저작권자 : 과천시청", "answer": "과천시청", "source": "tr02"}
+{"text": "저작인접권자 : 단국대학교 석주선기념박물관", "answer": "단국대학교 석주선기념박물관", "source": "tr02"}
+{"text": "저작권자 : 일본서복사", "answer": "일본서복사", "source": "tr02"}
+{"text": "저작권자 : 일본 지온인(知恩院)", "answer": "일본 지온인(知恩院)", "source": "tr02"}
+{"text": "저작권자 : 일본 다이온지(大恩寺)", "answer": "일본 다이온지(大恩寺)", "source": "tr02"}
+{"text": "저작권자 : 일본 사이후쿠지(西福寺)", "answer": "일본 사이후쿠지(西福寺)", "source": "tr02"}
+{"text": "저작권자 : 성균관대유도회", "answer": "성균관대유도회", "source": "tr02"}
+{"text": "저작권자 : 중앙일보사", "answer": "중앙일보사", "source": "tr02"}
+{"text": "저작권자 : 울산광역시청", "answer": "울산광역시청", "source": "tr02"}
+{"text": "저작인접권자 : 양덕사", "answer": "양덕사", "source": "tr02"}
+{"text": "저작인접권자 : 서울대학교 박물관", "answer": "서울대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 충현박물관", "answer": "충현박물관", "source": "tr02"}
+{"text": "저작권자 : 광장극단", "answer": "광장극단", "source": "tr02"}
+{"text": "저작권자 : 광주광역시북구청", "answer": "광주광역시북구청", "source": "tr02"}
+{"text": "저작인접권자 : 약사암", "answer": "약사암", "source": "tr02"}
+{"text": "저작인접권자 : 증심사", "answer": "증심사", "source": "tr02"}
+{"text": "저작권자 : 광주일보", "answer": "광주일보", "source": "tr02"}
+{"text": "저작권자 : 괴산군청", "answer": "괴산군청", "source": "tr02"}
+{"text": "저작인접권자 : 보광사", "answer": "보광사", "source": "tr02"}
+{"text": "저작인접권자 : 간송미술관", "answer": "간송미술관", "source": "tr02"}
+{"text": "저작인접권자 : 한독의약박물관", "answer": "한독의약박물관", "source": "tr02"}
+{"text": "저작인접권자 : 화엄사", "answer": "화엄사", "source": "tr02"}
+{"text": "저작권자 : 월정사 성보박물관", "answer": "월정사 성보박물관", "source": "tr02"}
+{"text": "저작인접권자 : 월정사 성보박물관", "answer": "월정사 성보박물관", "source": "tr02"}
+{"text": "저작권자 : 경희대학교", "answer": "경희대학교", "source": "tr02"}
+{"text": "저작권자 : 국립국악박물관", "answer": "국립국악박물관", "source": "tr02"}
+{"text": "저작권자 : 행정자치부", "answer": "행정자치부", "source": "tr02"}
+{"text": "저작권자 : 국어연구소", "answer": "국어연구소", "source": "tr02"}
+{"text": "저작인접권자 : 불주사", "answer": "불주사", "source": "tr02"}
+{"text": "저작인접권자 : 대율사", "answer": "대율사", "source": "tr02"}
+{"text": "저작권자 : 영광군청", "answer": "영광군청", "source": "tr02"}
+{"text": "저작인접권자 : 국립진주박물관", "answer": "국립진주박물관", "source": "tr02"}
+{"text": "저작인접권자 : 국립중앙도서관", "answer": "국립중앙도서관", "source": "tr02"}
+{"text": "저작권자 : 가교극단", "answer": "가교극단", "source": "tr02"}
+{"text": "저작권자 : 계명대학교 동산도서관", "answer": "계명대학교 동산도서관", "source": "tr02"}
+{"text": "저작권자 : 고려대학교 박물관", "answer": "고려대학교 박물관", "source": "tr02"}
+{"text": "저작인접권자 : 고려대학교박물관", "answer": "고려대학교박물관", "source": "tr02"}
+{"text": "저작권자 : 국립대구박물관", "answer": "국립대구박물관", "source": "tr02"}
+{"text": "저작권자 : 도쿄국립박물관", "answer": "도쿄국립박물관", "source": "tr02"}
+{"text": "저작권자 : 그린스튜디오", "answer": "그린스튜디오", "source": "tr02"}
+{"text": "저작권자 : 충청남도청", "answer": "충청남도청", "source": "tr02"}
+{"text": "저작권자 : 금산군청", "answer": "금산군청", "source": "tr02"}
+{"text": "저작인접권자 : 태고사", "answer": "태고사", "source": "tr02"}
+{"text": "저작권자 : 청주고인쇄박물관", "answer": "청주고인쇄박물관", "source": "tr02"}
+{"text": "저작권자 : 일본 동경국립박물관", "answer": "일본 동경국립박물관", "source": "tr02"}
+{"text": "저작권자 : 기독교방송국", "answer": "기독교방송국", "source": "tr02"}
+{"text": "저작권자 : 에밀레박물관", "answer": "에밀레박물관", "source": "tr02"}
+{"text": "저작권자 : 이화여자대학교", "answer": "이화여자대학교", "source": "tr02"}
+{"text": "저작인접권자 : 독일 함부르크민족학박물관", "answer": "독일 함부르크민족학박물관", "source": "tr02"}
+{"text": "저작권자 : 독일 함부르크민족학박물관", "answer": "독일 함부르크민족학박물관", "source": "tr02"}
+{"text": "저작인접권자 : 동아대학교박물관", "answer": "동아대학교박물관", "source": "tr02"}
+{"text": "저작권자 : 경상북도청", "answer": "경상북도청", "source": "tr02"}
+{"text": "저작인접권자 : 문화재청", "answer": "문화재청", "source": "tr02"}
+{"text": "저작인접권자 : 봉산영당", "answer": "봉산영당", "source": "tr02"}
+{"text": "저작권자 : 전쟁기념관", "answer": "전쟁기념관", "source": "tr02"}
+{"text": "저작권자 : 한국민속홍보센타", "answer": "한국민속홍보센타", "source": "tr02"}
+{"text": "저작권자 : 서울여자상업고등학교", "answer": "서울여자상업고등학교", "source": "tr02"}
+{"text": "저작권자 : 숙명여자대학교", "answer": "숙명여자대학교", "source": "tr02"}
+{"text": "저작권자 : 국사편찬위원회", "answer": "국사편찬위원회", "source": "tr02"}
+{"text": "저작권자 : 선소리산타령보존회", "answer": "선소리산타령보존회", "source": "tr02"}
+{"text": "저작인접권자 : 무량사", "answer": "무량사", "source": "tr02"}
+{"text": "저작권자 : 숭실대박물관", "answer": "숭실대박물관", "source": "tr02"}
+{"text": "저작권자 : 공보처", "answer": "공보처", "source": "tr02"}
+{"text": "저작인접권자 : 국립국악원", "answer": "국립국악원", "source": "tr02"}
+{"text": "저작권자 : 새문안교회", "answer": "새문안교회", "source": "tr02"}
+{"text": "저작권자 : 한국민속센타", "answer": "한국민속센타", "source": "tr02"}
+{"text": "저작권자 : 대한요업학회", "answer": "대한요업학회", "source": "tr02"}
+{"text": "저작권자 : 청주대학교", "answer": "청주대학교", "source": "tr02"}
+{"text": "저작권자 : 연세대학교 박물관", "answer": "연세대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 경주박물관", "answer": "경주박물관", "source": "tr02"}
+{"text": "저작권자 : 감리교신학대학", "answer": "감리교신학대학", "source": "tr02"}
+{"text": "저작인접권자 : 국립대구박물관", "answer": "국립대구박물관", "source": "tr02"}
+{"text": "저작권자 : 배재고등학교", "answer": "배재고등학교", "source": "tr02"}
+{"text": "저작권자 : 국립현대미술관", "answer": "국립현대미술관", "source": "tr02"}
+{"text": "저작인접권자 : 국립현대미술관", "answer": "국립현대미술관", "source": "tr02"}
+{"text": "저작인접권자 : 삼성미술관리움", "answer": "삼성미술관리움", "source": "tr02"}
+{"text": "저작권자 : 수원시공보실", "answer": "수원시공보실", "source": "tr02"}
+{"text": "저작권자 : 수원시청", "answer": "수원시청", "source": "tr02"}
+{"text": "저작인접권자 : 서울역사박물관", "answer": "서울역사박물관", "source": "tr02"}
+{"text": "저작권자 : 부산일보사", "answer": "부산일보사", "source": "tr02"}
+{"text": "저작인접권자 : 정렬사", "answer": "정렬사", "source": "tr02"}
+{"text": "저작권자 : 공훈전자사료관", "answer": "공훈전자사료관", "source": "tr02"}
+{"text": "저작권자 : 연세대학교 의과대학 동은의학박물관", "answer": "연세대학교 의과대학 동은의학박물관", "source": "tr02"}
+{"text": "저작권자 : 숭실대학교", "answer": "숭실대학교", "source": "tr02"}
+{"text": "저작권자 : 의사신문", "answer": "의사신문", "source": "tr02"}
+{"text": "저작인접권자 : 중앙일보사", "answer": "중앙일보사", "source": "tr02"}
+{"text": "저작권자 : 한국외국어대", "answer": "한국외국어대", "source": "tr02"}
+{"text": "저작권자 : 호암미술관", "answer": "호암미술관", "source": "tr02"}
+{"text": "저작권자 : 영화진흥공사", "answer": "영화진흥공사", "source": "tr02"}
+{"text": "저작권자 : 동양나이론", "answer": "동양나이론", "source": "tr02"}
+{"text": "저작권자 : 나주군청", "answer": "나주군청", "source": "tr02"}
+{"text": "저작인접권자 : 나주 홍기창 가옥", "answer": "나주 홍기창 가옥", "source": "tr02"}
+{"text": "저작권자 : 나주시문예관광과", "answer": "나주시문예관광과", "source": "tr02"}
+{"text": "저작권자 : 전사편찬위원회", "answer": "전사편찬위원회", "source": "tr02"}
+{"text": "저작권자 : 오죽헌시립박물관", "answer": "오죽헌시립박물관", "source": "tr02"}
+{"text": "저작권자 : 강원도청공보실", "answer": "강원도청공보실", "source": "tr02"}
+{"text": "저작권자 : 가평군청", "answer": "가평군청", "source": "tr02"}
+{"text": "저작인접권자 : 삼성출판박물관", "answer": "삼성출판박물관", "source": "tr02"}
+{"text": "저작권자 : 한국관광공사", "answer": "한국관광공사", "source": "tr02"}
+{"text": "저작권자 : 문공부", "answer": "문공부", "source": "tr02"}
+{"text": "저작권자 : 매일신문사", "answer": "매일신문사", "source": "tr02"}
+{"text": "저작권자 : 논산군청", "answer": "논산군청", "source": "tr02"}
+{"text": "저작인접권자 : 남양주 봉선사", "answer": "남양주 봉선사", "source": "tr02"}
+{"text": "저작인접권자 : 조계종 불교중앙박물관", "answer": "조계종 불교중앙박물관", "source": "tr02"}
+{"text": "저작인접권자 : 국립전부박물관", "answer": "국립전부박물관", "source": "tr02"}
+{"text": "저작인접권자 : 국립전주박물관", "answer": "국립전주박물관", "source": "tr02"}
+{"text": "저작인접권자 : 한양대학교박물관", "answer": "한양대학교박물관", "source": "tr02"}
+{"text": "저작권자 : 주화란대사관", "answer": "주화란대사관", "source": "tr02"}
+{"text": "저작권자 : 충남도청 공보실", "answer": "충남도청 공보실", "source": "tr02"}
+{"text": "저작권자 : 중앙기상대", "answer": "중앙기상대", "source": "tr02"}
+{"text": "저작권자 : 농업기반공사", "answer": "농업기반공사", "source": "tr02"}
+{"text": "저작권자 : YWCA", "answer": "YWCA", "source": "tr02"}
+{"text": "저작권자 : 아모레퍼시픽미술관", "answer": "아모레퍼시픽미술관", "source": "tr02"}
+{"text": "저작권자 : 예진원", "answer": "예진원", "source": "tr02"}
+{"text": "저작권자 : 단양군청", "answer": "단양군청", "source": "tr02"}
+{"text": "저작권자 : 한국조폐공사", "answer": "한국조폐공사", "source": "tr02"}
+{"text": "저작권자 : 대각회", "answer": "대각회", "source": "tr02"}
+{"text": "저작인접권자 : 대구 동화사", "answer": "대구 동화사", "source": "tr02"}
+{"text": "저작인접권자 : 경북대학교대구캠퍼스박물관", "answer": "경북대학교대구캠퍼스박물관", "source": "tr02"}
+{"text": "저작인접권자 : 파계사", "answer": "파계사", "source": "tr02"}
+{"text": "저작인접권자 : 계명대학교 동산도서관", "answer": "계명대학교 동산도서관", "source": "tr02"}
+{"text": "저작권자 : 한국기독교 박물관", "answer": "한국기독교 박물관", "source": "tr02"}
+{"text": "저작인접권자 : 송광사성보박물관", "answer": "송광사성보박물관", "source": "tr02"}
+{"text": "저작인접권자 : 동대사", "answer": "동대사", "source": "tr02"}
+{"text": "저작권자 : 가천문화재단", "answer": "가천문화재단", "source": "tr02"}
+{"text": "저작인접권자 : (재)아단문고", "answer": "(재)아단문고", "source": "tr02"}
+{"text": "저작권자 : 대성동고분박물관", "answer": "대성동고분박물관", "source": "tr02"}
+{"text": "저작권자 : 소수박물관", "answer": "소수박물관", "source": "tr02"}
+{"text": "저작인접권자 : 소수서원", "answer": "소수서원", "source": "tr02"}
+{"text": "저작권자 : 문경시청", "answer": "문경시청", "source": "tr02"}
+{"text": "저작권자 : 서울신문사", "answer": "서울신문사", "source": "tr02"}
+{"text": "저작인접권자 : 서울대학교 규장각", "answer": "서울대학교 규장각", "source": "tr02"}
+{"text": "저작권자 : 대전광역시청", "answer": "대전광역시청", "source": "tr02"}
+{"text": "저작권자 : 정부기록보존소", "answer": "정부기록보존소", "source": "tr02"}
+{"text": "저작권자 : 문화방송", "answer": "문화방송", "source": "tr02"}
+{"text": "저작권자 : 대한무역투자진흥공사", "answer": "대한무역투자진흥공사", "source": "tr02"}
+{"text": "저작권자 : 법제처", "answer": "법제처", "source": "tr02"}
+{"text": "저작권자 : 3.1운동100주년기념사업추진위원회", "answer": "3.1운동100주년기념사업추진위원회", "source": "tr02"}
+{"text": "저작권자 : 대한의학협회", "answer": "대한의학협회", "source": "tr02"}
+{"text": "저작권자 : 대한적십자사", "answer": "대한적십자사", "source": "tr02"}
+{"text": "저작권자 : 육군사관학교", "answer": "육군사관학교", "source": "tr02"}
+{"text": "저작권자 : 문화공보부", "answer": "문화공보부", "source": "tr02"}
+{"text": "저작권자 : 공주민속극박물관", "answer": "공주민속극박물관", "source": "tr02"}
+{"text": "저작권자 : 한국족보박물관", "answer": "한국족보박물관", "source": "tr02"}
+{"text": "저작권자 : 규장각한국학연구원", "answer": "규장각한국학연구원", "source": "tr02"}
+{"text": "저작권자 : 양주군청", "answer": "양주군청", "source": "tr02"}
+{"text": "저작권자 : 단국대학교", "answer": "단국대학교", "source": "tr02"}
+{"text": "저작권자 : 미국 피바디박물관", "answer": "미국 피바디박물관", "source": "tr02"}
+{"text": "저작권자 : 고려대학교", "answer": "고려대학교", "source": "tr02"}
+{"text": "저작권자 : 동경국립박물관", "answer": "동경국립박물관", "source": "tr02"}
+{"text": "저작권자 : 한국민속홍보쎈타", "answer": "한국민속홍보쎈타", "source": "tr02"}
+{"text": "저작권자 : 동아방송", "answer": "동아방송", "source": "tr02"}
+{"text": "저작권자 : 동학본부", "answer": "동학본부", "source": "tr02"}
+{"text": "저작권자 : 강원도청", "answer": "강원도청", "source": "tr02"}
+{"text": "저작인접권자 : 삼화사", "answer": "삼화사", "source": "tr02"}
+{"text": "저작권자 : 축협중앙회", "answer": "축협중앙회", "source": "tr02"}
+{"text": "저작권자 : 농촌진흥청", "answer": "농촌진흥청", "source": "tr02"}
+{"text": "저작권자 : 강원도공보실", "answer": "강원도공보실", "source": "tr02"}
+{"text": "저작권자 : 국토통일원", "answer": "국토통일원", "source": "tr02"}
+{"text": "저작권자 : 창원대박물관", "answer": "창원대박물관", "source": "tr02"}
+{"text": "저작권자 : 마산시청", "answer": "마산시청", "source": "tr02"}
+{"text": "저작인접권자 : 한국학중앙연구원 장서각", "answer": "한국학중앙연구원 장서각", "source": "tr02"}
+{"text": "저작권자 : 성남시청", "answer": "성남시청", "source": "tr02"}
+{"text": "저작권자 : 청양군청", "answer": "청양군청", "source": "tr02"}
+{"text": "저작권자 : 대한가족계획협회", "answer": "대한가족계획협회", "source": "tr02"}
+{"text": "저작권자 : 국방부", "answer": "국방부", "source": "tr02"}
+{"text": "저작권자 : 서울대학교 도서관", "answer": "서울대학교 도서관", "source": "tr02"}
+{"text": "저작인접권자 : 서울대도서관", "answer": "서울대도서관", "source": "tr02"}
+{"text": "저작권자 : 한국국학진흥원", "answer": "한국국학진흥원", "source": "tr02"}
+{"text": "저작인접권자 : 한국국학진흥원 유학문화박물관", "answer": "한국국학진흥원 유학문화박물관", "source": "tr02"}
+{"text": "저작권자 : 안동시청", "answer": "안동시청", "source": "tr02"}
+{"text": "저작권자 : 하동군청", "answer": "하동군청", "source": "tr02"}
+{"text": "저작인접권자 : 금남사", "answer": "금남사", "source": "tr02"}
+{"text": "저작권자 : 인천시립박물관", "answer": "인천시립박물관", "source": "tr02"}
+{"text": "저작권자 : 삼성출판박물관", "answer": "삼성출판박물관", "source": "tr02"}
+{"text": "저작인접권자 : 덴리대학 중앙도서관", "answer": "덴리대학 중앙도서관", "source": "tr02"}
+{"text": "저작권자 : 한국표준과학연구소", "answer": "한국표준과학연구소", "source": "tr02"}
+{"text": "저작인접권자 : 국립공주박물관", "answer": "국립공주박물관", "source": "tr02"}
+{"text": "저작권자 : 현대예술극장", "answer": "현대예술극장", "source": "tr02"}
+{"text": "저작권자 : 대전역사박물관", "answer": "대전역사박물관", "source": "tr02"}
+{"text": "저작인접권자 : 대전역사박물관", "answer": "대전역사박물관", "source": "tr02"}
+{"text": "저작인접권자 : 무용총", "answer": "무용총", "source": "tr02"}
+{"text": "저작인접권자 : 한양대학교 박물관", "answer": "한양대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 문경옛길박물관", "answer": "문경옛길박물관", "source": "tr02"}
+{"text": "저작권자 : 용인군청", "answer": "용인군청", "source": "tr02"}
+{"text": "저작권자 : 국립청주박물관", "answer": "국립청주박물관", "source": "tr02"}
+{"text": "저작인접권자 : 국립청주박물관", "answer": "국립청주박물관", "source": "tr02"}
+{"text": "저작권자 : 일본 신노인(親王院)", "answer": "일본 신노인(親王院)", "source": "tr02"}
+{"text": "저작권자 : 일본 신노원(親王院)", "answer": "일본 신노원(親王院)", "source": "tr02"}
+{"text": "저작권자 : 일본 지은원", "answer": "일본 지은원", "source": "tr02"}
+{"text": "저작권자 : 일본 친왕원", "answer": "일본 친왕원", "source": "tr02"}
+{"text": "저작권자 : 서울대박물관", "answer": "서울대박물관", "source": "tr02"}
+{"text": "저작인접권자 : 한국표준과학연구소", "answer": "한국표준과학연구소", "source": "tr02"}
+{"text": "저작권자 : 건국대학교", "answer": "건국대학교", "source": "tr02"}
+{"text": "저작인접권자 : 무봉사", "answer": "무봉사", "source": "tr02"}
+{"text": "저작권자 : 밀양박물관", "answer": "밀양박물관", "source": "tr02"}
+{"text": "저작권자 : 청원군청", "answer": "청원군청", "source": "tr02"}
+{"text": "저작권자 : 수원박물관", "answer": "수원박물관", "source": "tr02"}
+{"text": "저작권자 : 삼성반도체", "answer": "삼성반도체", "source": "tr02"}
+{"text": "저작권자 : 금성반도체", "answer": "금성반도체", "source": "tr02"}
+{"text": "저작권자 : 뿌리깊은나무", "answer": "뿌리깊은나무", "source": "tr02"}
+{"text": "저작권자 : 동두천시청", "answer": "동두천시청", "source": "tr02"}
+{"text": "저작권자 : 숭실대학교 한국기독교박물관", "answer": "숭실대학교 한국기독교박물관", "source": "tr02"}
+{"text": "저작인접권자 : 숭실대학교 한국기독교박물관", "answer": "숭실대학교 한국기독교박물관", "source": "tr02"}
+{"text": "저작권자 : (주)경방", "answer": "(주)경방", "source": "tr02"}
+{"text": "저작권자 : 대전시청", "answer": "대전시청", "source": "tr02"}
+{"text": "저작권자 : 국회사무처", "answer": "국회사무처", "source": "tr02"}
+{"text": "저작권자 : 서울백병원", "answer": "서울백병원", "source": "tr02"}
+{"text": "저작권자 : 이화여대박물관", "answer": "이화여대박물관", "source": "tr02"}
+{"text": "저작권자 : 동국대박물관", "answer": "동국대박물관", "source": "tr02"}
+{"text": "저작인접권자 : 호림박물관", "answer": "호림박물관", "source": "tr02"}
+{"text": "저작권자 : 국립부여박물관", "answer": "국립부여박물관", "source": "tr02"}
+{"text": "저작권자 : 보령시청", "answer": "보령시청", "source": "tr02"}
+{"text": "저작인접권자 : 보령 충청수영성", "answer": "보령 충청수영성", "source": "tr02"}
+{"text": "저작권자 : 남해군청", "answer": "남해군청", "source": "tr02"}
+{"text": "저작권자 : 대덕군청", "answer": "대덕군청", "source": "tr02"}
+{"text": "저작권자 : 보은군청", "answer": "보은군청", "source": "tr02"}
+{"text": "저작인접권자 : 보은 법주사", "answer": "보은 법주사", "source": "tr02"}
+{"text": "저작인접권자 : 동국대학교박물관", "answer": "동국대학교박물관", "source": "tr02"}
+{"text": "저작권자 : 동국대학교 박물관", "answer": "동국대학교 박물관", "source": "tr02"}
+{"text": "저작인접권자 : 연세대학교박물관", "answer": "연세대학교박물관", "source": "tr02"}
+{"text": "저작권자 : 봉화군청", "answer": "봉화군청", "source": "tr02"}
+{"text": "저작인접권자 : 창덕궁", "answer": "창덕궁", "source": "tr02"}
+{"text": "저작권자 : 부산광역시청", "answer": "부산광역시청", "source": "tr02"}
+{"text": "저작권자 : 부산광역시 남구청", "answer": "부산광역시 남구청", "source": "tr02"}
+{"text": "저작인접권자 : 취정사", "answer": "취정사", "source": "tr02"}
+{"text": "저작인접권자 : 국립부여박물관", "answer": "국립부여박물관", "source": "tr02"}
+{"text": "저작권자 : 정림사지박물관", "answer": "정림사지박물관", "source": "tr02"}
+{"text": "저작인접권자 : 정림사지박물관", "answer": "정림사지박물관", "source": "tr02"}
+{"text": "저작권자 : 부평구청", "answer": "부평구청", "source": "tr02"}
+{"text": "저작권자 : 북한문제연구소", "answer": "북한문제연구소", "source": "tr02"}
+{"text": "저작인접권자 : 경북대학교 박물관", "answer": "경북대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 의성김씨종친회", "answer": "의성김씨종친회", "source": "tr02"}
+{"text": "저작인접권자 : 해인사", "answer": "해인사", "source": "tr02"}
+{"text": "저작권자 : 대한잠사회", "answer": "대한잠사회", "source": "tr02"}
+{"text": "저작권자 : 성균관대학교", "answer": "성균관대학교", "source": "tr02"}
+{"text": "저작인접권자 : 성균관대학교 존경각", "answer": "성균관대학교 존경각", "source": "tr02"}
+{"text": "저작권자 : 거창군청공보실", "answer": "거창군청공보실", "source": "tr02"}
+{"text": "저작권자 : 사상구청", "answer": "사상구청", "source": "tr02"}
+{"text": "저작권자 : 옥천군청", "answer": "옥천군청", "source": "tr02"}
+{"text": "저작권자 : 동국대학교", "answer": "동국대학교", "source": "tr02"}
+{"text": "저작권자 : 포항시청", "answer": "포항시청", "source": "tr02"}
+{"text": "저작권자 : 월간 사진예술", "answer": "월간 사진예술", "source": "tr02"}
+{"text": "저작권자 : 삼육재활학교", "answer": "삼육재활학교", "source": "tr02"}
+{"text": "저작권자 : 보석연구원", "answer": "보석연구원", "source": "tr02"}
+{"text": "저작권자 : 성암고서박물관", "answer": "성암고서박물관", "source": "tr02"}
+{"text": "저작권자 : 삼척시청", "answer": "삼척시청", "source": "tr02"}
+{"text": "저작권자 : 새마을운동중앙본부", "answer": "새마을운동중앙본부", "source": "tr02"}
+{"text": "저작권자 : 천도교중앙총부", "answer": "천도교중앙총부", "source": "tr02"}
+{"text": "저작권자 : 상주시청", "answer": "상주시청", "source": "tr02"}
+{"text": "저작권자 : 숭문고등학교", "answer": "숭문고등학교", "source": "tr02"}
+{"text": "저작권자 : 충청문화연구원", "answer": "충청문화연구원", "source": "tr02"}
+{"text": "저작인접권자 : 서울 개운사", "answer": "서울 개운사", "source": "tr02"}
+{"text": "저작인접권자 : 백범기념사업회", "answer": "백범기념사업회", "source": "tr02"}
+{"text": "저작인접권자 : 서울 경국사", "answer": "서울 경국사", "source": "tr02"}
+{"text": "저작인접권자 : 문화재청 경복궁관리소", "answer": "문화재청 경복궁관리소", "source": "tr02"}
+{"text": "저작인접권자 : 방이동 고분군", "answer": "방이동 고분군", "source": "tr02"}
+{"text": "저작권자 : 한국불교미술박물관", "answer": "한국불교미술박물관", "source": "tr02"}
+{"text": "저작인접권자 : 안양암", "answer": "안양암", "source": "tr02"}
+{"text": "저작권자 : 외교박물관", "answer": "외교박물관", "source": "tr02"}
+{"text": "저작인접권자 : 외교박물관", "answer": "외교박물관", "source": "tr02"}
+{"text": "저작권자 : 종로구청", "answer": "종로구청", "source": "tr02"}
+{"text": "저작인접권자 : 청룡사", "answer": "청룡사", "source": "tr02"}
+{"text": "저작인접권자 : 서울과학기술대학교", "answer": "서울과학기술대학교", "source": "tr02"}
+{"text": "저작권자 : 충남문화연구원", "answer": "충남문화연구원", "source": "tr02"}
+{"text": "저작권자 : 김제시청", "answer": "김제시청", "source": "tr02"}
+{"text": "저작권자 : 영양군청", "answer": "영양군청", "source": "tr02"}
+{"text": "저작권자 : 대한광업진흥공사", "answer": "대한광업진흥공사", "source": "tr02"}
+{"text": "저작권자 : 대한석탄공사", "answer": "대한석탄공사", "source": "tr02"}
+{"text": "저작인접권자 : 선광사", "answer": "선광사", "source": "tr02"}
+{"text": "저작인접권자 : 국립춘천박물관", "answer": "국립춘천박물관", "source": "tr02"}
+{"text": "저작권자 : 구례군청", "answer": "구례군청", "source": "tr02"}
+{"text": "저작권자 : 한국교회사연구소", "answer": "한국교회사연구소", "source": "tr02"}
+{"text": "저작권자 : 성분도병원", "answer": "성분도병원", "source": "tr02"}
+{"text": "저작권자 : 순천시청", "answer": "순천시청", "source": "tr02"}
+{"text": "저작권자 : 법무부", "answer": "법무부", "source": "tr02"}
+{"text": "저작권자 : 삼화인쇄소", "answer": "삼화인쇄소", "source": "tr02"}
+{"text": "저작인접권자 : 소수박물관", "answer": "소수박물관", "source": "tr02"}
+{"text": "저작권자 : 속초시청공보실", "answer": "속초시청공보실", "source": "tr02"}
+{"text": "저작인접권자 : 신흥사", "answer": "신흥사", "source": "tr02"}
+{"text": "저작권자 : 여주군청", "answer": "여주군청", "source": "tr02"}
+{"text": "저작권자 : 국립생물자원관", "answer": "국립생물자원관", "source": "tr02"}
+{"text": "저작권자 : 세종대박물관", "answer": "세종대박물관", "source": "tr02"}
+{"text": "저작권자 : 프란치스코수도회", "answer": "프란치스코수도회", "source": "tr02"}
+{"text": "저작권자 : 남제주군청", "answer": "남제주군청", "source": "tr02"}
+{"text": "저작권자 : 밀양농지개량조합", "answer": "밀양농지개량조합", "source": "tr02"}
+{"text": "저작권자 : 일본 다이토쿠지(大德寺)", "answer": "일본 다이토쿠지(大德寺)", "source": "tr02"}
+{"text": "저작권자 : 일본 대덕사", "answer": "일본 대덕사", "source": "tr02"}
+{"text": "저작권자 : 후지이사이세이회유린관", "answer": "후지이사이세이회유린관", "source": "tr02"}
+{"text": "저작권자 : 일본 쇼쥬라이코지(聖衆來迎寺)", "answer": "일본 쇼쥬라이코지(聖衆來迎寺)", "source": "tr02"}
+{"text": "저작권자 : 충정로우체국", "answer": "충정로우체국", "source": "tr02"}
+{"text": "저작권자 : 안의사기념관", "answer": "안의사기념관", "source": "tr02"}
+{"text": "저작권자 : 순창군청", "answer": "순창군청", "source": "tr02"}
+{"text": "저작인접권자 : 선암사", "answer": "선암사", "source": "tr02"}
+{"text": "저작인접권자 : 송광사", "answer": "송광사", "source": "tr02"}
+{"text": "저작권자 : 순천송광사", "answer": "순천송광사", "source": "tr02"}
+{"text": "저작권자 : 울산광역시 중구청", "answer": "울산광역시 중구청", "source": "tr02"}
+{"text": "저작권자 : 신성여자고등학교", "answer": "신성여자고등학교", "source": "tr02"}
+{"text": "저작인접권자 : 청원 문의영당", "answer": "청원 문의영당", "source": "tr02"}
+{"text": "저작인접권자 : 고령신씨문중", "answer": "고령신씨문중", "source": "tr02"}
+{"text": "저작권자 : 한국철도공사", "answer": "한국철도공사", "source": "tr02"}
+{"text": "저작권자 : 외무부", "answer": "외무부", "source": "tr02"}
+{"text": "저작권자 : 과학기술연구원", "answer": "과학기술연구원", "source": "tr02"}
+{"text": "저작권자 : 미국 스미소니언국립자연사박물관", "answer": "미국 스미소니언국립자연사박물관", "source": "tr02"}
+{"text": "저작권자 : 일본 근진미술관", "answer": "일본 근진미술관", "source": "tr02"}
+{"text": "저작권자 : 일본 마쓰오사(松尾寺)", "answer": "일본 마쓰오사(松尾寺)", "source": "tr02"}
+{"text": "저작권자 : 일본 도쿠가와여명회(德川黎明會)", "answer": "일본 도쿠가와여명회(德川黎明會)", "source": "tr02"}
+{"text": "저작권자 : 일본 호인사(法恩寺)", "answer": "일본 호인사(法恩寺)", "source": "tr02"}
+{"text": "저작권자 : 옥림원", "answer": "옥림원", "source": "tr02"}
+{"text": "저작권자 : 신문관", "answer": "신문관", "source": "tr02"}
+{"text": "저작인접권자 : 안동 도산서원", "answer": "안동 도산서원", "source": "tr02"}
+{"text": "저작인접권자 : 봉정사", "answer": "봉정사", "source": "tr02"}
+{"text": "저작권자 : 안산시청", "answer": "안산시청", "source": "tr02"}
+{"text": "저작권자 : 안의사숭모회", "answer": "안의사숭모회", "source": "tr02"}
+{"text": "저작권자 : 부산광역시 동구청", "answer": "부산광역시 동구청", "source": "tr02"}
+{"text": "저작권자 : 흥사단", "answer": "흥사단", "source": "tr02"}
+{"text": "저작권자 : 소수서원", "answer": "소수서원", "source": "tr02"}
+{"text": "저작권자 : 대종교 총본사", "answer": "대종교 총본사", "source": "tr02"}
+{"text": "저작권자 : 서울대학교병원", "answer": "서울대학교병원", "source": "tr02"}
+{"text": "저작권자 : 일본 야마토문화관", "answer": "일본 야마토문화관", "source": "tr02"}
+{"text": "저작인접권자 : 미타암", "answer": "미타암", "source": "tr02"}
+{"text": "저작인접권자 : 통도사 성보박물관", "answer": "통도사 성보박물관", "source": "tr02"}
+{"text": "저작인접권자 : 통도사", "answer": "통도사", "source": "tr02"}
+{"text": "저작인접권자 : 낙산사", "answer": "낙산사", "source": "tr02"}
+{"text": "저작권자 : 양평군청", "answer": "양평군청", "source": "tr02"}
+{"text": "저작인접권자 : 양평 노산사지", "answer": "양평 노산사지", "source": "tr02"}
+{"text": "저작인접권자 : 에밀레박물관", "answer": "에밀레박물관", "source": "tr02"}
+{"text": "저작권자 : 조흥은행사료실", "answer": "조흥은행사료실", "source": "tr02"}
+{"text": "저작인접권자 : 한국금융사박물관", "answer": "한국금융사박물관", "source": "tr02"}
+{"text": "저작권자 : 연세대학교 도서관", "answer": "연세대학교 도서관", "source": "tr02"}
+{"text": "저작인접권자 : 연세대학교 도서관", "answer": "연세대학교 도서관", "source": "tr02"}
+{"text": "저작권자 : 여의도순복음교회", "answer": "여의도순복음교회", "source": "tr02"}
+{"text": "저작권자 : 함평군청", "answer": "함평군청", "source": "tr02"}
+{"text": "저작인접권자 : 용흥사", "answer": "용흥사", "source": "tr02"}
+{"text": "저작인접권자 : 장육사", "answer": "장육사", "source": "tr02"}
+{"text": "저작권자 : 충청북도청", "answer": "충청북도청", "source": "tr02"}
+{"text": "저작인접권자 : 영국사", "answer": "영국사", "source": "tr02"}
+{"text": "저작권자 : 공주영명학교", "answer": "공주영명학교", "source": "tr02"}
+{"text": "저작권자 : 교회사연구소", "answer": "교회사연구소", "source": "tr02"}
+{"text": "저작인접권자 : 도갑사", "answer": "도갑사", "source": "tr02"}
+{"text": "저작권자 : 눌와출판사", "answer": "눌와출판사", "source": "tr02"}
+{"text": "저작인접권자 : 부석사", "answer": "부석사", "source": "tr02"}
+{"text": "저작인접권자 : 봉림사", "answer": "봉림사", "source": "tr02"}
+{"text": "저작인접권자 : 선정사", "answer": "선정사", "source": "tr02"}
+{"text": "저작권자 : 대한성서공회", "answer": "대한성서공회", "source": "tr02"}
+{"text": "저작권자 : 예천군청", "answer": "예천군청", "source": "tr02"}
+{"text": "저작권자 : 용문사 성보박물관", "answer": "용문사 성보박물관", "source": "tr02"}
+{"text": "저작인접권자 : 한천사", "answer": "한천사", "source": "tr02"}
+{"text": "저작권자 : 삼성플라자", "answer": "삼성플라자", "source": "tr02"}
+{"text": "저작권자 : 광명시청", "answer": "광명시청", "source": "tr02"}
+{"text": "저작인접권자 : 충현박물관", "answer": "충현박물관", "source": "tr02"}
+{"text": "저작권자 : 미국 클리브랜드미술관", "answer": "미국 클리브랜드미술관", "source": "tr02"}
+{"text": "저작권자 : 롯데제과(주)", "answer": "롯데제과(주)", "source": "tr02"}
+{"text": "저작권자 : 농협중앙회", "answer": "농협중앙회", "source": "tr02"}
+{"text": "저작권자 : 김자경오페라단", "answer": "김자경오페라단", "source": "tr02"}
+{"text": "저작인접권자 : 오죽헌", "answer": "오죽헌", "source": "tr02"}
+{"text": "저작권자 : 한국표준연구소", "answer": "한국표준연구소", "source": "tr02"}
+{"text": "저작권자 : 옹진군청", "answer": "옹진군청", "source": "tr02"}
+{"text": "저작인접권자 : 화암사", "answer": "화암사", "source": "tr02"}
+{"text": "저작권자 : 영암군청", "answer": "영암군청", "source": "tr02"}
+{"text": "저작권자 : 오암미술관", "answer": "오암미술관", "source": "tr02"}
+{"text": "저작권자 : 용인시청", "answer": "용인시청", "source": "tr02"}
+{"text": "저작권자 : 삼양식품 홍보실", "answer": "삼양식품 홍보실", "source": "tr02"}
+{"text": "저작권자 : 국립제주박물관", "answer": "국립제주박물관", "source": "tr02"}
+{"text": "저작권자 : 병영초등학교", "answer": "병영초등학교", "source": "tr02"}
+{"text": "저작인접권자 : 울산박물관", "answer": "울산박물관", "source": "tr02"}
+{"text": "저작권자 : 울진군청", "answer": "울진군청", "source": "tr02"}
+{"text": "저작인접권자 : 불영사", "answer": "불영사", "source": "tr02"}
+{"text": "저작권자 : 원예시험장", "answer": "원예시험장", "source": "tr02"}
+{"text": "저작권자 : 원자력병원", "answer": "원자력병원", "source": "tr02"}
+{"text": "저작권자 : 한국전력공사", "answer": "한국전력공사", "source": "tr02"}
+{"text": "저작인접권자 : 원주 흥법사지", "answer": "원주 흥법사지", "source": "tr02"}
+{"text": "저작권자 : 원폭피해자협회", "answer": "원폭피해자협회", "source": "tr02"}
+{"text": "저작권자 : 따이한부대", "answer": "따이한부대", "source": "tr02"}
+{"text": "저작권자 : 따이한중앙회", "answer": "따이한중앙회", "source": "tr02"}
+{"text": "저작권자 : 부안군문화공보실", "answer": "부안군문화공보실", "source": "tr02"}
+{"text": "저작권자 : 부안군청", "answer": "부안군청", "source": "tr02"}
+{"text": "저작권자 : 고려대학교 도서관", "answer": "고려대학교 도서관", "source": "tr02"}
+{"text": "저작인접권자 : 고려대학교 도서관", "answer": "고려대학교 도서관", "source": "tr02"}
+{"text": "저작권자 : 예지원", "answer": "예지원", "source": "tr02"}
+{"text": "저작권자 : 대한YWCA연합회", "answer": "대한YWCA연합회", "source": "tr02"}
+{"text": "저작권자 : 이화역사관", "answer": "이화역사관", "source": "tr02"}
+{"text": "저작인접권자 : 이화역사관", "answer": "이화역사관", "source": "tr02"}
+{"text": "저작권자 : 법률신문사", "answer": "법률신문사", "source": "tr02"}
+{"text": "저작권자 : 건국대 부속병원", "answer": "건국대 부속병원", "source": "tr02"}
+{"text": "저작권자 : 한국천문연구원", "answer": "한국천문연구원", "source": "tr02"}
+{"text": "저작인접권자 : 자양영당", "answer": "자양영당", "source": "tr02"}
+{"text": "저작권자 : 서울시청", "answer": "서울시청", "source": "tr02"}
+{"text": "저작권자 : 정읍시청", "answer": "정읍시청", "source": "tr02"}
+{"text": "저작인접권자 : 안동김씨만취당파문중", "answer": "안동김씨만취당파문중", "source": "tr02"}
+{"text": "저작권자 : 의왕시청", "answer": "의왕시청", "source": "tr02"}
+{"text": "저작권자 : 부산시립박물관", "answer": "부산시립박물관", "source": "tr02"}
+{"text": "저작권자 : 이리초등학교", "answer": "이리초등학교", "source": "tr02"}
+{"text": "저작권자 : 충남도청", "answer": "충남도청", "source": "tr02"}
+{"text": "저작권자 : 양성이씨대종회", "answer": "양성이씨대종회", "source": "tr02"}
+{"text": "저작인접권자 : 정광사", "answer": "정광사", "source": "tr02"}
+{"text": "저작권자 : 한글학회", "answer": "한글학회", "source": "tr02"}
+{"text": "저작권자 : 이천군민회", "answer": "이천군민회", "source": "tr02"}
+{"text": "저작인접권자 : 한국국학진흥원", "answer": "한국국학진흥원", "source": "tr02"}
+{"text": "저작권자 : 해외홍보문화원", "answer": "해외홍보문화원", "source": "tr02"}
+{"text": "저작권자 : 이화여자고등학교", "answer": "이화여자고등학교", "source": "tr02"}
+{"text": "저작권자 : 국립전주박물관", "answer": "국립전주박물관", "source": "tr02"}
+{"text": "저작권자 : 원광대박물관", "answer": "원광대박물관", "source": "tr02"}
+{"text": "저작권자 : 원광대학교 박물관", "answer": "원광대학교 박물관", "source": "tr02"}
+{"text": "저작인접권자 : 경주최씨부제학공파종중", "answer": "경주최씨부제학공파종중", "source": "tr02"}
+{"text": "저작권자 : 고려인삼제품(주)", "answer": "고려인삼제품(주)", "source": "tr02"}
+{"text": "저작인접권자 : 동국대학교 박물관", "answer": "동국대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 인천광역시 남구청", "answer": "인천광역시 남구청", "source": "tr02"}
+{"text": "저작인접권자 : 인천광역시교육청", "answer": "인천광역시교육청", "source": "tr02"}
+{"text": "저작인접권자 : 전사편찬위원회", "answer": "전사편찬위원회", "source": "tr02"}
+{"text": "저작권자 : 해군사관학교 박물관", "answer": "해군사관학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 헌정회", "answer": "헌정회", "source": "tr02"}
+{"text": "저작인접권자 : 이화여자대학교박물관", "answer": "이화여자대학교박물관", "source": "tr02"}
+{"text": "저작권자 : 기아자동차", "answer": "기아자동차", "source": "tr02"}
+{"text": "저작권자 : 신진자동차", "answer": "신진자동차", "source": "tr02"}
+{"text": "저작권자 : 한국전기통신공사", "answer": "한국전기통신공사", "source": "tr02"}
+{"text": "저작권자 : 잠업시험장", "answer": "잠업시험장", "source": "tr02"}
+{"text": "저작권자 : 울산시청", "answer": "울산시청", "source": "tr02"}
+{"text": "저작권자 : 김해군청공보실", "answer": "김해군청공보실", "source": "tr02"}
+{"text": "저작권자 : 대만대사관", "answer": "대만대사관", "source": "tr02"}
+{"text": "저작권자 : 김제군청", "answer": "김제군청", "source": "tr02"}
+{"text": "저작인접권자 : 보림사", "answer": "보림사", "source": "tr02"}
+{"text": "저작권자 : 교육부", "answer": "교육부", "source": "tr02"}
+{"text": "저작인접권자 : 세종대학교박물관", "answer": "세종대학교박물관", "source": "tr02"}
+{"text": "저작인접권자 : 강릉 율곡기념관", "answer": "강릉 율곡기념관", "source": "tr02"}
+{"text": "저작권자 : 숙명여자대학교 박물관", "answer": "숙명여자대학교 박물관", "source": "tr02"}
+{"text": "저작인접권자 : 숙명여자대학교박물관", "answer": "숙명여자대학교박물관", "source": "tr02"}
+{"text": "저작권자 : 조선전보총국", "answer": "조선전보총국", "source": "tr02"}
+{"text": "저작권자 : 어진박물관", "answer": "어진박물관", "source": "tr02"}
+{"text": "저작권자 : 전주예수병원", "answer": "전주예수병원", "source": "tr02"}
+{"text": "저작인접권자 : 전북대학교", "answer": "전북대학교", "source": "tr02"}
+{"text": "저작권자 : 대한정구협회", "answer": "대한정구협회", "source": "tr02"}
+{"text": "저작인접권자 : 상주박물관", "answer": "상주박물관", "source": "tr02"}
+{"text": "저작권자 : 임고서원", "answer": "임고서원", "source": "tr02"}
+{"text": "저작인접권자 : 임고서원", "answer": "임고서원", "source": "tr02"}
+{"text": "저작권자 : 행정안전부", "answer": "행정안전부", "source": "tr02"}
+{"text": "저작권자 : 문화체육관광부", "answer": "문화체육관광부", "source": "tr02"}
+{"text": "저작권자 : 정선군청", "answer": "정선군청", "source": "tr02"}
+{"text": "저작권자 : 조선역사박물관", "answer": "조선역사박물관", "source": "tr02"}
+{"text": "저작인접권자 : 광주광역시립민속박물관", "answer": "광주광역시립민속박물관", "source": "tr02"}
+{"text": "저작권자 : 제주대학교 박물관", "answer": "제주대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 북제주군청", "answer": "북제주군청", "source": "tr02"}
+{"text": "저작권자 : 제주시청", "answer": "제주시청", "source": "tr02"}
+{"text": "저작권자 : 제주도 민속자연사박물관", "answer": "제주도 민속자연사박물관", "source": "tr02"}
+{"text": "저작인접권자 : 제주도민속자연사박물관", "answer": "제주도민속자연사박물관", "source": "tr02"}
+{"text": "저작권자 : 제주신문", "answer": "제주신문", "source": "tr02"}
+{"text": "저작권자 : 제원군문호공보실", "answer": "제원군문호공보실", "source": "tr02"}
+{"text": "저작권자 : 제원군청", "answer": "제원군청", "source": "tr02"}
+{"text": "저작인접권자 : 조계사", "answer": "조계사", "source": "tr02"}
+{"text": "저작권자 : 건국대학교병원", "answer": "건국대학교병원", "source": "tr02"}
+{"text": "저작권자 : 충남도청공보실", "answer": "충남도청공보실", "source": "tr02"}
+{"text": "저작인접권자 : 어진박물관", "answer": "어진박물관", "source": "tr02"}
+{"text": "저작권자 : 창녕조씨종친회", "answer": "창녕조씨종친회", "source": "tr02"}
+{"text": "저작권자 : 춘천시청공보실", "answer": "춘천시청공보실", "source": "tr02"}
+{"text": "저작권자 : 경희대박물관", "answer": "경희대박물관", "source": "tr02"}
+{"text": "저작권자 : 칠백의총관리소", "answer": "칠백의총관리소", "source": "tr02"}
+{"text": "저작권자 : 진주시청", "answer": "진주시청", "source": "tr02"}
+{"text": "저작권자 : 이천군청", "answer": "이천군청", "source": "tr02"}
+{"text": "저작권자 : 동력자원연구소", "answer": "동력자원연구소", "source": "tr02"}
+{"text": "저작권자 : 화정박물관", "answer": "화정박물관", "source": "tr02"}
+{"text": "저작인접권자 : 화정박물관", "answer": "화정박물관", "source": "tr02"}
+{"text": "저작권자 : 일본 네즈미술관", "answer": "일본 네즈미술관", "source": "tr02"}
+{"text": "저작권자 : 일본 젠도사", "answer": "일본 젠도사", "source": "tr02"}
+{"text": "저작권자 : 일본 엔가쿠사", "answer": "일본 엔가쿠사", "source": "tr02"}
+{"text": "저작권자 : 일본 닛코사", "answer": "일본 닛코사", "source": "tr02"}
+{"text": "저작권자 : 일본 세이카도미술관", "answer": "일본 세이카도미술관", "source": "tr02"}
+{"text": "저작권자 : 농업진흥공사", "answer": "농업진흥공사", "source": "tr02"}
+{"text": "저작권자 : 진남포시민회", "answer": "진남포시민회", "source": "tr02"}
+{"text": "저작권자 : 진도군청", "answer": "진도군청", "source": "tr02"}
+{"text": "저작권자 : 김해시청", "answer": "김해시청", "source": "tr02"}
+{"text": "저작권자 : 동아대학교 박물관", "answer": "동아대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 건들바우박물관", "answer": "건들바우박물관", "source": "tr02"}
+{"text": "저작권자 : 진해시청", "answer": "진해시청", "source": "tr02"}
+{"text": "저작권자 : 삼양식품공보실", "answer": "삼양식품공보실", "source": "tr02"}
+{"text": "저작인접권자 : 창경궁", "answer": "창경궁", "source": "tr02"}
+{"text": "저작권자 : 창성군민회", "answer": "창성군민회", "source": "tr02"}
+{"text": "저작권자 : 창원시청", "answer": "창원시청", "source": "tr02"}
+{"text": "저작권자 : 동해시청", "answer": "동해시청", "source": "tr02"}
+{"text": "저작권자 : 부산과학교육원", "answer": "부산과학교육원", "source": "tr02"}
+{"text": "저작인접권자 : 운문사", "answer": "운문사", "source": "tr02"}
+{"text": "저작권자 : 익산시청", "answer": "익산시청", "source": "tr02"}
+{"text": "저작인접권자 : 장곡사", "answer": "장곡사", "source": "tr02"}
+{"text": "저작인접권자 : 충북대학교 박물관", "answer": "충북대학교 박물관", "source": "tr02"}
+{"text": "저작인접권자 : 청주 신봉동 고분군", "answer": "청주 신봉동 고분군", "source": "tr02"}
+{"text": "저작권자 : 청주시청", "answer": "청주시청", "source": "tr02"}
+{"text": "저작권자 : 춘천시청", "answer": "춘천시청", "source": "tr02"}
+{"text": "저작권자 : 명지대학교 박물관", "answer": "명지대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 우당기념관", "answer": "우당기념관", "source": "tr02"}
+{"text": "저작권자 : 무성서원", "answer": "무성서원", "source": "tr02"}
+{"text": "저작인접권자 : 무성서원", "answer": "무성서원", "source": "tr02"}
+{"text": "저작권자 : 부여군청", "answer": "부여군청", "source": "tr02"}
+{"text": "저작권자 : 축현초등학교", "answer": "축현초등학교", "source": "tr02"}
+{"text": "저작권자 : 불교신문", "answer": "불교신문", "source": "tr02"}
+{"text": "저작권자 : 춘성군청", "answer": "춘성군청", "source": "tr02"}
+{"text": "저작권자 : 노원구청", "answer": "노원구청", "source": "tr02"}
+{"text": "저작권자 : 전국봉치과", "answer": "전국봉치과", "source": "tr02"}
+{"text": "저작인접권자 : 송림사", "answer": "송림사", "source": "tr02"}
+{"text": "저작권자 : 목포시청", "answer": "목포시청", "source": "tr02"}
+{"text": "저작인접권자 : 농협중앙회 농업박물관", "answer": "농협중앙회 농업박물관", "source": "tr02"}
+{"text": "저작인접권자 : 문화재청 조선왕릉관리소 서부지구관리소", "answer": "문화재청 조선왕릉관리소 서부지구관리소", "source": "tr02"}
+{"text": "저작인접권자 : 고려대학교 박물관", "answer": "고려대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 법원행정처", "answer": "법원행정처", "source": "tr02"}
+{"text": "저작권자 : 평창군청", "answer": "평창군청", "source": "tr02"}
+{"text": "저작인접권자 : 상원사", "answer": "상원사", "source": "tr02"}
+{"text": "저작권자 : 표준연구소", "answer": "표준연구소", "source": "tr02"}
+{"text": "저작권자 : 진안군청", "answer": "진안군청", "source": "tr02"}
+{"text": "저작인접권자 : 국립광주박물관", "answer": "국립광주박물관", "source": "tr02"}
+{"text": "저작권자 : 민족문화문고간행회", "answer": "민족문화문고간행회", "source": "tr02"}
+{"text": "저작권자 : 하와이독립운동자료전", "answer": "하와이독립운동자료전", "source": "tr02"}
+{"text": "저작권자 : 『한국역대명현전첩』 복제", "answer": "『한국역대명현전첩』 복제", "source": "tr02"}
+{"text": "저작권자 : 한국노동연구원", "answer": "한국노동연구원", "source": "tr02"}
+{"text": "저작권자 : 한국전통문화학교", "answer": "한국전통문화학교", "source": "tr02"}
+{"text": "저작인접권자 : 클리블랜드미술관", "answer": "클리블랜드미술관", "source": "tr02"}
+{"text": "저작권자 : 원주지방환경청", "answer": "원주지방환경청", "source": "tr02"}
+{"text": "저작권자 : 조흥은행 사료실", "answer": "조흥은행 사료실", "source": "tr02"}
+{"text": "저작인접권자 : 원효암", "answer": "원효암", "source": "tr02"}
+{"text": "저작권자 : 전남대학교 박물관", "answer": "전남대학교 박물관", "source": "tr02"}
+{"text": "저작인접권자 : 전남대학교 박물관", "answer": "전남대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 함평중학교", "answer": "함평중학교", "source": "tr02"}
+{"text": "저작권자 : 동아대박물관", "answer": "동아대박물관", "source": "tr02"}
+{"text": "저작권자 : 해군본부", "answer": "해군본부", "source": "tr02"}
+{"text": "저작권자 : 해남동초등학교", "answer": "해남동초등학교", "source": "tr02"}
+{"text": "저작권자 : 고불선원", "answer": "고불선원", "source": "tr02"}
+{"text": "저작인접권자 : 묘향산 보현사", "answer": "묘향산 보현사", "source": "tr02"}
+{"text": "저작권자 : 국립춘천박물관", "answer": "국립춘천박물관", "source": "tr02"}
+{"text": "저작권자 : 현대자동차", "answer": "현대자동차", "source": "tr02"}
+{"text": "저작권자 : 울릉군청", "answer": "울릉군청", "source": "tr02"}
+{"text": "저작권자 : 안동대학교 박물관", "answer": "안동대학교 박물관", "source": "tr02"}
+{"text": "저작권자 : 노작홍사용문학관", "answer": "노작홍사용문학관", "source": "tr02"}
+{"text": "저작권자 : 홍익회", "answer": "홍익회", "source": "tr02"}
+{"text": "저작인접권자 : 대승사", "answer": "대승사", "source": "tr02"}
+{"text": "저작권자 : 광주시청", "answer": "광주시청", "source": "tr02"}
+{"text": "저작인접권자 : 화성 용주사", "answer": "화성 용주사", "source": "tr02"}
+{"text": "저작인접권자 : 용주사", "answer": "용주사", "source": "tr02"}
+{"text": "저작인접권자 : 화성 정용래 가옥", "answer": "화성 정용래 가옥", "source": "tr02"}
+{"text": "저작권자 : 광주광역시청", "answer": "광주광역시청", "source": "tr02"}
+{"text": "저작권자 : 화순군청", "answer": "화순군청", "source": "tr02"}
+{"text": "저작권자 : 국립광주박물관", "answer": "국립광주박물관", "source": "tr02"}
+{"text": "저작인접권자 : 쌍봉사", "answer": "쌍봉사", "source": "tr02"}
+{"text": "저작권자 : 화천군청", "answer": "화천군청", "source": "tr02"}
+{"text": "저작권자 : 기독교청년회", "answer": "기독교청년회", "source": "tr02"}
+{"text": "저작권자 : 연세대학교 세브란스병원", "answer": "연세대학교 세브란스병원", "source": "tr02"}
+{"text": "저작권자 : 대한결핵협회", "answer": "대한결핵협회", "source": "tr02"}
+{"text": "저작권자 : 중소기업연구원", "answer": "중소기업연구원", "source": "tr02"}
+{"text": "저작권자 : 중소기업연구원 경제동향팀", "answer": "중소기업연구원 경제동향팀", "source": "tr02"}
+{"text": "저작권자 : 중소기업연구원 경제동향실", "answer": "중소기업연구원 경제동향실", "source": "tr02"}
+{"text": "저작권자 : 중소기업연구원 동향분석실", "answer": "중소기업연구원 동향분석실", "source": "tr02"}
+{"text": "저작권자 : 중소벤처기업연구원", "answer": "중소벤처기업연구원", "source": "tr02"}
+{"text": "저작권자 : 한국지역정보개발원", "answer": "한국지역정보개발원", "source": "tr02"}
+{"text": "저작인접권자 : 한국지역정보개발원", "answer": "한국지역정보개발원", "source": "tr02"}
+{"text": "저작권자 : 철도박물관", "answer": "철도박물관", "source": "tr02"}
+{"text": "저작권자 : 철도역사관", "answer": "철도역사관", "source": "tr02"}
+{"text": "저작권자 : 국제방송교류재단", "answer": "국제방송교류재단", "source": "tr02"}
+{"text": "저작권자 : 대한민국역사박물관", "answer": "대한민국역사박물관", "source": "tr02"}
+{"text": "저작권자 : 서울시립과학관", "answer": "서울시립과학관", "source": "tr02"}
+{"text": "저작권자 : 한국보육진흥원", "answer": "한국보육진흥원", "source": "tr02"}
+{"text": "저작권자 : 세종학당재단", "answer": "세종학당재단", "source": "tr02"}
+{"text": "저작권자 : 한국문화예술교육진흥원", "answer": "한국문화예술교육진흥원", "source": "tr02"}
+{"text": "기관 : 국회법률도서관", "answer": "국회법률도서관", "source": "tr02"}
+{"text": "저작권자 : 한국지능정보사회진흥원", "answer": "한국지능정보사회진흥원", "source": "tr02"}
+{"text": "기관 : 국가유산청", "answer": "국가유산청", "source": "tr02"}
+{"text": "저작권자 : 국가유산청", "answer": "국가유산청", "source": "tr02"}
+{"text": "저작인접권자 : 국가유산청", "answer": "국가유산청", "source": "tr02"}
+{"text": "기관 : 제주콘텐츠진흥원", "answer": "제주콘텐츠진흥원", "source": "tr02"}
+{"text": "저작권자 : 제주콘텐츠진흥원", "answer": "제주콘텐츠진흥원", "source": "tr02"}
+{"text": "기관 : 충남문화관광재단", "answer": "충남문화관광재단", "source": "tr02"}
+{"text": "저작권자 : 충남문화관광재단", "answer": "충남문화관광재단", "source": "tr02"}
+{"text": "원본소유자 : 한국스포츠과학원", "answer": "한국스포츠과학원", "source": "wondb"}
+{"text": "원본소유자 : 국립국악원", "answer": "국립국악원", "source": "wondb"}
+{"text": "원본소유자 : 한국문화예술교육진흥원", "answer": "한국문화예술교육진흥원", "source": "wondb"}
+{"text": "원본소유자 : 국가유산청", "answer": "국가유산청", "source": "wondb"}
+{"text": "원본소유자 : 제주콘텐츠진흥원", "answer": "제주콘텐츠진흥원", "source": "wondb"}
+{"text": "원본소유자 : 세종학당재단", "answer": "세종학당재단", "source": "wondb"}
+{"text": "원본소유자 : 한국관광공사", "answer": "한국관광공사", "source": "wondb"}
+{"text": "원본소유자 : 한국학중앙연구원", "answer": "한국학중앙연구원", "source": "wondb"}
+{"text": "원본소유자 : 한국농수산식품유통공사", "answer": "한국농수산식품유통공사", "source": "wondb"}
+{"text": "원본소유자 : 국립대전현충원", "answer": "국립대전현충원", "source": "wondb"}
+{"text": "원본소유자 : 국제방송교류재단", "answer": "국제방송교류재단", "source": "wondb"}
+{"text": "촬영원본 : (주)써머트리", "answer": "(주)써머트리", "source": "wondb"}
+{"text": "원본소유자 : 국립문화유산연구원", "answer": "국립문화유산연구원", "source": "wondb"}
+{"text": "원본소유자 : 문화체육관광부", "answer": "문화체육관광부", "source": "wondb"}
+{"text": "원본소유자 : 국립극장", "answer": "국립극장", "source": "wondb"}
+{"text": "원본소유자 : 국립소록도병원 한센병박물관", "answer": "국립소록도병원 한센병박물관", "source": "wondb"}
+{"text": "원본소유자 : 경제·인문사회연구회", "answer": "경제·인문사회연구회", "source": "wondb"}
+{"text": "촬영원본 : 인천대학교", "answer": "인천대학교", "source": "wondb"}
+{"text": "원본소유자 : 전쟁기념관", "answer": "전쟁기념관", "source": "wondb"}
+{"text": "원본소유자 : 국립해양박물관", "answer": "국립해양박물관", "source": "wondb"}
+{"text": "원본소유자 : 한국수목원정원관리원", "answer": "한국수목원정원관리원", "source": "wondb"}
+{"text": "원본소유자 : 서울우리소리박물관", "answer": "서울우리소리박물관", "source": "wondb"}
+{"text": "원본소유자 : 서대문형무소역사관", "answer": "서대문형무소역사관", "source": "wondb"}
+{"text": "원본소유자 : 국립생태원", "answer": "국립생태원", "source": "wondb"}
+{"text": "원본소유자 : 국립해양유산연구소", "answer": "국립해양유산연구소", "source": "wondb"}
+{"text": "원본소유자 : 한국국학진흥원", "answer": "한국국학진흥원", "source": "wondb"}
+{"text": "원본소유자 : 부산항만공사", "answer": "부산항만공사", "source": "wondb"}
+{"text": "원본소유자 : 충남문화관광재단", "answer": "충남문화관광재단", "source": "wondb"}
+{"text": "원본소유자 : 부평역사박물관", "answer": "부평역사박물관", "source": "wondb"}
+{"text": "원본소유자 : 한국문화관광연구원", "answer": "한국문화관광연구원", "source": "wondb"}
+{"text": "원본소유자 : 육군사관학교 육군박물관", "answer": "육군사관학교 육군박물관", "source": "wondb"}
+{"text": "원본소유자 : 국립김해박물관", "answer": "국립김해박물관", "source": "wondb"}
+{"text": "촬영원본 : 한국관광공사", "answer": "한국관광공사", "source": "wondb"}
+{"text": "촬영원본 : ㈜써머트리", "answer": "㈜써머트리", "source": "wondb"}
+{"text": "촬영원본 : 세명대학교", "answer": "세명대학교", "source": "wondb"}
+{"text": "원본소유자 : 한국저작권위원회", "answer": "한국저작권위원회", "source": "wondb"}
+{"text": "촬영원본 : (사)지역공공정책플랫폼광주로", "answer": "(사)지역공공정책플랫폼광주로", "source": "wondb"}
+{"text": "원본소유자 : 국립생물자원관", "answer": "국립생물자원관", "source": "wondb"}
+{"text": "원본소유자 : 전주정보문화산업진흥원", "answer": "전주정보문화산업진흥원", "source": "wondb"}
+{"text": "원본소유자 : 서울시립과학관", "answer": "서울시립과학관", "source": "wondb"}
+{"text": "원본소유자 : 국회도서관", "answer": "국회도서관", "source": "wondb"}
+{"text": "원본소유자 : 한국문화정보원", "answer": "한국문화정보원", "source": "wondb"}
+{"text": "원본소유자 : 국립중앙도서관", "answer": "국립중앙도서관", "source": "wondb"}
+{"text": "원본소유자 : 국립경주박물관", "answer": "국립경주박물관", "source": "wondb"}
+{"text": "원본소유자 : 국립수산과학원", "answer": "국립수산과학원", "source": "wondb"}
+{"text": "원본소유자 : 국가유산진흥원", "answer": "국가유산진흥원", "source": "wondb"}
+{"text": "촬영원본 : ㈜아이엠티소프트", "answer": "㈜아이엠티소프트", "source": "wondb"}
+{"text": "촬영원본 : ㈜지노랩", "answer": "㈜지노랩", "source": "wondb"}
+{"text": "원본소유자 : 한국건강가정진흥원", "answer": "한국건강가정진흥원", "source": "wondb"}
+{"text": "원본소유자 : 한국산업안전보건공단", "answer": "한국산업안전보건공단", "source": "wondb"}
+{"text": "원본소유자 : 광양시청", "answer": "광양시청", "source": "wondb"}
+{"text": "원본소유자 : 국가평생교육진흥원", "answer": "국가평생교육진흥원", "source": "wondb"}
+{"text": "원본소유자 : 한국보육진흥원", "answer": "한국보육진흥원", "source": "wondb"}
+{"text": "원본소유자 : 유네스코한국위원회", "answer": "유네스코한국위원회", "source": "wondb"}
+{"text": "촬영원본 : 원광대학교", "answer": "원광대학교", "source": "wondb"}
+{"text": "원본소유자 : 철도산업정보센터", "answer": "철도산업정보센터", "source": "wondb"}
+{"text": "원본소유자 : 여주시립 폰박물관", "answer": "여주시립 폰박물관", "source": "wondb"}
+{"text": "원본소유자 : 국립공주박물관", "answer": "국립공주박물관", "source": "wondb"}
+{"text": "원본소유자 : 예술의전당", "answer": "예술의전당", "source": "wondb"}
+{"text": "촬영원본 : 한국행정연구원", "answer": "한국행정연구원", "source": "wondb"}
+{"text": "촬영원본 : 한국보건사회연구원", "answer": "한국보건사회연구원", "source": "wondb"}
+{"text": "촬영원본 : 과학기술정책연구원", "answer": "과학기술정책연구원", "source": "wondb"}
+{"text": "원본소유자 : 한국지역정보개발원", "answer": "한국지역정보개발원", "source": "wondb"}
+{"text": "원본소유자 : 한국토지주택공사", "answer": "한국토지주택공사", "source": "wondb"}
+{"text": "송천동 388 안동대학교", "answer": "안동대학교", "source": "tr02"}
+{"text": "서부리 산33 한국국학진흥원", "answer": "한국국학진흥원", "source": "tr02"}
+{"text": "퇴계로 1997 한국국학진흥원", "answer": "한국국학진흥원", "source": "tr02"}
+{"text": "서부리 220 한국국학진흥원", "answer": "한국국학진흥원", "source": "tr02"}
+{"text": "반포동 산60-1 국립중앙도서관", "answer": "국립중앙도서관", "source": "tr02"}
+{"text": "장충동2가 26 동국대학교 박물관", "answer": "동국대학교 박물관", "source": "tr02"}
+{"text": "용산동6가 168-6 국립중앙박물관", "answer": "국립중앙박물관", "source": "tr02"}
+{"text": ": 정원규 서울대 교수, 임석준", "answer": "서울대", "source": "tr02"}
+{"text": "교수, 임석준 동아대 교수, 윤훈용", "answer": "동아대", "source": "tr02"}
+{"text": "교수, 임석준 동아대 교수, 윤훈용", "answer": "동아대", "source": "tr02"}
+{"text": "이상호 박사 한국건설산업연구원", "answer": "한국건설산업연구원", "source": "tr02"}
+{"text": ": 이홍배 동아대 교수", "answer": "동아대", "source": "tr02"}
+{"text": ": 곽규태 순천향대 교수", "answer": "순천향대", "source": "tr02"}
+{"text": "기관 : CHEN CHENGLIANG", "answer": "CHEN CHENGLIANG", "source": "gongu"}
+{"text": "기관 : 셀수스협동조합", "answer": "셀수스협동조합", "source": "gongu"}
+{"text": "기관 : 한국저작권위원회", "answer": "한국저작권위원회", "source": "gongu"}
+{"text": "기관 : JICA", "answer": "JICA", "source": "gongu"}
+{"text": "기관 : 日本鑛山協會", "answer": "日本鑛山協會", "source": "gongu"}
+{"text": "기관 : 懷德堂堂友會", "answer": "懷德堂堂友會", "source": "gongu"}
+{"text": "기관 : 岡山縣靑年會", "answer": "岡山縣靑年會", "source": "gongu"}
+{"text": "기관 : 國際文化協會", "answer": "國際文化協會", "source": "gongu"}
+{"text": "기관 : 齋藤報恩會", "answer": "齋藤報恩會", "source": "gongu"}
+{"text": "기관 : 한국. 문교부", "answer": "한국. 문교부", "source": "gongu"}
+{"text": "기관 : 조선어연구회", "answer": "조선어연구회", "source": "gongu"}
+{"text": "기관 : 동방문화사 편집부", "answer": "동방문화사 편집부", "source": "gongu"}
+{"text": "기관 : 한국. 외무부", "answer": "한국. 외무부", "source": "gongu"}
+{"text": "기관 : 한국. 농림부", "answer": "한국. 농림부", "source": "gongu"}
+{"text": "기관 : 한국은행조사부", "answer": "한국은행조사부", "source": "gongu"}
+{"text": "기관 : 중소기업은행기획조사부", "answer": "중소기업은행기획조사부", "source": "gongu"}
+{"text": "기관 : 중소기업은행. 기획조사부", "answer": "중소기업은행. 기획조사부", "source": "gongu"}
+{"text": "기관 : 鳥取縣蠶業取締所", "answer": "鳥取縣蠶業取締所", "source": "gongu"}
+{"text": "기관 : 회木縣蠶業取締所", "answer": "회木縣蠶業取締所", "source": "gongu"}
+{"text": "기관 : 회木縣內務部", "answer": "회木縣內務部", "source": "gongu"}
+{"text": "기관 : 富山縣蠶業試驗場", "answer": "富山縣蠶業試驗場", "source": "gongu"}
+{"text": "기관 : 長野縣立松本原蠶種製造所", "answer": "長野縣立松本原蠶種製造所", "source": "gongu"}
+{"text": "기관 : 長野縣松本原蠶種製造所", "answer": "長野縣松本原蠶種製造所", "source": "gongu"}
+{"text": "기관 : 奈良縣蠶業試驗場", "answer": "奈良縣蠶業試驗場", "source": "gongu"}
+{"text": "기관 : 奈良縣原蠶種製造所", "answer": "奈良縣原蠶種製造所", "source": "gongu"}
+{"text": "기관 : 長野縣蠶業試驗場松本支場", "answer": "長野縣蠶業試驗場松本支場", "source": "gongu"}
+{"text": "기관 : 農林省蠶業試驗場", "answer": "農林省蠶業試驗場", "source": "gongu"}
+{"text": "기관 : 東京女子專門學校", "answer": "東京女子專門學校", "source": "gongu"}
+{"text": "기관 : 婦女界洋裁部", "answer": "婦女界洋裁部", "source": "gongu"}
+{"text": "기관 : 主婦之友社編輯局", "answer": "主婦之友社編輯局", "source": "gongu"}
+{"text": "기관 : 大阪基督敎女子靑年會", "answer": "大阪基督敎女子靑年會", "source": "gongu"}
+{"text": "기관 : 大阪魚株式會社", "answer": "大阪魚株式會社", "source": "gongu"}
+{"text": "기관 : 報知社出版部", "answer": "報知社出版部", "source": "gongu"}
+{"text": "기관 : 生活改善硏究會", "answer": "生活改善硏究會", "source": "gongu"}
+{"text": "기관 : 一戶食物硏究所", "answer": "一戶食物硏究所", "source": "gongu"}
+{"text": "기관 : 糧友會", "answer": "糧友會", "source": "gongu"}
+{"text": "기관 : 家庭染色物硏究會", "answer": "家庭染色物硏究會", "source": "gongu"}
+{"text": "기관 : 家政改善洗濯硏究會", "answer": "家政改善洗濯硏究會", "source": "gongu"}
+{"text": "기관 : 陸軍被服本廠高等官集會所", "answer": "陸軍被服本廠高等官集會所", "source": "gongu"}
+{"text": "기관 : 大日本料理硏究會", "answer": "大日本料理硏究會", "source": "gongu"}
+{"text": "기관 : 大妻技藝學校裁縫硏究會", "answer": "大妻技藝學校裁縫硏究會", "source": "gongu"}
+{"text": "기관 : 家事科學協會", "answer": "家事科學協會", "source": "gongu"}
+{"text": "기관 : 名古屋地方職業紹介事務局", "answer": "名古屋地方職業紹介事務局", "source": "gongu"}
+{"text": "기관 : 全國山林會聯合會", "answer": "全國山林會聯合會", "source": "gongu"}
+{"text": "기관 : 京城府", "answer": "京城府", "source": "gongu"}
+{"text": "기관 : 第一相互住宅株式會社", "answer": "第一相互住宅株式會社", "source": "gongu"}
+{"text": "기관 : 生活改善同盟會", "answer": "生活改善同盟會", "source": "gongu"}
+{"text": "기관 : 新聞聯合社大阪支社", "answer": "新聞聯合社大阪支社", "source": "gongu"}
+{"text": "기관 : 內閣統計局", "answer": "內閣統計局", "source": "gongu"}
+{"text": "기관 : 國家經濟硏究所", "answer": "國家經濟硏究所", "source": "gongu"}
+{"text": "기관 : 京城部", "answer": "京城部", "source": "gongu"}
+{"text": "기관 : 商工經營硏究會", "answer": "商工經營硏究會", "source": "gongu"}
+{"text": "기관 : 海軍省軍事普及委員會", "answer": "海軍省軍事普及委員會", "source": "gongu"}
+{"text": "기관 : 日本銀行調査局", "answer": "日本銀行調査局", "source": "gongu"}
+{"text": "기관 : 日本經濟硏究會", "answer": "日本經濟硏究會", "source": "gongu"}
+{"text": "기관 : 産業組合中央會", "answer": "産業組合中央會", "source": "gongu"}
+{"text": "기관 : 農商務省商務局", "answer": "農商務省商務局", "source": "gongu"}
+{"text": "기관 : 神戶商工會議所", "answer": "神戶商工會議所", "source": "gongu"}
+{"text": "기관 : 外務省通商局", "answer": "外務省通商局", "source": "gongu"}
+{"text": "기관 : 태평양협회 조사부", "answer": "태평양협회 조사부", "source": "gongu"}
+{"text": "기관 : 京城商工會議所", "answer": "京城商工會議所", "source": "gongu"}
+{"text": "기관 : 애서취미사", "answer": "애서취미사", "source": "gongu"}
+{"text": "기관 : 山形縣水産會", "answer": "山形縣水産會", "source": "gongu"}
+{"text": "기관 : 南洋水産協會", "answer": "南洋水産協會", "source": "gongu"}
+{"text": "기관 : 農商務省水産局", "answer": "農商務省水産局", "source": "gongu"}
+{"text": "기관 : 産業福利協會", "answer": "産業福利協會", "source": "gongu"}
+{"text": "기관 : 廣島高等工業學校", "answer": "廣島高等工業學校", "source": "gongu"}
+{"text": "기관 : 姬路商業會議所", "answer": "姬路商業會議所", "source": "gongu"}
+{"text": "기관 : 專賣局中央硏究所", "answer": "專賣局中央硏究所", "source": "gongu"}
+{"text": "기관 : 日本産業協會", "answer": "日本産業協會", "source": "gongu"}
+{"text": "기관 : 東京商工會議所", "answer": "東京商工會議所", "source": "gongu"}
+{"text": "기관 : 臺灣總督府", "answer": "臺灣總督府", "source": "gongu"}
+{"text": "기관 : 日露協會", "answer": "日露協會", "source": "gongu"}
+{"text": "기관 : 大日本麥酒株式會社", "answer": "大日本麥酒株式會社", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府專賣局", "answer": "朝鮮總督府專賣局", "source": "gongu"}
+{"text": "기관 : 長崎電氣軌道株式會社", "answer": "長崎電氣軌道株式會社", "source": "gongu"}
+{"text": "기관 : 東洋クロス株式會社", "answer": "東洋クロス株式會社", "source": "gongu"}
+{"text": "기관 : 協調會", "answer": "協調會", "source": "gongu"}
+{"text": "기관 : 安東商工會議所", "answer": "安東商工會議所", "source": "gongu"}
+{"text": "기관 : 日本産業株式會社", "answer": "日本産業株式會社", "source": "gongu"}
+{"text": "기관 : 福岡地方專賣局", "answer": "福岡地方專賣局", "source": "gongu"}
+{"text": "기관 : 遞信省電氣試驗所", "answer": "遞信省電氣試驗所", "source": "gongu"}
+{"text": "기관 : 技術部", "answer": "技術部", "source": "gongu"}
+{"text": "기관 : 大阪工廠 鐵材製造所", "answer": "大阪工廠 鐵材製造所", "source": "gongu"}
+{"text": "기관 : 大阪商業會議所書記局", "answer": "大阪商業會議所書記局", "source": "gongu"}
+{"text": "기관 : 遞信省電氣試驗所", "answer": "遞信省電氣試驗所", "source": "gongu"}
+{"text": "기관 : 조선도서주식회사", "answer": "조선도서주식회사", "source": "gongu"}
+{"text": "기관 : 大阪醫科大學俳句會", "answer": "大阪醫科大學俳句會", "source": "gongu"}
+{"text": "기관 : 京都帝國大學文學部", "answer": "京都帝國大學文學部", "source": "gongu"}
+{"text": "기관 : 中央氣象臺附屬沖繩測候所", "answer": "中央氣象臺附屬沖繩測候所", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府觀測所", "answer": "朝鮮總督府觀測所", "source": "gongu"}
+{"text": "기관 : 大邱測候所", "answer": "大邱測候所", "source": "gongu"}
+{"text": "기관 : 石卷測候所", "answer": "石卷測候所", "source": "gongu"}
+{"text": "기관 : 兵庫縣神戶測候所", "answer": "兵庫縣神戶測候所", "source": "gongu"}
+{"text": "기관 : 長崎測候所", "answer": "長崎測候所", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府濟生院", "answer": "朝鮮總督府濟生院", "source": "gongu"}
+{"text": "기관 : 京城府社會事業助成會", "answer": "京城府社會事業助成會", "source": "gongu"}
+{"text": "기관 : 大阪市役所社會部", "answer": "大阪市役所社會部", "source": "gongu"}
+{"text": "기관 : 中央社會事業協會", "answer": "中央社會事業協會", "source": "gongu"}
+{"text": "기관 : 東京市社會局", "answer": "東京市社會局", "source": "gongu"}
+{"text": "기관 : 鹿兒島測候所", "answer": "鹿兒島測候所", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府地質調査所", "answer": "朝鮮總督府地質調査所", "source": "gongu"}
+{"text": "기관 : 復興局建築部", "answer": "復興局建築部", "source": "gongu"}
+{"text": "기관 : 森蔭短歌會", "answer": "森蔭短歌會", "source": "gongu"}
+{"text": "기관 : 眞人社", "answer": "眞人社", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府勸業模範場", "answer": "朝鮮總督府勸業模範場", "source": "gongu"}
+{"text": "기관 : 九州帝國大學農學部", "answer": "九州帝國大學農學部", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府勤業模範場", "answer": "朝鮮總督府勤業模範場", "source": "gongu"}
+{"text": "기관 : 생활교육연구회", "answer": "생활교육연구회", "source": "gongu"}
+{"text": "기관 : 조선총독부", "answer": "조선총독부", "source": "gongu"}
+{"text": "기관 : 문성당. 편집부", "answer": "문성당. 편집부", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府農事試驗場", "answer": "朝鮮總督府農事試驗場", "source": "gongu"}
+{"text": "기관 : 大日本學術協會", "answer": "大日本學術協會", "source": "gongu"}
+{"text": "기관 : 內閣印刷局", "answer": "內閣印刷局", "source": "gongu"}
+{"text": "기관 : 동경시립준하대도서관", "answer": "동경시립준하대도서관", "source": "gongu"}
+{"text": "기관 : 圖書硏究會", "answer": "圖書硏究會", "source": "gongu"}
+{"text": "기관 : 山梨縣蠶業取締所", "answer": "山梨縣蠶業取締所", "source": "gongu"}
+{"text": "기관 : 橫濱商工會議所調査部", "answer": "橫濱商工會議所調査部", "source": "gongu"}
+{"text": "기관 : 大日本養蛙奬勵會", "answer": "大日本養蛙奬勵會", "source": "gongu"}
+{"text": "기관 : 農林省畜産局", "answer": "農林省畜産局", "source": "gongu"}
+{"text": "기관 : 農商務省畜産局", "answer": "農商務省畜産局", "source": "gongu"}
+{"text": "기관 : 農林省山林局", "answer": "農林省山林局", "source": "gongu"}
+{"text": "기관 : 山形縣蠶業取締所", "answer": "山形縣蠶業取締所", "source": "gongu"}
+{"text": "기관 : 절수취미편집부", "answer": "절수취미편집부", "source": "gongu"}
+{"text": "기관 : 일본경제연구회", "answer": "일본경제연구회", "source": "gongu"}
+{"text": "기관 : 일본우권상조합형록편찬위원회", "answer": "일본우권상조합형록편찬위원회", "source": "gongu"}
+{"text": "기관 : 三重縣蠶業取締所", "answer": "三重縣蠶業取締所", "source": "gongu"}
+{"text": "기관 : 宮崎縣蠶業取締所", "answer": "宮崎縣蠶業取締所", "source": "gongu"}
+{"text": "기관 : 東京府藥劑師會神田支部", "answer": "東京府藥劑師會神田支部", "source": "gongu"}
+{"text": "기관 : 東京割烹敎育者協會", "answer": "東京割烹敎育者協會", "source": "gongu"}
+{"text": "기관 : モ-タシップ雜誌社", "answer": "モ-タシップ雜誌社", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府殖産局", "answer": "朝鮮總督府殖産局", "source": "gongu"}
+{"text": "기관 : 東洋協會調査部", "answer": "東洋協會調査部", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府燃料選鑛硏究所", "answer": "朝鮮總督府燃料選鑛硏究所", "source": "gongu"}
+{"text": "기관 : 農林省畜産試驗場", "answer": "農林省畜産試驗場", "source": "gongu"}
+{"text": "기관 : 農蠶新報社", "answer": "農蠶新報社", "source": "gongu"}
+{"text": "기관 : 農林務省農務局", "answer": "農林務省農務局", "source": "gongu"}
+{"text": "기관 : 오사카매일신문사.경제부", "answer": "오사카매일신문사.경제부", "source": "gongu"}
+{"text": "기관 : 은행문제연구회", "answer": "은행문제연구회", "source": "gongu"}
+{"text": "기관 : 야전경제연구소", "answer": "야전경제연구소", "source": "gongu"}
+{"text": "기관 : 노력신문편집부", "answer": "노력신문편집부", "source": "gongu"}
+{"text": "기관 : 신경제사남방연구회", "answer": "신경제사남방연구회", "source": "gongu"}
+{"text": "기관 : 岡山縣警察練習所", "answer": "岡山縣警察練習所", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府警察官講習所", "answer": "朝鮮總督府警察官講習所", "source": "gongu"}
+{"text": "기관 : 警察學講習所", "answer": "警察學講習所", "source": "gongu"}
+{"text": "기관 : 日本通信大學法制學會編輯部", "answer": "日本通信大學法制學會編輯部", "source": "gongu"}
+{"text": "기관 : 警視廳", "answer": "警視廳", "source": "gongu"}
+{"text": "기관 : 神戶市役所都市計劃部", "answer": "神戶市役所都市計劃部", "source": "gongu"}
+{"text": "기관 : 奉天滿鐵公所", "answer": "奉天滿鐵公所", "source": "gongu"}
+{"text": "기관 : 東京日日新聞社", "answer": "東京日日新聞社", "source": "gongu"}
+{"text": "기관 : 日本讀書協會", "answer": "日本讀書協會", "source": "gongu"}
+{"text": "기관 : 日本新聞社", "answer": "日本新聞社", "source": "gongu"}
+{"text": "기관 : 일본산업경제정경부", "answer": "일본산업경제정경부", "source": "gongu"}
+{"text": "기관 : 신제법규연구회", "answer": "신제법규연구회", "source": "gongu"}
+{"text": "기관 : 財政經濟時報社", "answer": "財政經濟時報社", "source": "gongu"}
+{"text": "기관 : 國民新聞社經濟部", "answer": "國民新聞社經濟部", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府", "answer": "朝鮮總督府", "source": "gongu"}
+{"text": "기관 : 鹿兒島郵便局", "answer": "鹿兒島郵便局", "source": "gongu"}
+{"text": "기관 : 시립대판시민박물관", "answer": "시립대판시민박물관", "source": "gongu"}
+{"text": "기관 : 일본학술진흥회", "answer": "일본학술진흥회", "source": "gongu"}
+{"text": "기관 : 國務院總務廳", "answer": "國務院總務廳", "source": "gongu"}
+{"text": "기관 : 東京朝日新聞社", "answer": "東京朝日新聞社", "source": "gongu"}
+{"text": "기관 : 滿洲日報社", "answer": "滿洲日報社", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府警務局", "answer": "朝鮮總督府警務局", "source": "gongu"}
+{"text": "기관 : 明治文化硏究會", "answer": "明治文化硏究會", "source": "gongu"}
+{"text": "기관 : 東京朝日新聞社社會部", "answer": "東京朝日新聞社社會部", "source": "gongu"}
+{"text": "기관 : 同盟通信社", "answer": "同盟通信社", "source": "gongu"}
+{"text": "기관 : 大明堂編輯部", "answer": "大明堂編輯部", "source": "gongu"}
+{"text": "기관 : 法學協會", "answer": "法學協會", "source": "gongu"}
+{"text": "기관 : 日本電報通信社", "answer": "日本電報通信社", "source": "gongu"}
+{"text": "기관 : 衆議院事務局", "answer": "衆議院事務局", "source": "gongu"}
+{"text": "기관 : 立憲政友會政務調査會", "answer": "立憲政友會政務調査會", "source": "gongu"}
+{"text": "기관 : 帝國普選準備會", "answer": "帝國普選準備會", "source": "gongu"}
+{"text": "기관 : 三重縣立桑名高等女學校校友會", "answer": "三重縣立桑名高等女學校校友會", "source": "gongu"}
+{"text": "기관 : 海軍省海軍軍事普及部", "answer": "海軍省海軍軍事普及部", "source": "gongu"}
+{"text": "기관 : 陸軍省軍事調査部", "answer": "陸軍省軍事調査部", "source": "gongu"}
+{"text": "기관 : 埼玉縣拓殖協會", "answer": "埼玉縣拓殖協會", "source": "gongu"}
+{"text": "기관 : 日露通報社", "answer": "日露通報社", "source": "gongu"}
+{"text": "기관 : 政治智識普及會", "answer": "政治智識普及會", "source": "gongu"}
+{"text": "기관 : 日本橋壽老會", "answer": "日本橋壽老會", "source": "gongu"}
+{"text": "기관 : 鎭西財務硏究會", "answer": "鎭西財務硏究會", "source": "gongu"}
+{"text": "기관 : 朝鮮財務協會", "answer": "朝鮮財務協會", "source": "gongu"}
+{"text": "기관 : 八幡濱稅務署", "answer": "八幡濱稅務署", "source": "gongu"}
+{"text": "기관 : 大藏省主稅局", "answer": "大藏省主稅局", "source": "gongu"}
+{"text": "기관 : 名古屋稅務監督局", "answer": "名古屋稅務監督局", "source": "gongu"}
+{"text": "기관 : 主稅局", "answer": "主稅局", "source": "gongu"}
+{"text": "기관 : 京城稅務監督局", "answer": "京城稅務監督局", "source": "gongu"}
+{"text": "기관 : 生命保險會社協會", "answer": "生命保險會社協會", "source": "gongu"}
+{"text": "기관 : 大阪每日新聞社", "answer": "大阪每日新聞社", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府內務局", "answer": "朝鮮總督府內務局", "source": "gongu"}
+{"text": "기관 : 國政硏究會", "answer": "國政硏究會", "source": "gongu"}
+{"text": "기관 : 入협商店調査部", "answer": "入협商店調査部", "source": "gongu"}
+{"text": "기관 : 帝國火災保險株式會社調査部", "answer": "帝國火災保險株式會社調査部", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府遞信局", "answer": "朝鮮總督府遞信局", "source": "gongu"}
+{"text": "기관 : 貯金局", "answer": "貯金局", "source": "gongu"}
+{"text": "기관 : 계명문화사편집부", "answer": "계명문화사편집부", "source": "gongu"}
+{"text": "기관 : 山一證券株式會社調査部", "answer": "山一證券株式會社調査部", "source": "gongu"}
+{"text": "기관 : 野田經濟硏究所出版部", "answer": "野田經濟硏究所出版部", "source": "gongu"}
+{"text": "기관 : 大阪稅務監督局", "answer": "大阪稅務監督局", "source": "gongu"}
+{"text": "기관 : 조선불교중앙교무원", "answer": "조선불교중앙교무원", "source": "gongu"}
+{"text": "기관 : 일본민예미술관", "answer": "일본민예미술관", "source": "gongu"}
+{"text": "기관 : 新泉社", "answer": "新泉社", "source": "gongu"}
+{"text": "기관 : 東京帝國大學學友會スキ一山岳部", "answer": "東京帝國大學學友會スキ一山岳部", "source": "gongu"}
+{"text": "기관 : 改造社", "answer": "改造社", "source": "gongu"}
+{"text": "기관 : 오사카매일신문사", "answer": "오사카매일신문사", "source": "gongu"}
+{"text": "기관 : 대일본문명협회", "answer": "대일본문명협회", "source": "gongu"}
+{"text": "기관 : 日本評論社", "answer": "日本評論社", "source": "gongu"}
+{"text": "기관 : 齒科學報社", "answer": "齒科學報社", "source": "gongu"}
+{"text": "기관 : 新潮社", "answer": "新潮社", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府農村部", "answer": "朝鮮總督府農村部", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府土地改良部", "answer": "朝鮮總督府土地改良部", "source": "gongu"}
+{"text": "기관 : 日本赤十字社", "answer": "日本赤十字社", "source": "gongu"}
+{"text": "기관 : 朝鮮藥學會事務所", "answer": "朝鮮藥學會事務所", "source": "gongu"}
+{"text": "기관 : 家庭讀物刊行會", "answer": "家庭讀物刊行會", "source": "gongu"}
+{"text": "기관 : 修靈敎化團本部", "answer": "修靈敎化團本部", "source": "gongu"}
+{"text": "기관 : 朝鮮金融組合聯合會", "answer": "朝鮮金融組合聯合會", "source": "gongu"}
+{"text": "기관 : 慶尙北道內務部", "answer": "慶尙北道內務部", "source": "gongu"}
+{"text": "기관 : 朝日新聞社", "answer": "朝日新聞社", "source": "gongu"}
+{"text": "기관 : 東京府大泉師範學校附屬小學校", "answer": "東京府大泉師範學校附屬小學校", "source": "gongu"}
+{"text": "기관 : 大阪今日新聞社", "answer": "大阪今日新聞社", "source": "gongu"}
+{"text": "기관 : 時事新報社", "answer": "時事新報社", "source": "gongu"}
+{"text": "기관 : 東京商科大學一橋會", "answer": "東京商科大學一橋會", "source": "gongu"}
+{"text": "기관 : 日刊受驗硏究編輯部", "answer": "日刊受驗硏究編輯部", "source": "gongu"}
+{"text": "기관 : 龍山公立中學校", "answer": "龍山公立中學校", "source": "gongu"}
+{"text": "기관 : 久住尋常高等小學校", "answer": "久住尋常高等小學校", "source": "gongu"}
+{"text": "기관 : 北海道廳立函館商業學校", "answer": "北海道廳立函館商業學校", "source": "gongu"}
+{"text": "기관 : 日本放送協會", "answer": "日本放送協會", "source": "gongu"}
+{"text": "기관 : 三重縣立鳥羽商船學校", "answer": "三重縣立鳥羽商船學校", "source": "gongu"}
+{"text": "기관 : 滋賀縣女子師範學校附屬小學校敎學硏究會", "answer": "滋賀縣女子師範學校附屬小學校敎學硏究會", "source": "gongu"}
+{"text": "기관 : 紫式部", "answer": "紫式部", "source": "gongu"}
+{"text": "기관 : 中等敎育學會", "answer": "中等敎育學會", "source": "gongu"}
+{"text": "기관 : 北海道廳空知支廳", "answer": "北海道廳空知支廳", "source": "gongu"}
+{"text": "기관 : 日本放送出版協會", "answer": "日本放送出版協會", "source": "gongu"}
+{"text": "기관 : 岩手縣敎育會", "answer": "岩手縣敎育會", "source": "gongu"}
+{"text": "기관 : 松本市役所", "answer": "松本市役所", "source": "gongu"}
+{"text": "기관 : 朝鮮銀行調査局", "answer": "朝鮮銀行調査局", "source": "gongu"}
+{"text": "기관 : 農商務省農務局", "answer": "農商務省農務局", "source": "gongu"}
+{"text": "기관 : 沖繩縣立糖業試驗場", "answer": "沖繩縣立糖業試驗場", "source": "gongu"}
+{"text": "기관 : 化學工藝社", "answer": "化學工藝社", "source": "gongu"}
+{"text": "기관 : 日出新聞社", "answer": "日出新聞社", "source": "gongu"}
+{"text": "기관 : 東加茂郡役所", "answer": "東加茂郡役所", "source": "gongu"}
+{"text": "기관 : 今治市役所", "answer": "今治市役所", "source": "gongu"}
+{"text": "기관 : 學校經營編輯部", "answer": "學校經營編輯部", "source": "gongu"}
+{"text": "기관 : 靜岡市役所", "answer": "靜岡市役所", "source": "gongu"}
+{"text": "기관 : 拓務省拓北局", "answer": "拓務省拓北局", "source": "gongu"}
+{"text": "기관 : 鐵道省運輸局", "answer": "鐵道省運輸局", "source": "gongu"}
+{"text": "기관 : 長野市役所", "answer": "長野市役所", "source": "gongu"}
+{"text": "기관 : 日本名勝硏究會", "answer": "日本名勝硏究會", "source": "gongu"}
+{"text": "기관 : 靜岡市國史科硏究部", "answer": "靜岡市國史科硏究部", "source": "gongu"}
+{"text": "기관 : 下田己酉俱樂部", "answer": "下田己酉俱樂部", "source": "gongu"}
+{"text": "기관 : 澤柳全集刊行會", "answer": "澤柳全集刊行會", "source": "gongu"}
+{"text": "기관 : 島田三郞全集刊行會", "answer": "島田三郞全集刊行會", "source": "gongu"}
+{"text": "기관 : 益軒會", "answer": "益軒會", "source": "gongu"}
+{"text": "기관 : 伊藤公全集刊行會", "answer": "伊藤公全集刊行會", "source": "gongu"}
+{"text": "기관 : 大日本水産會", "answer": "大日本水産會", "source": "gongu"}
+{"text": "기관 : 東京博物學硏究會", "answer": "東京博物學硏究會", "source": "gongu"}
+{"text": "기관 : 印牧バロㅡ硏究會", "answer": "印牧バロㅡ硏究會", "source": "gongu"}
+{"text": "기관 : 文部省編輯局", "answer": "文部省編輯局", "source": "gongu"}
+{"text": "기관 : 秦野町國民學校", "answer": "秦野町國民學校", "source": "gongu"}
+{"text": "기관 : 理科準備講習會", "answer": "理科準備講習會", "source": "gongu"}
+{"text": "기관 : 普通敎育硏究會", "answer": "普通敎育硏究會", "source": "gongu"}
+{"text": "기관 : 受驗準備講習會", "answer": "受驗準備講習會", "source": "gongu"}
+{"text": "기관 : 南洋栽培聯合會", "answer": "南洋栽培聯合會", "source": "gongu"}
+{"text": "기관 : 右文館編輯部", "answer": "右文館編輯部", "source": "gongu"}
+{"text": "기관 : 敎育品攻究會", "answer": "敎育品攻究會", "source": "gongu"}
+{"text": "기관 : 敎育資料編纂會", "answer": "敎育資料編纂會", "source": "gongu"}
+{"text": "기관 : 學校經營編集部", "answer": "學校經營編集部", "source": "gongu"}
+{"text": "기관 : 山形縣師範學校附屬國民學校", "answer": "山形縣師範學校附屬國民學校", "source": "gongu"}
+{"text": "기관 : 工業敎育振興會", "answer": "工業敎育振興會", "source": "gongu"}
+{"text": "기관 : 東京中央放送局", "answer": "東京中央放送局", "source": "gongu"}
+{"text": "기관 : 日本職業指導協會", "answer": "日本職業指導協會", "source": "gongu"}
+{"text": "기관 : 日滿實業協會", "answer": "日滿實業協會", "source": "gongu"}
+{"text": "기관 : 戰爭文化硏究所", "answer": "戰爭文化硏究所", "source": "gongu"}
+{"text": "기관 : 陸軍士官學校", "answer": "陸軍士官學校", "source": "gongu"}
+{"text": "기관 : 實業之日本社", "answer": "實業之日本社", "source": "gongu"}
+{"text": "기관 : 情報局", "answer": "情報局", "source": "gongu"}
+{"text": "기관 : 內務省計劃局", "answer": "內務省計劃局", "source": "gongu"}
+{"text": "기관 : 企劃院硏究會", "answer": "企劃院硏究會", "source": "gongu"}
+{"text": "기관 : 帝國新報社", "answer": "帝國新報社", "source": "gongu"}
+{"text": "기관 : 東京人類協會", "answer": "東京人類協會", "source": "gongu"}
+{"text": "기관 : 明文堂編輯部", "answer": "明文堂編輯部", "source": "gongu"}
+{"text": "기관 : 大邱商業會議所", "answer": "大邱商業會議所", "source": "gongu"}
+{"text": "기관 : 朝鮮工業協會", "answer": "朝鮮工業協會", "source": "gongu"}
+{"text": "기관 : 朝鮮殖産銀行調査部", "answer": "朝鮮殖産銀行調査部", "source": "gongu"}
+{"text": "기관 : 雄山閣史學部", "answer": "雄山閣史學部", "source": "gongu"}
+{"text": "기관 : 鐵道廳", "answer": "鐵道廳", "source": "gongu"}
+{"text": "기관 : 朝日新聞社中央調査會", "answer": "朝日新聞社中央調査會", "source": "gongu"}
+{"text": "기관 : 拓務省拓務局", "answer": "拓務省拓務局", "source": "gongu"}
+{"text": "기관 : 신田翁記念會", "answer": "신田翁記念會", "source": "gongu"}
+{"text": "기관 : 吉野山岳會", "answer": "吉野山岳會", "source": "gongu"}
+{"text": "기관 : 西武鐵道株式會社", "answer": "西武鐵道株式會社", "source": "gongu"}
+{"text": "기관 : 日本植民通信社", "answer": "日本植民通信社", "source": "gongu"}
+{"text": "기관 : 中山文化硏究所", "answer": "中山文化硏究所", "source": "gongu"}
+{"text": "기관 : 福岡市役所", "answer": "福岡市役所", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府鐵道局", "answer": "朝鮮總督府鐵道局", "source": "gongu"}
+{"text": "기관 : 安東商工公會", "answer": "安東商工公會", "source": "gongu"}
+{"text": "기관 : 三省堂編輯部", "answer": "三省堂編輯部", "source": "gongu"}
+{"text": "기관 : 鐵道省運輪局", "answer": "鐵道省運輪局", "source": "gongu"}
+{"text": "기관 : 先憂會", "answer": "先憂會", "source": "gongu"}
+{"text": "기관 : 日本郵船株式會社", "answer": "日本郵船株式會社", "source": "gongu"}
+{"text": "기관 : 東京開成館編輯所", "answer": "東京開成館編輯所", "source": "gongu"}
+{"text": "기관 : 九段書房編輯部", "answer": "九段書房編輯部", "source": "gongu"}
+{"text": "기관 : 安東商工會義所", "answer": "安東商工會義所", "source": "gongu"}
+{"text": "기관 : 讀賣新聞社", "answer": "讀賣新聞社", "source": "gongu"}
+{"text": "기관 : 朝鮮治刑協會", "answer": "朝鮮治刑協會", "source": "gongu"}
+{"text": "기관 : 早稻田大學出版部", "answer": "早稻田大學出版部", "source": "gongu"}
+{"text": "기관 : 平凡社", "answer": "平凡社", "source": "gongu"}
+{"text": "기관 : 圖書刊行會", "answer": "圖書刊行會", "source": "gongu"}
+{"text": "기관 : 新朝社", "answer": "新朝社", "source": "gongu"}
+{"text": "기관 : 修文館編輯部", "answer": "修文館編輯部", "source": "gongu"}
+{"text": "기관 : 朝鮮總督府林業試驗場", "answer": "朝鮮總督府林業試驗場", "source": "gongu"}
+{"text": "기관 : 農林省園藝試驗場", "answer": "農林省園藝試驗場", "source": "gongu"}
+{"text": "기관 : 壽農園編輯部", "answer": "壽農園編輯部", "source": "gongu"}
+{"text": "기관 : 埼玉縣立農事試驗場", "answer": "埼玉縣立農事試驗場", "source": "gongu"}
+{"text": "기관 : 農商務省園藝試驗場", "answer": "農商務省園藝試驗場", "source": "gongu"}
+{"text": "기관 : 東京園藝硏究所", "answer": "東京園藝硏究所", "source": "gongu"}
+{"text": "기관 : 造園藝術社", "answer": "造園藝術社", "source": "gongu"}
+{"text": "기관 : 全國山林會聯合會", "answer": "全國山林會聯合會", "source": "gongu"}
+{"text": "기관 : 國立公園協會宮崎支部", "answer": "國立公園協會宮崎支部", "source": "gongu"}
+{"text": "기관 : 復興局經理部", "answer": "復興局經理部", "source": "gongu"}
+{"text": "기관 : 太平洋問題調査會", "answer": "太平洋問題調査會", "source": "gongu"}
+{"text": "기관 : 大連商工會議所", "answer": "大連商工會議所", "source": "gongu"}
+{"text": "기관 : 大阪市役所産業部", "answer": "大阪市役所産業部", "source": "gongu"}
+{"text": "기관 : 中外商業新報社", "answer": "中外商業新報社", "source": "gongu"}
+{"text": "기관 : 東京財務協會", "answer": "東京財務協會", "source": "gongu"}
+{"text": "기관 : 札幌商工會議所", "answer": "札幌商工會議所", "source": "gongu"}
+{"text": "기관 : 岐阜縣工業試驗場", "answer": "岐阜縣工業試驗場", "source": "gongu"}
+{"text": "기관 : 滋賀縣工業試驗場", "answer": "滋賀縣工業試驗場", "source": "gongu"}
+{"text": "기관 : 德島縣工業試驗場", "answer": "德島縣工業試驗場", "source": "gongu"}
+{"text": "기관 : 東京工業試驗所", "answer": "東京工業試驗所", "source": "gongu"}
+{"text": "기관 : 日本學術振興會", "answer": "日本學術振興會", "source": "gongu"}
+{"text": "기관 : 特許局", "answer": "特許局", "source": "gongu"}
+{"text": "기관 : 중앙연구원역사어언연구소", "answer": "중앙연구원역사어언연구소", "source": "gongu"}
+{"text": "기관 : 조선사학회", "answer": "조선사학회", "source": "gongu"}
+{"text": "기관 : 한국급한국인사", "answer": "한국급한국인사", "source": "gongu"}
+{"text": "기관 : 제국대학법문학부", "answer": "제국대학법문학부", "source": "gongu"}
+{"text": "기관 : 계몽문화사", "answer": "계몽문화사", "source": "gongu"}
+{"text": "기관 : 한국교육학술정보원", "answer": "한국교육학술정보원", "source": "gongu"}
+{"text": "기관 : 국가유산진흥원", "answer": "국가유산진흥원", "source": "gongu"}
+{"text": "기관 : 한국전기안전공사", "answer": "한국전기안전공사", "source": "gongu"}
+{"text": "기관 : 한국장애인개발원", "answer": "한국장애인개발원", "source": "gongu"}
+{"text": "기관 : 도봉문화원", "answer": "도봉문화원", "source": "gongu"}
+{"text": "기관 : (주)보이저엑스 의왕시청소련수련관", "answer": "(주)보이저엑스 의왕시청소련수련관", "source": "gongu"}
+{"text": "기관 : (주)정림건축종합건축사무소", "answer": "(주)정림건축종합건축사무소", "source": "gongu"}
+{"text": "기관 : 한국기계연구원", "answer": "한국기계연구원", "source": "gongu"}
+{"text": "기관 : (사)지역공공정책플랫폼광주로", "answer": "(사)지역공공정책플랫폼광주로", "source": "gongu"}
+{"text": "기관 : 충북대학교", "answer": "충북대학교", "source": "gongu"}
+{"text": "기관 : KOTRA", "answer": "KOTRA", "source": "gongu"}
+{"text": "기관 : 국립공원공단", "answer": "국립공원공단", "source": "gongu"}
+{"text": "기관 : 한국토지주택공사", "answer": "한국토지주택공사", "source": "gongu"}
+{"text": "기관 : 문화체육관광부", "answer": "문화체육관광부", "source": "gongu"}
+{"text": "기관 : 국립박물관문화재단", "answer": "국립박물관문화재단", "source": "gongu"}
+{"text": "기관 : 서울보훈청", "answer": "서울보훈청", "source": "gongu"}
+{"text": "기관 : 한국출판문화산업진흥원", "answer": "한국출판문화산업진흥원", "source": "gongu"}
+{"text": "기관 : 한국환경공단", "answer": "한국환경공단", "source": "gongu"}
+{"text": "기관 : ㈜유앤피플", "answer": "㈜유앤피플", "source": "gongu"}
+{"text": "기관 : ㈜우아한형제들", "answer": "㈜우아한형제들", "source": "gongu"}
+{"text": "기관 : (재)네이버문화재단 네이버(주)", "answer": "(재)네이버문화재단 네이버(주)", "source": "gongu"}
+{"text": "기관 : 네이버(주) (재)네이버문화재단", "answer": "네이버(주) (재)네이버문화재단", "source": "gongu"}
+{"text": "기관 : ㈜야놀자", "answer": "㈜야놀자", "source": "gongu"}
+{"text": "기관 : (주)중고나라", "answer": "(주)중고나라", "source": "gongu"}
+{"text": "기관 : 국립수산진흥원", "answer": "국립수산진흥원", "source": "kcc"}
+{"text": "기관 : (주)엔티스톰", "answer": "(주)엔티스톰", "source": "kcc"}
+{"text": "기관 : (주)킴스라이센싱", "answer": "(주)킴스라이센싱", "source": "kcc"}
+{"text": "기관 : (주)클라이맥스", "answer": "(주)클라이맥스", "source": "kcc"}
+{"text": "기관 : (주)북차일드코리아", "answer": "(주)북차일드코리아", "source": "kcc"}
+{"text": "기관 : (주)케이비이씨엔", "answer": "(주)케이비이씨엔", "source": "kcc"}
+{"text": "기관 : 정보통신연구진흥원ㆍ㈜여금ㆍ재단법인 한국국학진흥원", "answer": "정보통신연구진흥원ㆍ㈜여금ㆍ재단법인 한국국학진흥원", "source": "kcc"}
+{"text": "기관 : (주)김천영교육콘텐츠연구소", "answer": "(주)김천영교육콘텐츠연구소", "source": "kcc"}
+{"text": "기관 : (주)고미드", "answer": "(주)고미드", "source": "kcc"}
+{"text": "기관 : (주)소프트엔터", "answer": "(주)소프트엔터", "source": "kcc"}
+{"text": "기관 : 국제교육진흥원", "answer": "국제교육진흥원", "source": "kcc"}
+{"text": "기관 : (주)종합건축사사무소 삼정디앤드지", "answer": "(주)종합건축사사무소 삼정디앤드지", "source": "kcc"}
+{"text": "기관 : (주)트리플다이스", "answer": "(주)트리플다이스", "source": "kcc"}
+{"text": "기관 : (주)펀섬", "answer": "(주)펀섬", "source": "kcc"}
+{"text": "기관 : (주)리노다임", "answer": "(주)리노다임", "source": "kcc"}
+{"text": "기관 : (주)골드펄", "answer": "(주)골드펄", "source": "kcc"}
+{"text": "기관 : (주)윤텍스", "answer": "(주)윤텍스", "source": "kcc"}
+{"text": "기관 : (주)매직채널", "answer": "(주)매직채널", "source": "kcc"}
+{"text": "기관 : (주)화인종합기획", "answer": "(주)화인종합기획", "source": "kcc"}
+{"text": "기관 : (주)에이아이쎌", "answer": "(주)에이아이쎌", "source": "kcc"}
+{"text": "기관 : (주)바른손", "answer": "(주)바른손", "source": "kcc"}
+{"text": "기관 : 정보통신연구진흥원ㆍ주식회사 윤디자인연구소", "answer": "정보통신연구진흥원ㆍ주식회사 윤디자인연구소", "source": "kcc"}
+{"text": "기관 : (주)무타", "answer": "(주)무타", "source": "kcc"}
+{"text": "기관 : 지유아이디자인 주식회사", "answer": "지유아이디자인 주식회사", "source": "kcc"}
+{"text": "기관 : (주)씨드엔터테인먼트", "answer": "(주)씨드엔터테인먼트", "source": "kcc"}
+{"text": "기관 : 삼성물산주식회사", "answer": "삼성물산주식회사", "source": "kcc"}
+{"text": "기관 : 쌍용건설주식회사", "answer": "쌍용건설주식회사", "source": "kcc"}
+{"text": "기관 : (주)에스알애니메이션", "answer": "(주)에스알애니메이션", "source": "kcc"}
+{"text": "기관 : (주)인비트로플랜트", "answer": "(주)인비트로플랜트", "source": "kcc"}
+{"text": "기관 : (주)미팅버스", "answer": "(주)미팅버스", "source": "kcc"}
+{"text": "기관 : (주)스튜디오카브", "answer": "(주)스튜디오카브", "source": "kcc"}
+{"text": "기관 : (주)웹마스터", "answer": "(주)웹마스터", "source": "kcc"}
+{"text": "기관 : (주)골드필", "answer": "(주)골드필", "source": "kcc"}
+{"text": "기관 : (주)디엔에이엔지니어링 종합건축사사무소", "answer": "(주)디엔에이엔지니어링 종합건축사사무소", "source": "kcc"}
+{"text": "기관 : (주)트라이디커뮤니케이션", "answer": "(주)트라이디커뮤니케이션", "source": "kcc"}
+{"text": "기관 : 정보통신연구진흥원ㆍ㈜하트코리아ㆍ성균관대학교", "answer": "정보통신연구진흥원ㆍ㈜하트코리아ㆍ성균관대학교", "source": "kcc"}
+{"text": "기관 : (주)카리스네오스", "answer": "(주)카리스네오스", "source": "kcc"}
+{"text": "기관 : (주)시네마서비스", "answer": "(주)시네마서비스", "source": "kcc"}
+{"text": "기관 : (주)티엠엠", "answer": "(주)티엠엠", "source": "kcc"}
+{"text": "기관 : (주)엔디유", "answer": "(주)엔디유", "source": "kcc"}
+{"text": "기관 : 현대건설주식회사", "answer": "현대건설주식회사", "source": "kcc"}
+{"text": "기관 : (주)엄지건축사사무소", "answer": "(주)엄지건축사사무소", "source": "kcc"}
+{"text": "기관 : (주)씨앤에이엔터프라이즈", "answer": "(주)씨앤에이엔터프라이즈", "source": "kcc"}
+{"text": "기관 : (주)브이알그래픽스", "answer": "(주)브이알그래픽스", "source": "kcc"}
+{"text": "기관 : (주)디알무비ㆍ박종철", "answer": "(주)디알무비ㆍ박종철", "source": "kcc"}
+{"text": "기관 : (주)프레임아웃", "answer": "(주)프레임아웃", "source": "kcc"}
+{"text": "기관 : (주)제이비항공", "answer": "(주)제이비항공", "source": "kcc"}
+{"text": "기관 : (주)라소프트", "answer": "(주)라소프트", "source": "kcc"}
+{"text": "기관 : 정보통신연구진흥원ㆍ㈜소프트엔터ㆍ학교법인 인하 학원", "answer": "정보통신연구진흥원ㆍ㈜소프트엔터ㆍ학교법인 인하 학원", "source": "kcc"}
+{"text": "기관 : (주)플러스 앤 디바이드", "answer": "(주)플러스 앤 디바이드", "source": "kcc"}
+{"text": "기관 : (주)브릿지북스코리아", "answer": "(주)브릿지북스코리아", "source": "kcc"}
+{"text": "기관 : (주)인디펜던스", "answer": "(주)인디펜던스", "source": "kcc"}
+{"text": "기관 : (주)제타웨이브", "answer": "(주)제타웨이브", "source": "kcc"}
+{"text": "기관 : 네이버컴주식회사", "answer": "네이버컴주식회사", "source": "kcc"}
+{"text": "기관 : (주)통커뮤니케이션", "answer": "(주)통커뮤니케이션", "source": "kcc"}
+{"text": "기관 : (주)드림아트", "answer": "(주)드림아트", "source": "kcc"}
+{"text": "기관 : (주)태인메가", "answer": "(주)태인메가", "source": "kcc"}
+{"text": "기관 : (주)뉴레카", "answer": "(주)뉴레카", "source": "kcc"}
+{"text": "기관 : (주)맥거핀", "answer": "(주)맥거핀", "source": "kcc"}
+{"text": "기관 : (주)에이씨엔코리아", "answer": "(주)에이씨엔코리아", "source": "kcc"}
+{"text": "기관 : 주식회사 소프트맥스", "answer": "주식회사 소프트맥스", "source": "kcc"}
+{"text": "기관 : (주)드림캐치", "answer": "(주)드림캐치", "source": "kcc"}
+{"text": "기관 : (주)씨즈아이", "answer": "(주)씨즈아이", "source": "kcc"}
+{"text": "기관 : (주)파네즈", "answer": "(주)파네즈", "source": "kcc"}
+{"text": "기관 : (주)대한항공", "answer": "(주)대한항공", "source": "kcc"}
+{"text": "기관 : (주)캐릭터인", "answer": "(주)캐릭터인", "source": "kcc"}
+{"text": "기관 : 사단법인 한국청소년지도사협회", "answer": "사단법인 한국청소년지도사협회", "source": "kcc"}
+{"text": "기관 : (주)컬트스튜디오", "answer": "(주)컬트스튜디오", "source": "kcc"}
+{"text": "기관 : 아시아나항공주식회사", "answer": "아시아나항공주식회사", "source": "kcc"}
+{"text": "기관 : 코오롱건설 주식회사", "answer": "코오롱건설 주식회사", "source": "kcc"}
+{"text": "기관 : 대한주택공사", "answer": "대한주택공사", "source": "kcc"}
+{"text": "기관 : 주식회사반도호이스트크레인", "answer": "주식회사반도호이스트크레인", "source": "kcc"}
+{"text": "기관 : (주)상지원", "answer": "(주)상지원", "source": "kcc"}
+{"text": "기관 : 멀티미디어교육개발원", "answer": "멀티미디어교육개발원", "source": "kcc"}
+{"text": "기관 : (주)두뇌개발소프트랩", "answer": "(주)두뇌개발소프트랩", "source": "kcc"}
+{"text": "기관 : (주)위젯", "answer": "(주)위젯", "source": "kcc"}
+{"text": "기관 : (주)웰컴상사", "answer": "(주)웰컴상사", "source": "kcc"}
+{"text": "기관 : (주)애니프레임", "answer": "(주)애니프레임", "source": "kcc"}
+{"text": "기관 : (주)테크로스", "answer": "(주)테크로스", "source": "kcc"}
+{"text": "기관 : (주)하바짐", "answer": "(주)하바짐", "source": "kcc"}
+{"text": "기관 : (주)아이엠티소프트", "answer": "(주)아이엠티소프트", "source": "kcc"}
+{"text": "기관 : (주)에이시스 커뮤니케이션스", "answer": "(주)에이시스 커뮤니케이션스", "source": "kcc"}
+{"text": "기관 : (주)드림플러스", "answer": "(주)드림플러스", "source": "kcc"}
+{"text": "기관 : 태그소프트 대표 배영관", "answer": "태그소프트 대표 배영관", "source": "kcc"}
+{"text": "기관 : 매일유업주식회사", "answer": "매일유업주식회사", "source": "kcc"}
+{"text": "기관 : (주)현진종합건설", "answer": "(주)현진종합건설", "source": "kcc"}
+{"text": "기관 : (주)한국디지털미디어", "answer": "(주)한국디지털미디어", "source": "kcc"}
+{"text": "기관 : (주)캐피컬쳐스", "answer": "(주)캐피컬쳐스", "source": "kcc"}
+{"text": "기관 : (주)닥스닥", "answer": "(주)닥스닥", "source": "kcc"}
+{"text": "기관 : (주)알팩닷컴", "answer": "(주)알팩닷컴", "source": "kcc"}
+{"text": "기관 : (사)부산민주항쟁기념사업회", "answer": "(사)부산민주항쟁기념사업회", "source": "kcc"}
+{"text": "기관 : (주)아이비", "answer": "(주)아이비", "source": "kcc"}
+{"text": "기관 : 백암교육재단", "answer": "백암교육재단", "source": "kcc"}
+{"text": "기관 : (주)애니매니아", "answer": "(주)애니매니아", "source": "kcc"}
+{"text": "기관 : (주)쉘리디코", "answer": "(주)쉘리디코", "source": "kcc"}
+{"text": "기관 : (주)흰소커뮤니케이션", "answer": "(주)흰소커뮤니케이션", "source": "kcc"}
+{"text": "기관 : (주)웹코디", "answer": "(주)웹코디", "source": "kcc"}
+{"text": "기관 : 주식회사 에스비에스뉴스텍", "answer": "주식회사 에스비에스뉴스텍", "source": "kcc"}
+{"text": "기관 : 한국조폐공사", "answer": "한국조폐공사", "source": "kcc"}
+{"text": "기관 : 주식회사 동영아이텍", "answer": "주식회사 동영아이텍", "source": "kcc"}
+{"text": "기관 : (주)이둘", "answer": "(주)이둘", "source": "kcc"}
+{"text": "기관 : 한국문화콘텐츠진흥원ㆍ사단법인한빛문화기획자개발원", "answer": "한국문화콘텐츠진흥원ㆍ사단법인한빛문화기획자개발원", "source": "kcc"}
+{"text": "기관 : 한국문화콘텐츠진흥원ㆍ국립국악원", "answer": "한국문화콘텐츠진흥원ㆍ국립국악원", "source": "kcc"}
+{"text": "기관 : 한국자격개발원", "answer": "한국자격개발원", "source": "kcc"}
+{"text": "기관 : 정보통신연구진흥원ㆍ㈜코리아비주얼스ㆍ한국해양대학교", "answer": "정보통신연구진흥원ㆍ㈜코리아비주얼스ㆍ한국해양대학교", "source": "kcc"}
+{"text": "기관 : (주)파티를 만드는 사람들", "answer": "(주)파티를 만드는 사람들", "source": "kcc"}
+{"text": "기관 : (주)코아필름서울", "answer": "(주)코아필름서울", "source": "kcc"}
+{"text": "기관 : (주)그라비티ㆍ이명진", "answer": "(주)그라비티ㆍ이명진", "source": "kcc"}
+{"text": "기관 : (주)두두씨에스", "answer": "(주)두두씨에스", "source": "kcc"}
+{"text": "기관 : (주)세이생명과학시스템", "answer": "(주)세이생명과학시스템", "source": "kcc"}
+{"text": "기관 : (주)한국방송제작단", "answer": "(주)한국방송제작단", "source": "kcc"}
+{"text": "기관 : (주)스페이스일루젼", "answer": "(주)스페이스일루젼", "source": "kcc"}
+{"text": "기관 : (주)투알엔디", "answer": "(주)투알엔디", "source": "kcc"}
+{"text": "기관 : 주식회사 위즈엔터테인먼트", "answer": "주식회사 위즈엔터테인먼트", "source": "kcc"}
+{"text": "기관 : 주식회사 동일하이빌", "answer": "주식회사 동일하이빌", "source": "kcc"}
+{"text": "기관 : (주)무한비트", "answer": "(주)무한비트", "source": "kcc"}
+{"text": "기관 : (주)드림프리", "answer": "(주)드림프리", "source": "kcc"}
+{"text": "기관 : (주)동원창업컨설팅", "answer": "(주)동원창업컨설팅", "source": "kcc"}
+{"text": "기관 : (주)SCS아카데미", "answer": "(주)SCS아카데미", "source": "kcc"}
+{"text": "기관 : (주)에스씨에스아카데미", "answer": "(주)에스씨에스아카데미", "source": "kcc"}
+{"text": "기관 : (주)지나월드", "answer": "(주)지나월드", "source": "kcc"}
+{"text": "기관 : (주)톱니소프트", "answer": "(주)톱니소프트", "source": "kcc"}
+{"text": "기관 : (주)위즈컴", "answer": "(주)위즈컴", "source": "kcc"}
+{"text": "기관 : (주)지씨텍", "answer": "(주)지씨텍", "source": "kcc"}
+{"text": "기관 : (주)아그막", "answer": "(주)아그막", "source": "kcc"}
+{"text": "기관 : (주)유앤아이씨", "answer": "(주)유앤아이씨", "source": "kcc"}
+{"text": "기관 : 주식회사 태평양ㆍ김재훈", "answer": "주식회사 태평양ㆍ김재훈", "source": "kcc"}
+{"text": "기관 : (주)리스프로", "answer": "(주)리스프로", "source": "kcc"}
+{"text": "기관 : (주)지웍스", "answer": "(주)지웍스", "source": "kcc"}
+{"text": "기관 : (주)진성무역", "answer": "(주)진성무역", "source": "kcc"}
+{"text": "기관 : (주)탑스코리아", "answer": "(주)탑스코리아", "source": "kcc"}
+{"text": "기관 : 남광토건주식회사", "answer": "남광토건주식회사", "source": "kcc"}
+{"text": "기관 : (주)위기관리지원연구소", "answer": "(주)위기관리지원연구소", "source": "kcc"}
+{"text": "기관 : (주)티나라", "answer": "(주)티나라", "source": "kcc"}
+{"text": "기관 : 한국담배인삼공사", "answer": "한국담배인삼공사", "source": "kcc"}
+{"text": "기관 : (주)뿌바엔터테인먼트", "answer": "(주)뿌바엔터테인먼트", "source": "kcc"}
+{"text": "기관 : (주)지엠제트", "answer": "(주)지엠제트", "source": "kcc"}
+{"text": "기관 : (주)임펙트 커뮤니케이션", "answer": "(주)임펙트 커뮤니케이션", "source": "kcc"}
+{"text": "기관 : (주)아이토마토 커뮤니케이션", "answer": "(주)아이토마토 커뮤니케이션", "source": "kcc"}
+{"text": "기관 : (주)포스트넛", "answer": "(주)포스트넛", "source": "kcc"}
+{"text": "기관 : (주)헤가소프트", "answer": "(주)헤가소프트", "source": "kcc"}
+{"text": "기관 : (주)아이비스 코리아", "answer": "(주)아이비스 코리아", "source": "kcc"}
+{"text": "기관 : (주)이지인터내셔날", "answer": "(주)이지인터내셔날", "source": "kcc"}
+{"text": "기관 : (주)인포다스", "answer": "(주)인포다스", "source": "kcc"}
+{"text": "기관 : (주)드림한스", "answer": "(주)드림한스", "source": "kcc"}
+{"text": "기관 : (주)오투미디어", "answer": "(주)오투미디어", "source": "kcc"}
+{"text": "기관 : (주)소프트맥스", "answer": "(주)소프트맥스", "source": "kcc"}
+{"text": "기관 : (주)한길건축사사무소", "answer": "(주)한길건축사사무소", "source": "kcc"}
+{"text": "기관 : (주)삼우종합건축사사무소", "answer": "(주)삼우종합건축사사무소", "source": "kcc"}
+{"text": "기관 : 소프트코리아주식회사", "answer": "소프트코리아주식회사", "source": "kcc"}
+{"text": "기관 : (주)월산프로젝트", "answer": "(주)월산프로젝트", "source": "kcc"}
+{"text": "기관 : (주)넥스팝", "answer": "(주)넥스팝", "source": "kcc"}
+{"text": "기관 : (주)온세울유통", "answer": "(주)온세울유통", "source": "kcc"}
+{"text": "기관 : (주)넥슨", "answer": "(주)넥슨", "source": "kcc"}
+{"text": "기관 : (주)가원건축사사무소", "answer": "(주)가원건축사사무소", "source": "kcc"}
+{"text": "기관 : 주식회사 고은ㆍ주식회사 세림(공동저작자)", "answer": "주식회사 고은ㆍ주식회사 세림(공동저작자)", "source": "kcc"}
+{"text": "기관 : (주)댄디비", "answer": "(주)댄디비", "source": "kcc"}
+{"text": "기관 : (주)아리스토.엔.티", "answer": "(주)아리스토.엔.티", "source": "kcc"}
+{"text": "기관 : (주)삼우종합건축사무소", "answer": "(주)삼우종합건축사무소", "source": "kcc"}
+{"text": "기관 : (주)개구장이", "answer": "(주)개구장이", "source": "kcc"}
+{"text": "기관 : (주)바른손카드", "answer": "(주)바른손카드", "source": "kcc"}
+{"text": "기관 : 학교법인 상지문학원", "answer": "학교법인 상지문학원", "source": "kcc"}
+{"text": "기관 : 주식회사 에스알온라인", "answer": "주식회사 에스알온라인", "source": "kcc"}
+{"text": "기관 : (주)띵호아", "answer": "(주)띵호아", "source": "kcc"}
+{"text": "기관 : (주)와디자인", "answer": "(주)와디자인", "source": "kcc"}
+{"text": "기관 : (주)아이앤티텍스타일", "answer": "(주)아이앤티텍스타일", "source": "kcc"}
+{"text": "기관 : (주)이노모션", "answer": "(주)이노모션", "source": "kcc"}
+{"text": "기관 : 오렌지스토리 주식회사", "answer": "오렌지스토리 주식회사", "source": "kcc"}
+{"text": "기관 : (주)테이크모바일", "answer": "(주)테이크모바일", "source": "kcc"}
+{"text": "기관 : (주)팡고엔터토이먼트", "answer": "(주)팡고엔터토이먼트", "source": "kcc"}
+{"text": "기관 : (주)메가텍인터내쇼날", "answer": "(주)메가텍인터내쇼날", "source": "kcc"}
+{"text": "기관 : (주)이엠정보교육원", "answer": "(주)이엠정보교육원", "source": "kcc"}
+{"text": "기관 : (주)모비온", "answer": "(주)모비온", "source": "kcc"}
+{"text": "기관 : (주)조이인터렉티브", "answer": "(주)조이인터렉티브", "source": "kcc"}
+{"text": "기관 : 주식회사 하우드엔지니어링종합건축사사무소", "answer": "주식회사 하우드엔지니어링종합건축사사무소", "source": "kcc"}
+{"text": "기관 : (주)아이토마토커뮤니케이션", "answer": "(주)아이토마토커뮤니케이션", "source": "kcc"}
+{"text": "기관 : (주)지킴이 커뮤니케이션", "answer": "(주)지킴이 커뮤니케이션", "source": "kcc"}
+{"text": "기관 : (주)토우실내건축", "answer": "(주)토우실내건축", "source": "kcc"}
+{"text": "기관 : 대한간병진흥원", "answer": "대한간병진흥원", "source": "kcc"}
+{"text": "기관 : (주)엔토디자인", "answer": "(주)엔토디자인", "source": "kcc"}
+{"text": "기관 : 주식회사세인트뮤직ㆍ한국문화콘텐츠진흥원", "answer": "주식회사세인트뮤직ㆍ한국문화콘텐츠진흥원", "source": "kcc"}
+{"text": "기관 : 한국문화콘텐츠진흥원", "answer": "한국문화콘텐츠진흥원", "source": "kcc"}
+{"text": "기관 : 한국문화콘텐츠진흥원ㆍ궁중유물전시관", "answer": "한국문화콘텐츠진흥원ㆍ궁중유물전시관", "source": "kcc"}
+{"text": "기관 : 한국문화콘텐츠진흥원ㆍ학교법인 함주학원", "answer": "한국문화콘텐츠진흥원ㆍ학교법인 함주학원", "source": "kcc"}
+{"text": "기관 : 한국문화콘텐츠진흥원ㆍ이화여자대학교 산학협력단", "answer": "한국문화콘텐츠진흥원ㆍ이화여자대학교 산학협력단", "source": "kcc"}
+{"text": "기관 : 한국전력기술 주식회사", "answer": "한국전력기술 주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사 아이오엔터테인먼트", "answer": "주식회사 아이오엔터테인먼트", "source": "kcc"}
+{"text": "기관 : 플레이웨이주식회사", "answer": "플레이웨이주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사 유림사포니", "answer": "주식회사 유림사포니", "source": "kcc"}
+{"text": "기관 : 재단법인 광주정보ㆍ문화산업진흥원ㆍ조형진", "answer": "재단법인 광주정보ㆍ문화산업진흥원ㆍ조형진", "source": "kcc"}
+{"text": "기관 : 재단법인 광주정보ㆍ문화산업진흥원ㆍ강병욱ㆍ김환수", "answer": "재단법인 광주정보ㆍ문화산업진흥원ㆍ강병욱ㆍ김환수", "source": "kcc"}
+{"text": "기관 : 주식회사 종합건축사사무소삼정디앤드지", "answer": "주식회사 종합건축사사무소삼정디앤드지", "source": "kcc"}
+{"text": "기관 : 주식회사 루퍼스엔터테인먼트", "answer": "주식회사 루퍼스엔터테인먼트", "source": "kcc"}
+{"text": "기관 : 주식회사 ED", "answer": "주식회사 ED", "source": "kcc"}
+{"text": "기관 : 주식회사 윌텍코리아", "answer": "주식회사 윌텍코리아", "source": "kcc"}
+{"text": "기관 : 죠이미디어 주식회사", "answer": "죠이미디어 주식회사", "source": "kcc"}
+{"text": "기관 : (주)비스타헤그", "answer": "(주)비스타헤그", "source": "kcc"}
+{"text": "기관 : (주)코리아로얄컴퍼니", "answer": "(주)코리아로얄컴퍼니", "source": "kcc"}
+{"text": "기관 : (주)코윈", "answer": "(주)코윈", "source": "kcc"}
+{"text": "기관 : (주)엑스포테이토", "answer": "(주)엑스포테이토", "source": "kcc"}
+{"text": "기관 : 김주섭ㆍ채원섭ㆍ최재원", "answer": "김주섭ㆍ채원섭ㆍ최재원", "source": "kcc"}
+{"text": "기관 : (주)더스팍스인터내셔날", "answer": "(주)더스팍스인터내셔날", "source": "kcc"}
+{"text": "기관 : (주)안다미로", "answer": "(주)안다미로", "source": "kcc"}
+{"text": "기관 : (주)세영코리아", "answer": "(주)세영코리아", "source": "kcc"}
+{"text": "기관 : (주)시스튜디오", "answer": "(주)시스튜디오", "source": "kcc"}
+{"text": "기관 : (주)엔스크린ㆍ김재환", "answer": "(주)엔스크린ㆍ김재환", "source": "kcc"}
+{"text": "기관 : (주)신아텍스", "answer": "(주)신아텍스", "source": "kcc"}
+{"text": "기관 : (주)한솔교육", "answer": "(주)한솔교육", "source": "kcc"}
+{"text": "기관 : (주)종합건축사사무소 동일건축", "answer": "(주)종합건축사사무소 동일건축", "source": "kcc"}
+{"text": "기관 : (주)무한엔터테인먼트", "answer": "(주)무한엔터테인먼트", "source": "kcc"}
+{"text": "기관 : 한국표준협회", "answer": "한국표준협회", "source": "kcc"}
+{"text": "기관 : 주식회사 포포인터내셔날", "answer": "주식회사 포포인터내셔날", "source": "kcc"}
+{"text": "기관 : (주)하버드영어사", "answer": "(주)하버드영어사", "source": "kcc"}
+{"text": "기관 : 해태제과식품주식회사", "answer": "해태제과식품주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사 굿타임상사", "answer": "주식회사 굿타임상사", "source": "kcc"}
+{"text": "기관 : (주)씨엘양행", "answer": "(주)씨엘양행", "source": "kcc"}
+{"text": "기관 : 정보통신연구진흥원ㆍ국민서관 주식회사", "answer": "정보통신연구진흥원ㆍ국민서관 주식회사", "source": "kcc"}
+{"text": "기관 : (주)하도이즈닷컴", "answer": "(주)하도이즈닷컴", "source": "kcc"}
+{"text": "기관 : (주)알키미컨설팅", "answer": "(주)알키미컨설팅", "source": "kcc"}
+{"text": "기관 : 주식회사 성윤피엔피커뮤니케이션", "answer": "주식회사 성윤피엔피커뮤니케이션", "source": "kcc"}
+{"text": "기관 : (주)코리아비주얼스 · 한국문화콘텐츠진흥원", "answer": "(주)코리아비주얼스 · 한국문화콘텐츠진흥원", "source": "kcc"}
+{"text": "기관 : 한국지역난방공사", "answer": "한국지역난방공사", "source": "kcc"}
+{"text": "기관 : 주식회사 국제한방피부미용개발원", "answer": "주식회사 국제한방피부미용개발원", "source": "kcc"}
+{"text": "기관 : 주식회사드림한스", "answer": "주식회사드림한스", "source": "kcc"}
+{"text": "기관 : 주식회사 파라다임애니메이션", "answer": "주식회사 파라다임애니메이션", "source": "kcc"}
+{"text": "기관 : 한국지역난방공사, 한국지역난방기술주식회사", "answer": "한국지역난방공사, 한국지역난방기술주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사케이티이엔지", "answer": "주식회사케이티이엔지", "source": "kcc"}
+{"text": "기관 : 미라클래식 주식회사", "answer": "미라클래식 주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사프라스프로덕션ㆍ한국문화콘텐츠진흥원", "answer": "주식회사프라스프로덕션ㆍ한국문화콘텐츠진흥원", "source": "kcc"}
+{"text": "기관 : (주)스마일포인트", "answer": "(주)스마일포인트", "source": "kcc"}
+{"text": "기관 : 주식회사 호산텍스타일", "answer": "주식회사 호산텍스타일", "source": "kcc"}
+{"text": "기관 : 한국인재평가개발원 주식회사", "answer": "한국인재평가개발원 주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사 에스알애니메이션", "answer": "주식회사 에스알애니메이션", "source": "kcc"}
+{"text": "기관 : 한국지역난방공사ㆍ사단법인 대한설비공학회", "answer": "한국지역난방공사ㆍ사단법인 대한설비공학회", "source": "kcc"}
+{"text": "기관 : 주식회사 넥슨홀딩스", "answer": "주식회사 넥슨홀딩스", "source": "kcc"}
+{"text": "기관 : 주식회사씨퀀스엔터테인먼트·한국문화콘텐츠진흥원", "answer": "주식회사씨퀀스엔터테인먼트·한국문화콘텐츠진흥원", "source": "kcc"}
+{"text": "기관 : 한국지질자원연구원", "answer": "한국지질자원연구원", "source": "kcc"}
+{"text": "기관 : 주식회사 논스톱미디어", "answer": "주식회사 논스톱미디어", "source": "kcc"}
+{"text": "기관 : 주식회사 이랜드월드", "answer": "주식회사 이랜드월드", "source": "kcc"}
+{"text": "기관 : 주식회사 라온엔터테인먼트", "answer": "주식회사 라온엔터테인먼트", "source": "kcc"}
+{"text": "기관 : 주식회사 엔틱스소프트, 주식회사 네오위즈", "answer": "주식회사 엔틱스소프트, 주식회사 네오위즈", "source": "kcc"}
+{"text": "기관 : 한국기술교육대학교", "answer": "한국기술교육대학교", "source": "kcc"}
+{"text": "기관 : 주식회사 디지털매직엔터테인먼트", "answer": "주식회사 디지털매직엔터테인먼트", "source": "kcc"}
+{"text": "기관 : 주식회사아이오에스이십일", "answer": "주식회사아이오에스이십일", "source": "kcc"}
+{"text": "기관 : (주)휴먼미디어테크", "answer": "(주)휴먼미디어테크", "source": "kcc"}
+{"text": "기관 : (주)발해", "answer": "(주)발해", "source": "kcc"}
+{"text": "기관 : 재단법인 명원문화재단", "answer": "재단법인 명원문화재단", "source": "kcc"}
+{"text": "기관 : 사단법인 문화마을들소리", "answer": "사단법인 문화마을들소리", "source": "kcc"}
+{"text": "기관 : 주식회사엘리웍스", "answer": "주식회사엘리웍스", "source": "kcc"}
+{"text": "기관 : (주)여금·한국문화콘텐츠진흥원", "answer": "(주)여금·한국문화콘텐츠진흥원", "source": "kcc"}
+{"text": "기관 : 주식회사네오그라프 · 한국문화콘텐츠진흥원 · 이화여자대학교 산학협력단", "answer": "주식회사네오그라프 · 한국문화콘텐츠진흥원 · 이화여자대학교 산학협력단", "source": "kcc"}
+{"text": "기관 : 피카소리모델링 주식회사", "answer": "피카소리모델링 주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사 엔텔리젼트", "answer": "주식회사 엔텔리젼트", "source": "kcc"}
+{"text": "기관 : 현대산업개발 주식회사", "answer": "현대산업개발 주식회사", "source": "kcc"}
+{"text": "기관 : 재단법인한국이미지커뮤니케이션연구원", "answer": "재단법인한국이미지커뮤니케이션연구원", "source": "kcc"}
+{"text": "기관 : 주식회사 엔젤씨앤씨", "answer": "주식회사 엔젤씨앤씨", "source": "kcc"}
+{"text": "기관 : (주)도리두리", "answer": "(주)도리두리", "source": "kcc"}
+{"text": "기관 : (주)그라비티", "answer": "(주)그라비티", "source": "kcc"}
+{"text": "기관 : (주)금강아트휀스", "answer": "(주)금강아트휀스", "source": "kcc"}
+{"text": "기관 : 아시아나항공 주식회사", "answer": "아시아나항공 주식회사", "source": "kcc"}
+{"text": "기관 : (주)에네메스", "answer": "(주)에네메스", "source": "kcc"}
+{"text": "기관 : (주)와이앤제이 인터내셔날", "answer": "(주)와이앤제이 인터내셔날", "source": "kcc"}
+{"text": "기관 : (주)씨아이머천다이징", "answer": "(주)씨아이머천다이징", "source": "kcc"}
+{"text": "기관 : 주식회사네오그라프ㆍ한국문화콘텐츠진흥원ㆍ이화여자대학교 산학협력단", "answer": "주식회사네오그라프ㆍ한국문화콘텐츠진흥원ㆍ이화여자대학교 산학협력단", "source": "kcc"}
+{"text": "기관 : (주)해피텍", "answer": "(주)해피텍", "source": "kcc"}
+{"text": "기관 : (주)뱅크건축사사무소", "answer": "(주)뱅크건축사사무소", "source": "kcc"}
+{"text": "기관 : 엔에이치엔 주식회사", "answer": "엔에이치엔 주식회사", "source": "kcc"}
+{"text": "기관 : 창의메디칼 주식회사", "answer": "창의메디칼 주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사엠디에이치·서강대학교·한국문화콘텐츠진흥원", "answer": "주식회사엠디에이치·서강대학교·한국문화콘텐츠진흥원", "source": "kcc"}
+{"text": "기관 : (주)선우아미치", "answer": "(주)선우아미치", "source": "kcc"}
+{"text": "기관 : (주)호텔롯데", "answer": "(주)호텔롯데", "source": "kcc"}
+{"text": "기관 : 엑스포디자인연구소 대표 정석원", "answer": "엑스포디자인연구소 대표 정석원", "source": "kcc"}
+{"text": "기관 : (주)컴웨어넷아카데미아", "answer": "(주)컴웨어넷아카데미아", "source": "kcc"}
+{"text": "기관 : 히스토피아(주) · 한국문화콘텐츠진흥원", "answer": "히스토피아(주) · 한국문화콘텐츠진흥원", "source": "kcc"}
+{"text": "기관 : (주)이인", "answer": "(주)이인", "source": "kcc"}
+{"text": "기관 : 주식회사 이엠정보교육원", "answer": "주식회사 이엠정보교육원", "source": "kcc"}
+{"text": "기관 : (주)베루프", "answer": "(주)베루프", "source": "kcc"}
+{"text": "기관 : (주)퓨즈웍스", "answer": "(주)퓨즈웍스", "source": "kcc"}
+{"text": "기관 : (주)코나드", "answer": "(주)코나드", "source": "kcc"}
+{"text": "기관 : (주)오패스닷컴", "answer": "(주)오패스닷컴", "source": "kcc"}
+{"text": "기관 : 주식회사 태평양 · 박은정", "answer": "주식회사 태평양 · 박은정", "source": "kcc"}
+{"text": "기관 : 주식회사 태평양, 박은정", "answer": "주식회사 태평양, 박은정", "source": "kcc"}
+{"text": "기관 : 주식회사 태평양, 이영", "answer": "주식회사 태평양, 이영", "source": "kcc"}
+{"text": "기관 : 재단법인 한국천부교전도관유지재단", "answer": "재단법인 한국천부교전도관유지재단", "source": "kcc"}
+{"text": "기관 : 재단법인 대한성서공회", "answer": "재단법인 대한성서공회", "source": "kcc"}
+{"text": "기관 : (주)잉글리쉬채널", "answer": "(주)잉글리쉬채널", "source": "kcc"}
+{"text": "기관 : (주)데모라인", "answer": "(주)데모라인", "source": "kcc"}
+{"text": "기관 : 갤럭시여행사", "answer": "갤럭시여행사", "source": "kcc"}
+{"text": "기관 : (주)이파엘지종합특수방수", "answer": "(주)이파엘지종합특수방수", "source": "kcc"}
+{"text": "기관 : (주)사계절비앤씨", "answer": "(주)사계절비앤씨", "source": "kcc"}
+{"text": "기관 : 주식회사 필건축사사무소", "answer": "주식회사 필건축사사무소", "source": "kcc"}
+{"text": "기관 : (주)포르테라인", "answer": "(주)포르테라인", "source": "kcc"}
+{"text": "기관 : (주)건축사사무소예헌", "answer": "(주)건축사사무소예헌", "source": "kcc"}
+{"text": "기관 : 주식회사 아이앤씨직업능력개발원", "answer": "주식회사 아이앤씨직업능력개발원", "source": "kcc"}
+{"text": "기관 : 푸르덴셜생명보험 주식회사", "answer": "푸르덴셜생명보험 주식회사", "source": "kcc"}
+{"text": "기관 : (주)토스코리아ㆍ한국문화콘텐츠진흥원", "answer": "(주)토스코리아ㆍ한국문화콘텐츠진흥원", "source": "kcc"}
+{"text": "기관 : 주식회사 와이에듀케이션", "answer": "주식회사 와이에듀케이션", "source": "kcc"}
+{"text": "기관 : 주식회사 포스코건설", "answer": "주식회사 포스코건설", "source": "kcc"}
+{"text": "기관 : (주)플레이런", "answer": "(주)플레이런", "source": "kcc"}
+{"text": "기관 : 대신이엔에스 주식회사", "answer": "대신이엔에스 주식회사", "source": "kcc"}
+{"text": "기관 : (주)포스터", "answer": "(주)포스터", "source": "kcc"}
+{"text": "기관 : (주)스토리타임", "answer": "(주)스토리타임", "source": "kcc"}
+{"text": "기관 : 주식회사 한국몬테소리", "answer": "주식회사 한국몬테소리", "source": "kcc"}
+{"text": "기관 : 주식회사판타그램", "answer": "주식회사판타그램", "source": "kcc"}
+{"text": "기관 : 주식회사 시은디자인ㆍ주식회사 문화방송ㆍ주식회사 인터넷엠비씨", "answer": "주식회사 시은디자인ㆍ주식회사 문화방송ㆍ주식회사 인터넷엠비씨", "source": "kcc"}
+{"text": "기관 : 주식회사 아이비더블유", "answer": "주식회사 아이비더블유", "source": "kcc"}
+{"text": "기관 : 지티전자주식회사", "answer": "지티전자주식회사", "source": "kcc"}
+{"text": "기관 : 한국문화재보호재단", "answer": "한국문화재보호재단", "source": "kcc"}
+{"text": "기관 : 주식회사 한국제이에스씨스텍", "answer": "주식회사 한국제이에스씨스텍", "source": "kcc"}
+{"text": "기관 : 주식회사 피앤피아이앤씨", "answer": "주식회사 피앤피아이앤씨", "source": "kcc"}
+{"text": "기관 : 주식회사 디자인서울모형", "answer": "주식회사 디자인서울모형", "source": "kcc"}
+{"text": "기관 : (주)네티션닷컴", "answer": "(주)네티션닷컴", "source": "kcc"}
+{"text": "기관 : 대신이엔에스주식회사", "answer": "대신이엔에스주식회사", "source": "kcc"}
+{"text": "기관 : 사단법인 한국산업용재공구상협회", "answer": "사단법인 한국산업용재공구상협회", "source": "kcc"}
+{"text": "기관 : 주식회사 정글커뮤니케이션즈", "answer": "주식회사 정글커뮤니케이션즈", "source": "kcc"}
+{"text": "기관 : 주식회사 네티션닷컴", "answer": "주식회사 네티션닷컴", "source": "kcc"}
+{"text": "기관 : 주식회사 조암건축사사무소", "answer": "주식회사 조암건축사사무소", "source": "kcc"}
+{"text": "기관 : 주식회사 플레이스테이션월드코리아", "answer": "주식회사 플레이스테이션월드코리아", "source": "kcc"}
+{"text": "기관 : 주식회사 성원애드피아", "answer": "주식회사 성원애드피아", "source": "kcc"}
+{"text": "기관 : 주식회사게임빌", "answer": "주식회사게임빌", "source": "kcc"}
+{"text": "기관 : (주)청암엔터테인먼트", "answer": "(주)청암엔터테인먼트", "source": "kcc"}
+{"text": "기관 : 학교법인 한국기술교육대학교", "answer": "학교법인 한국기술교육대학교", "source": "kcc"}
+{"text": "기관 : 주식회사 히코센코리아", "answer": "주식회사 히코센코리아", "source": "kcc"}
+{"text": "기관 : 주식회사 일건씨앤씨건축사사무소", "answer": "주식회사 일건씨앤씨건축사사무소", "source": "kcc"}
+{"text": "기관 : (주)투알앤디", "answer": "(주)투알앤디", "source": "kcc"}
+{"text": "기관 : 주식회사 종합건축사사무소세하", "answer": "주식회사 종합건축사사무소세하", "source": "kcc"}
+{"text": "기관 : 주식회사엠시피에스", "answer": "주식회사엠시피에스", "source": "kcc"}
+{"text": "기관 : 주식회사 주논소프트", "answer": "주식회사 주논소프트", "source": "kcc"}
+{"text": "기관 : 주식회사 브레인밸리", "answer": "주식회사 브레인밸리", "source": "kcc"}
+{"text": "기관 : (주)바이토토", "answer": "(주)바이토토", "source": "kcc"}
+{"text": "기관 : (주)앤캐릭엔터테인먼트", "answer": "(주)앤캐릭엔터테인먼트", "source": "kcc"}
+{"text": "기관 : (주)네슈라화장품", "answer": "(주)네슈라화장품", "source": "kcc"}
+{"text": "기관 : (주)예일디자인아카데미", "answer": "(주)예일디자인아카데미", "source": "kcc"}
+{"text": "기관 : (주)에이아이코퍼스", "answer": "(주)에이아이코퍼스", "source": "kcc"}
+{"text": "기관 : 한양대학교 산학협력단", "answer": "한양대학교 산학협력단", "source": "kcc"}
+{"text": "기관 : 주식회사 늑대와여우컴퓨터", "answer": "주식회사 늑대와여우컴퓨터", "source": "kcc"}
+{"text": "기관 : 한국항공우주연구원", "answer": "한국항공우주연구원", "source": "kcc"}
+{"text": "기관 : 주식회사 희원엔터테인먼트", "answer": "주식회사 희원엔터테인먼트", "source": "kcc"}
+{"text": "기관 : (주)송호골프디자인그룹", "answer": "(주)송호골프디자인그룹", "source": "kcc"}
+{"text": "기관 : 주식회사 에이에이건축사사무소", "answer": "주식회사 에이에이건축사사무소", "source": "kcc"}
+{"text": "기관 : (주)퓨니", "answer": "(주)퓨니", "source": "kcc"}
+{"text": "기관 : (주)캐드앤소프트", "answer": "(주)캐드앤소프트", "source": "kcc"}
+{"text": "기관 : (주)데이타웨이엔지니어링", "answer": "(주)데이타웨이엔지니어링", "source": "kcc"}
+{"text": "기관 : (주)씨즈아이 대표 이두영", "answer": "(주)씨즈아이 대표 이두영", "source": "kcc"}
+{"text": "기관 : 주식회사 한아엔지니어링ㆍ당진군(관리부처 : 당진군청)", "answer": "주식회사 한아엔지니어링ㆍ당진군(관리부처 : 당진군청)", "source": "kcc"}
+{"text": "기관 : 주식회사 무빙프라자", "answer": "주식회사 무빙프라자", "source": "kcc"}
+{"text": "기관 : 우리엠에프씨 주식회사", "answer": "우리엠에프씨 주식회사", "source": "kcc"}
+{"text": "기관 : 학교법인 신동아학원", "answer": "학교법인 신동아학원", "source": "kcc"}
+{"text": "기관 : 주식회사 미스터케이", "answer": "주식회사 미스터케이", "source": "kcc"}
+{"text": "기관 : (주)진샘", "answer": "(주)진샘", "source": "kcc"}
+{"text": "기관 : (주)성일종합건축사 사무소", "answer": "(주)성일종합건축사 사무소", "source": "kcc"}
+{"text": "기관 : 주식회사시은디자인", "answer": "주식회사시은디자인", "source": "kcc"}
+{"text": "기관 : 해태제과식품 주식회사", "answer": "해태제과식품 주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사 케이.알", "answer": "주식회사 케이.알", "source": "kcc"}
+{"text": "기관 : (주)이미지캐스트ㆍ주식회사 이에프라인", "answer": "(주)이미지캐스트ㆍ주식회사 이에프라인", "source": "kcc"}
+{"text": "기관 : 재단법인 제16회인천아시아육상경기선수권대회조직위원회", "answer": "재단법인 제16회인천아시아육상경기선수권대회조직위원회", "source": "kcc"}
+{"text": "기관 : 주식회사 오르다코리아", "answer": "주식회사 오르다코리아", "source": "kcc"}
+{"text": "기관 : 주식회사 진성코리아", "answer": "주식회사 진성코리아", "source": "kcc"}
+{"text": "기관 : 주식회사 아이윌팬시", "answer": "주식회사 아이윌팬시", "source": "kcc"}
+{"text": "기관 : 주식회사김포캐릭터월드·주식회사 디지털시티·한국문화콘텐츠진흥원", "answer": "주식회사김포캐릭터월드·주식회사 디지털시티·한국문화콘텐츠진흥원", "source": "kcc"}
+{"text": "기관 : (주)시스윌·한국문화콘텐츠진흥원", "answer": "(주)시스윌·한국문화콘텐츠진흥원", "source": "kcc"}
+{"text": "기관 : 애니프레임 주식회사", "answer": "애니프레임 주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사 한국자격개발원", "answer": "주식회사 한국자격개발원", "source": "kcc"}
+{"text": "기관 : 주식회사 디와이프로페셔널", "answer": "주식회사 디와이프로페셔널", "source": "kcc"}
+{"text": "기관 : 보람상조개발 주식회사", "answer": "보람상조개발 주식회사", "source": "kcc"}
+{"text": "기관 : 디케이 티.엠.아이 주식회사", "answer": "디케이 티.엠.아이 주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사 아레아인터랙티브", "answer": "주식회사 아레아인터랙티브", "source": "kcc"}
+{"text": "기관 : 주식회사 비투비익스체인지", "answer": "주식회사 비투비익스체인지", "source": "kcc"}
+{"text": "기관 : (주)제이더블유픽처스", "answer": "(주)제이더블유픽처스", "source": "kcc"}
+{"text": "기관 : 주식회사 잉글리쉬채널", "answer": "주식회사 잉글리쉬채널", "source": "kcc"}
+{"text": "기관 : 주식회사 시은디자인ㆍ장욱상", "answer": "주식회사 시은디자인ㆍ장욱상", "source": "kcc"}
+{"text": "기관 : 주식회사 희원엔터테인먼트ㆍ주식회사 문화방송ㆍ 주식회사 손오공", "answer": "주식회사 희원엔터테인먼트ㆍ주식회사 문화방송ㆍ 주식회사 손오공", "source": "kcc"}
+{"text": "기관 : 유니온라이트 주식회사", "answer": "유니온라이트 주식회사", "source": "kcc"}
+{"text": "기관 : 엑스포디자인연구소정석원", "answer": "엑스포디자인연구소정석원", "source": "kcc"}
+{"text": "기관 : 잇츠유어스주식회사", "answer": "잇츠유어스주식회사", "source": "kcc"}
+{"text": "기관 : (주)리전", "answer": "(주)리전", "source": "kcc"}
+{"text": "기관 : 주식회사 이모시스텍", "answer": "주식회사 이모시스텍", "source": "kcc"}
+{"text": "기관 : 주식회사 엔터토피아", "answer": "주식회사 엔터토피아", "source": "kcc"}
+{"text": "기관 : 주식회사 건축디자인그룹제이드", "answer": "주식회사 건축디자인그룹제이드", "source": "kcc"}
+{"text": "기관 : 주식회사 케이이엔씨", "answer": "주식회사 케이이엔씨", "source": "kcc"}
+{"text": "기관 : 한국문화관광콘텐츠개발 주식회사", "answer": "한국문화관광콘텐츠개발 주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사 베스트투데이", "answer": "주식회사 베스트투데이", "source": "kcc"}
+{"text": "기관 : 주식회사 이오스디자인", "answer": "주식회사 이오스디자인", "source": "kcc"}
+{"text": "기관 : 주식회사 아이앤티텍스타일", "answer": "주식회사 아이앤티텍스타일", "source": "kcc"}
+{"text": "기관 : (주)안전하는사람들", "answer": "(주)안전하는사람들", "source": "kcc"}
+{"text": "기관 : 한국철도공사", "answer": "한국철도공사", "source": "kcc"}
+{"text": "기관 : 캔엔터프라이즈 주식회사", "answer": "캔엔터프라이즈 주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사 드라마뱅크", "answer": "주식회사 드라마뱅크", "source": "kcc"}
+{"text": "기관 : 주식회사위드프로젝트", "answer": "주식회사위드프로젝트", "source": "kcc"}
+{"text": "기관 : 주식회사 잉카솔루션", "answer": "주식회사 잉카솔루션", "source": "kcc"}
+{"text": "기관 : 주식회사 대동종합건설", "answer": "주식회사 대동종합건설", "source": "kcc"}
+{"text": "기관 : 재단법인 이십일세기생명과학문화재단", "answer": "재단법인 이십일세기생명과학문화재단", "source": "kcc"}
+{"text": "기관 : 주식회사 아이디어피크닉", "answer": "주식회사 아이디어피크닉", "source": "kcc"}
+{"text": "기관 : 주식회사 사계절비앤씨", "answer": "주식회사 사계절비앤씨", "source": "kcc"}
+{"text": "기관 : 디엠에스랩주식회사", "answer": "디엠에스랩주식회사", "source": "kcc"}
+{"text": "기관 : 주식회사 서홍엔지니어링건축사사무소", "answer": "주식회사 서홍엔지니어링건축사사무소", "source": "kcc"}
+{"text": "기관 : 한국에스앤피 대표 전필원", "answer": "한국에스앤피 대표 전필원", "source": "kcc"}
+{"text": "기관 : 지에스칼텍스 주식회사", "answer": "지에스칼텍스 주식회사", "source": "kcc"}
+{"text": "기관 : 재단법인 대구디지털산업진흥원ㆍ계명대학교산학협력단ㆍ토탈씨지 대표 송상무ㆍ주식회사 와이즈온", "answer": "재단법인 대구디지털산업진흥원ㆍ계명대학교산학협력단ㆍ토탈씨지 대표 송상무ㆍ주식회사 와이즈온", "source": "kcc"}
+{"text": "기관 : (주)미니오", "answer": "(주)미니오", "source": "kcc"}
+{"text": "기관 : 주식회사 키드패밀리", "answer": "주식회사 키드패밀리", "source": "kcc"}
+{"text": "기관 : 주식회사 인터워크코리아", "answer": "주식회사 인터워크코리아", "source": "kcc"}
+{"text": "기관 : 주식회사 엔로그소프트", "answer": "주식회사 엔로그소프트", "source": "kcc"}
+{"text": "기관 : 하바놀이학교 주식회사", "answer": "하바놀이학교 주식회사", "source": "kcc"}
+{"text": "기관 : 이은희ㆍ이해숙ㆍ조태원", "answer": "이은희ㆍ이해숙ㆍ조태원", "source": "kcc"}
+{"text": "기관 : 주식회사 엠게임ㆍ주식회사 넷게임", "answer": "주식회사 엠게임ㆍ주식회사 넷게임", "source": "kcc"}
+{"text": "기관 : (주)플레이오프", "answer": "(주)플레이오프", "source": "kcc"}
+{"text": "기관 : 주식회사 브랜드업, 김덕용, 재단법인 충청남도 역사문화원", "answer": "주식회사 브랜드업, 김덕용, 재단법인 충청남도 역사문화원", "source": "kcc"}

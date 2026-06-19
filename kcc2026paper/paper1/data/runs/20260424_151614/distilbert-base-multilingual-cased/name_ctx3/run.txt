@@ -1,0 +1,34 @@
+# Run started: 2026-04-24T21:53:15
+# Log format: [section] blocks with key = value pairs
+
+[meta]
+model = distilbert-base-multilingual-cased
+label = name
+ctx = ctx3
+silver_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/ctx_ablation/silver/name_ctx3
+gold_dir = /home/peppermint/copyright_metadata_extraction/metadata/configs/paper1/ctx_ablation/gold/name_ctx3
+
+[hparams]
+epochs = 2
+batch_size = 8
+lr = 2e-05
+train_ratio = 8/12
+val_ratio = 2/12
+test_ratio = 2/12
+split_seed = 42
+
+[train_result]
+train_time_sec = 125.4
+model_path = /home/peppermint/copyright_metadata_extraction/metadata/data/out/paper1_20260424_151614/distilbert-base-multilingual-cased/name_ctx3/model
+
+[eval_result]
+n_gold = 550
+hit = 545
+accuracy = 0.9909
+eval_time_sec = 1.3
+
+[final]
+accuracy = 0.9909
+total_time_sec = 127.2
+
+# Run ended: 2026-04-24T21:55:22

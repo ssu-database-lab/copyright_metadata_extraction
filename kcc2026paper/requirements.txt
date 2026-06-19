@@ -1,0 +1,39 @@
+# kcc2026paper — GPU 학습/평가 환경 (검증: 2026-06-19, RTX 5070 재현 성공)
+# Python 3.12. RTX 5070(Blackwell)/드라이버 580 → CUDA 13 이므로 torch 는 cu130 인덱스에서 설치.
+#
+# 재생성:
+#   cd kcc2026paper
+#   uv venv .venv --python 3.12
+#   uv pip install --python .venv/bin/python -r requirements.txt
+#   # (또는: python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt)
+#
+# 주의: paper1.py 는 ../metadata 의 module.* 와 같은 디렉토리의 paper_module 을 import 한다(README 참조).
+
+--extra-index-url https://download.pytorch.org/whl/cu130
+
+# --- torch (cu130, Blackwell/RTX 5070) ---
+torch==2.12.0
+torchvision==0.27.0
+
+# --- transformers 스택 ---
+transformers==5.11.0
+tokenizers==0.22.2
+accelerate==1.13.0
+huggingface-hub==1.18.0
+safetensors==0.8.0
+
+# --- 학습 필수 (없으면 'datasets 패키지가 필요합니다' 로 학습 실패) ---
+datasets==5.0.0
+seqeval==1.2.2
+
+# --- metadata NER 스택 (한국어 텍스트 처리; 없으면 import 단계 실패) ---
+blingfire==0.1.8
+kiwipiepy==0.23.2
+kiwipiepy-model==0.23.0
+
+# --- 수치/평가/설정 ---
+scikit-learn==1.9.0
+numpy==2.4.4
+pandas==3.0.3
+scipy==1.17.1
+pyyaml==6.0.3

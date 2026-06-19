@@ -1,0 +1,13311 @@
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+오류가	O
+발생했습니다.	O
+
+참고하시기	O
+바랍니다.	O
+
+감사합니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+감사합니다.	O
+
+회의는	O
+2시에	O
+시작합니다.	O
+(61)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+이	O
+내용은	O
+중요합니다.	O
+(90)	O
+
+회의는	O
+2시에	O
+시작합니다.	O
+(47)	O
+
+확인	O
+부탁드립니다.	O
+(100)	O
+
+다음에	O
+뵙겠습니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+이	O
+내용은	O
+중요합니다.	O
+(35)	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(100)	O
+
+로그인이	O
+필요합니다.	O
+(22)	O
+
+문서를	O
+검토해	O
+주세요.	O
+(10)	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+다음에	O
+뵙겠습니다.	O
+(13)	O
+
+첨부파일을	O
+확인하세요.	O
+(90)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+수고하셨습니다.	O
+(9)	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+안녕하세요,	O
+반갑습니다.	O
+(16)	O
+
+확인	O
+부탁드립니다.	O
+(90)	O
+
+감사합니다.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+참고하시기	O
+바랍니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(36)	O
+
+회원가입을	O
+환영합니다.	O
+(26)	O
+
+이	O
+내용은	O
+중요합니다.	O
+(5)	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+문서를	O
+검토해	O
+주세요.	O
+(19)	O
+
+로그인이	O
+필요합니다.	O
+(83)	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+수고하셨습니다.	O
+
+확인	O
+부탁드립니다.	O
+(98)	O
+
+회원가입을	O
+환영합니다.	O
+
+로그인이	O
+필요합니다.	O
+(18)	O
+
+회의는	O
+2시에	O
+시작합니다.	O
+(6)	O
+
+안녕하세요,	O
+반갑습니다.	O
+(34)	O
+
+확인	O
+부탁드립니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(10)	O
+
+다음에	O
+뵙겠습니다.	O
+(70)	O
+
+식사는	O
+하셨나요?	O
+(41)	O
+
+식사는	O
+하셨나요?	O
+(88)	O
+
+감사합니다.	O
+
+이	O
+내용은	O
+중요합니다.	O
+
+다음에	O
+뵙겠습니다.	O
+
+이	O
+내용은	O
+중요합니다.	O
+(29)	O
+
+회원가입을	O
+환영합니다.	O
+
+작업이	O
+완료되었습니다.	O
+
+참고하시기	O
+바랍니다.	O
+
+확인	O
+부탁드립니다.	O
+
+오류가	O
+발생했습니다.	O
+(84)	O
+
+확인	O
+부탁드립니다.	O
+(2)	O
+
+작업이	O
+완료되었습니다.	O
+(24)	O
+
+수고하셨습니다.	O
+(33)	O
+
+수고하셨습니다.	O
+(74)	O
+
+확인	O
+부탁드립니다.	O
+
+회원가입을	O
+환영합니다.	O
+
+작업이	O
+완료되었습니다.	O
+
+첨부파일을	O
+확인하세요.	O
+(38)	O
+
+감사합니다.	O
+
+참고하시기	O
+바랍니다.	O
+(54)	O
+
+감사합니다.	O
+
+다음에	O
+뵙겠습니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(60)	O
+
+다음에	O
+뵙겠습니다.	O
+
+오류가	O
+발생했습니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(14)	O
+
+오류가	O
+발생했습니다.	O
+
+감사합니다.	O
+
+식사는	O
+하셨나요?	O
+
+안녕하세요,	O
+반갑습니다.	O
+(33)	O
+
+첨부파일을	O
+확인하세요.	O
+(63)	O
+
+다음에	O
+뵙겠습니다.	O
+
+식사는	O
+하셨나요?	O
+(47)	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+참고하시기	O
+바랍니다.	O
+
+작업이	O
+완료되었습니다.	O
+(18)	O
+
+다음에	O
+뵙겠습니다.	O
+(36)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+(63)	O
+
+로그인이	O
+필요합니다.	O
+(37)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+참고하시기	O
+바랍니다.	O
+
+감사합니다.	O
+(34)	O
+
+참고하시기	O
+바랍니다.	O
+
+식사는	O
+하셨나요?	O
+(42)	O
+
+확인	O
+부탁드립니다.	O
+(14)	O
+
+참고하시기	O
+바랍니다.	O
+(10)	O
+
+작업이	O
+완료되었습니다.	O
+(4)	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+회의는	O
+2시에	O
+시작합니다.	O
+(39)	O
+
+수고하셨습니다.	O
+(77)	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+시스템	O
+점검	O
+중입니다.	O
+
+식사는	O
+하셨나요?	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+참고하시기	O
+바랍니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(49)	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+감사합니다.	O
+
+이	O
+내용은	O
+중요합니다.	O
+(78)	O
+
+감사합니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(36)	O
+
+안녕하세요,	O
+반갑습니다.	O
+(75)	O
+
+회원가입을	O
+환영합니다.	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(23)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+작업이	O
+완료되었습니다.	O
+
+식사는	O
+하셨나요?	O
+(68)	O
+
+수고하셨습니다.	O
+(23)	O
+
+감사합니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+(62)	O
+
+첨부파일을	O
+확인하세요.	O
+(60)	O
+
+오류가	O
+발생했습니다.	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(16)	O
+
+작업이	O
+완료되었습니다.	O
+(59)	O
+
+감사합니다.	O
+
+참고하시기	O
+바랍니다.	O
+
+오류가	O
+발생했습니다.	O
+(64)	O
+
+참고하시기	O
+바랍니다.	O
+
+로그인이	O
+필요합니다.	O
+(60)	O
+
+첨부파일을	O
+확인하세요.	O
+(15)	O
+
+참고하시기	O
+바랍니다.	O
+
+수고하셨습니다.	O
+(13)	O
+
+오류가	O
+발생했습니다.	O
+(95)	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+로그인이	O
+필요합니다.	O
+(51)	O
+
+감사합니다.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+오류가	O
+발생했습니다.	O
+(65)	O
+
+식사는	O
+하셨나요?	O
+(43)	O
+
+참고하시기	O
+바랍니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+(9)	O
+
+회의는	O
+2시에	O
+시작합니다.	O
+(2)	O
+
+첨부파일을	O
+확인하세요.	O
+(85)	O
+
+감사합니다.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+
+수고하셨습니다.	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+안녕하세요,	O
+반갑습니다.	O
+
+문서를	O
+검토해	O
+주세요.	O
+(57)	O
+
+오류가	O
+발생했습니다.	O
+(22)	O
+
+다음에	O
+뵙겠습니다.	O
+
+회의는	O
+2시에	O
+시작합니다.	O
+
+안녕하세요,	O
+반갑습니다.	O
+(98)	O
+
+안녕하세요,	O
+반갑습니다.	O
+(78)	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+작업이	O
+완료되었습니다.	O
+(1)	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+이	O
+내용은	O
+중요합니다.	O
+(7)	O
+
+회원가입을	O
+환영합니다.	O
+(29)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+(18)	O
+
+식사는	O
+하셨나요?	O
+(24)	O
+
+식사는	O
+하셨나요?	O
+(76)	O
+
+회원가입을	O
+환영합니다.	O
+(70)	O
+
+비밀번호를	O
+변경해	O
+주세요.	O
+
+식사는	O
+하셨나요?	O
+
+오류가	O
+발생했습니다.	O
+(48)	O
+
+회원가입을	O
+환영합니다.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(47)	O
+
+오류가	O
+발생했습니다.	O
+
+문서를	O
+검토해	O
+주세요.	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+(34)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+(87)	O
+
+다음에	O
+뵙겠습니다.	O
+
+이	O
+내용은	O
+중요합니다.	O
+(15)	O
+
+시스템	O
+점검	O
+중입니다.	O
+(69)	O
+
+감사합니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+시스템	O
+점검	O
+중입니다.	O
+(11)	O
+
+첨부파일을	O
+확인하세요.	O
+(4)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+(10)	O
+
+회의는	O
+2시에	O
+시작합니다.	O
+(67)	O
+
+문의사항이	O
+있으시면	O
+연락주세요.	O
+
+안녕하세요,	O
+반갑습니다.	O
+(36)	O
+
+식사는	O
+하셨나요?	O
+
+식사는	O
+하셨나요?	O
+(47)	O
+
+회원가입을	O
+환영합니다.	O
+(25)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+(21)	O
+
+로그인이	O
+필요합니다.	O
+
+확인	O
+부탁드립니다.	O
+
+잠시	O
+후	O
+다시	O
+시도해	O
+주세요.	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+(26)	O
+
+문서를	O
+검토해	O
+주세요.	O
+(15)	O
+
+작업이	O
+완료되었습니다.	O
+(68)	O
+
+수고하셨습니다.	O
+(80)	O
+
+식사는	O
+하셨나요?	O
+(74)	O
+
+오늘	O
+날씨가	O
+참	O
+좋네요.	O
+(6)	O
+
+수고하셨습니다.	O
+
+강환	B-NAME
+signed	O
+here.	O
+
+재단법인	B-COMPANY
+남오명소프트	I-COMPANY
+CEO	O
+허효	B-NAME
+
+변준	B-NAME
+works	O
+at	O
+회계팀.	B-DEPARTMENT
+
+Details:	O
+염찬,	B-NAME
+131016-2******,	B-ID_NUM
+전라남도	B-ADDRESS
+곽전군	I-ADDRESS
+주지옥길	I-ADDRESS
+114	I-ADDRESS
+
+Approved	O
+by	O
+백전산	B-NAME
+
+Info:	O
+1.위회	B-NAME
+2.010-3894-6932	B-PHONE
+3.user429@example.com	B-EMAIL
+
+Contact	O
+person:	O
+구솔	B-NAME
+
+Identity	O
+verified:	O
+전원,	B-NAME
+450801-4******.	B-ID_NUM
+
+송마	B-NAME
+works	O
+at	O
+개발팀.	B-DEPARTMENT
+
+문일식	B-NAME
+(사장)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2016년	B-DATE
+4월	I-DATE
+15일	I-DATE
+->	O
+user416@example.com.	B-EMAIL
+
+Certificate:	O
+방선	B-NAME
+joined	O
+사단법인	B-COMPANY
+위애스튜디오	I-COMPANY
+on	O
+2021년	B-DATE
+7월	I-DATE
+15일.	I-DATE
+
+Identity	O
+verified:	O
+길하채,	B-NAME
+470522-4******.	B-ID_NUM
+
+Certificate:	O
+신진	B-NAME
+joined	O
+(주)	B-COMPANY
+제유디자인	I-COMPANY
+on	O
+2014년	B-DATE
+5월	I-DATE
+13일.	I-DATE
+
+황빈한	B-NAME
+signed	O
+here.	O
+
+Details:	O
+최현,	B-NAME
+890328-3******,	B-ID_NUM
+대구시	B-ADDRESS
+유산군	I-ADDRESS
+하민대로	I-ADDRESS
+341	I-ADDRESS
+
+User:	O
+김철아	B-NAME
+
+Attn:	O
+모석	B-NAME
+수석연구원,	B-POSITION
+홍보팀,	B-DEPARTMENT
+사단법인	B-COMPANY
+권찬네트웍스	I-COMPANY
+
+Party	O
+A:	O
+사단법인	B-COMPANY
+조훈바이오,	I-COMPANY
+Party	O
+B:	O
+은월,	B-NAME
+Date:	O
+2007년	B-DATE
+9월	I-DATE
+13일	I-DATE
+
+소효한	B-NAME
+(파트장)	B-POSITION
+from	O
+사단법인	B-COMPANY
+정한바이오	I-COMPANY
+홍보팀.	B-DEPARTMENT
+
+To:	O
+국순준	B-NAME
+
+Attn:	O
+백현훈	B-NAME
+본부장,	B-POSITION
+해외사업팀,	B-DEPARTMENT
+유한회사	B-COMPANY
+방규시스템	I-COMPANY
+
+Details:	O
+전윤성,	B-NAME
+450121-3******,	B-ID_NUM
+경상북도	B-ADDRESS
+곽건군	I-ADDRESS
+신대카길	I-ADDRESS
+466-6	I-ADDRESS
+
+Details:	O
+황이,	B-NAME
+980324-1******,	B-ID_NUM
+경기도	B-ADDRESS
+변동구	I-ADDRESS
+장종로	I-ADDRESS
+840-44	I-ADDRESS
+
+함치자	B-NAME
+lives	O
+in	O
+강원도	B-ADDRESS
+성두순시	I-ADDRESS
+손승자대로	I-ADDRESS
+338-40.	I-ADDRESS
+
+Info:	O
+1.선창전	B-NAME
+2.010-8796-4948	B-PHONE
+3.user894@example.com	B-EMAIL
+
+Contact	O
+person:	O
+조임장	B-NAME
+
+Identity	O
+verified:	O
+남우,	B-NAME
+880728-1******.	B-ID_NUM
+
+제식예	B-NAME
+(파트장)	B-POSITION
+from	O
+(주)	B-COMPANY
+설홍컨설팅	I-COMPANY
+총무팀.	B-DEPARTMENT
+
+To:	O
+명소규	B-NAME
+
+양현	B-NAME
+works	O
+at	O
+기획팀.	B-DEPARTMENT
+
+Info:	O
+1.채바	B-NAME
+2.010-9477-6628	B-PHONE
+3.user984@example.com	B-EMAIL
+
+공파	B-NAME
+lives	O
+in	O
+부산시	B-ADDRESS
+방섭구	I-ADDRESS
+왕조사길	I-ADDRESS
+459-2.	I-ADDRESS
+
+추창	B-NAME
+(회장)	B-POSITION
+from	O
+(주)	B-COMPANY
+주일통상	I-COMPANY
+홍보팀.	B-DEPARTMENT
+
+Please	O
+contact	O
+엄성	B-NAME
+at	O
+010-1923-4303.	B-PHONE
+
+Identity	O
+verified:	O
+국신가,	B-NAME
+910217-4******.	B-ID_NUM
+
+Contact	O
+person:	O
+최하	B-NAME
+
+주라병	B-NAME
+lives	O
+in	O
+전라남도	B-ADDRESS
+허회수군	I-ADDRESS
+손명길	I-ADDRESS
+134.	I-ADDRESS
+
+From:	O
+조연신	B-NAME
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+오자화전자,	I-COMPANY
+Party	O
+B:	O
+신판진,	B-NAME
+Date:	O
+2005년	B-DATE
+6월	I-DATE
+17일	I-DATE
+
+User:	O
+모창오	B-NAME
+
+엄의민	B-NAME
+signed	O
+here.	O
+
+유의	B-NAME
+(사장)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-9592-2113.	B-PHONE
+
+Certificate:	O
+은사라	B-NAME
+joined	O
+(주)	B-COMPANY
+육택시스템	I-COMPANY
+on	O
+2021년	B-DATE
+12월	I-DATE
+19일.	I-DATE
+
+Party	O
+A:	O
+유한회사	B-COMPANY
+염지제약,	I-COMPANY
+Party	O
+B:	O
+유명해,	B-NAME
+Date:	O
+2007년	B-DATE
+6월	I-DATE
+13일	I-DATE
+
+인휘윤	B-NAME
+signed	O
+here.	O
+
+Please	O
+contact	O
+석카	B-NAME
+at	O
+010-6293-9164.	B-PHONE
+
+안초제	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+조월시	I-ADDRESS
+연완로	I-ADDRESS
+385-9.	I-ADDRESS
+
+Please	O
+contact	O
+문준	B-NAME
+at	O
+010-5635-7474.	B-PHONE
+
+User:	O
+남택지	B-NAME
+
+노바	B-NAME
+(대표)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-3106-2896.	B-PHONE
+
+Identity	O
+verified:	O
+함지신,	B-NAME
+710721-1******.	B-ID_NUM
+
+Approved	O
+by	O
+백두	B-NAME
+
+Certificate:	O
+원태학	B-NAME
+joined	O
+재단법인	B-COMPANY
+표두무역	I-COMPANY
+on	O
+2007년	B-DATE
+5월	I-DATE
+10일.	I-DATE
+
+어인세	B-NAME
+(상무)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2013년	B-DATE
+8월	I-DATE
+11일	I-DATE
+->	O
+user709@example.com.	B-EMAIL
+
+From:	O
+왕홍	B-NAME
+
+Identity	O
+verified:	O
+탁선준,	B-NAME
+190916-4******.	B-ID_NUM
+
+Approved	O
+by	O
+유하	B-NAME
+
+권세	B-NAME
+signed	O
+here.	O
+
+Please	O
+contact	O
+배가옥	B-NAME
+at	O
+010-7611-2692.	B-PHONE
+
+위원	B-NAME
+(책임)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2009년	B-DATE
+11월	I-DATE
+16일	I-DATE
+->	O
+user464@example.com.	B-EMAIL
+
+Identity	O
+verified:	O
+도준호,	B-NAME
+300511-2******.	B-ID_NUM
+
+From:	O
+진만보	B-NAME
+
+User:	O
+기택	B-NAME
+
+Contact	O
+person:	O
+신재철	B-NAME
+
+To:	O
+은은	B-NAME
+
+Approved	O
+by	O
+여수	B-NAME
+
+Identity	O
+verified:	O
+진우환,	B-NAME
+321113-4******.	B-ID_NUM
+
+Party	O
+A:	O
+재단법인	B-COMPANY
+용엄그룹,	I-COMPANY
+Party	O
+B:	O
+탁지회,	B-NAME
+Date:	O
+2010년	B-DATE
+1월	I-DATE
+5일	I-DATE
+
+양재충	B-NAME
+(선임연구원)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-3763-2462.	B-PHONE
+
+본부장:	B-POSITION
+서화웅	B-NAME
+
+(주)	B-COMPANY
+여회컨설팅	I-COMPANY
+CEO	O
+강준	B-NAME
+
+여석승	B-NAME
+(회장)	B-POSITION
+from	O
+사단법인	B-COMPANY
+강한은전자	I-COMPANY
+홍보팀.	B-DEPARTMENT
+
+Who	O
+is	O
+박재?	B-NAME
+
+Approved	O
+by	O
+정준수	B-NAME
+
+유한회사	B-COMPANY
+심초진컨설팅	I-COMPANY
+CEO	O
+심재병	B-NAME
+
+Certificate:	O
+유가혁	B-NAME
+joined	O
+(주)	B-COMPANY
+진효율산업	I-COMPANY
+on	O
+2010년	B-DATE
+12월	I-DATE
+28일.	I-DATE
+
+Certificate:	O
+조창	B-NAME
+joined	O
+재단법인	B-COMPANY
+민실통상	I-COMPANY
+on	O
+2017년	B-DATE
+7월	I-DATE
+23일.	I-DATE
+
+한차자	B-NAME
+(실장)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-9279-8111.	B-PHONE
+
+From:	O
+유승이	B-NAME
+
+Please	O
+contact	O
+주시	B-NAME
+at	O
+010-2994-8891.	B-PHONE
+
+010-7256-7619	B-PHONE
+(표자)	B-NAME
+
+SMS:	O
+010-5389-9226	B-PHONE
+
+SMS:	O
+010-1235-8232	B-PHONE
+
+Phone	O
+Number:	O
+010-9979-1576	B-PHONE
+
+SMS:	O
+010-8725-4664	B-PHONE
+
+Info:	O
+1.설솔라	B-NAME
+2.010-8435-6547	B-PHONE
+3.user150@example.com	B-EMAIL
+
+Mobile:	O
+010-3910-3852	B-PHONE
+
+user484@example.com,	B-EMAIL
+010-8330-3992	B-PHONE
+
+주식회사	B-COMPANY
+진택하스튜디오	I-COMPANY
+@	O
+광주시	B-ADDRESS
+안다근구	I-ADDRESS
+여우타대로	I-ADDRESS
+560-46,	I-ADDRESS
+Tel:	O
+010-7043-7871,	B-PHONE
+Web:	O
+http://www.twitter842.com.	B-URL
+
+연승	B-NAME
+(ID:	O
+750822-2******)	B-ID_NUM
+resides	O
+at	O
+전라남도	B-ADDRESS
+용근창구	I-ADDRESS
+성현혜대로	I-ADDRESS
+381-22,	I-ADDRESS
+phone:	O
+010-9214-7618.	B-PHONE
+
+Mobile:	O
+010-1130-8007	B-PHONE
+
+Info:	O
+1.우파신	B-NAME
+2.010-9829-6985	B-PHONE
+3.user869@example.com	B-EMAIL
+
+Mobile:	O
+010-4176-8988	B-PHONE
+
+010-1637-1721	B-PHONE
+(변진신)	B-NAME
+
+(주)	B-COMPANY
+남성미디어	I-COMPANY
+@	O
+전라남도	B-ADDRESS
+신애현시	I-ADDRESS
+도희대로	I-ADDRESS
+757-26,	I-ADDRESS
+Tel:	O
+010-8914-7660,	B-PHONE
+Web:	O
+http://www.instagram20.com.	B-URL
+
+Please	O
+contact	O
+엄임	B-NAME
+at	O
+010-9754-8526.	B-PHONE
+
+Phone	O
+Number:	O
+010-5014-3031	B-PHONE
+
+Please	O
+contact	O
+전형용	B-NAME
+at	O
+010-5745-8695.	B-PHONE
+
+Call	O
+010-9905-6883	B-PHONE
+now.	O
+
+user627@example.com,	B-EMAIL
+010-5640-7222	B-PHONE
+
+user265@example.com,	B-EMAIL
+010-6476-3644	B-PHONE
+
+010-8510-1412	B-PHONE
+(장산)	B-NAME
+
+010-3378-1883	B-PHONE
+(백선)	B-NAME
+
+Please	O
+contact	O
+차바	B-NAME
+at	O
+010-2953-2616.	B-PHONE
+
+Dial	O
+010-5487-7505	B-PHONE
+
+Please	O
+contact	O
+선충	B-NAME
+at	O
+010-3758-4467.	B-PHONE
+
+Please	O
+contact	O
+송찬	B-NAME
+at	O
+010-2461-5376.	B-PHONE
+
+Mobile:	O
+010-9693-4803	B-PHONE
+
+SMS:	O
+010-8109-2431	B-PHONE
+
+Info:	O
+1.조건만	B-NAME
+2.010-2866-4782	B-PHONE
+3.user427@example.com	B-EMAIL
+
+010-8423-3757	B-PHONE
+(최중)	B-NAME
+
+Info:	O
+1.엄홍	B-NAME
+2.010-6669-8728	B-PHONE
+3.user232@example.com	B-EMAIL
+
+Please	O
+contact	O
+진라	B-NAME
+at	O
+010-1513-9317.	B-PHONE
+
+Please	O
+contact	O
+백안	B-NAME
+at	O
+010-7306-5109.	B-PHONE
+
+공조	B-NAME
+(팀장)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-4811-7794.	B-PHONE
+
+SMS:	O
+010-1976-3586	B-PHONE
+
+Info:	O
+1.한안홍	B-NAME
+2.010-9099-9229	B-PHONE
+3.user436@example.com	B-EMAIL
+
+SMS:	O
+010-5376-8051	B-PHONE
+
+Reach	O
+me	O
+at	O
+010-4944-2931	B-PHONE
+
+원타판	B-NAME
+(ID:	O
+590810-4******)	B-ID_NUM
+resides	O
+at	O
+부산시	B-ADDRESS
+금근시	I-ADDRESS
+홍사길	I-ADDRESS
+816-45,	I-ADDRESS
+phone:	O
+010-9159-9053.	B-PHONE
+
+Reach	O
+me	O
+at	O
+010-8990-3733	B-PHONE
+
+Reach	O
+me	O
+at	O
+010-6543-2515	B-PHONE
+
+SMS:	O
+010-2286-4929	B-PHONE
+
+Info:	O
+1.여카	B-NAME
+2.010-7732-2636	B-PHONE
+3.user345@example.com	B-EMAIL
+
+Dial	O
+010-2494-6009	B-PHONE
+
+Please	O
+contact	O
+편동근	B-NAME
+at	O
+010-7828-1025.	B-PHONE
+
+010-8275-6953	B-PHONE
+(채나우)	B-NAME
+
+Call	O
+010-1705-8102	B-PHONE
+now.	O
+
+Info:	O
+1.마현	B-NAME
+2.010-6103-8586	B-PHONE
+3.user235@example.com	B-EMAIL
+
+user965@example.com,	B-EMAIL
+010-2204-2687	B-PHONE
+
+Dial	O
+010-3290-5640	B-PHONE
+
+Mobile:	O
+010-6026-9948	B-PHONE
+
+여준	B-NAME
+(실장)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-5531-6872.	B-PHONE
+
+Info:	O
+1.장준운	B-NAME
+2.010-6471-6384	B-PHONE
+3.user899@example.com	B-EMAIL
+
+user79@example.com,	B-EMAIL
+010-2518-5252	B-PHONE
+
+user57@example.com,	B-EMAIL
+010-3854-3534	B-PHONE
+
+Info:	O
+1.방휘근	B-NAME
+2.010-9059-7325	B-PHONE
+3.user10@example.com	B-EMAIL
+
+Please	O
+contact	O
+유재	B-NAME
+at	O
+010-2941-8783.	B-PHONE
+
+Info:	O
+1.길근영	B-NAME
+2.010-7510-6000	B-PHONE
+3.user507@example.com	B-EMAIL
+
+010-7318-6068	B-PHONE
+(변대)	B-NAME
+
+010-2442-4118	B-PHONE
+(여재해)	B-NAME
+
+SMS:	O
+010-5283-4305	B-PHONE
+
+Info:	O
+1.석환충	B-NAME
+2.010-5749-9995	B-PHONE
+3.user548@example.com	B-EMAIL
+
+SMS:	O
+010-9252-8177	B-PHONE
+
+SMS:	O
+010-2234-1398	B-PHONE
+
+Dial	O
+010-8927-7873	B-PHONE
+
+Reach	O
+me	O
+at	O
+010-2968-2333	B-PHONE
+
+Mobile:	O
+010-5628-5102	B-PHONE
+
+user565@example.com,	B-EMAIL
+010-7300-6892	B-PHONE
+
+Call	O
+010-7595-6202	B-PHONE
+now.	O
+
+Please	O
+contact	O
+금조	B-NAME
+at	O
+010-1692-4551.	B-PHONE
+
+Call	O
+010-2530-4538	B-PHONE
+now.	O
+
+Reach	O
+me	O
+at	O
+010-3599-4627	B-PHONE
+
+유한회사	B-COMPANY
+배정산업	I-COMPANY
+@	O
+전라남도	B-ADDRESS
+인승인군	I-ADDRESS
+양판로	I-ADDRESS
+722-47,	I-ADDRESS
+Tel:	O
+010-4905-2006,	B-PHONE
+Web:	O
+http://www.google777.com.	B-URL
+
+Please	O
+contact	O
+서은	B-NAME
+at	O
+010-6441-7346.	B-PHONE
+
+Mobile:	O
+010-2952-1194	B-PHONE
+
+SMS:	O
+010-5730-9799	B-PHONE
+
+Mobile:	O
+010-2038-1328	B-PHONE
+
+임라	B-NAME
+lives	O
+in	O
+경상남도	B-ADDRESS
+노초바군	I-ADDRESS
+전호로	I-ADDRESS
+572-5.	I-ADDRESS
+
+Located	O
+at	O
+서울시	B-ADDRESS
+채철구	I-ADDRESS
+남소대로	I-ADDRESS
+524-10	I-ADDRESS
+
+Details:	O
+양운오,	B-NAME
+970723-2******,	B-ID_NUM
+경상남도	B-ADDRESS
+엄영시	I-ADDRESS
+허초대로	I-ADDRESS
+35-49	I-ADDRESS
+
+Office:	O
+울산시	B-ADDRESS
+방우요구	I-ADDRESS
+왕재길	I-ADDRESS
+550-21	I-ADDRESS
+
+유한회사	B-COMPANY
+염월인홀딩스	I-COMPANY
+@	O
+제주시	B-ADDRESS
+진영혁군	I-ADDRESS
+도홍길	I-ADDRESS
+72,	I-ADDRESS
+Tel:	O
+010-9653-9059,	B-PHONE
+Web:	O
+http://www.microsoft329.com.	B-URL
+
+반선	B-NAME
+lives	O
+in	O
+경상남도	B-ADDRESS
+남애혁시	I-ADDRESS
+양이충대로	I-ADDRESS
+612.	I-ADDRESS
+
+Residence:	O
+경기도	B-ADDRESS
+어파위구	I-ADDRESS
+유비로	I-ADDRESS
+451-1	I-ADDRESS
+
+Ship	O
+to:	O
+제주시	B-ADDRESS
+윤월시	I-ADDRESS
+양건길	I-ADDRESS
+876-1	I-ADDRESS
+
+Office:	O
+인천시	B-ADDRESS
+손한시	I-ADDRESS
+도요대로	I-ADDRESS
+351	I-ADDRESS
+
+유한회사	B-COMPANY
+배애소프트	I-COMPANY
+-	O
+서울시	B-ADDRESS
+금산준구	I-ADDRESS
+전사로	I-ADDRESS
+245	I-ADDRESS
+
+연호	B-NAME
+lives	O
+in	O
+강원도	B-ADDRESS
+노하구	I-ADDRESS
+하정진로	I-ADDRESS
+155-28.	I-ADDRESS
+
+Details:	O
+문예비,	B-NAME
+940917-3******,	B-ID_NUM
+광주시	B-ADDRESS
+진건시	I-ADDRESS
+신빈대로	I-ADDRESS
+224	I-ADDRESS
+
+변시	B-NAME
+lives	O
+in	O
+경상남도	B-ADDRESS
+신월시	I-ADDRESS
+진한로	I-ADDRESS
+90.	I-ADDRESS
+
+안종	B-NAME
+lives	O
+in	O
+서울시	B-ADDRESS
+문수구	I-ADDRESS
+임영호길	I-ADDRESS
+537.	I-ADDRESS
+
+Ship	O
+to:	O
+대구시	B-ADDRESS
+기종군	I-ADDRESS
+용원로	I-ADDRESS
+394	I-ADDRESS
+
+Ship	O
+to:	O
+대전시	B-ADDRESS
+여찬군	I-ADDRESS
+박선홍로	I-ADDRESS
+745-49	I-ADDRESS
+
+Office:	O
+인천시	B-ADDRESS
+신아구	I-ADDRESS
+변예빈길	I-ADDRESS
+771	I-ADDRESS
+
+Site:	O
+대전시	B-ADDRESS
+성한월군	I-ADDRESS
+방우로	I-ADDRESS
+564	I-ADDRESS
+
+Details:	O
+유훈중,	B-NAME
+971226-2******,	B-ID_NUM
+인천시	B-ADDRESS
+양철시	I-ADDRESS
+임훈철길	I-ADDRESS
+75-39	I-ADDRESS
+
+Ship	O
+to:	O
+충청북도	B-ADDRESS
+염태시	I-ADDRESS
+차사로	I-ADDRESS
+966	I-ADDRESS
+
+Details:	O
+양창형,	B-NAME
+100716-2******,	B-ID_NUM
+충청남도	B-ADDRESS
+제학학군	I-ADDRESS
+곽훈신길	I-ADDRESS
+782-20	I-ADDRESS
+
+조요태	B-NAME
+(ID:	O
+491210-4******)	B-ID_NUM
+resides	O
+at	O
+광주시	B-ADDRESS
+구휘휘군	I-ADDRESS
+양택환로	I-ADDRESS
+929,	I-ADDRESS
+phone:	O
+010-2384-4698.	B-PHONE
+
+Details:	O
+김선,	B-NAME
+970919-4******,	B-ID_NUM
+대구시	B-ADDRESS
+민재재구	I-ADDRESS
+안오용대로	I-ADDRESS
+672	I-ADDRESS
+
+윤정	B-NAME
+lives	O
+in	O
+전라북도	B-ADDRESS
+소세군	I-ADDRESS
+진현자길	I-ADDRESS
+449.	I-ADDRESS
+
+Site:	O
+제주시	B-ADDRESS
+서웅광군	I-ADDRESS
+곽이길	I-ADDRESS
+875-42	I-ADDRESS
+
+재단법인	B-COMPANY
+한현전자	I-COMPANY
+-	O
+충청남도	B-ADDRESS
+임찬보시	I-ADDRESS
+차천대로	I-ADDRESS
+145	I-ADDRESS
+
+Ship	O
+to:	O
+경상남도	B-ADDRESS
+신식군	I-ADDRESS
+유타로	I-ADDRESS
+97-7	I-ADDRESS
+
+Details:	O
+추운,	B-NAME
+871210-2******,	B-ID_NUM
+강원도	B-ADDRESS
+신수군	I-ADDRESS
+문동엄대로	I-ADDRESS
+586	I-ADDRESS
+
+Site:	O
+경상남도	B-ADDRESS
+강세엄시	I-ADDRESS
+고섭실로	I-ADDRESS
+257-33	I-ADDRESS
+
+Site:	O
+인천시	B-ADDRESS
+신현구	I-ADDRESS
+여카로	I-ADDRESS
+599-36	I-ADDRESS
+
+Site:	O
+강원도	B-ADDRESS
+허카시	I-ADDRESS
+김영길	I-ADDRESS
+141	I-ADDRESS
+
+Ship	O
+to:	O
+충청북도	B-ADDRESS
+주하준군	I-ADDRESS
+김소로	I-ADDRESS
+18	I-ADDRESS
+
+(주)	B-COMPANY
+고훈그룹	I-COMPANY
+@	O
+광주시	B-ADDRESS
+방엄군	I-ADDRESS
+도두로	I-ADDRESS
+837-33,	I-ADDRESS
+Tel:	O
+010-9244-7337,	B-PHONE
+Web:	O
+http://www.sk7.com.	B-URL
+
+Office:	O
+전라남도	B-ADDRESS
+노시시	I-ADDRESS
+육용대로	I-ADDRESS
+131-4	I-ADDRESS
+
+Located	O
+at	O
+경상북도	B-ADDRESS
+금철전구	I-ADDRESS
+진옥설길	I-ADDRESS
+155-36	I-ADDRESS
+
+변병제	B-NAME
+lives	O
+in	O
+광주시	B-ADDRESS
+옥용시	I-ADDRESS
+공가대로	I-ADDRESS
+363.	I-ADDRESS
+
+(주)	B-COMPANY
+노동예네트웍스	I-COMPANY
+@	O
+제주시	B-ADDRESS
+양완시	I-ADDRESS
+유하길	I-ADDRESS
+300-12,	I-ADDRESS
+Tel:	O
+010-4239-5441,	B-PHONE
+Web:	O
+http://www.amazon826.com.	B-URL
+
+Ship	O
+to:	O
+제주시	B-ADDRESS
+우전시	I-ADDRESS
+진애길	I-ADDRESS
+772-44	I-ADDRESS
+
+Site:	O
+제주시	B-ADDRESS
+양용환시	I-ADDRESS
+임재로	I-ADDRESS
+810	I-ADDRESS
+
+노재	B-NAME
+(ID:	O
+741215-3******)	B-ID_NUM
+resides	O
+at	O
+인천시	B-ADDRESS
+임회구	I-ADDRESS
+강훈성로	I-ADDRESS
+835,	I-ADDRESS
+phone:	O
+010-9237-3341.	B-PHONE
+
+조사	B-NAME
+lives	O
+in	O
+부산시	B-ADDRESS
+강환석시	I-ADDRESS
+백종충로	I-ADDRESS
+802.	I-ADDRESS
+
+Site:	O
+대전시	B-ADDRESS
+허율구	I-ADDRESS
+민판길	I-ADDRESS
+645	I-ADDRESS
+
+사단법인	B-COMPANY
+정희수바이오	I-COMPANY
+is	O
+located	O
+at	O
+광주시	B-ADDRESS
+문현구	I-ADDRESS
+탁석길	I-ADDRESS
+769-31.	I-ADDRESS
+
+Residence:	O
+강원도	B-ADDRESS
+한현구	I-ADDRESS
+탁오민대로	I-ADDRESS
+332-30	I-ADDRESS
+
+Ship	O
+to:	O
+경기도	B-ADDRESS
+최요유군	I-ADDRESS
+위전창로	I-ADDRESS
+132-31	I-ADDRESS
+
+(주)	B-COMPANY
+정솔홀딩스	I-COMPANY
+@	O
+전라남도	B-ADDRESS
+모유우군	I-ADDRESS
+주일채길	I-ADDRESS
+721-43,	I-ADDRESS
+Tel:	O
+010-9709-6058,	B-PHONE
+Web:	O
+http://www.youtube573.com.	B-URL
+
+윤오	B-NAME
+lives	O
+in	O
+인천시	B-ADDRESS
+왕선지군	I-ADDRESS
+마설철대로	I-ADDRESS
+77-40.	I-ADDRESS
+
+재단법인	B-COMPANY
+백충스튜디오	I-COMPANY
+-	O
+전라남도	B-ADDRESS
+유오구	I-ADDRESS
+금다순대로	I-ADDRESS
+614	I-ADDRESS
+
+Office:	O
+경기도	B-ADDRESS
+홍현군	I-ADDRESS
+허선길	I-ADDRESS
+293	I-ADDRESS
+
+Office:	O
+전라북도	B-ADDRESS
+배다식구	I-ADDRESS
+인인길	I-ADDRESS
+490-23	I-ADDRESS
+
+Residence:	O
+부산시	B-ADDRESS
+소가시	I-ADDRESS
+공임길	I-ADDRESS
+694	I-ADDRESS
+
+Residence:	O
+인천시	B-ADDRESS
+설치군	I-ADDRESS
+엄위로	I-ADDRESS
+775	I-ADDRESS
+
+Office:	O
+경기도	B-ADDRESS
+원익구	I-ADDRESS
+유조재길	I-ADDRESS
+409-37	I-ADDRESS
+
+Ship	O
+to:	O
+부산시	B-ADDRESS
+최바보구	I-ADDRESS
+연일이로	I-ADDRESS
+726	I-ADDRESS
+
+은주	B-NAME
+(ID:	O
+180210-3******)	B-ID_NUM
+resides	O
+at	O
+경상남도	B-ADDRESS
+현자시	I-ADDRESS
+홍설대로	I-ADDRESS
+407,	I-ADDRESS
+phone:	O
+010-4262-8453.	B-PHONE
+
+유한회사	B-COMPANY
+서해그룹	I-COMPANY
+is	O
+located	O
+at	O
+경상남도	B-ADDRESS
+변수시	I-ADDRESS
+박조대로	I-ADDRESS
+190-15.	I-ADDRESS
+
+Residence:	O
+전라남도	B-ADDRESS
+추설구	I-ADDRESS
+남은로	I-ADDRESS
+622	I-ADDRESS
+
+재단법인	B-COMPANY
+염연전자	I-COMPANY
+is	O
+located	O
+at	O
+경상남도	B-ADDRESS
+임솔구	I-ADDRESS
+강연바대로	I-ADDRESS
+608.	I-ADDRESS
+
+유한회사	B-COMPANY
+오연설산업	I-COMPANY
+-	O
+대전시	B-ADDRESS
+방정시	I-ADDRESS
+편유대로	I-ADDRESS
+651	I-ADDRESS
+
+유한회사	B-COMPANY
+진중디자인	I-COMPANY
+@	O
+전라남도	B-ADDRESS
+송철조군	I-ADDRESS
+진해길	I-ADDRESS
+215,	I-ADDRESS
+Tel:	O
+010-4432-4995,	B-PHONE
+Web:	O
+http://www.netflix466.com.	B-URL
+
+Residence:	O
+충청남도	B-ADDRESS
+나월구	I-ADDRESS
+방대대로	I-ADDRESS
+81	I-ADDRESS
+
+Ship	O
+to:	O
+부산시	B-ADDRESS
+신웅군	I-ADDRESS
+오환설대로	I-ADDRESS
+149	I-ADDRESS
+
+Site:	O
+경상남도	B-ADDRESS
+배지군	I-ADDRESS
+진정대로	I-ADDRESS
+401-26	I-ADDRESS
+
+신하	B-NAME
+lives	O
+in	O
+제주시	B-ADDRESS
+임현구	I-ADDRESS
+정영채로	I-ADDRESS
+861-17.	I-ADDRESS
+
+Located	O
+at	O
+전라남도	B-ADDRESS
+길호조군	I-ADDRESS
+육형로	I-ADDRESS
+287	I-ADDRESS
+
+주식회사	B-COMPANY
+양소훈바이오	I-COMPANY
+is	O
+located	O
+at	O
+충청남도	B-ADDRESS
+변완군	I-ADDRESS
+현철로	I-ADDRESS
+872.	I-ADDRESS
+
+오만	B-NAME
+(ID:	O
+070409-1******)	B-ID_NUM
+resides	O
+at	O
+경기도	B-ADDRESS
+여예회군	I-ADDRESS
+한가대로	I-ADDRESS
+609-49,	I-ADDRESS
+phone:	O
+010-6127-7418.	B-PHONE
+
+Details:	O
+탁만,	B-NAME
+190824-2******,	B-ID_NUM
+전라북도	B-ADDRESS
+권유구	I-ADDRESS
+신건길	I-ADDRESS
+541	I-ADDRESS
+
+소상원	B-NAME
+(ID:	O
+580813-2******)	B-ID_NUM
+resides	O
+at	O
+울산시	B-ADDRESS
+우근군	I-ADDRESS
+옥재로	I-ADDRESS
+941-41,	I-ADDRESS
+phone:	O
+010-9126-3893.	B-PHONE
+
+Located	O
+at	O
+대구시	B-ADDRESS
+홍훈재시	I-ADDRESS
+변현길	I-ADDRESS
+477	I-ADDRESS
+
+Residence:	O
+경기도	B-ADDRESS
+모위시	I-ADDRESS
+노준대로	I-ADDRESS
+809	I-ADDRESS
+
+Residence:	O
+제주시	B-ADDRESS
+변하구	I-ADDRESS
+허혜대로	I-ADDRESS
+663-42	I-ADDRESS
+
+Located	O
+at	O
+경상북도	B-ADDRESS
+남마월군	I-ADDRESS
+현천대로	I-ADDRESS
+640	I-ADDRESS
+
+Residence:	O
+대전시	B-ADDRESS
+배나군	I-ADDRESS
+장희원대로	I-ADDRESS
+557	I-ADDRESS
+
+양사	B-NAME
+lives	O
+in	O
+경상남도	B-ADDRESS
+현보구	I-ADDRESS
+김호길	I-ADDRESS
+494-23.	I-ADDRESS
+
+Located	O
+at	O
+대전시	B-ADDRESS
+신산군	I-ADDRESS
+방일두길	I-ADDRESS
+669-48	I-ADDRESS
+
+Residence:	O
+부산시	B-ADDRESS
+엄충군	I-ADDRESS
+전원오길	I-ADDRESS
+548-22	I-ADDRESS
+
+Details:	O
+왕일,	B-NAME
+850122-1******,	B-ID_NUM
+광주시	B-ADDRESS
+임만민구	I-ADDRESS
+어태대로	I-ADDRESS
+646	I-ADDRESS
+
+(주)	B-COMPANY
+강철임미디어	I-COMPANY
+is	O
+located	O
+at	O
+충청남도	B-ADDRESS
+강명태시	I-ADDRESS
+옥파대로	I-ADDRESS
+343.	I-ADDRESS
+
+Certificate:	O
+손초	B-NAME
+joined	O
+사단법인	B-COMPANY
+왕자엔터테인먼트	I-COMPANY
+on	O
+2017년	B-DATE
+2월	I-DATE
+14일.	I-DATE
+
+Since	O
+2023년	B-DATE
+9월	I-DATE
+14일	I-DATE
+
+Date:	O
+2022년	B-DATE
+2월	I-DATE
+1일	I-DATE
+
+(주)	B-COMPANY
+양창디자인	I-COMPANY
+invests	O
+2022만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+R24,	I-PROJECT_NAME
+completion	O
+2001년	B-DATE
+1월	I-DATE
+2일.	I-DATE
+
+This	O
+출판권설정계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2007년	B-DATE
+6월	I-DATE
+13일	I-DATE
+for	O
+2개월,	B-PERIOD
+value	O
+6353천만원.	B-MONEY
+
+Certificate:	O
+신수세	B-NAME
+joined	O
+주식회사	B-COMPANY
+심호우물산	I-COMPANY
+on	O
+2010년	B-DATE
+4월	I-DATE
+20일.	I-DATE
+
+Expires:	O
+2019년	B-DATE
+5월	I-DATE
+21일	I-DATE
+
+Expires:	O
+2010년	B-DATE
+6월	I-DATE
+22일	I-DATE
+
+Party	O
+A:	O
+사단법인	B-COMPANY
+배판제약,	I-COMPANY
+Party	O
+B:	O
+노명파,	B-NAME
+Date:	O
+2013년	B-DATE
+1월	I-DATE
+2일	I-DATE
+
+2008년	B-DATE
+12월	I-DATE
+3일	I-DATE
+-	O
+업무협약서	B-CONTRACT_TYPE
+
+Effective	O
+from	O
+2011년	B-DATE
+5월	I-DATE
+2일	I-DATE
+
+Due	O
+by	O
+2014년	B-DATE
+1월	I-DATE
+9일	I-DATE
+
+유한회사	B-COMPANY
+설현제약	I-COMPANY
+invests	O
+9821만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+W73,	I-PROJECT_NAME
+completion	O
+2020년	B-DATE
+8월	I-DATE
+20일.	I-DATE
+
+허건	B-NAME
+(센터장)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2019년	B-DATE
+2월	I-DATE
+27일	I-DATE
+->	O
+user52@example.com.	B-EMAIL
+
+Payment	O
+of	O
+45만원	B-MONEY
+due	O
+on	O
+2002년	B-DATE
+6월	I-DATE
+18일.	I-DATE
+
+Expires:	O
+2016년	B-DATE
+11월	I-DATE
+8일	I-DATE
+
+This	O
+용역계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2008년	B-DATE
+2월	I-DATE
+21일	I-DATE
+for	O
+7개월,	B-PERIOD
+value	O
+9362만원.	B-MONEY
+
+Deposit	O
+8074억원	B-MONEY
+on	O
+2014년	B-DATE
+4월	I-DATE
+21일,	I-DATE
+Balance	O
+8074억원	O
+on	O
+2014년	O
+4월	O
+21일.	O
+
+Party	O
+A:	O
+사단법인	B-COMPANY
+탁여제약,	I-COMPANY
+Party	O
+B:	O
+명우의,	B-NAME
+Date:	O
+2018년	B-DATE
+11월	I-DATE
+2일	I-DATE
+
+Certificate:	O
+구연창	B-NAME
+joined	O
+(주)	B-COMPANY
+반춘산업	I-COMPANY
+on	O
+2013년	B-DATE
+11월	I-DATE
+16일.	I-DATE
+
+2008년	B-DATE
+1월	I-DATE
+1일	I-DATE
+-	O
+근로계약서	B-CONTRACT_TYPE
+
+On	O
+2015년	B-DATE
+5월	I-DATE
+17일,	I-DATE
+(주)	B-COMPANY
+육광무역	I-COMPANY
+and	O
+기원채	B-NAME
+signed	O
+비밀유지서약서.	B-CONTRACT_TYPE
+
+Agreement	O
+표준계약서	B-CONTRACT_TYPE
+signed	O
+on	O
+2025년	B-DATE
+12월	I-DATE
+7일.	I-DATE
+
+Since	O
+2018년	B-DATE
+3월	I-DATE
+12일	I-DATE
+
+2008년	B-DATE
+2월	I-DATE
+12일	I-DATE
+-	O
+근로계약서	B-CONTRACT_TYPE
+
+Deposit	O
+9209억원	B-MONEY
+on	O
+2016년	B-DATE
+9월	I-DATE
+14일,	I-DATE
+Balance	O
+9209억원	O
+on	O
+2016년	O
+9월	O
+14일.	O
+
+(주)	B-COMPANY
+지전채통상	I-COMPANY
+invests	O
+8284만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+Z66,	I-PROJECT_NAME
+completion	O
+2002년	B-DATE
+10월	I-DATE
+19일.	I-DATE
+
+2000년	B-DATE
+3월	I-DATE
+5일:	I-DATE
+(주)	B-COMPANY
+여하익시스템	I-COMPANY
+
+2011년	B-DATE
+12월	I-DATE
+14일:	I-DATE
+재단법인	B-COMPANY
+고진시스템	I-COMPANY
+
+This	O
+도급계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2016년	B-DATE
+5월	I-DATE
+5일	I-DATE
+for	O
+25개월,	B-PERIOD
+value	O
+2043천원.	B-MONEY
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+윤희윤바이오,	I-COMPANY
+Party	O
+B:	O
+주나,	B-NAME
+Date:	O
+2004년	B-DATE
+10월	I-DATE
+14일	I-DATE
+
+Submit	O
+to	O
+user235@example.com	B-EMAIL
+by	O
+2010년	B-DATE
+5월	I-DATE
+10일.	I-DATE
+
+Signed	O
+on	O
+2020년	B-DATE
+10월	I-DATE
+14일	I-DATE
+
+Effective	O
+from	O
+2023년	B-DATE
+12월	I-DATE
+17일	I-DATE
+
+2013년	B-DATE
+10월	I-DATE
+12일:	I-DATE
+(주)	B-COMPANY
+염시통상	I-COMPANY
+
+Submit	O
+to	O
+user614@example.com	B-EMAIL
+by	O
+2020년	B-DATE
+3월	I-DATE
+10일.	I-DATE
+
+Signed	O
+on	O
+2001년	B-DATE
+3월	I-DATE
+26일	I-DATE
+
+This	O
+업무협약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2008년	B-DATE
+10월	I-DATE
+2일	I-DATE
+for	O
+14개월,	B-PERIOD
+value	O
+7251만원.	B-MONEY
+
+(주)	B-COMPANY
+인솔임제약	I-COMPANY
+invests	O
+9685만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+W11,	I-PROJECT_NAME
+completion	O
+2002년	B-DATE
+5월	I-DATE
+1일.	I-DATE
+
+2009년	B-DATE
+2월	I-DATE
+8일	I-DATE
+/	O
+844천원	B-MONEY
+
+Signed	O
+on	O
+2016년	B-DATE
+7월	I-DATE
+10일	I-DATE
+
+Submit	O
+to	O
+user915@example.com	B-EMAIL
+by	O
+2020년	B-DATE
+5월	I-DATE
+22일.	I-DATE
+
+2007년	B-DATE
+9월	I-DATE
+9일	I-DATE
+/	O
+7562백만원	B-MONEY
+
+2003년	B-DATE
+4월	I-DATE
+4일	I-DATE
+-	O
+근로계약서	B-CONTRACT_TYPE
+
+Due	O
+by	O
+2020년	B-DATE
+5월	I-DATE
+16일	I-DATE
+
+Expires:	O
+2001년	B-DATE
+11월	I-DATE
+22일	I-DATE
+
+2010년	B-DATE
+1월	I-DATE
+6일	I-DATE
+-	O
+이용허락계약서	B-CONTRACT_TYPE
+
+Deposit	O
+8023천만원	B-MONEY
+on	O
+2021년	B-DATE
+2월	I-DATE
+20일,	I-DATE
+Balance	O
+8023천만원	O
+on	O
+2021년	O
+2월	O
+20일.	O
+
+Submit	O
+to	O
+user693@example.com	B-EMAIL
+by	O
+2002년	B-DATE
+8월	I-DATE
+4일.	I-DATE
+
+Due	O
+by	O
+2004년	B-DATE
+12월	I-DATE
+13일	I-DATE
+
+This	O
+용역계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2019년	B-DATE
+7월	I-DATE
+23일	I-DATE
+for	O
+15개월,	B-PERIOD
+value	O
+4981천만원.	B-MONEY
+
+Deposit	O
+9564백만원	B-MONEY
+on	O
+2001년	B-DATE
+3월	I-DATE
+3일,	I-DATE
+Balance	O
+9564백만원	O
+on	O
+2001년	O
+3월	O
+3일.	O
+
+Certificate:	O
+안이	B-NAME
+joined	O
+재단법인	B-COMPANY
+양세스튜디오	I-COMPANY
+on	O
+2019년	B-DATE
+8월	I-DATE
+9일.	I-DATE
+
+On	O
+2025년	B-DATE
+2월	I-DATE
+22일,	I-DATE
+사단법인	B-COMPANY
+제지엔터테인먼트	I-COMPANY
+and	O
+남효	B-NAME
+signed	O
+용역계약서.	B-CONTRACT_TYPE
+
+Deposit	O
+5466백만원	B-MONEY
+on	O
+2000년	B-DATE
+3월	I-DATE
+14일,	I-DATE
+Balance	O
+5466백만원	O
+on	O
+2000년	O
+3월	O
+14일.	O
+
+Effective	O
+from	O
+2018년	B-DATE
+2월	I-DATE
+8일	I-DATE
+
+2003년	B-DATE
+10월	I-DATE
+13일	I-DATE
+/	O
+3454천만원	B-MONEY
+
+2005년	B-DATE
+5월	I-DATE
+21일:	I-DATE
+재단법인	B-COMPANY
+진실소프트	I-COMPANY
+
+Date:	O
+2018년	B-DATE
+6월	I-DATE
+23일	I-DATE
+
+Expires:	O
+2024년	B-DATE
+4월	I-DATE
+20일	I-DATE
+
+2006년	B-DATE
+10월	I-DATE
+20일	I-DATE
+-	O
+양도계약서	B-CONTRACT_TYPE
+
+2021년	B-DATE
+2월	I-DATE
+19일:	I-DATE
+재단법인	B-COMPANY
+신일형네트웍스	I-COMPANY
+
+Expires:	O
+2012년	B-DATE
+12월	I-DATE
+21일	I-DATE
+
+허학	B-NAME
+(대표)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2013년	B-DATE
+5월	I-DATE
+27일	I-DATE
+->	O
+user129@example.com.	B-EMAIL
+
+Date:	O
+2004년	B-DATE
+1월	I-DATE
+6일	I-DATE
+
+Submit	O
+to	O
+user323@example.com	B-EMAIL
+by	O
+2022년	B-DATE
+12월	I-DATE
+25일.	I-DATE
+
+Deposit	O
+5270백만원	B-MONEY
+on	O
+2024년	B-DATE
+2월	I-DATE
+11일,	I-DATE
+Balance	O
+5270백만원	O
+on	O
+2024년	O
+2월	O
+11일.	O
+
+Submit	O
+to	O
+user561@example.com	B-EMAIL
+by	O
+2000년	B-DATE
+2월	I-DATE
+15일.	I-DATE
+
+Date:	O
+2022년	B-DATE
+9월	I-DATE
+17일	I-DATE
+
+Party	O
+A:	O
+재단법인	B-COMPANY
+성찬건설,	I-COMPANY
+Party	O
+B:	O
+왕실,	B-NAME
+Date:	O
+2005년	B-DATE
+2월	I-DATE
+2일	I-DATE
+
+2005년	B-DATE
+10월	I-DATE
+21일	I-DATE
+/	O
+5371천만원	B-MONEY
+
+Since	O
+2010년	B-DATE
+10월	I-DATE
+9일	I-DATE
+
+Deposit	O
+7959만원	B-MONEY
+on	O
+2013년	B-DATE
+1월	I-DATE
+27일,	I-DATE
+Balance	O
+7959만원	O
+on	O
+2013년	O
+1월	O
+27일.	O
+
+2016년	B-DATE
+4월	I-DATE
+23일:	I-DATE
+재단법인	B-COMPANY
+하바기획	I-COMPANY
+
+2015년	B-DATE
+4월	I-DATE
+12일:	I-DATE
+(주)	B-COMPANY
+신현그룹	I-COMPANY
+
+Date:	O
+2006년	B-DATE
+12월	I-DATE
+10일	I-DATE
+
+Party	O
+A:	O
+사단법인	B-COMPANY
+한빈엔터테인먼트,	I-COMPANY
+Party	O
+B:	O
+구산,	B-NAME
+Date:	O
+2007년	B-DATE
+11월	I-DATE
+11일	I-DATE
+
+Agreement	O
+이용허락계약서	B-CONTRACT_TYPE
+signed	O
+on	O
+2000년	B-DATE
+12월	I-DATE
+8일.	I-DATE
+
+2015년	B-DATE
+7월	I-DATE
+23일	I-DATE
+/	O
+8572백만원	B-MONEY
+
+Client:	O
+유한회사	B-COMPANY
+신효재스튜디오	I-COMPANY
+
+재단법인	B-COMPANY
+강훈소프트	I-COMPANY
+is	O
+located	O
+at	O
+충청북도	B-ADDRESS
+조타시	I-ADDRESS
+송종로	I-ADDRESS
+80-32.	I-ADDRESS
+
+안광사	B-NAME
+(전무)	B-POSITION
+from	O
+사단법인	B-COMPANY
+편두전자	I-COMPANY
+영업팀.	B-DEPARTMENT
+
+Client:	O
+사단법인	B-COMPANY
+방종홀딩스	I-COMPANY
+
+사단법인	B-COMPANY
+신성무역	I-COMPANY
+CEO	O
+용희	B-NAME
+
+On	O
+2023년	B-DATE
+2월	I-DATE
+10일,	I-DATE
+(주)	B-COMPANY
+허신원그룹	I-COMPANY
+and	O
+방일	B-NAME
+signed	O
+이용허락계약서.	B-CONTRACT_TYPE
+
+Attn:	O
+배진	B-NAME
+실장,	B-POSITION
+총무팀,	B-DEPARTMENT
+재단법인	B-COMPANY
+마창건설	I-COMPANY
+
+복제권	B-RIGHT_INFO
+in	O
+구유	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+belongs	O
+to	O
+주식회사	B-COMPANY
+신인자미디어	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제100조	I-LAW_REFERENCE
+8항.	I-LAW_REFERENCE
+
+Client:	O
+재단법인	B-COMPANY
+송의상기획	I-COMPANY
+
+(주)	B-COMPANY
+강월정건설	I-COMPANY
+@	O
+경상북도	B-ADDRESS
+염치구	I-ADDRESS
+금성혜로	I-ADDRESS
+213,	I-ADDRESS
+Tel:	O
+010-3932-7765,	B-PHONE
+Web:	O
+http://www.twitter981.com.	B-URL
+
+유한회사	B-COMPANY
+강전네트웍스	I-COMPANY
+@	O
+대구시	B-ADDRESS
+현정효구	I-ADDRESS
+추현길	I-ADDRESS
+575-42,	I-ADDRESS
+Tel:	O
+010-9996-7951,	B-PHONE
+Web:	O
+http://www.disney404.com.	B-URL
+
+Vendor:	O
+유한회사	B-COMPANY
+유카디자인	I-COMPANY
+
+2018년	B-DATE
+8월	I-DATE
+14일:	I-DATE
+(주)	B-COMPANY
+하아나소프트	I-COMPANY
+
+재단법인	B-COMPANY
+채건무역	I-COMPANY
+invests	O
+8342천만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+D97,	I-PROJECT_NAME
+completion	O
+2023년	B-DATE
+12월	I-DATE
+27일.	I-DATE
+
+Copyright	O
+사단법인	B-COMPANY
+오근유무역	I-COMPANY
+
+Party	O
+A:	O
+사단법인	B-COMPANY
+신웅유건설,	I-COMPANY
+Party	O
+B:	O
+안은산,	B-NAME
+Date:	O
+2013년	B-DATE
+4월	I-DATE
+18일	I-DATE
+
+Organization:	O
+재단법인	B-COMPANY
+현현건설	I-COMPANY
+
+유한회사	B-COMPANY
+맹병요건설	I-COMPANY
+invests	O
+111천원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+V22,	I-PROJECT_NAME
+completion	O
+2021년	B-DATE
+8월	I-DATE
+23일.	I-DATE
+
+출판권	B-RIGHT_INFO
+in	O
+공건학	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+belongs	O
+to	O
+사단법인	B-COMPANY
+반차엔터테인먼트	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제63조	I-LAW_REFERENCE
+8항.	I-LAW_REFERENCE
+
+Certificate:	O
+고건준	B-NAME
+joined	O
+주식회사	B-COMPANY
+나완컨설팅	I-COMPANY
+on	O
+2017년	B-DATE
+11월	I-DATE
+14일.	I-DATE
+
+Client:	O
+유한회사	B-COMPANY
+도우하통상	I-COMPANY
+
+사단법인	B-COMPANY
+고익장시스템	I-COMPANY
+CEO	O
+노재	B-NAME
+
+Made	O
+by	O
+재단법인	B-COMPANY
+전조소프트	I-COMPANY
+
+재단법인	B-COMPANY
+천회바이오	I-COMPANY
+@	O
+충청북도	B-ADDRESS
+주의군	I-ADDRESS
+채철자길	I-ADDRESS
+938-17,	I-ADDRESS
+Tel:	O
+010-8446-7034,	B-PHONE
+Web:	O
+http://www.lg781.com.	B-URL
+
+유한회사	B-COMPANY
+유바산업	I-COMPANY
+CEO	O
+신훈찬	B-NAME
+
+Attn:	O
+오치	B-NAME
+팀장,	B-POSITION
+연구소,	B-DEPARTMENT
+주식회사	B-COMPANY
+구지미디어	I-COMPANY
+
+Certificate:	O
+모옥민	B-NAME
+joined	O
+유한회사	B-COMPANY
+나태승바이오	I-COMPANY
+on	O
+2005년	B-DATE
+9월	I-DATE
+17일.	I-DATE
+
+주식회사	B-COMPANY
+인바희스튜디오	I-COMPANY
+is	O
+located	O
+at	O
+경상남도	B-ADDRESS
+김광군	I-ADDRESS
+설해대로	I-ADDRESS
+766-15.	I-ADDRESS
+
+Client:	O
+재단법인	B-COMPANY
+진병건설	I-COMPANY
+
+Party	O
+A:	O
+재단법인	B-COMPANY
+홍지기획,	I-COMPANY
+Party	O
+B:	O
+변월,	B-NAME
+Date:	O
+2024년	B-DATE
+2월	I-DATE
+18일	I-DATE
+
+Party	O
+A:	O
+유한회사	B-COMPANY
+하자회기획,	I-COMPANY
+Party	O
+B:	O
+노이진,	B-NAME
+Date:	O
+2024년	B-DATE
+8월	I-DATE
+13일	I-DATE
+
+On	O
+2022년	B-DATE
+12월	I-DATE
+23일,	I-DATE
+사단법인	B-COMPANY
+강택비무역	I-COMPANY
+and	O
+문엄빈	B-NAME
+signed	O
+매매계약서.	B-CONTRACT_TYPE
+
+Certificate:	O
+정설윤	B-NAME
+joined	O
+사단법인	B-COMPANY
+나효택홀딩스	I-COMPANY
+on	O
+2016년	B-DATE
+10월	I-DATE
+4일.	I-DATE
+
+유한회사	B-COMPANY
+원서소프트	I-COMPANY
+CEO	O
+강장	B-NAME
+
+Vendor:	O
+유한회사	B-COMPANY
+하솔바이오	I-COMPANY
+
+Vendor:	O
+(주)	B-COMPANY
+신진소프트	I-COMPANY
+
+Made	O
+by	O
+주식회사	B-COMPANY
+석의소프트	I-COMPANY
+
+주식회사	B-COMPANY
+인혁석제약	I-COMPANY
+CEO	O
+박일	B-NAME
+
+Certificate:	O
+함일	B-NAME
+joined	O
+재단법인	B-COMPANY
+모실우제약	I-COMPANY
+on	O
+2011년	B-DATE
+11월	I-DATE
+5일.	I-DATE
+
+Made	O
+by	O
+재단법인	B-COMPANY
+천찬다기획	I-COMPANY
+
+재단법인	B-COMPANY
+차다실바이오	I-COMPANY
+-	O
+전라북도	B-ADDRESS
+진호건시	I-ADDRESS
+김신규로	I-ADDRESS
+268-40	I-ADDRESS
+
+유한회사	B-COMPANY
+용화채산업	I-COMPANY
+-	O
+강원도	B-ADDRESS
+방회시	I-ADDRESS
+노하대로	I-ADDRESS
+707	I-ADDRESS
+
+On	O
+2004년	B-DATE
+3월	I-DATE
+2일,	I-DATE
+주식회사	B-COMPANY
+고재건설	I-COMPANY
+and	O
+조광	B-NAME
+signed	O
+출판권설정계약서.	B-CONTRACT_TYPE
+
+Client:	O
+(주)	B-COMPANY
+마이회네트웍스	I-COMPANY
+
+On	O
+2024년	B-DATE
+4월	I-DATE
+17일,	I-DATE
+주식회사	B-COMPANY
+탁수엔터테인먼트	I-COMPANY
+and	O
+백화	B-NAME
+signed	O
+근로계약서.	B-CONTRACT_TYPE
+
+Vendor:	O
+주식회사	B-COMPANY
+양호엔터테인먼트	I-COMPANY
+
+주식회사	B-COMPANY
+나빈근무역	I-COMPANY
+-	O
+충청남도	B-ADDRESS
+전조구	I-ADDRESS
+염준환대로	I-ADDRESS
+845-11	I-ADDRESS
+
+초상권	B-RIGHT_INFO
+in	O
+탁하	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+노재네트웍스	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제34조	I-LAW_REFERENCE
+2항.	I-LAW_REFERENCE
+
+2차적저작물작성권	B-RIGHT_INFO
+in	O
+변철	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+은현영소프트	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제86조	I-LAW_REFERENCE
+9항.	I-LAW_REFERENCE
+
+Vendor:	O
+주식회사	B-COMPANY
+조애컨설팅	I-COMPANY
+
+Attn:	O
+반혁	B-NAME
+국장,	B-POSITION
+법무팀,	B-DEPARTMENT
+(주)	B-COMPANY
+채성물산	I-COMPANY
+
+사단법인	B-COMPANY
+박이진엔터테인먼트	I-COMPANY
+CEO	O
+송일	B-NAME
+
+Party	O
+A:	O
+유한회사	B-COMPANY
+송광디자인,	I-COMPANY
+Party	O
+B:	O
+우한,	B-NAME
+Date:	O
+2009년	B-DATE
+9월	I-DATE
+6일	I-DATE
+
+Party	O
+A:	O
+사단법인	B-COMPANY
+진한유물산,	I-COMPANY
+Party	O
+B:	O
+노인차,	B-NAME
+Date:	O
+2019년	B-DATE
+12월	I-DATE
+7일	I-DATE
+
+2013년	B-DATE
+5월	I-DATE
+20일:	I-DATE
+주식회사	B-COMPANY
+서타시스템	I-COMPANY
+
+Vendor:	O
+사단법인	B-COMPANY
+송만솔산업	I-COMPANY
+
+재단법인	B-COMPANY
+선수학컨설팅	I-COMPANY
+CEO	O
+은수	B-NAME
+
+주식회사	B-COMPANY
+어하라산업	I-COMPANY
+is	O
+located	O
+at	O
+제주시	B-ADDRESS
+송시민군	I-ADDRESS
+주충종대로	I-ADDRESS
+905.	I-ADDRESS
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+지선안무역,	I-COMPANY
+Party	O
+B:	O
+연지,	B-NAME
+Date:	O
+2012년	B-DATE
+8월	I-DATE
+16일	I-DATE
+
+Copyright	O
+(주)	B-COMPANY
+조종시엔터테인먼트	I-COMPANY
+
+Client:	O
+주식회사	B-COMPANY
+신태제약	I-COMPANY
+
+유한회사	B-COMPANY
+모용소프트	I-COMPANY
+invests	O
+3611천원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+Y92,	I-PROJECT_NAME
+completion	O
+2001년	B-DATE
+5월	I-DATE
+19일.	I-DATE
+
+On	O
+2000년	B-DATE
+8월	I-DATE
+14일,	I-DATE
+(주)	B-COMPANY
+한홍산네트웍스	I-COMPANY
+and	O
+서동운	B-NAME
+signed	O
+도급계약서.	B-CONTRACT_TYPE
+
+Certificate:	O
+염초	B-NAME
+joined	O
+재단법인	B-COMPANY
+염예컨설팅	I-COMPANY
+on	O
+2013년	B-DATE
+9월	I-DATE
+25일.	I-DATE
+
+(주)	B-COMPANY
+염실컨설팅	I-COMPANY
+-	O
+부산시	B-ADDRESS
+변영춘군	I-ADDRESS
+심철환길	I-ADDRESS
+131-46	I-ADDRESS
+
+주식회사	B-COMPANY
+공여엔터테인먼트	I-COMPANY
+is	O
+located	O
+at	O
+서울시	B-ADDRESS
+추화일군	I-ADDRESS
+하다대로	I-ADDRESS
+168-30.	I-ADDRESS
+
+2005년	B-DATE
+12월	I-DATE
+23일:	I-DATE
+(주)	B-COMPANY
+제엄시스템	I-COMPANY
+
+(주)	B-COMPANY
+설판기획	I-COMPANY
+invests	O
+5299억원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+V22,	I-PROJECT_NAME
+completion	O
+2012년	B-DATE
+6월	I-DATE
+6일.	I-DATE
+
+2019년	B-DATE
+4월	I-DATE
+3일:	I-DATE
+사단법인	B-COMPANY
+류치스튜디오	I-COMPANY
+
+사단법인	B-COMPANY
+문섭제약	I-COMPANY
+is	O
+located	O
+at	O
+전라남도	B-ADDRESS
+신광시	I-ADDRESS
+맹혜월로	I-ADDRESS
+407-18.	I-ADDRESS
+
+2016년	B-DATE
+9월	I-DATE
+6일:	I-DATE
+(주)	B-COMPANY
+조천스튜디오	I-COMPANY
+
+배포권	B-RIGHT_INFO
+in	O
+김설	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+장장디자인	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제65조	I-LAW_REFERENCE
+9항.	I-LAW_REFERENCE
+
+(주)	B-COMPANY
+강가홀딩스	I-COMPANY
+is	O
+located	O
+at	O
+경기도	B-ADDRESS
+신건시	I-ADDRESS
+어장대로	I-ADDRESS
+544-50.	I-ADDRESS
+
+On	O
+2024년	B-DATE
+4월	I-DATE
+20일,	I-DATE
+유한회사	B-COMPANY
+장환엔터테인먼트	I-COMPANY
+and	O
+공천	B-NAME
+signed	O
+전속계약서.	B-CONTRACT_TYPE
+
+Copyright	O
+(주)	B-COMPANY
+신찬그룹	I-COMPANY
+
+(주)	B-COMPANY
+탁운통상	I-COMPANY
+-	O
+충청남도	B-ADDRESS
+도중혜시	I-ADDRESS
+배정로	I-ADDRESS
+486-32	I-ADDRESS
+
+On	O
+2020년	B-DATE
+3월	I-DATE
+25일,	I-DATE
+유한회사	B-COMPANY
+방환타산업	I-COMPANY
+and	O
+손연	B-NAME
+signed	O
+매매계약서.	B-CONTRACT_TYPE
+
+유한회사	B-COMPANY
+여요홀딩스	I-COMPANY
+CEO	O
+노신	B-NAME
+
+서장	B-NAME
+(부장)	B-POSITION
+from	O
+재단법인	B-COMPANY
+엄태시스템	I-COMPANY
+CS팀.	B-DEPARTMENT
+
+user18@example.com,	B-EMAIL
+010-2951-5364	B-PHONE
+
+백수안	B-NAME
+(연구원)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2006년	B-DATE
+9월	I-DATE
+6일	I-DATE
+->	O
+user307@example.com.	B-EMAIL
+
+Submit	O
+to	O
+user745@example.com	B-EMAIL
+by	O
+2002년	B-DATE
+6월	I-DATE
+7일.	I-DATE
+
+user842@example.com,	B-EMAIL
+010-6736-9635	B-PHONE
+
+Info:	O
+1.방라식	B-NAME
+2.010-7355-7865	B-PHONE
+3.user124@example.com	B-EMAIL
+
+Email	O
+address:	O
+user43@example.com	B-EMAIL
+
+강나우	B-NAME
+(사장)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2020년	B-DATE
+11월	I-DATE
+17일	I-DATE
+->	O
+user179@example.com.	B-EMAIL
+
+Email	O
+address:	O
+user184@example.com	B-EMAIL
+
+Submit	O
+to	O
+user445@example.com	B-EMAIL
+by	O
+2023년	B-DATE
+3월	I-DATE
+23일.	I-DATE
+
+Mail:	O
+user720@example.com	B-EMAIL
+
+Email	O
+address:	O
+user795@example.com	B-EMAIL
+
+Info:	O
+1.손전	B-NAME
+2.010-6028-3505	B-PHONE
+3.user683@example.com	B-EMAIL
+
+변오	B-NAME
+(연구원)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2013년	B-DATE
+8월	I-DATE
+20일	I-DATE
+->	O
+user531@example.com.	B-EMAIL
+
+Reply-To:	O
+user828@example.com	B-EMAIL
+
+민석	B-NAME
+(파트장)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2019년	B-DATE
+1월	I-DATE
+10일	I-DATE
+->	O
+user587@example.com.	B-EMAIL
+
+Submit	O
+to	O
+user108@example.com	B-EMAIL
+by	O
+2015년	B-DATE
+6월	I-DATE
+23일.	I-DATE
+
+user430@example.com,	B-EMAIL
+010-5069-1312	B-PHONE
+
+Mail:	O
+user903@example.com	B-EMAIL
+
+Send	O
+to	O
+user141@example.com	B-EMAIL
+
+Info:	O
+1.육대철	B-NAME
+2.010-3723-4651	B-PHONE
+3.user157@example.com	B-EMAIL
+
+Mail:	O
+user364@example.com	B-EMAIL
+
+user5@example.com,	B-EMAIL
+010-4511-4760	B-PHONE
+
+Submit	O
+to	O
+user126@example.com	B-EMAIL
+by	O
+2024년	B-DATE
+7월	I-DATE
+4일.	I-DATE
+
+Mail:	O
+user130@example.com	B-EMAIL
+
+Submit	O
+to	O
+user723@example.com	B-EMAIL
+by	O
+2022년	B-DATE
+11월	I-DATE
+18일.	I-DATE
+
+Info:	O
+1.원솔홍	B-NAME
+2.010-8332-4091	B-PHONE
+3.user626@example.com	B-EMAIL
+
+Send	O
+to	O
+user409@example.com	B-EMAIL
+
+CC:	O
+user449@example.com	B-EMAIL
+
+Mail:	O
+user240@example.com	B-EMAIL
+
+Mail:	O
+user667@example.com	B-EMAIL
+
+Send	O
+to	O
+user396@example.com	B-EMAIL
+
+강자환	B-NAME
+(전무)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2024년	B-DATE
+7월	I-DATE
+17일	I-DATE
+->	O
+user383@example.com.	B-EMAIL
+
+Send	O
+to	O
+user199@example.com	B-EMAIL
+
+함동두	B-NAME
+(이사)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2005년	B-DATE
+2월	I-DATE
+26일	I-DATE
+->	O
+user442@example.com.	B-EMAIL
+
+CC:	O
+user182@example.com	B-EMAIL
+
+Email	O
+address:	O
+user441@example.com	B-EMAIL
+
+Reply-To:	O
+user874@example.com	B-EMAIL
+
+Email	O
+address:	O
+user345@example.com	B-EMAIL
+
+Email	O
+address:	O
+user288@example.com	B-EMAIL
+
+이실	B-NAME
+(수석연구원)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2023년	B-DATE
+11월	I-DATE
+19일	I-DATE
+->	O
+user303@example.com.	B-EMAIL
+
+Info:	O
+1.고근혁	B-NAME
+2.010-6629-6951	B-PHONE
+3.user948@example.com	B-EMAIL
+
+Mail:	O
+user682@example.com	B-EMAIL
+
+Email	O
+address:	O
+user907@example.com	B-EMAIL
+
+탁원	B-NAME
+(과장)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2008년	B-DATE
+5월	I-DATE
+11일	I-DATE
+->	O
+user389@example.com.	B-EMAIL
+
+Info:	O
+1.송건	B-NAME
+2.010-8516-7430	B-PHONE
+3.user96@example.com	B-EMAIL
+
+Reply-To:	O
+user977@example.com	B-EMAIL
+
+Send	O
+to	O
+user271@example.com	B-EMAIL
+
+최하	B-NAME
+(연구원)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2018년	B-DATE
+6월	I-DATE
+15일	I-DATE
+->	O
+user350@example.com.	B-EMAIL
+
+Send	O
+to	O
+user40@example.com	B-EMAIL
+
+Email	O
+address:	O
+user428@example.com	B-EMAIL
+
+Send	O
+to	O
+user379@example.com	B-EMAIL
+
+Info:	O
+1.양용타	B-NAME
+2.010-5750-9331	B-PHONE
+3.user647@example.com	B-EMAIL
+
+Info:	O
+1.박호수	B-NAME
+2.010-6905-5020	B-PHONE
+3.user223@example.com	B-EMAIL
+
+CC:	O
+user441@example.com	B-EMAIL
+
+Submit	O
+to	O
+user167@example.com	B-EMAIL
+by	O
+2007년	B-DATE
+8월	I-DATE
+17일.	I-DATE
+
+Send	O
+to	O
+user419@example.com	B-EMAIL
+
+Mail:	O
+user945@example.com	B-EMAIL
+
+Send	O
+to	O
+user411@example.com	B-EMAIL
+
+user10@example.com,	B-EMAIL
+010-9948-5539	B-PHONE
+
+Send	O
+to	O
+user152@example.com	B-EMAIL
+
+Submit	O
+to	O
+user971@example.com	B-EMAIL
+by	O
+2005년	B-DATE
+3월	I-DATE
+13일.	I-DATE
+
+Info:	O
+1.노찬	B-NAME
+2.010-2324-3716	B-PHONE
+3.user706@example.com	B-EMAIL
+
+user316@example.com,	B-EMAIL
+010-9178-7155	B-PHONE
+
+Info:	O
+1.제태	B-NAME
+2.010-4646-9737	B-PHONE
+3.user707@example.com	B-EMAIL
+
+주수	B-NAME
+(실장)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2007년	B-DATE
+9월	I-DATE
+11일	I-DATE
+->	O
+user373@example.com.	B-EMAIL
+
+Send	O
+to	O
+user783@example.com	B-EMAIL
+
+Reply-To:	O
+user851@example.com	B-EMAIL
+
+user517@example.com,	B-EMAIL
+010-4652-1345	B-PHONE
+
+user487@example.com,	B-EMAIL
+010-3763-3112	B-PHONE
+
+Submit	O
+to	O
+user87@example.com	B-EMAIL
+by	O
+2018년	B-DATE
+2월	I-DATE
+24일.	I-DATE
+
+Reply-To:	O
+user278@example.com	B-EMAIL
+
+Reply-To:	O
+user661@example.com	B-EMAIL
+
+Info:	O
+1.국세	B-NAME
+2.010-7609-8588	B-PHONE
+3.user889@example.com	B-EMAIL
+
+Info:	O
+1.홍혁	B-NAME
+2.010-7633-9981	B-PHONE
+3.user751@example.com	B-EMAIL
+
+Reply-To:	O
+user651@example.com	B-EMAIL
+
+Send	O
+to	O
+user657@example.com	B-EMAIL
+
+Info:	O
+1.어운	B-NAME
+2.010-1173-2461	B-PHONE
+3.user205@example.com	B-EMAIL
+
+Email	O
+address:	O
+user52@example.com	B-EMAIL
+
+Send	O
+to	O
+user491@example.com	B-EMAIL
+
+제설	B-NAME
+(연구원)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2022년	B-DATE
+10월	I-DATE
+6일	I-DATE
+->	O
+user15@example.com.	B-EMAIL
+
+Attn:	O
+장엄우	B-NAME
+선임연구원,	B-POSITION
+회계팀,	B-DEPARTMENT
+유한회사	B-COMPANY
+최의초네트웍스	I-COMPANY
+
+한선익	B-NAME
+(대표)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2004년	B-DATE
+1월	I-DATE
+16일	I-DATE
+->	O
+user941@example.com.	B-EMAIL
+
+Attn:	O
+최의서	B-NAME
+차장,	B-POSITION
+보안팀,	B-DEPARTMENT
+재단법인	B-COMPANY
+오호산업	I-COMPANY
+
+Missing	O
+POSITION:	O
+이사	B-POSITION
+
+Attn:	O
+천택	B-NAME
+사장,	B-POSITION
+CS팀,	B-DEPARTMENT
+재단법인	B-COMPANY
+전영주통상	I-COMPANY
+
+Value	O
+of	O
+POSITION	O
+is	O
+센터장	B-POSITION
+
+상무:	B-POSITION
+전섭	B-NAME
+
+Value	O
+of	O
+POSITION	O
+is	O
+파트장	B-POSITION
+
+Please	O
+provide	O
+매니저	B-POSITION
+for	O
+POSITION.	O
+
+Check	O
+POSITION:	O
+매니저	B-POSITION
+
+Attn:	O
+김임용	B-NAME
+부장,	B-POSITION
+홍보팀,	B-DEPARTMENT
+사단법인	B-COMPANY
+엄사카물산	I-COMPANY
+
+채화식	B-NAME
+(팀장)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2002년	B-DATE
+9월	I-DATE
+9일	I-DATE
+->	O
+user799@example.com.	B-EMAIL
+
+차완	B-NAME
+(본부장)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-5885-9902.	B-PHONE
+
+Value	O
+of	O
+POSITION	O
+is	O
+책임	B-POSITION
+
+전준	B-NAME
+(선임연구원)	B-POSITION
+from	O
+(주)	B-COMPANY
+노철순스튜디오	I-COMPANY
+QA팀.	B-DEPARTMENT
+
+Attn:	O
+장익	B-NAME
+본부장,	B-POSITION
+법무팀,	B-DEPARTMENT
+사단법인	B-COMPANY
+노은소프트	I-COMPANY
+
+매니저:	B-POSITION
+하섭	B-NAME
+
+Check	O
+POSITION:	O
+팀장	B-POSITION
+
+Attn:	O
+구춘준	B-NAME
+사장,	B-POSITION
+연구소,	B-DEPARTMENT
+(주)	B-COMPANY
+반세디자인	I-COMPANY
+
+Attn:	O
+표오빈	B-NAME
+파트장,	B-POSITION
+법무팀,	B-DEPARTMENT
+주식회사	B-COMPANY
+맹하디자인	I-COMPANY
+
+Attn:	O
+옥신	B-NAME
+이사,	B-POSITION
+전략팀,	B-DEPARTMENT
+주식회사	B-COMPANY
+소지제약	I-COMPANY
+
+Attn:	O
+전빈	B-NAME
+실장,	B-POSITION
+영업팀,	B-DEPARTMENT
+(주)	B-COMPANY
+엄철무역	I-COMPANY
+
+Please	O
+provide	O
+수석연구원	B-POSITION
+for	O
+POSITION.	O
+
+Value	O
+of	O
+POSITION	O
+is	O
+주임	B-POSITION
+
+송훈	B-NAME
+(부장)	B-POSITION
+from	O
+(주)	B-COMPANY
+이지디자인	I-COMPANY
+총무팀.	B-DEPARTMENT
+
+Please	O
+provide	O
+사장	B-POSITION
+for	O
+POSITION.	O
+
+Value	O
+of	O
+POSITION	O
+is	O
+차장	B-POSITION
+
+Please	O
+provide	O
+회장	B-POSITION
+for	O
+POSITION.	O
+
+대표:	B-POSITION
+변위	B-NAME
+
+윤한	B-NAME
+(차장)	B-POSITION
+from	O
+재단법인	B-COMPANY
+오차시스템	I-COMPANY
+회계팀.	B-DEPARTMENT
+
+Please	O
+provide	O
+실장	B-POSITION
+for	O
+POSITION.	O
+
+Value	O
+of	O
+POSITION	O
+is	O
+과장	B-POSITION
+
+Please	O
+provide	O
+연구원	B-POSITION
+for	O
+POSITION.	O
+
+양윤익	B-NAME
+(회장)	B-POSITION
+from	O
+사단법인	B-COMPANY
+남사엔터테인먼트	I-COMPANY
+구매팀.	B-DEPARTMENT
+
+최화빈	B-NAME
+(사장)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2009년	B-DATE
+12월	I-DATE
+15일	I-DATE
+->	O
+user694@example.com.	B-EMAIL
+
+석영운	B-NAME
+(부장)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-5887-9744.	B-PHONE
+
+이사:	B-POSITION
+석엄준	B-NAME
+
+함진	B-NAME
+(상무)	B-POSITION
+from	O
+재단법인	B-COMPANY
+변훈엔터테인먼트	I-COMPANY
+홍보팀.	B-DEPARTMENT
+
+설월설	B-NAME
+(팀장)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2009년	B-DATE
+12월	I-DATE
+6일	I-DATE
+->	O
+user519@example.com.	B-EMAIL
+
+박진	B-NAME
+(선임연구원)	B-POSITION
+from	O
+유한회사	B-COMPANY
+반회기획	I-COMPANY
+보안팀.	B-DEPARTMENT
+
+실장:	B-POSITION
+명영하	B-NAME
+
+최건조	B-NAME
+(회장)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-7117-7461.	B-PHONE
+
+설원	B-NAME
+(파트장)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2013년	B-DATE
+2월	I-DATE
+28일	I-DATE
+->	O
+user637@example.com.	B-EMAIL
+
+Attn:	O
+은일	B-NAME
+주임,	B-POSITION
+개발팀,	B-DEPARTMENT
+(주)	B-COMPANY
+국여전자	I-COMPANY
+
+사원:	B-POSITION
+임애민	B-NAME
+
+인빈바	B-NAME
+(부장)	B-POSITION
+from	O
+(주)	B-COMPANY
+표엄네트웍스	I-COMPANY
+전략팀.	B-DEPARTMENT
+
+Attn:	O
+배이	B-NAME
+본부장,	B-POSITION
+회계팀,	B-DEPARTMENT
+(주)	B-COMPANY
+맹학스튜디오	I-COMPANY
+
+허산	B-NAME
+(이사)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2011년	B-DATE
+1월	I-DATE
+13일	I-DATE
+->	O
+user968@example.com.	B-EMAIL
+
+장건훈	B-NAME
+(사원)	B-POSITION
+from	O
+(주)	B-COMPANY
+길혜상무역	I-COMPANY
+회계팀.	B-DEPARTMENT
+
+국장:	B-POSITION
+하사	B-NAME
+
+Missing	O
+POSITION:	O
+대리	B-POSITION
+
+정자	B-NAME
+(파트장)	B-POSITION
+from	O
+(주)	B-COMPANY
+남파소프트	I-COMPANY
+총무팀.	B-DEPARTMENT
+
+Value	O
+of	O
+POSITION	O
+is	O
+팀장	B-POSITION
+
+허홍웅	B-NAME
+(수석연구원)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2008년	B-DATE
+12월	I-DATE
+1일	I-DATE
+->	O
+user845@example.com.	B-EMAIL
+
+Check	O
+POSITION:	O
+실장	B-POSITION
+
+Value	O
+of	O
+POSITION	O
+is	O
+선임연구원	B-POSITION
+
+신운성	B-NAME
+(주임)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2025년	B-DATE
+5월	I-DATE
+5일	I-DATE
+->	O
+user58@example.com.	B-EMAIL
+
+Missing	O
+POSITION:	O
+매니저	B-POSITION
+
+Please	O
+provide	O
+책임	B-POSITION
+for	O
+POSITION.	O
+
+양익	B-NAME
+(수석연구원)	B-POSITION
+from	O
+주식회사	B-COMPANY
+원윤시스템	I-COMPANY
+QA팀.	B-DEPARTMENT
+
+Attn:	O
+용훈규	B-NAME
+본부장,	B-POSITION
+기획팀,	B-DEPARTMENT
+유한회사	B-COMPANY
+엄승타소프트	I-COMPANY
+
+사원:	B-POSITION
+오혜다	B-NAME
+
+Missing	O
+POSITION:	O
+상무	B-POSITION
+
+장종	B-NAME
+(매니저)	B-POSITION
+from	O
+(주)	B-COMPANY
+박오기획	I-COMPANY
+보안팀.	B-DEPARTMENT
+
+Missing	O
+POSITION:	O
+팀장	B-POSITION
+
+유애	B-NAME
+(매니저)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2001년	B-DATE
+9월	I-DATE
+13일	I-DATE
+->	O
+user57@example.com.	B-EMAIL
+
+Please	O
+provide	O
+팀장	B-POSITION
+for	O
+POSITION.	O
+
+여훈설	B-NAME
+(연구원)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-4128-7453.	B-PHONE
+
+이치	B-NAME
+(이사)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-6047-3042.	B-PHONE
+
+Please	O
+provide	O
+국장	B-POSITION
+for	O
+POSITION.	O
+
+조사	B-NAME
+(전무)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-1810-7638.	B-PHONE
+
+위현	B-NAME
+(이사)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-2558-6018.	B-PHONE
+
+Missing	O
+POSITION:	O
+연구원	B-POSITION
+
+금병식	B-NAME
+(대리)	B-POSITION
+from	O
+주식회사	B-COMPANY
+어솔그룹	I-COMPANY
+회계팀.	B-DEPARTMENT
+
+Attn:	O
+금지	B-NAME
+전무,	B-POSITION
+구매팀,	B-DEPARTMENT
+사단법인	B-COMPANY
+유중건설	I-COMPANY
+
+Attn:	O
+한창철	B-NAME
+수석연구원,	B-POSITION
+구매팀,	B-DEPARTMENT
+재단법인	B-COMPANY
+정나시스템	I-COMPANY
+
+Check	O
+POSITION:	O
+책임	B-POSITION
+
+변제	B-NAME
+(실장)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-4028-9588.	B-PHONE
+
+Value	O
+of	O
+CONTRACT_TYPE	O
+is	O
+매매계약서	B-CONTRACT_TYPE
+
+Missing	O
+CONTRACT_TYPE:	O
+라이선스계약서	B-CONTRACT_TYPE
+
+Check	O
+CONTRACT_TYPE:	O
+용역계약서	B-CONTRACT_TYPE
+
+This	O
+근로계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2008년	B-DATE
+10월	I-DATE
+3일	I-DATE
+for	O
+31개월,	B-PERIOD
+value	O
+613천원.	B-MONEY
+
+This	O
+전속계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2020년	B-DATE
+9월	I-DATE
+28일	I-DATE
+for	O
+32개월,	B-PERIOD
+value	O
+6738천원.	B-MONEY
+
+Value	O
+of	O
+CONTRACT_TYPE	O
+is	O
+근로계약서	B-CONTRACT_TYPE
+
+This	O
+양도계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2012년	B-DATE
+11월	I-DATE
+5일	I-DATE
+for	O
+7개월,	B-PERIOD
+value	O
+5197만원.	B-MONEY
+
+This	O
+MOU	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2024년	B-DATE
+9월	I-DATE
+7일	I-DATE
+for	O
+24개월,	B-PERIOD
+value	O
+1151천원.	B-MONEY
+
+Please	O
+provide	O
+비밀유지서약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYPE.	O
+
+On	O
+2014년	B-DATE
+5월	I-DATE
+14일,	I-DATE
+재단법인	B-COMPANY
+류신종홀딩스	I-COMPANY
+and	O
+마라	B-NAME
+signed	O
+용역계약서.	B-CONTRACT_TYPE
+
+This	O
+표준계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2007년	B-DATE
+3월	I-DATE
+14일	I-DATE
+for	O
+5개월,	B-PERIOD
+value	O
+868천원.	B-MONEY
+
+Check	O
+CONTRACT_TYPE:	O
+전속계약서	B-CONTRACT_TYPE
+
+On	O
+2012년	B-DATE
+3월	I-DATE
+21일,	I-DATE
+사단법인	B-COMPANY
+노호신홀딩스	I-COMPANY
+and	O
+진유창	B-NAME
+signed	O
+도급계약서.	B-CONTRACT_TYPE
+
+This	O
+비밀유지서약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2017년	B-DATE
+7월	I-DATE
+21일	I-DATE
+for	O
+2개월,	B-PERIOD
+value	O
+6159만원.	B-MONEY
+
+On	O
+2002년	B-DATE
+4월	I-DATE
+9일,	I-DATE
+재단법인	B-COMPANY
+석천대제약	I-COMPANY
+and	O
+여병운	B-NAME
+signed	O
+MOU.	B-CONTRACT_TYPE
+
+Value	O
+of	O
+CONTRACT_TYPE	O
+is	O
+도급계약서	B-CONTRACT_TYPE
+
+2002년	B-DATE
+1월	I-DATE
+5일	I-DATE
+-	O
+라이선스계약서	B-CONTRACT_TYPE
+
+2008년	B-DATE
+5월	I-DATE
+24일	I-DATE
+-	O
+매매계약서	B-CONTRACT_TYPE
+
+Missing	O
+CONTRACT_TYPE:	O
+출판권설정계약서	B-CONTRACT_TYPE
+
+2002년	B-DATE
+3월	I-DATE
+18일	I-DATE
+-	O
+표준계약서	B-CONTRACT_TYPE
+
+2007년	B-DATE
+4월	I-DATE
+4일	I-DATE
+-	O
+전속계약서	B-CONTRACT_TYPE
+
+This	O
+업무협약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2011년	B-DATE
+5월	I-DATE
+9일	I-DATE
+for	O
+25개월,	B-PERIOD
+value	O
+9531백만원.	B-MONEY
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제63조	I-LAW_REFERENCE
+2항,	I-LAW_REFERENCE
+we	O
+sign	O
+라이선스계약서.	B-CONTRACT_TYPE
+
+Missing	O
+CONTRACT_TYPE:	O
+이용허락계약서	B-CONTRACT_TYPE
+
+This	O
+출판권설정계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2010년	B-DATE
+2월	I-DATE
+16일	I-DATE
+for	O
+34개월,	B-PERIOD
+value	O
+4219억원.	B-MONEY
+
+This	O
+전속계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2011년	B-DATE
+2월	I-DATE
+14일	I-DATE
+for	O
+26개월,	B-PERIOD
+value	O
+1946천만원.	B-MONEY
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제47조	I-LAW_REFERENCE
+2항,	I-LAW_REFERENCE
+we	O
+sign	O
+이용허락계약서.	B-CONTRACT_TYPE
+
+This	O
+업무협약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2016년	B-DATE
+5월	I-DATE
+24일	I-DATE
+for	O
+13개월,	B-PERIOD
+value	O
+1223천만원.	B-MONEY
+
+On	O
+2007년	B-DATE
+2월	I-DATE
+3일,	I-DATE
+사단법인	B-COMPANY
+하동완디자인	I-COMPANY
+and	O
+국타	B-NAME
+signed	O
+라이선스계약서.	B-CONTRACT_TYPE
+
+Check	O
+CONTRACT_TYPE:	O
+양도계약서	B-CONTRACT_TYPE
+
+Value	O
+of	O
+CONTRACT_TYPE	O
+is	O
+용역계약서	B-CONTRACT_TYPE
+
+2014년	B-DATE
+11월	I-DATE
+9일	I-DATE
+-	O
+근로계약서	B-CONTRACT_TYPE
+
+This	O
+매매계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2013년	B-DATE
+2월	I-DATE
+10일	I-DATE
+for	O
+25개월,	B-PERIOD
+value	O
+7677만원.	B-MONEY
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제9조	I-LAW_REFERENCE
+10항,	I-LAW_REFERENCE
+we	O
+sign	O
+표준계약서.	B-CONTRACT_TYPE
+
+2005년	B-DATE
+7월	I-DATE
+3일	I-DATE
+-	O
+전속계약서	B-CONTRACT_TYPE
+
+Missing	O
+CONTRACT_TYPE:	O
+전속계약서	B-CONTRACT_TYPE
+
+On	O
+2012년	B-DATE
+5월	I-DATE
+27일,	I-DATE
+유한회사	B-COMPANY
+허희이미디어	I-COMPANY
+and	O
+천장	B-NAME
+signed	O
+라이선스계약서.	B-CONTRACT_TYPE
+
+Agreement	O
+비밀유지서약서	B-CONTRACT_TYPE
+signed	O
+on	O
+2016년	B-DATE
+9월	I-DATE
+2일.	I-DATE
+
+On	O
+2019년	B-DATE
+4월	I-DATE
+12일,	I-DATE
+사단법인	B-COMPANY
+심해전자	I-COMPANY
+and	O
+위두	B-NAME
+signed	O
+양도계약서.	B-CONTRACT_TYPE
+
+On	O
+2016년	B-DATE
+10월	I-DATE
+16일,	I-DATE
+유한회사	B-COMPANY
+표카물산	I-COMPANY
+and	O
+인재	B-NAME
+signed	O
+임대차계약서.	B-CONTRACT_TYPE
+
+This	O
+MOU	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2019년	B-DATE
+12월	I-DATE
+18일	I-DATE
+for	O
+1개월,	B-PERIOD
+value	O
+6775천만원.	B-MONEY
+
+2002년	B-DATE
+8월	I-DATE
+1일	I-DATE
+-	O
+근로계약서	B-CONTRACT_TYPE
+
+2018년	B-DATE
+8월	I-DATE
+18일	I-DATE
+-	O
+매매계약서	B-CONTRACT_TYPE
+
+Please	O
+provide	O
+용역계약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYPE.	O
+
+On	O
+2000년	B-DATE
+3월	I-DATE
+25일,	I-DATE
+재단법인	B-COMPANY
+나세여네트웍스	I-COMPANY
+and	O
+지인	B-NAME
+signed	O
+근로계약서.	B-CONTRACT_TYPE
+
+2004년	B-DATE
+10월	I-DATE
+20일	I-DATE
+-	O
+전속계약서	B-CONTRACT_TYPE
+
+Value	O
+of	O
+CONTRACT_TYPE	O
+is	O
+MOU	B-CONTRACT_TYPE
+
+Agreement	O
+매매계약서	B-CONTRACT_TYPE
+signed	O
+on	O
+2004년	B-DATE
+7월	I-DATE
+6일.	I-DATE
+
+2024년	B-DATE
+1월	I-DATE
+21일	I-DATE
+-	O
+도급계약서	B-CONTRACT_TYPE
+
+Please	O
+provide	O
+출판권설정계약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYPE.	O
+
+This	O
+양도계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2014년	B-DATE
+12월	I-DATE
+17일	I-DATE
+for	O
+35개월,	B-PERIOD
+value	O
+6870천만원.	B-MONEY
+
+Value	O
+of	O
+CONTRACT_TYPE	O
+is	O
+라이선스계약서	B-CONTRACT_TYPE
+
+This	O
+이용허락계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2002년	B-DATE
+9월	I-DATE
+13일	I-DATE
+for	O
+24개월,	B-PERIOD
+value	O
+2806천원.	B-MONEY
+
+Check	O
+CONTRACT_TYPE:	O
+임대차계약서	B-CONTRACT_TYPE
+
+Missing	O
+CONTRACT_TYPE:	O
+가맹계약서	B-CONTRACT_TYPE
+
+On	O
+2013년	B-DATE
+3월	I-DATE
+23일,	I-DATE
+주식회사	B-COMPANY
+공타시스템	I-COMPANY
+and	O
+임바	B-NAME
+signed	O
+전속계약서.	B-CONTRACT_TYPE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제84조	I-LAW_REFERENCE
+3항,	I-LAW_REFERENCE
+we	O
+sign	O
+도급계약서.	B-CONTRACT_TYPE
+
+On	O
+2006년	B-DATE
+2월	I-DATE
+4일,	I-DATE
+재단법인	B-COMPANY
+권초네트웍스	I-COMPANY
+and	O
+전우	B-NAME
+signed	O
+라이선스계약서.	B-CONTRACT_TYPE
+
+Value	O
+of	O
+CONTRACT_TYPE	O
+is	O
+비밀유지서약서	B-CONTRACT_TYPE
+
+Check	O
+CONTRACT_TYPE:	O
+MOU	B-CONTRACT_TYPE
+
+Value	O
+of	O
+CONTRACT_TYPE	O
+is	O
+출판권설정계약서	B-CONTRACT_TYPE
+
+2017년	B-DATE
+7월	I-DATE
+5일	I-DATE
+-	O
+양도계약서	B-CONTRACT_TYPE
+
+2005년	B-DATE
+11월	I-DATE
+19일	I-DATE
+-	O
+매매계약서	B-CONTRACT_TYPE
+
+Missing	O
+CONTRACT_TYPE:	O
+도급계약서	B-CONTRACT_TYPE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제16조	I-LAW_REFERENCE
+2항,	I-LAW_REFERENCE
+we	O
+sign	O
+표준계약서.	B-CONTRACT_TYPE
+
+Missing	O
+CONTRACT_TYPE:	O
+양도계약서	B-CONTRACT_TYPE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제10조	I-LAW_REFERENCE
+9항,	I-LAW_REFERENCE
+we	O
+sign	O
+표준계약서.	B-CONTRACT_TYPE
+
+This	O
+출판권설정계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2005년	B-DATE
+2월	I-DATE
+17일	I-DATE
+for	O
+18개월,	B-PERIOD
+value	O
+8753천원.	B-MONEY
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제47조	I-LAW_REFERENCE
+3항,	I-LAW_REFERENCE
+we	O
+sign	O
+표준계약서.	B-CONTRACT_TYPE
+
+On	O
+2023년	B-DATE
+3월	I-DATE
+13일,	I-DATE
+사단법인	B-COMPANY
+양대엔터테인먼트	I-COMPANY
+and	O
+명신만	B-NAME
+signed	O
+가맹계약서.	B-CONTRACT_TYPE
+
+Check	O
+CONTRACT_TYPE:	O
+가맹계약서	B-CONTRACT_TYPE
+
+On	O
+2019년	B-DATE
+9월	I-DATE
+15일,	I-DATE
+(주)	B-COMPANY
+추위진그룹	I-COMPANY
+and	O
+곽옥	B-NAME
+signed	O
+라이선스계약서.	B-CONTRACT_TYPE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제56조	I-LAW_REFERENCE
+4항,	I-LAW_REFERENCE
+we	O
+sign	O
+근로계약서.	B-CONTRACT_TYPE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제7조	I-LAW_REFERENCE
+1항,	I-LAW_REFERENCE
+we	O
+sign	O
+MOU.	B-CONTRACT_TYPE
+
+Check	O
+CONTRACT_TYPE:	O
+표준계약서	B-CONTRACT_TYPE
+
+2020년	B-DATE
+4월	I-DATE
+12일	I-DATE
+-	O
+용역계약서	B-CONTRACT_TYPE
+
+Please	O
+provide	O
+임대차계약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYPE.	O
+
+2007년	B-DATE
+6월	I-DATE
+15일	I-DATE
+-	O
+양도계약서	B-CONTRACT_TYPE
+
+Please	O
+provide	O
+전속계약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYPE.	O
+
+Payment:	O
+4580천만원	B-MONEY
+
+Transfer	O
+fee	O
+for	O
+초상권	B-RIGHT_INFO
+is	O
+9312만원.	B-MONEY
+
+유한회사	B-COMPANY
+석의보시스템	I-COMPANY
+invests	O
+8444백만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+G82,	I-PROJECT_NAME
+completion	O
+2016년	B-DATE
+4월	I-DATE
+20일.	I-DATE
+
+Payment:	O
+4338천만원	B-MONEY
+
+2010년	B-DATE
+9월	I-DATE
+15일	I-DATE
+/	O
+5814억원	B-MONEY
+
+This	O
+근로계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2012년	B-DATE
+1월	I-DATE
+1일	I-DATE
+for	O
+20개월,	B-PERIOD
+value	O
+6039천원.	B-MONEY
+
+Deposit	O
+4041만원	B-MONEY
+on	O
+2024년	B-DATE
+5월	I-DATE
+5일,	I-DATE
+Balance	O
+4041만원	O
+on	O
+2024년	O
+5월	O
+5일.	O
+
+Total:	O
+3226천만원	B-MONEY
+
+Deposit	O
+5413천원	B-MONEY
+on	O
+2014년	B-DATE
+1월	I-DATE
+12일,	I-DATE
+Balance	O
+5413천원	O
+on	O
+2014년	O
+1월	O
+12일.	O
+
+Amount:	O
+1318억원	B-MONEY
+
+Transfer	O
+fee	O
+for	O
+2차적저작물작성권	B-RIGHT_INFO
+is	O
+8486억원.	B-MONEY
+
+2014년	B-DATE
+9월	I-DATE
+24일	I-DATE
+/	O
+9556천만원	B-MONEY
+
+Transfer	O
+fee	O
+for	O
+방송권	B-RIGHT_INFO
+is	O
+4698천원.	B-MONEY
+
+Transfer	O
+공연권	B-RIGHT_INFO
+of	O
+167일	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+9059만원.	B-MONEY
+
+Deposit	O
+9809억원	B-MONEY
+on	O
+2003년	B-DATE
+6월	I-DATE
+1일,	I-DATE
+Balance	O
+9809억원	O
+on	O
+2003년	O
+6월	O
+1일.	O
+
+Payment	O
+of	O
+1604만원	B-MONEY
+due	O
+on	O
+2001년	B-DATE
+3월	I-DATE
+6일.	I-DATE
+
+Payment:	O
+8581만원	B-MONEY
+
+유한회사	B-COMPANY
+양나전자	I-COMPANY
+invests	O
+5847백만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+F25,	I-PROJECT_NAME
+completion	O
+2011년	B-DATE
+4월	I-DATE
+14일.	I-DATE
+
+Total:	O
+7077만원	B-MONEY
+
+Total:	O
+165만원	B-MONEY
+
+2022년	B-DATE
+6월	I-DATE
+28일	I-DATE
+/	O
+6998백만원	B-MONEY
+
+Deposit	O
+1777천만원	B-MONEY
+on	O
+2002년	B-DATE
+1월	I-DATE
+7일,	I-DATE
+Balance	O
+1777천만원	O
+on	O
+2002년	O
+1월	O
+7일.	O
+
+Payment	O
+of	O
+3381백만원	B-MONEY
+due	O
+on	O
+2015년	B-DATE
+5월	I-DATE
+6일.	I-DATE
+
+Cost:	O
+2843억원	B-MONEY
+
+Transfer	O
+fee	O
+for	O
+성명표시권	B-RIGHT_INFO
+is	O
+6687천만원.	B-MONEY
+
+2024년	B-DATE
+2월	I-DATE
+15일	I-DATE
+/	O
+1508천만원	B-MONEY
+
+사단법인	B-COMPANY
+여전판스튜디오	I-COMPANY
+invests	O
+6063천만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+O40,	I-PROJECT_NAME
+completion	O
+2006년	B-DATE
+6월	I-DATE
+9일.	I-DATE
+
+재단법인	B-COMPANY
+탁혜제약	I-COMPANY
+invests	O
+3547천만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+T49,	I-PROJECT_NAME
+completion	O
+2007년	B-DATE
+2월	I-DATE
+16일.	I-DATE
+
+Price:	O
+2877억원	B-MONEY
+
+2002년	B-DATE
+2월	I-DATE
+23일	I-DATE
+/	O
+8792만원	B-MONEY
+
+Payment	O
+of	O
+2495만원	B-MONEY
+due	O
+on	O
+2017년	B-DATE
+9월	I-DATE
+26일.	I-DATE
+
+Transfer	O
+fee	O
+for	O
+출판권	B-RIGHT_INFO
+is	O
+6335억원.	B-MONEY
+
+Total:	O
+1749만원	B-MONEY
+
+Cost:	O
+5346천만원	B-MONEY
+
+사단법인	B-COMPANY
+제준컨설팅	I-COMPANY
+invests	O
+4257만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+W94,	I-PROJECT_NAME
+completion	O
+2019년	B-DATE
+11월	I-DATE
+5일.	I-DATE
+
+Payment	O
+of	O
+3204만원	B-MONEY
+due	O
+on	O
+2001년	B-DATE
+3월	I-DATE
+28일.	I-DATE
+
+This	O
+가맹계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2008년	B-DATE
+6월	I-DATE
+10일	I-DATE
+for	O
+36개월,	B-PERIOD
+value	O
+6009천만원.	B-MONEY
+
+Amount:	O
+4192만원	B-MONEY
+
+Payment	O
+of	O
+6349억원	B-MONEY
+due	O
+on	O
+2019년	B-DATE
+1월	I-DATE
+27일.	I-DATE
+
+2000년	B-DATE
+7월	I-DATE
+1일	I-DATE
+/	O
+3606천만원	B-MONEY
+
+Price:	O
+4452억원	B-MONEY
+
+Transfer	O
+저작재산권	B-RIGHT_INFO
+of	O
+685편	B-QUANTITY
+음악저작물	B-TYPE
+for	O
+1834만원.	B-MONEY
+
+2003년	B-DATE
+8월	I-DATE
+8일	I-DATE
+/	O
+6015만원	B-MONEY
+
+Price:	O
+3004억원	B-MONEY
+
+Deposit	O
+366백만원	B-MONEY
+on	O
+2000년	B-DATE
+3월	I-DATE
+15일,	I-DATE
+Balance	O
+366백만원	O
+on	O
+2000년	O
+3월	O
+15일.	O
+
+Payment	O
+of	O
+3815만원	B-MONEY
+due	O
+on	O
+2010년	B-DATE
+8월	I-DATE
+1일.	I-DATE
+
+Price:	O
+5318천만원	B-MONEY
+
+Amount:	O
+6243천원	B-MONEY
+
+Amount:	O
+1685천원	B-MONEY
+
+Cost:	O
+8513억원	B-MONEY
+
+Price:	O
+7074억원	B-MONEY
+
+Price:	O
+9222천원	B-MONEY
+
+Payment:	O
+1671만원	B-MONEY
+
+Payment:	O
+8632백만원	B-MONEY
+
+사단법인	B-COMPANY
+변월건설	I-COMPANY
+invests	O
+7075억원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+R49,	I-PROJECT_NAME
+completion	O
+2015년	B-DATE
+12월	I-DATE
+22일.	I-DATE
+
+주식회사	B-COMPANY
+심충엔터테인먼트	I-COMPANY
+invests	O
+1847억원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+C78,	I-PROJECT_NAME
+completion	O
+2008년	B-DATE
+1월	I-DATE
+24일.	I-DATE
+
+This	O
+양도계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2011년	B-DATE
+1월	I-DATE
+22일	I-DATE
+for	O
+16개월,	B-PERIOD
+value	O
+6205천원.	B-MONEY
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+Z7:	I-PROJECT_NAME
+8923천원.	B-MONEY
+
+2025년	B-DATE
+1월	I-DATE
+18일	I-DATE
+/	O
+6311백만원	B-MONEY
+
+Deposit	O
+8232천원	B-MONEY
+on	O
+2008년	B-DATE
+11월	I-DATE
+2일,	I-DATE
+Balance	O
+8232천원	O
+on	O
+2008년	O
+11월	O
+2일.	O
+
+Transfer	O
+전송권	B-RIGHT_INFO
+of	O
+983편	B-QUANTITY
+미술저작물	B-TYPE
+for	O
+8513만원.	B-MONEY
+
+Price:	O
+8895백만원	B-MONEY
+
+This	O
+전속계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2001년	B-DATE
+7월	I-DATE
+28일	I-DATE
+for	O
+34개월,	B-PERIOD
+value	O
+6761만원.	B-MONEY
+
+Price:	O
+5338백만원	B-MONEY
+
+Deposit	O
+4170만원	B-MONEY
+on	O
+2023년	B-DATE
+1월	I-DATE
+27일,	I-DATE
+Balance	O
+4170만원	O
+on	O
+2023년	O
+1월	O
+27일.	O
+
+2012년	B-DATE
+12월	I-DATE
+14일	I-DATE
+/	O
+6660백만원	B-MONEY
+
+Cost:	O
+3846만원	B-MONEY
+
+This	O
+근로계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2021년	B-DATE
+10월	I-DATE
+10일	I-DATE
+for	O
+33개월,	B-PERIOD
+value	O
+6978천만원.	B-MONEY
+
+Deposit	O
+6733천원	B-MONEY
+on	O
+2000년	B-DATE
+11월	I-DATE
+12일,	I-DATE
+Balance	O
+6733천원	O
+on	O
+2000년	O
+11월	O
+12일.	O
+
+Transfer	O
+퍼블리시티권	B-RIGHT_INFO
+of	O
+607건	B-QUANTITY
+연극저작물	B-TYPE
+for	O
+7310만원.	B-MONEY
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+Z47:	I-PROJECT_NAME
+1659억원.	B-MONEY
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+E14:	I-PROJECT_NAME
+2859천원.	B-MONEY
+
+This	O
+라이선스계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2011년	B-DATE
+5월	I-DATE
+1일	I-DATE
+for	O
+20개월,	B-PERIOD
+value	O
+178백만원.	B-MONEY
+
+Transfer	O
+fee	O
+for	O
+퍼블리시티권	B-RIGHT_INFO
+is	O
+2731천만원.	B-MONEY
+
+Transfer	O
+fee	O
+for	O
+초상권	B-RIGHT_INFO
+is	O
+3149억원.	B-MONEY
+
+Deposit	O
+1161천원	B-MONEY
+on	O
+2011년	B-DATE
+10월	I-DATE
+2일,	I-DATE
+Balance	O
+1161천원	O
+on	O
+2011년	O
+10월	O
+2일.	O
+
+Fee:	O
+4714백만원	B-MONEY
+
+Transfer	O
+출판권	B-RIGHT_INFO
+of	O
+688개	B-QUANTITY
+음악저작물	B-TYPE
+for	O
+1678억원.	B-MONEY
+
+This	O
+표준계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2009년	B-DATE
+11월	I-DATE
+5일	I-DATE
+for	O
+10개월,	B-PERIOD
+value	O
+9385만원.	B-MONEY
+
+This	O
+양도계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2009년	B-DATE
+11월	I-DATE
+17일	I-DATE
+for	O
+33개월,	B-PERIOD
+value	O
+7113백만원.	B-MONEY
+
+This	O
+용역계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2019년	B-DATE
+4월	I-DATE
+19일	I-DATE
+for	O
+9개월,	B-PERIOD
+value	O
+7733만원.	B-MONEY
+
+Check	O
+PERIOD:	O
+32개월	B-PERIOD
+
+Check	O
+PERIOD:	O
+33개월	B-PERIOD
+
+Check	O
+PERIOD:	O
+14개월	B-PERIOD
+
+Missing	O
+PERIOD:	O
+30개월	B-PERIOD
+
+Please	O
+provide	O
+9개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Please	O
+provide	O
+14개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Check	O
+PERIOD:	O
+36개월	B-PERIOD
+
+This	O
+양도계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2009년	B-DATE
+7월	I-DATE
+26일	I-DATE
+for	O
+35개월,	B-PERIOD
+value	O
+8168만원.	B-MONEY
+
+This	O
+양도계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2021년	B-DATE
+7월	I-DATE
+11일	I-DATE
+for	O
+27개월,	B-PERIOD
+value	O
+2349천원.	B-MONEY
+
+Please	O
+provide	O
+3개월	B-PERIOD
+for	O
+PERIOD.	O
+
+This	O
+매매계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2003년	B-DATE
+2월	I-DATE
+22일	I-DATE
+for	O
+5개월,	B-PERIOD
+value	O
+7643천원.	B-MONEY
+
+This	O
+라이선스계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2010년	B-DATE
+1월	I-DATE
+17일	I-DATE
+for	O
+2개월,	B-PERIOD
+value	O
+135억원.	B-MONEY
+
+This	O
+도급계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2009년	B-DATE
+7월	I-DATE
+11일	I-DATE
+for	O
+2개월,	B-PERIOD
+value	O
+9235만원.	B-MONEY
+
+Value	O
+of	O
+PERIOD	O
+is	O
+17개월	B-PERIOD
+
+Check	O
+PERIOD:	O
+11개월	B-PERIOD
+
+Missing	O
+PERIOD:	O
+31개월	B-PERIOD
+
+Please	O
+provide	O
+33개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Please	O
+provide	O
+25개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Missing	O
+PERIOD:	O
+10개월	B-PERIOD
+
+This	O
+표준계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2019년	B-DATE
+1월	I-DATE
+7일	I-DATE
+for	O
+10개월,	B-PERIOD
+value	O
+8271천만원.	B-MONEY
+
+Please	O
+provide	O
+28개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Please	O
+provide	O
+18개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Value	O
+of	O
+PERIOD	O
+is	O
+36개월	B-PERIOD
+
+This	O
+이용허락계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2015년	B-DATE
+10월	I-DATE
+12일	I-DATE
+for	O
+24개월,	B-PERIOD
+value	O
+9997백만원.	B-MONEY
+
+Please	O
+provide	O
+16개월	B-PERIOD
+for	O
+PERIOD.	O
+
+This	O
+양도계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2020년	B-DATE
+3월	I-DATE
+20일	I-DATE
+for	O
+4개월,	B-PERIOD
+value	O
+4515만원.	B-MONEY
+
+Missing	O
+PERIOD:	O
+3개월	B-PERIOD
+
+Check	O
+PERIOD:	O
+35개월	B-PERIOD
+
+Please	O
+provide	O
+6개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Please	O
+provide	O
+21개월	B-PERIOD
+for	O
+PERIOD.	O
+
+This	O
+근로계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2022년	B-DATE
+12월	I-DATE
+3일	I-DATE
+for	O
+18개월,	B-PERIOD
+value	O
+2535만원.	B-MONEY
+
+Missing	O
+PERIOD:	O
+4개월	B-PERIOD
+
+This	O
+업무협약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2023년	B-DATE
+10월	I-DATE
+17일	I-DATE
+for	O
+6개월,	B-PERIOD
+value	O
+7698천만원.	B-MONEY
+
+Missing	O
+PERIOD:	O
+11개월	B-PERIOD
+
+Value	O
+of	O
+PERIOD	O
+is	O
+16개월	B-PERIOD
+
+Value	O
+of	O
+PERIOD	O
+is	O
+22개월	B-PERIOD
+
+Value	O
+of	O
+PERIOD	O
+is	O
+12개월	B-PERIOD
+
+Value	O
+of	O
+PERIOD	O
+is	O
+32개월	B-PERIOD
+
+Missing	O
+PERIOD:	O
+25개월	B-PERIOD
+
+Value	O
+of	O
+PERIOD	O
+is	O
+9개월	B-PERIOD
+
+Missing	O
+PERIOD:	O
+7개월	B-PERIOD
+
+Missing	O
+PERIOD:	O
+17개월	B-PERIOD
+
+Missing	O
+PERIOD:	O
+35개월	B-PERIOD
+
+This	O
+이용허락계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2025년	B-DATE
+11월	I-DATE
+19일	I-DATE
+for	O
+33개월,	B-PERIOD
+value	O
+1328천원.	B-MONEY
+
+Please	O
+provide	O
+11개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Value	O
+of	O
+PERIOD	O
+is	O
+29개월	B-PERIOD
+
+Value	O
+of	O
+PERIOD	O
+is	O
+30개월	B-PERIOD
+
+Please	O
+provide	O
+4개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Please	O
+provide	O
+26개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Check	O
+PERIOD:	O
+16개월	B-PERIOD
+
+Missing	O
+PERIOD:	O
+24개월	B-PERIOD
+
+Missing	O
+PERIOD:	O
+5개월	B-PERIOD
+
+This	O
+출판권설정계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2013년	B-DATE
+5월	I-DATE
+20일	I-DATE
+for	O
+28개월,	B-PERIOD
+value	O
+1108백만원.	B-MONEY
+
+Value	O
+of	O
+PERIOD	O
+is	O
+23개월	B-PERIOD
+
+Missing	O
+PERIOD:	O
+6개월	B-PERIOD
+
+Value	O
+of	O
+PERIOD	O
+is	O
+31개월	B-PERIOD
+
+Check	O
+PERIOD:	O
+12개월	B-PERIOD
+
+Please	O
+provide	O
+7개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Value	O
+of	O
+PERIOD	O
+is	O
+2개월	B-PERIOD
+
+Please	O
+provide	O
+36개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Value	O
+of	O
+PERIOD	O
+is	O
+33개월	B-PERIOD
+
+Value	O
+of	O
+PERIOD	O
+is	O
+11개월	B-PERIOD
+
+Value	O
+of	O
+PERIOD	O
+is	O
+19개월	B-PERIOD
+
+This	O
+근로계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2016년	B-DATE
+7월	I-DATE
+8일	I-DATE
+for	O
+10개월,	B-PERIOD
+value	O
+9283억원.	B-MONEY
+
+This	O
+가맹계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2022년	B-DATE
+10월	I-DATE
+10일	I-DATE
+for	O
+12개월,	B-PERIOD
+value	O
+6187만원.	B-MONEY
+
+Missing	O
+PERIOD:	O
+22개월	B-PERIOD
+
+Value	O
+of	O
+PERIOD	O
+is	O
+6개월	B-PERIOD
+
+Value	O
+of	O
+PERIOD	O
+is	O
+25개월	B-PERIOD
+
+Missing	O
+PERIOD:	O
+14개월	B-PERIOD
+
+Please	O
+provide	O
+24개월	B-PERIOD
+for	O
+PERIOD.	O
+
+This	O
+출판권설정계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2012년	B-DATE
+12월	I-DATE
+7일	I-DATE
+for	O
+7개월,	B-PERIOD
+value	O
+2795천만원.	B-MONEY
+
+Check	O
+PERIOD:	O
+26개월	B-PERIOD
+
+Please	O
+provide	O
+23개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Please	O
+provide	O
+27개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Check	O
+PERIOD:	O
+6개월	B-PERIOD
+
+Please	O
+provide	O
+13개월	B-PERIOD
+for	O
+PERIOD.	O
+
+Check	O
+PERIOD:	O
+19개월	B-PERIOD
+
+License:	O
+321203-4******	B-ID_NUM
+
+육은	B-NAME
+(ID:	O
+710814-1******)	B-ID_NUM
+resides	O
+at	O
+광주시	B-ADDRESS
+편파구	I-ADDRESS
+옥동로	I-ADDRESS
+438,	I-ADDRESS
+phone:	O
+010-7835-1403.	B-PHONE
+
+ID:	O
+140602-4******	B-ID_NUM
+
+맹하	B-NAME
+(ID:	O
+340703-2******)	B-ID_NUM
+resides	O
+at	O
+대전시	B-ADDRESS
+윤춘군	I-ADDRESS
+백제로	I-ADDRESS
+683,	I-ADDRESS
+phone:	O
+010-7721-7231.	B-PHONE
+
+염정중	B-NAME
+(ID:	O
+830419-3******)	B-ID_NUM
+resides	O
+at	O
+경상북도	B-ADDRESS
+지월비군	I-ADDRESS
+조종대로	I-ADDRESS
+996,	I-ADDRESS
+phone:	O
+010-2837-6826.	B-PHONE
+
+Identity	O
+verified:	O
+어판,	B-NAME
+341225-3******.	B-ID_NUM
+
+SSN:	O
+950412-3******	B-ID_NUM
+
+ID:	O
+590425-2******	B-ID_NUM
+
+SSN:	O
+960306-2******	B-ID_NUM
+
+SSN:	O
+990223-4******	B-ID_NUM
+
+Identity	O
+verified:	O
+장준,	B-NAME
+470511-1******.	B-ID_NUM
+
+Details:	O
+탁산해,	B-NAME
+010101-4******,	B-ID_NUM
+경상북도	B-ADDRESS
+전하군	I-ADDRESS
+주식타길	I-ADDRESS
+942	I-ADDRESS
+
+License:	O
+470523-1******	B-ID_NUM
+
+ID:	O
+720510-1******	B-ID_NUM
+
+SSN:	O
+560527-2******	B-ID_NUM
+
+License:	O
+340425-2******	B-ID_NUM
+
+SSN:	O
+170104-3******	B-ID_NUM
+
+Details:	O
+김차,	B-NAME
+581211-3******,	B-ID_NUM
+인천시	B-ADDRESS
+양혜시	I-ADDRESS
+강연애로	I-ADDRESS
+810	I-ADDRESS
+
+성두	B-NAME
+(ID:	O
+070612-1******)	B-ID_NUM
+resides	O
+at	O
+경상북도	B-ADDRESS
+길채군	I-ADDRESS
+전민길	I-ADDRESS
+889-40,	I-ADDRESS
+phone:	O
+010-5555-2685.	B-PHONE
+
+ID:	O
+931101-4******	B-ID_NUM
+
+Reg	O
+No:	O
+011008-3******	B-ID_NUM
+
+Details:	O
+강웅,	B-NAME
+000627-3******,	B-ID_NUM
+부산시	B-ADDRESS
+모훈구	I-ADDRESS
+여나우로	I-ADDRESS
+584-27	I-ADDRESS
+
+License:	O
+760610-3******	B-ID_NUM
+
+ID:	O
+200517-3******	B-ID_NUM
+
+SSN:	O
+091214-4******	B-ID_NUM
+
+ID:	O
+180828-4******	B-ID_NUM
+
+Details:	O
+차만,	B-NAME
+721006-3******,	B-ID_NUM
+울산시	B-ADDRESS
+배철시	I-ADDRESS
+진성대로	I-ADDRESS
+201	I-ADDRESS
+
+장광	B-NAME
+(ID:	O
+360509-3******)	B-ID_NUM
+resides	O
+at	O
+전라북도	B-ADDRESS
+양제완시	I-ADDRESS
+김바환대로	I-ADDRESS
+312,	I-ADDRESS
+phone:	O
+010-2388-9198.	B-PHONE
+
+Identity	O
+verified:	O
+조초훈,	B-NAME
+161116-1******.	B-ID_NUM
+
+SSN:	O
+240115-3******	B-ID_NUM
+
+License:	O
+480409-1******	B-ID_NUM
+
+SSN:	O
+580126-4******	B-ID_NUM
+
+License:	O
+520419-3******	B-ID_NUM
+
+ID:	O
+090511-2******	B-ID_NUM
+
+Identity	O
+verified:	O
+이안,	B-NAME
+670912-2******.	B-ID_NUM
+
+남선	B-NAME
+(ID:	O
+791213-2******)	B-ID_NUM
+resides	O
+at	O
+제주시	B-ADDRESS
+전윤훈군	I-ADDRESS
+유솔용로	I-ADDRESS
+616-28,	I-ADDRESS
+phone:	O
+010-6632-5544.	B-PHONE
+
+ID:	O
+950614-3******	B-ID_NUM
+
+Reg	O
+No:	O
+721013-2******	B-ID_NUM
+
+SSN:	O
+830310-3******	B-ID_NUM
+
+ID:	O
+230409-4******	B-ID_NUM
+
+옥판	B-NAME
+(ID:	O
+991213-4******)	B-ID_NUM
+resides	O
+at	O
+전라북도	B-ADDRESS
+엄판환구	I-ADDRESS
+심카로	I-ADDRESS
+455,	I-ADDRESS
+phone:	O
+010-6445-5492.	B-PHONE
+
+SSN:	O
+991022-1******	B-ID_NUM
+
+진충	B-NAME
+(ID:	O
+471006-3******)	B-ID_NUM
+resides	O
+at	O
+울산시	B-ADDRESS
+이종자구	I-ADDRESS
+왕승시길	I-ADDRESS
+552-10,	I-ADDRESS
+phone:	O
+010-2122-2625.	B-PHONE
+
+Reg	O
+No:	O
+610522-1******	B-ID_NUM
+
+Identity	O
+verified:	O
+임나종,	B-NAME
+440909-3******.	B-ID_NUM
+
+구학	B-NAME
+(ID:	O
+820512-3******)	B-ID_NUM
+resides	O
+at	O
+경상남도	B-ADDRESS
+오창시	I-ADDRESS
+임판안길	I-ADDRESS
+528-28,	I-ADDRESS
+phone:	O
+010-2516-8829.	B-PHONE
+
+Details:	O
+신파,	B-NAME
+980704-3******,	B-ID_NUM
+전라남도	B-ADDRESS
+민자보시	I-ADDRESS
+명명조대로	I-ADDRESS
+988-3	I-ADDRESS
+
+SSN:	O
+181126-2******	B-ID_NUM
+
+ID:	O
+610726-2******	B-ID_NUM
+
+Reg	O
+No:	O
+580217-3******	B-ID_NUM
+
+ID:	O
+561014-2******	B-ID_NUM
+
+SSN:	O
+340101-4******	B-ID_NUM
+
+Details:	O
+육대,	B-NAME
+260720-4******,	B-ID_NUM
+경상북도	B-ADDRESS
+여성충구	I-ADDRESS
+제태원길	I-ADDRESS
+608	I-ADDRESS
+
+Details:	O
+서연,	B-NAME
+171106-4******,	B-ID_NUM
+제주시	B-ADDRESS
+민타시	I-ADDRESS
+엄진안길	I-ADDRESS
+261-33	I-ADDRESS
+
+ID:	O
+810513-4******	B-ID_NUM
+
+SSN:	O
+920322-4******	B-ID_NUM
+
+Reg	O
+No:	O
+260920-1******	B-ID_NUM
+
+Identity	O
+verified:	O
+방종,	B-NAME
+761020-3******.	B-ID_NUM
+
+Details:	O
+진선요,	B-NAME
+050307-4******,	B-ID_NUM
+충청북도	B-ADDRESS
+양철시	I-ADDRESS
+양택길	I-ADDRESS
+188	I-ADDRESS
+
+유종	B-NAME
+(ID:	O
+270115-2******)	B-ID_NUM
+resides	O
+at	O
+대구시	B-ADDRESS
+선화지군	I-ADDRESS
+모신로	I-ADDRESS
+969,	I-ADDRESS
+phone:	O
+010-1068-2740.	B-PHONE
+
+Details:	O
+구가임,	B-NAME
+060527-2******,	B-ID_NUM
+경상북도	B-ADDRESS
+반학시	I-ADDRESS
+남재대로	I-ADDRESS
+655	I-ADDRESS
+
+Identity	O
+verified:	O
+강병,	B-NAME
+640815-4******.	B-ID_NUM
+
+License:	O
+291114-3******	B-ID_NUM
+
+License:	O
+050527-4******	B-ID_NUM
+
+한이찬	B-NAME
+(ID:	O
+790406-1******)	B-ID_NUM
+resides	O
+at	O
+충청북도	B-ADDRESS
+안하식구	I-ADDRESS
+주호오길	I-ADDRESS
+566,	I-ADDRESS
+phone:	O
+010-6845-2309.	B-PHONE
+
+곽엄차	B-NAME
+(ID:	O
+350811-1******)	B-ID_NUM
+resides	O
+at	O
+서울시	B-ADDRESS
+염상시	I-ADDRESS
+함택홍대로	I-ADDRESS
+324,	I-ADDRESS
+phone:	O
+010-2008-3558.	B-PHONE
+
+SSN:	O
+800115-4******	B-ID_NUM
+
+License:	O
+010920-4******	B-ID_NUM
+
+License:	O
+330213-4******	B-ID_NUM
+
+License:	O
+160616-4******	B-ID_NUM
+
+License:	O
+851025-4******	B-ID_NUM
+
+Reg	O
+No:	O
+970924-2******	B-ID_NUM
+
+염차율	B-NAME
+(ID:	O
+470406-3******)	B-ID_NUM
+resides	O
+at	O
+부산시	B-ADDRESS
+제병택군	I-ADDRESS
+노창해로	I-ADDRESS
+388-33,	I-ADDRESS
+phone:	O
+010-7798-5183.	B-PHONE
+
+ID:	O
+361007-2******	B-ID_NUM
+
+ID:	O
+130922-1******	B-ID_NUM
+
+ID:	O
+791002-4******	B-ID_NUM
+
+Identity	O
+verified:	O
+노동환,	B-NAME
+200712-3******.	B-ID_NUM
+
+Details:	O
+정아카,	B-NAME
+091021-4******,	B-ID_NUM
+경상남도	B-ADDRESS
+주섭요구	I-ADDRESS
+권오로	I-ADDRESS
+961	I-ADDRESS
+
+Identity	O
+verified:	O
+공애일,	B-NAME
+800614-2******.	B-ID_NUM
+
+Missing	O
+CONSENT_TYPE:	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Please	O
+provide	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+for	O
+CONSENT_TYPE.	O
+
+Please	O
+provide	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+for	O
+CONSENT_TYPE.	O
+
+반근	B-NAME
+(국장)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2008년	B-DATE
+6월	I-DATE
+3일	I-DATE
+->	O
+user539@example.com.	B-EMAIL
+
+Value	O
+of	O
+CONSENT_TYPE	O
+is	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Please	O
+provide	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+for	O
+CONSENT_TYPE.	O
+
+Value	O
+of	O
+CONSENT_TYPE	O
+is	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Check	O
+CONSENT_TYPE:	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Value	O
+of	O
+CONSENT_TYPE	O
+is	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Check	O
+CONSENT_TYPE:	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Missing	O
+CONSENT_TYPE:	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Missing	O
+CONSENT_TYPE:	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Please	O
+provide	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+for	O
+CONSENT_TYPE.	O
+
+Missing	O
+CONSENT_TYPE:	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+국바	B-NAME
+(센터장)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2001년	B-DATE
+1월	I-DATE
+21일	I-DATE
+->	O
+user300@example.com.	B-EMAIL
+
+조주	B-NAME
+(센터장)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2004년	B-DATE
+6월	I-DATE
+25일	I-DATE
+->	O
+user993@example.com.	B-EMAIL
+
+지휘	B-NAME
+(사원)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2014년	B-DATE
+10월	I-DATE
+27일	I-DATE
+->	O
+user523@example.com.	B-EMAIL
+
+Missing	O
+CONSENT_TYPE:	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Please	O
+provide	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+for	O
+CONSENT_TYPE.	O
+
+박종재	B-NAME
+(차장)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2025년	B-DATE
+7월	I-DATE
+19일	I-DATE
+->	O
+user232@example.com.	B-EMAIL
+
+Please	O
+provide	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+for	O
+CONSENT_TYPE.	O
+
+Missing	O
+CONSENT_TYPE:	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Value	O
+of	O
+CONSENT_TYPE	O
+is	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+소조라	B-NAME
+(국장)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2011년	B-DATE
+8월	I-DATE
+6일	I-DATE
+->	O
+user762@example.com.	B-EMAIL
+
+황옥	B-NAME
+(팀장)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2009년	B-DATE
+9월	I-DATE
+14일	I-DATE
+->	O
+user281@example.com.	B-EMAIL
+
+장엄	B-NAME
+(상무)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2012년	B-DATE
+4월	I-DATE
+20일	I-DATE
+->	O
+user450@example.com.	B-EMAIL
+
+백종	B-NAME
+(사원)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2024년	B-DATE
+12월	I-DATE
+11일	I-DATE
+->	O
+user110@example.com.	B-EMAIL
+
+변명성	B-NAME
+(연구원)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2014년	B-DATE
+8월	I-DATE
+10일	I-DATE
+->	O
+user336@example.com.	B-EMAIL
+
+옥보세	B-NAME
+(대표)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2015년	B-DATE
+4월	I-DATE
+18일	I-DATE
+->	O
+user289@example.com.	B-EMAIL
+
+Check	O
+CONSENT_TYPE:	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+제섭	B-NAME
+(사원)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2005년	B-DATE
+3월	I-DATE
+22일	I-DATE
+->	O
+user818@example.com.	B-EMAIL
+
+염혁	B-NAME
+(수석연구원)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2017년	B-DATE
+6월	I-DATE
+2일	I-DATE
+->	O
+user183@example.com.	B-EMAIL
+
+Check	O
+CONSENT_TYPE:	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+연춘	B-NAME
+(사원)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2000년	B-DATE
+6월	I-DATE
+2일	I-DATE
+->	O
+user178@example.com.	B-EMAIL
+
+신천학	B-NAME
+(사원)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2023년	B-DATE
+7월	I-DATE
+10일	I-DATE
+->	O
+user231@example.com.	B-EMAIL
+
+서영	B-NAME
+(과장)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2023년	B-DATE
+10월	I-DATE
+1일	I-DATE
+->	O
+user75@example.com.	B-EMAIL
+
+차소민	B-NAME
+(전무)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2000년	B-DATE
+4월	I-DATE
+12일	I-DATE
+->	O
+user761@example.com.	B-EMAIL
+
+모여	B-NAME
+(대리)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2013년	B-DATE
+4월	I-DATE
+22일	I-DATE
+->	O
+user875@example.com.	B-EMAIL
+
+채다민	B-NAME
+(팀장)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2019년	B-DATE
+10월	I-DATE
+5일	I-DATE
+->	O
+user555@example.com.	B-EMAIL
+
+양한	B-NAME
+(센터장)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2021년	B-DATE
+10월	I-DATE
+14일	I-DATE
+->	O
+user727@example.com.	B-EMAIL
+
+윤인종	B-NAME
+(사원)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2007년	B-DATE
+11월	I-DATE
+27일	I-DATE
+->	O
+user911@example.com.	B-EMAIL
+
+Check	O
+CONSENT_TYPE:	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+차현춘	B-NAME
+(연구원)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2025년	B-DATE
+7월	I-DATE
+12일	I-DATE
+->	O
+user517@example.com.	B-EMAIL
+
+지정윤	B-NAME
+(파트장)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2016년	B-DATE
+10월	I-DATE
+23일	I-DATE
+->	O
+user938@example.com.	B-EMAIL
+
+선섭	B-NAME
+(상무)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2018년	B-DATE
+11월	I-DATE
+8일	I-DATE
+->	O
+user409@example.com.	B-EMAIL
+
+류라	B-NAME
+(주임)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2012년	B-DATE
+8월	I-DATE
+9일	I-DATE
+->	O
+user490@example.com.	B-EMAIL
+
+Value	O
+of	O
+CONSENT_TYPE	O
+is	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+Value	O
+of	O
+CONSENT_TYPE	O
+is	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+탁채두	B-NAME
+(선임연구원)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2010년	B-DATE
+8월	I-DATE
+2일	I-DATE
+->	O
+user695@example.com.	B-EMAIL
+
+Check	O
+CONSENT_TYPE:	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+
+배영	B-NAME
+(사장)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2015년	B-DATE
+9월	I-DATE
+10일	I-DATE
+->	O
+user752@example.com.	B-EMAIL
+
+노중종	B-NAME
+(사장)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2002년	B-DATE
+5월	I-DATE
+19일	I-DATE
+->	O
+user656@example.com.	B-EMAIL
+
+제하훈	B-NAME
+(부장)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2020년	B-DATE
+11월	I-DATE
+27일	I-DATE
+->	O
+user140@example.com.	B-EMAIL
+
+장가	B-NAME
+(전무)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2014년	B-DATE
+1월	I-DATE
+26일	I-DATE
+->	O
+user557@example.com.	B-EMAIL
+
+국광	B-NAME
+(연구원)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2008년	B-DATE
+5월	I-DATE
+14일	I-DATE
+->	O
+user878@example.com.	B-EMAIL
+
+방판천	B-NAME
+(대표)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2002년	B-DATE
+2월	I-DATE
+22일	I-DATE
+->	O
+user793@example.com.	B-EMAIL
+
+반우타	B-NAME
+(상무)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2002년	B-DATE
+4월	I-DATE
+16일	I-DATE
+->	O
+user247@example.com.	B-EMAIL
+
+강만근	B-NAME
+(팀장)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2020년	B-DATE
+7월	I-DATE
+8일	I-DATE
+->	O
+user963@example.com.	B-EMAIL
+
+백철	B-NAME
+(매니저)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2016년	B-DATE
+7월	I-DATE
+26일	I-DATE
+->	O
+user952@example.com.	B-EMAIL
+
+국규준	B-NAME
+(차장)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2016년	B-DATE
+8월	I-DATE
+27일	I-DATE
+->	O
+user537@example.com.	B-EMAIL
+
+신조	B-NAME
+(회장)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2017년	B-DATE
+8월	I-DATE
+3일	I-DATE
+->	O
+user97@example.com.	B-EMAIL
+
+손빈	B-NAME
+(실장)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2002년	B-DATE
+7월	I-DATE
+14일	I-DATE
+->	O
+user514@example.com.	B-EMAIL
+
+성광	B-NAME
+(팀장)	B-POSITION
+signed	O
+마케팅	B-CONSENT_TYPE
+수신	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2002년	B-DATE
+7월	I-DATE
+22일	I-DATE
+->	O
+user703@example.com.	B-EMAIL
+
+공석우	B-NAME
+(국장)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2017년	B-DATE
+12월	I-DATE
+23일	I-DATE
+->	O
+user38@example.com.	B-EMAIL
+
+기세	B-NAME
+(국장)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2009년	B-DATE
+1월	I-DATE
+5일	I-DATE
+->	O
+user405@example.com.	B-EMAIL
+
+권일	B-NAME
+(대표)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2018년	B-DATE
+12월	I-DATE
+18일	I-DATE
+->	O
+user391@example.com.	B-EMAIL
+
+민우여	B-NAME
+(수석연구원)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2021년	B-DATE
+5월	I-DATE
+14일	I-DATE
+->	O
+user507@example.com.	B-EMAIL
+
+함자	B-NAME
+(선임연구원)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2012년	B-DATE
+11월	I-DATE
+15일	I-DATE
+->	O
+user783@example.com.	B-EMAIL
+
+엄원	B-NAME
+(본부장)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2015년	B-DATE
+3월	I-DATE
+20일	I-DATE
+->	O
+user909@example.com.	B-EMAIL
+
+용장	B-NAME
+(파트장)	B-POSITION
+signed	O
+서비스	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2025년	B-DATE
+8월	I-DATE
+1일	I-DATE
+->	O
+user534@example.com.	B-EMAIL
+
+주명	B-NAME
+(매니저)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2023년	B-DATE
+9월	I-DATE
+24일	I-DATE
+->	O
+user90@example.com.	B-EMAIL
+
+석섭섭	B-NAME
+(팀장)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2001년	B-DATE
+3월	I-DATE
+3일	I-DATE
+->	O
+user772@example.com.	B-EMAIL
+
+남혁	B-NAME
+(책임)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2003년	B-DATE
+7월	I-DATE
+21일	I-DATE
+->	O
+user121@example.com.	B-EMAIL
+
+조애하	B-NAME
+(팀장)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2001년	B-DATE
+10월	I-DATE
+17일	I-DATE
+->	O
+user440@example.com.	B-EMAIL
+
+하태	B-NAME
+(파트장)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2024년	B-DATE
+11월	I-DATE
+9일	I-DATE
+->	O
+user400@example.com.	B-EMAIL
+
+임광휘	B-NAME
+(사원)	B-POSITION
+signed	O
+제3자	B-CONSENT_TYPE
+제공	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2016년	B-DATE
+2월	I-DATE
+28일	I-DATE
+->	O
+user351@example.com.	B-EMAIL
+
+반차연	B-NAME
+(파트장)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2001년	B-DATE
+8월	I-DATE
+11일	I-DATE
+->	O
+user397@example.com.	B-EMAIL
+
+권건영	B-NAME
+(실장)	B-POSITION
+signed	O
+전자금융거래	B-CONSENT_TYPE
+약관	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2002년	B-DATE
+7월	I-DATE
+15일	I-DATE
+->	O
+user595@example.com.	B-EMAIL
+
+주민소	B-NAME
+(연구원)	B-POSITION
+signed	O
+위치정보	B-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2009년	B-DATE
+10월	I-DATE
+27일	I-DATE
+->	O
+user569@example.com.	B-EMAIL
+
+Transfer	O
+fee	O
+for	O
+초상권	B-RIGHT_INFO
+is	O
+3114천만원.	B-MONEY
+
+Please	O
+provide	O
+방송권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+Transfer	O
+초상권	B-RIGHT_INFO
+of	O
+104개	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+568천만원.	B-MONEY
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+출판권	B-RIGHT_INFO
+
+Transfer	O
+fee	O
+for	O
+배포권	B-RIGHT_INFO
+is	O
+5083만원.	B-MONEY
+
+Check	O
+RIGHT_INFO:	O
+전송권	B-RIGHT_INFO
+
+Check	O
+RIGHT_INFO:	O
+복제권	B-RIGHT_INFO
+
+Transfer	O
+2차적저작물작성권	B-RIGHT_INFO
+of	O
+671회	B-QUANTITY
+연극저작물	B-TYPE
+for	O
+4012천만원.	B-MONEY
+
+Missing	O
+RIGHT_INFO:	O
+배포권	B-RIGHT_INFO
+
+전시권	B-RIGHT_INFO
+in	O
+남준	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+지현바이오	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제50조	I-LAW_REFERENCE
+5항.	I-LAW_REFERENCE
+
+Missing	O
+RIGHT_INFO:	O
+공표권	B-RIGHT_INFO
+
+Missing	O
+RIGHT_INFO:	O
+초상권	B-RIGHT_INFO
+
+성명표시권	B-RIGHT_INFO
+in	O
+백효규	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+한광컨설팅	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제98조	I-LAW_REFERENCE
+10항.	I-LAW_REFERENCE
+
+Missing	O
+RIGHT_INFO:	O
+2차적저작물작성권	B-RIGHT_INFO
+
+방송권	B-RIGHT_INFO
+in	O
+육위애	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+성형연엔터테인먼트	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제84조	I-LAW_REFERENCE
+4항.	I-LAW_REFERENCE
+
+동일성유지권	B-RIGHT_INFO
+in	O
+문한	B-TITLE
+관련	I-TITLE
+동의서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+제종디자인	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제18조	I-LAW_REFERENCE
+7항.	I-LAW_REFERENCE
+
+Check	O
+RIGHT_INFO:	O
+공표권	B-RIGHT_INFO
+
+Transfer	O
+fee	O
+for	O
+공연권	B-RIGHT_INFO
+is	O
+6853백만원.	B-MONEY
+
+Transfer	O
+동일성유지권	B-RIGHT_INFO
+of	O
+767회	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+1906백만원.	B-MONEY
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+퍼블리시티권	B-RIGHT_INFO
+
+퍼블리시티권	B-RIGHT_INFO
+in	O
+모순섭	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+표은컨설팅	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제35조	I-LAW_REFERENCE
+7항.	I-LAW_REFERENCE
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+배포권	B-RIGHT_INFO
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+성명표시권	B-RIGHT_INFO
+
+Transfer	O
+대여권	B-RIGHT_INFO
+of	O
+715년	B-QUANTITY
+어문저작물	B-TYPE
+for	O
+2349천만원.	B-MONEY
+
+Transfer	O
+저작재산권	B-RIGHT_INFO
+of	O
+909편	B-QUANTITY
+음악저작물	B-TYPE
+for	O
+4008천원.	B-MONEY
+
+Missing	O
+RIGHT_INFO:	O
+공연권	B-RIGHT_INFO
+
+Transfer	O
+fee	O
+for	O
+퍼블리시티권	B-RIGHT_INFO
+is	O
+7154억원.	B-MONEY
+
+Transfer	O
+fee	O
+for	O
+전시권	B-RIGHT_INFO
+is	O
+6697억원.	B-MONEY
+
+Check	O
+RIGHT_INFO:	O
+공연권	B-RIGHT_INFO
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+전시권	B-RIGHT_INFO
+
+방송권	B-RIGHT_INFO
+in	O
+노나	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+belongs	O
+to	O
+사단법인	B-COMPANY
+은철안건설	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제94조	I-LAW_REFERENCE
+5항.	I-LAW_REFERENCE
+
+Please	O
+provide	O
+공표권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+Transfer	O
+2차적저작물작성권	B-RIGHT_INFO
+of	O
+103부	B-QUANTITY
+편집저작물	B-TYPE
+for	O
+7468만원.	B-MONEY
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+2차적저작물작성권	B-RIGHT_INFO
+
+Transfer	O
+fee	O
+for	O
+전송권	B-RIGHT_INFO
+is	O
+9281억원.	B-MONEY
+
+Missing	O
+RIGHT_INFO:	O
+전송권	B-RIGHT_INFO
+
+배포권	B-RIGHT_INFO
+in	O
+진두	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+belongs	O
+to	O
+(주)	B-COMPANY
+천중무역	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제42조	I-LAW_REFERENCE
+3항.	I-LAW_REFERENCE
+
+Transfer	O
+복제권	B-RIGHT_INFO
+of	O
+588점	B-QUANTITY
+편집저작물	B-TYPE
+for	O
+9023천만원.	B-MONEY
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+공표권	B-RIGHT_INFO
+
+Transfer	O
+대여권	B-RIGHT_INFO
+of	O
+963일	B-QUANTITY
+소프트웨어	B-TYPE
+for	O
+1507억원.	B-MONEY
+
+Please	O
+provide	O
+전송권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+Transfer	O
+공표권	B-RIGHT_INFO
+of	O
+565일	B-QUANTITY
+음악저작물	B-TYPE
+for	O
+8036백만원.	B-MONEY
+
+Please	O
+provide	O
+대여권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+2차적저작물작성권	B-RIGHT_INFO
+in	O
+신선	B-TITLE
+관련	I-TITLE
+확약서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+류운시스템	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제43조	I-LAW_REFERENCE
+6항.	I-LAW_REFERENCE
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+방송권	B-RIGHT_INFO
+
+Transfer	O
+fee	O
+for	O
+공표권	B-RIGHT_INFO
+is	O
+7239천원.	B-MONEY
+
+Check	O
+RIGHT_INFO:	O
+전시권	B-RIGHT_INFO
+
+Transfer	O
+배포권	B-RIGHT_INFO
+of	O
+720회	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+5512억원.	B-MONEY
+
+Transfer	O
+저작재산권	B-RIGHT_INFO
+of	O
+70곡	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+5954백만원.	B-MONEY
+
+Please	O
+provide	O
+복제권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+Missing	O
+RIGHT_INFO:	O
+대여권	B-RIGHT_INFO
+
+공연권	B-RIGHT_INFO
+in	O
+현하	B-TITLE
+관련	I-TITLE
+동의서	I-TITLE
+belongs	O
+to	O
+(주)	B-COMPANY
+마바진디자인	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제91조	I-LAW_REFERENCE
+3항.	I-LAW_REFERENCE
+
+Please	O
+provide	O
+저작재산권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+초상권	B-RIGHT_INFO
+
+성명표시권	B-RIGHT_INFO
+in	O
+황천	B-TITLE
+관련	I-TITLE
+계획서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+채은소프트	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제97조	I-LAW_REFERENCE
+5항.	I-LAW_REFERENCE
+
+Check	O
+RIGHT_INFO:	O
+저작재산권	B-RIGHT_INFO
+
+Transfer	O
+fee	O
+for	O
+퍼블리시티권	B-RIGHT_INFO
+is	O
+489천만원.	B-MONEY
+
+Please	O
+provide	O
+동일성유지권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+복제권	B-RIGHT_INFO
+in	O
+도조지	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+belongs	O
+to	O
+사단법인	B-COMPANY
+옥하물산	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제18조	I-LAW_REFERENCE
+3항.	I-LAW_REFERENCE
+
+2차적저작물작성권	B-RIGHT_INFO
+in	O
+원차율	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+추지기획	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제91조	I-LAW_REFERENCE
+8항.	I-LAW_REFERENCE
+
+Transfer	O
+fee	O
+for	O
+성명표시권	B-RIGHT_INFO
+is	O
+5693만원.	B-MONEY
+
+Missing	O
+RIGHT_INFO:	O
+출판권	B-RIGHT_INFO
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+동일성유지권	B-RIGHT_INFO
+
+Transfer	O
+fee	O
+for	O
+퍼블리시티권	B-RIGHT_INFO
+is	O
+9142백만원.	B-MONEY
+
+Transfer	O
+대여권	B-RIGHT_INFO
+of	O
+278개월	B-QUANTITY
+소프트웨어	B-TYPE
+for	O
+9983천만원.	B-MONEY
+
+Check	O
+RIGHT_INFO:	O
+2차적저작물작성권	B-RIGHT_INFO
+
+Transfer	O
+fee	O
+for	O
+성명표시권	B-RIGHT_INFO
+is	O
+8363백만원.	B-MONEY
+
+초상권	B-RIGHT_INFO
+in	O
+여영	B-TITLE
+관련	I-TITLE
+계획서	I-TITLE
+belongs	O
+to	O
+주식회사	B-COMPANY
+최재재제약	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제97조	I-LAW_REFERENCE
+8항.	I-LAW_REFERENCE
+
+Transfer	O
+배포권	B-RIGHT_INFO
+of	O
+621건	B-QUANTITY
+어문저작물	B-TYPE
+for	O
+1007억원.	B-MONEY
+
+초상권	B-RIGHT_INFO
+in	O
+심장	B-TITLE
+관련	I-TITLE
+계획서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+전영임엔터테인먼트	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제89조	I-LAW_REFERENCE
+2항.	I-LAW_REFERENCE
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+저작재산권	B-RIGHT_INFO
+
+Transfer	O
+복제권	B-RIGHT_INFO
+of	O
+69개	B-QUANTITY
+미술저작물	B-TYPE
+for	O
+3647억원.	B-MONEY
+
+Missing	O
+RIGHT_INFO:	O
+복제권	B-RIGHT_INFO
+
+Transfer	O
+전송권	B-RIGHT_INFO
+of	O
+771점	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+7261억원.	B-MONEY
+
+Please	O
+provide	O
+성명표시권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+Missing	O
+RIGHT_INFO:	O
+성명표시권	B-RIGHT_INFO
+
+Check	O
+RIGHT_INFO:	O
+출판권	B-RIGHT_INFO
+
+대여권	B-RIGHT_INFO
+in	O
+소재여	B-TITLE
+관련	I-TITLE
+계획서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+강지명바이오	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제78조	I-LAW_REFERENCE
+7항.	I-LAW_REFERENCE
+
+Value	O
+of	O
+RIGHT_INFO	O
+is	O
+전송권	B-RIGHT_INFO
+
+주식회사	B-COMPANY
+임순소프트	I-COMPANY
+invests	O
+4662천만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+A5,	I-PROJECT_NAME
+completion	O
+2023년	B-DATE
+6월	I-DATE
+23일.	I-DATE
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+E13	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+G26	I-PROJECT_NAME
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+T23	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+X47	I-PROJECT_NAME
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+L90	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+K62	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+O48	I-PROJECT_NAME
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+O61	I-PROJECT_NAME
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+I76:	I-PROJECT_NAME
+7657천만원.	B-MONEY
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+F7:	I-PROJECT_NAME
+3316백만원.	B-MONEY
+
+(주)	B-COMPANY
+원차물산	I-COMPANY
+invests	O
+1963백만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+S36,	I-PROJECT_NAME
+completion	O
+2012년	B-DATE
+10월	I-DATE
+12일.	I-DATE
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+F73	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+사단법인	B-COMPANY
+반의바이오	I-COMPANY
+invests	O
+9732백만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+J12,	I-PROJECT_NAME
+completion	O
+2001년	B-DATE
+1월	I-DATE
+13일.	I-DATE
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+H32	I-PROJECT_NAME
+
+재단법인	B-COMPANY
+현동오무역	I-COMPANY
+invests	O
+5959천만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+R84,	I-PROJECT_NAME
+completion	O
+2009년	B-DATE
+6월	I-DATE
+12일.	I-DATE
+
+재단법인	B-COMPANY
+노명하전자	I-COMPANY
+invests	O
+2704만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+Y35,	I-PROJECT_NAME
+completion	O
+2012년	B-DATE
+11월	I-DATE
+25일.	I-DATE
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+I8	I-PROJECT_NAME
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+I94	I-PROJECT_NAME
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+S41:	I-PROJECT_NAME
+4748천만원.	B-MONEY
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+E2	I-PROJECT_NAME
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+E11:	I-PROJECT_NAME
+6052백만원.	B-MONEY
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+F53	I-PROJECT_NAME
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+T3	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+Y92:	I-PROJECT_NAME
+7339천원.	B-MONEY
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+P51	I-PROJECT_NAME
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+J81	I-PROJECT_NAME
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+P88:	I-PROJECT_NAME
+654만원.	B-MONEY
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+A54	I-PROJECT_NAME
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+X27	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+B58	I-PROJECT_NAME
+
+유한회사	B-COMPANY
+표석위바이오	I-COMPANY
+invests	O
+1693만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+W17,	I-PROJECT_NAME
+completion	O
+2016년	B-DATE
+7월	I-DATE
+14일.	I-DATE
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+F75	I-PROJECT_NAME
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+D18:	I-PROJECT_NAME
+2222만원.	B-MONEY
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+D86	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+D56	I-PROJECT_NAME
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+L78:	I-PROJECT_NAME
+8393천원.	B-MONEY
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+T78	I-PROJECT_NAME
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+V19	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+X83	I-PROJECT_NAME
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+L21	I-PROJECT_NAME
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+Q76	I-PROJECT_NAME
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+Z50	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+Q8	I-PROJECT_NAME
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+D53	I-PROJECT_NAME
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+Z5	I-PROJECT_NAME
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+U16:	I-PROJECT_NAME
+1303억원.	B-MONEY
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+J80	I-PROJECT_NAME
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+B62	I-PROJECT_NAME
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+B36	I-PROJECT_NAME
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+N58	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+L86	I-PROJECT_NAME
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+L67	I-PROJECT_NAME
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+L36	I-PROJECT_NAME
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+D89	I-PROJECT_NAME
+
+재단법인	B-COMPANY
+조두익물산	I-COMPANY
+invests	O
+9682억원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+I87,	I-PROJECT_NAME
+completion	O
+2013년	B-DATE
+3월	I-DATE
+23일.	I-DATE
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+J41	I-PROJECT_NAME
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+K47	I-PROJECT_NAME
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+A18:	I-PROJECT_NAME
+7954백만원.	B-MONEY
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+C97	I-PROJECT_NAME
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+J97	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+유한회사	B-COMPANY
+하진무역	I-COMPANY
+invests	O
+1920천원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+A44,	I-PROJECT_NAME
+completion	O
+2017년	B-DATE
+5월	I-DATE
+8일.	I-DATE
+
+유한회사	B-COMPANY
+오원택네트웍스	I-COMPANY
+invests	O
+6331백만원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+C49,	I-PROJECT_NAME
+completion	O
+2016년	B-DATE
+6월	I-DATE
+15일.	I-DATE
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+D63	I-PROJECT_NAME
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+U67	I-PROJECT_NAME
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+R53:	I-PROJECT_NAME
+5856천만원.	B-MONEY
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+P39	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+H1	I-PROJECT_NAME
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+Z51:	I-PROJECT_NAME
+1453백만원.	B-MONEY
+
+(주)	B-COMPANY
+차빈컨설팅	I-COMPANY
+invests	O
+4126천원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+K32,	I-PROJECT_NAME
+completion	O
+2023년	B-DATE
+3월	I-DATE
+8일.	I-DATE
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+X33	I-PROJECT_NAME
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+F54	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+N20	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+J41	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+사단법인	B-COMPANY
+조임성무역	I-COMPANY
+invests	O
+8294억원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+E38,	I-PROJECT_NAME
+completion	O
+2005년	B-DATE
+2월	I-DATE
+9일.	I-DATE
+
+Please	O
+provide	O
+프로젝트	B-PROJECT_NAME
+O3	I-PROJECT_NAME
+for	O
+PROJECT_NAME.	O
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+M18:	I-PROJECT_NAME
+9034억원.	B-MONEY
+
+Value	O
+of	O
+PROJECT_NAME	O
+is	O
+프로젝트	B-PROJECT_NAME
+W51	I-PROJECT_NAME
+
+주식회사	B-COMPANY
+전신호스튜디오	I-COMPANY
+invests	O
+8144억원	B-MONEY
+in	O
+프로젝트	B-PROJECT_NAME
+L58,	I-PROJECT_NAME
+completion	O
+2005년	B-DATE
+4월	I-DATE
+15일.	I-DATE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제24조	I-LAW_REFERENCE
+6항	I-LAW_REFERENCE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제80조	I-LAW_REFERENCE
+1항,	I-LAW_REFERENCE
+we	O
+sign	O
+라이선스계약서.	B-CONTRACT_TYPE
+
+배포권	B-RIGHT_INFO
+in	O
+강동	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+belongs	O
+to	O
+주식회사	B-COMPANY
+방지연엔터테인먼트	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제83조	I-LAW_REFERENCE
+7항.	I-LAW_REFERENCE
+
+Please	O
+provide	O
+저작권법	B-LAW_REFERENCE
+제99조	I-LAW_REFERENCE
+2항	I-LAW_REFERENCE
+for	O
+LAW_REFERENCE.	O
+
+공연권	B-RIGHT_INFO
+in	O
+제카오	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+belongs	O
+to	O
+(주)	B-COMPANY
+인건완스튜디오	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제51조	I-LAW_REFERENCE
+2항.	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제96조	I-LAW_REFERENCE
+8항	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제82조	I-LAW_REFERENCE
+5항	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제58조	I-LAW_REFERENCE
+5항	I-LAW_REFERENCE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제39조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+
+퍼블리시티권	B-RIGHT_INFO
+in	O
+구여	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+belongs	O
+to	O
+(주)	B-COMPANY
+신현기획	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제31조	I-LAW_REFERENCE
+4항.	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제58조	I-LAW_REFERENCE
+7항	I-LAW_REFERENCE
+
+전시권	B-RIGHT_INFO
+in	O
+최광	B-TITLE
+관련	I-TITLE
+확약서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+하해시스템	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제80조	I-LAW_REFERENCE
+4항.	I-LAW_REFERENCE
+
+배포권	B-RIGHT_INFO
+in	O
+고창윤	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+belongs	O
+to	O
+(주)	B-COMPANY
+배옥그룹	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제55조	I-LAW_REFERENCE
+5항.	I-LAW_REFERENCE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제22조	I-LAW_REFERENCE
+6항,	I-LAW_REFERENCE
+we	O
+sign	O
+가맹계약서.	B-CONTRACT_TYPE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제15조	I-LAW_REFERENCE
+5항,	I-LAW_REFERENCE
+we	O
+sign	O
+가맹계약서.	B-CONTRACT_TYPE
+
+2차적저작물작성권	B-RIGHT_INFO
+in	O
+강화	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+belongs	O
+to	O
+사단법인	B-COMPANY
+위종기획	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제91조	I-LAW_REFERENCE
+6항.	I-LAW_REFERENCE
+
+Please	O
+provide	O
+저작권법	B-LAW_REFERENCE
+제39조	I-LAW_REFERENCE
+5항	I-LAW_REFERENCE
+for	O
+LAW_REFERENCE.	O
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제60조	I-LAW_REFERENCE
+7항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제5조	I-LAW_REFERENCE
+10항	I-LAW_REFERENCE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제88조	I-LAW_REFERENCE
+6항	I-LAW_REFERENCE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제87조	I-LAW_REFERENCE
+3항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제89조	I-LAW_REFERENCE
+5항	I-LAW_REFERENCE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제53조	I-LAW_REFERENCE
+5항	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제75조	I-LAW_REFERENCE
+10항	I-LAW_REFERENCE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제11조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+
+대여권	B-RIGHT_INFO
+in	O
+고영	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+은현요미디어	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제27조	I-LAW_REFERENCE
+1항.	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제42조	I-LAW_REFERENCE
+7항	I-LAW_REFERENCE
+
+Please	O
+provide	O
+저작권법	B-LAW_REFERENCE
+제96조	I-LAW_REFERENCE
+2항	I-LAW_REFERENCE
+for	O
+LAW_REFERENCE.	O
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제100조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제64조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제36조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제87조	I-LAW_REFERENCE
+4항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제81조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제37조	I-LAW_REFERENCE
+6항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제82조	I-LAW_REFERENCE
+8항	I-LAW_REFERENCE
+
+Please	O
+provide	O
+저작권법	B-LAW_REFERENCE
+제75조	I-LAW_REFERENCE
+7항	I-LAW_REFERENCE
+for	O
+LAW_REFERENCE.	O
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제22조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+
+동일성유지권	B-RIGHT_INFO
+in	O
+기자성	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+belongs	O
+to	O
+사단법인	B-COMPANY
+신치섭제약	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제28조	I-LAW_REFERENCE
+7항.	I-LAW_REFERENCE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제31조	I-LAW_REFERENCE
+4항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제78조	I-LAW_REFERENCE
+10항	I-LAW_REFERENCE
+
+출판권	B-RIGHT_INFO
+in	O
+편혜	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+허우일무역	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제58조	I-LAW_REFERENCE
+6항.	I-LAW_REFERENCE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제100조	I-LAW_REFERENCE
+9항,	I-LAW_REFERENCE
+we	O
+sign	O
+라이선스계약서.	B-CONTRACT_TYPE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제96조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+
+전시권	B-RIGHT_INFO
+in	O
+류건	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+김홍시스템	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제45조	I-LAW_REFERENCE
+10항.	I-LAW_REFERENCE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제31조	I-LAW_REFERENCE
+3항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제66조	I-LAW_REFERENCE
+8항	I-LAW_REFERENCE
+
+대여권	B-RIGHT_INFO
+in	O
+남천	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+추여물산	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제91조	I-LAW_REFERENCE
+10항.	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제91조	I-LAW_REFERENCE
+8항	I-LAW_REFERENCE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제90조	I-LAW_REFERENCE
+3항,	I-LAW_REFERENCE
+we	O
+sign	O
+출판권설정계약서.	B-CONTRACT_TYPE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제47조	I-LAW_REFERENCE
+5항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제79조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제49조	I-LAW_REFERENCE
+5항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제25조	I-LAW_REFERENCE
+6항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제29조	I-LAW_REFERENCE
+9항	I-LAW_REFERENCE
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제40조	I-LAW_REFERENCE
+2항	I-LAW_REFERENCE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제27조	I-LAW_REFERENCE
+3항,	I-LAW_REFERENCE
+we	O
+sign	O
+비밀유지서약서.	B-CONTRACT_TYPE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제15조	I-LAW_REFERENCE
+1항,	I-LAW_REFERENCE
+we	O
+sign	O
+임대차계약서.	B-CONTRACT_TYPE
+
+배포권	B-RIGHT_INFO
+in	O
+류학	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+belongs	O
+to	O
+(주)	B-COMPANY
+옥비규디자인	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제7조	I-LAW_REFERENCE
+2항.	I-LAW_REFERENCE
+
+Please	O
+provide	O
+저작권법	B-LAW_REFERENCE
+제55조	I-LAW_REFERENCE
+8항	I-LAW_REFERENCE
+for	O
+LAW_REFERENCE.	O
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제100조	I-LAW_REFERENCE
+6항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제11조	I-LAW_REFERENCE
+3항	I-LAW_REFERENCE
+
+배포권	B-RIGHT_INFO
+in	O
+남창우	B-TITLE
+관련	I-TITLE
+확약서	I-TITLE
+belongs	O
+to	O
+(주)	B-COMPANY
+국정선디자인	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제97조	I-LAW_REFERENCE
+4항.	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제20조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+
+Please	O
+provide	O
+저작권법	B-LAW_REFERENCE
+제14조	I-LAW_REFERENCE
+7항	I-LAW_REFERENCE
+for	O
+LAW_REFERENCE.	O
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제89조	I-LAW_REFERENCE
+3항	I-LAW_REFERENCE
+
+성명표시권	B-RIGHT_INFO
+in	O
+제산재	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+진설홀딩스	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제57조	I-LAW_REFERENCE
+5항.	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제26조	I-LAW_REFERENCE
+4항	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제10조	I-LAW_REFERENCE
+5항	I-LAW_REFERENCE
+
+복제권	B-RIGHT_INFO
+in	O
+육환	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+belongs	O
+to	O
+(주)	B-COMPANY
+노하연산업	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제44조	I-LAW_REFERENCE
+9항.	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제99조	I-LAW_REFERENCE
+10항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제71조	I-LAW_REFERENCE
+7항	I-LAW_REFERENCE
+
+2차적저작물작성권	B-RIGHT_INFO
+in	O
+박시	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+은사명건설	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제83조	I-LAW_REFERENCE
+7항.	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제77조	I-LAW_REFERENCE
+10항	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제2조	I-LAW_REFERENCE
+7항	I-LAW_REFERENCE
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제48조	I-LAW_REFERENCE
+2항	I-LAW_REFERENCE
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제89조	I-LAW_REFERENCE
+8항	I-LAW_REFERENCE
+
+Please	O
+provide	O
+저작권법	B-LAW_REFERENCE
+제33조	I-LAW_REFERENCE
+6항	I-LAW_REFERENCE
+for	O
+LAW_REFERENCE.	O
+
+Please	O
+provide	O
+저작권법	B-LAW_REFERENCE
+제54조	I-LAW_REFERENCE
+2항	I-LAW_REFERENCE
+for	O
+LAW_REFERENCE.	O
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제47조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+
+Check	O
+TITLE:	O
+손창건	B-TITLE
+관련	I-TITLE
+계획서	I-TITLE
+
+Check	O
+TITLE:	O
+성일	B-TITLE
+관련	I-TITLE
+신청서	I-TITLE
+
+Missing	O
+TITLE:	O
+민광지	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+
+성명표시권	B-RIGHT_INFO
+in	O
+장임	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+변화홀딩스	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제58조	I-LAW_REFERENCE
+10항.	I-LAW_REFERENCE
+
+Check	O
+TITLE:	O
+문사	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+
+Please	O
+provide	O
+왕현	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+for	O
+TITLE.	O
+
+Please	O
+provide	O
+허진	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+for	O
+TITLE.	O
+
+Check	O
+TITLE:	O
+송호명	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+
+초상권	B-RIGHT_INFO
+in	O
+배소	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+belongs	O
+to	O
+주식회사	B-COMPANY
+변완환물산	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제24조	I-LAW_REFERENCE
+6항.	I-LAW_REFERENCE
+
+Please	O
+provide	O
+진연	B-TITLE
+관련	I-TITLE
+동의서	I-TITLE
+for	O
+TITLE.	O
+
+공연권	B-RIGHT_INFO
+in	O
+이치	B-TITLE
+관련	I-TITLE
+계획서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+인진시스템	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제13조	I-LAW_REFERENCE
+7항.	I-LAW_REFERENCE
+
+Please	O
+provide	O
+천호	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+for	O
+TITLE.	O
+
+Check	O
+TITLE:	O
+변성	B-TITLE
+관련	I-TITLE
+신청서	I-TITLE
+
+Value	O
+of	O
+TITLE	O
+is	O
+추의자	B-TITLE
+관련	I-TITLE
+제안서	I-TITLE
+
+Please	O
+provide	O
+전택	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+for	O
+TITLE.	O
+
+Check	O
+TITLE:	O
+모환섭	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+
+Please	O
+provide	O
+천신차	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+for	O
+TITLE.	O
+
+Check	O
+TITLE:	O
+인실	B-TITLE
+관련	I-TITLE
+제안서	I-TITLE
+
+Check	O
+TITLE:	O
+위연	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+
+Missing	O
+TITLE:	O
+우효	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+
+Value	O
+of	O
+TITLE	O
+is	O
+위하	B-TITLE
+관련	I-TITLE
+동의서	I-TITLE
+
+Value	O
+of	O
+TITLE	O
+is	O
+육호	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+
+저작재산권	B-RIGHT_INFO
+in	O
+전예	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+소옥순제약	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제52조	I-LAW_REFERENCE
+5항.	I-LAW_REFERENCE
+
+Please	O
+provide	O
+심우	B-TITLE
+관련	I-TITLE
+계획서	I-TITLE
+for	O
+TITLE.	O
+
+Missing	O
+TITLE:	O
+하우비	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+
+Value	O
+of	O
+TITLE	O
+is	O
+왕자순	B-TITLE
+관련	I-TITLE
+동의서	I-TITLE
+
+Value	O
+of	O
+TITLE	O
+is	O
+어석휘	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+
+Missing	O
+TITLE:	O
+길지	B-TITLE
+관련	I-TITLE
+확약서	I-TITLE
+
+Check	O
+TITLE:	O
+염아	B-TITLE
+관련	I-TITLE
+신청서	I-TITLE
+
+Value	O
+of	O
+TITLE	O
+is	O
+유주	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+Value	O
+of	O
+TITLE	O
+is	O
+강라	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+
+Check	O
+TITLE:	O
+강보	B-TITLE
+관련	I-TITLE
+확약서	I-TITLE
+
+Please	O
+provide	O
+방설	B-TITLE
+관련	I-TITLE
+계획서	I-TITLE
+for	O
+TITLE.	O
+
+Missing	O
+TITLE:	O
+연실효	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+
+Missing	O
+TITLE:	O
+반마	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+
+Check	O
+TITLE:	O
+염지	B-TITLE
+관련	I-TITLE
+계획서	I-TITLE
+
+Missing	O
+TITLE:	O
+어윤바	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+
+Value	O
+of	O
+TITLE	O
+is	O
+임현	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+
+Missing	O
+TITLE:	O
+도수	B-TITLE
+관련	I-TITLE
+확약서	I-TITLE
+
+Value	O
+of	O
+TITLE	O
+is	O
+신만	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+Please	O
+provide	O
+설우	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+for	O
+TITLE.	O
+
+Missing	O
+TITLE:	O
+윤자충	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+
+복제권	B-RIGHT_INFO
+in	O
+탁옥신	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+belongs	O
+to	O
+사단법인	B-COMPANY
+홍유병홀딩스	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제81조	I-LAW_REFERENCE
+8항.	I-LAW_REFERENCE
+
+Please	O
+provide	O
+서철	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+for	O
+TITLE.	O
+
+Value	O
+of	O
+TITLE	O
+is	O
+차태선	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+
+Please	O
+provide	O
+지호	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+for	O
+TITLE.	O
+
+Please	O
+provide	O
+육춘애	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+for	O
+TITLE.	O
+
+Please	O
+provide	O
+성소차	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+for	O
+TITLE.	O
+
+Value	O
+of	O
+TITLE	O
+is	O
+기이	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+
+Missing	O
+TITLE:	O
+유현	B-TITLE
+관련	I-TITLE
+동의서	I-TITLE
+
+Please	O
+provide	O
+여창	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+for	O
+TITLE.	O
+
+출판권	B-RIGHT_INFO
+in	O
+남자	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+명원전자	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제85조	I-LAW_REFERENCE
+10항.	I-LAW_REFERENCE
+
+Check	O
+TITLE:	O
+곽휘	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+
+Check	O
+TITLE:	O
+길원종	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+
+전송권	B-RIGHT_INFO
+in	O
+조민	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+belongs	O
+to	O
+재단법인	B-COMPANY
+이택실미디어	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제39조	I-LAW_REFERENCE
+3항.	I-LAW_REFERENCE
+
+출판권	B-RIGHT_INFO
+in	O
+민호	B-TITLE
+관련	I-TITLE
+동의서	I-TITLE
+belongs	O
+to	O
+사단법인	B-COMPANY
+안위연디자인	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제22조	I-LAW_REFERENCE
+6항.	I-LAW_REFERENCE
+
+Value	O
+of	O
+TITLE	O
+is	O
+문일환	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+
+Value	O
+of	O
+TITLE	O
+is	O
+노여	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+
+Please	O
+provide	O
+유현	B-TITLE
+관련	I-TITLE
+신청서	I-TITLE
+for	O
+TITLE.	O
+
+Please	O
+provide	O
+곽호	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+for	O
+TITLE.	O
+
+배포권	B-RIGHT_INFO
+in	O
+여석차	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+한중전자	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제59조	I-LAW_REFERENCE
+7항.	I-LAW_REFERENCE
+
+Please	O
+provide	O
+백용	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+for	O
+TITLE.	O
+
+Value	O
+of	O
+TITLE	O
+is	O
+장윤	B-TITLE
+관련	I-TITLE
+계약서	I-TITLE
+
+Please	O
+provide	O
+민만라	B-TITLE
+관련	I-TITLE
+제안서	I-TITLE
+for	O
+TITLE.	O
+
+Please	O
+provide	O
+주호	B-TITLE
+관련	I-TITLE
+확약서	I-TITLE
+for	O
+TITLE.	O
+
+Value	O
+of	O
+TITLE	O
+is	O
+구라용	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+
+Please	O
+provide	O
+여라익	B-TITLE
+관련	I-TITLE
+확약서	I-TITLE
+for	O
+TITLE.	O
+
+Check	O
+TITLE:	O
+추형나	B-TITLE
+관련	I-TITLE
+신청서	I-TITLE
+
+Check	O
+TITLE:	O
+육상진	B-TITLE
+관련	I-TITLE
+청구서	I-TITLE
+
+2차적저작물작성권	B-RIGHT_INFO
+in	O
+곽해일	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+하우통상	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제64조	I-LAW_REFERENCE
+1항.	I-LAW_REFERENCE
+
+Check	O
+TITLE:	O
+은익	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+
+Please	O
+provide	O
+지운	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+for	O
+TITLE.	O
+
+동일성유지권	B-RIGHT_INFO
+in	O
+여준	B-TITLE
+관련	I-TITLE
+합의서	I-TITLE
+belongs	O
+to	O
+유한회사	B-COMPANY
+손상네트웍스	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제2조	I-LAW_REFERENCE
+2항.	I-LAW_REFERENCE
+
+Missing	O
+TITLE:	O
+원성	B-TITLE
+관련	I-TITLE
+확약서	I-TITLE
+
+동일성유지권	B-RIGHT_INFO
+in	O
+어수	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+belongs	O
+to	O
+주식회사	B-COMPANY
+함원선기획	I-COMPANY
+per	O
+저작권법	B-LAW_REFERENCE
+제48조	I-LAW_REFERENCE
+10항.	I-LAW_REFERENCE
+
+Value	O
+of	O
+TITLE	O
+is	O
+모완월	B-TITLE
+관련	I-TITLE
+확약서	I-TITLE
+
+Please	O
+provide	O
+여아	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+for	O
+TITLE.	O
+
+Check	O
+TITLE:	O
+문자	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+
+Missing	O
+TITLE:	O
+표창	B-TITLE
+관련	I-TITLE
+기획서	I-TITLE
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.disney705.com	B-URL
+
+Check	O
+URL:	O
+http://www.woowahan150.com	B-URL
+
+Please	O
+provide	O
+http://www.apple500.com	B-URL
+for	O
+URL.	O
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.apple904.com	B-URL
+
+Check	O
+URL:	O
+http://www.daum334.com	B-URL
+
+Missing	O
+URL:	O
+http://www.netflix435.com	B-URL
+
+재단법인	B-COMPANY
+현조건설	I-COMPANY
+@	O
+충청북도	B-ADDRESS
+설의구	I-ADDRESS
+민성대로	I-ADDRESS
+693-1,	I-ADDRESS
+Tel:	O
+010-5442-8219,	B-PHONE
+Web:	O
+http://www.netflix661.com.	B-URL
+
+(주)	B-COMPANY
+명마제홀딩스	I-COMPANY
+@	O
+경상남도	B-ADDRESS
+천현홍군	I-ADDRESS
+차식대로	I-ADDRESS
+876,	I-ADDRESS
+Tel:	O
+010-9409-6095,	B-PHONE
+Web:	O
+http://www.disney241.com.	B-URL
+
+Please	O
+provide	O
+http://www.coupang791.com	B-URL
+for	O
+URL.	O
+
+주식회사	B-COMPANY
+함찬건설	I-COMPANY
+@	O
+대구시	B-ADDRESS
+염바군	I-ADDRESS
+방화형대로	I-ADDRESS
+820,	I-ADDRESS
+Tel:	O
+010-6655-9576,	B-PHONE
+Web:	O
+http://www.daum336.com.	B-URL
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.google826.com	B-URL
+
+Missing	O
+URL:	O
+http://www.youtube75.com	B-URL
+
+Missing	O
+URL:	O
+http://www.lg462.com	B-URL
+
+재단법인	B-COMPANY
+허율엔터테인먼트	I-COMPANY
+@	O
+경상남도	B-ADDRESS
+염요군	I-ADDRESS
+박주안로	I-ADDRESS
+847,	I-ADDRESS
+Tel:	O
+010-2484-3758,	B-PHONE
+Web:	O
+http://www.google805.com.	B-URL
+
+Please	O
+provide	O
+http://www.facebook339.com	B-URL
+for	O
+URL.	O
+
+Please	O
+provide	O
+http://www.twitter771.com	B-URL
+for	O
+URL.	O
+
+Please	O
+provide	O
+http://www.line605.com	B-URL
+for	O
+URL.	O
+
+Please	O
+provide	O
+http://www.coupang657.com	B-URL
+for	O
+URL.	O
+
+주식회사	B-COMPANY
+신병엔터테인먼트	I-COMPANY
+@	O
+전라북도	B-ADDRESS
+류신원군	I-ADDRESS
+어안대로	I-ADDRESS
+881,	I-ADDRESS
+Tel:	O
+010-2985-3083,	B-PHONE
+Web:	O
+http://www.naver250.com.	B-URL
+
+Missing	O
+URL:	O
+http://www.microsoft871.com	B-URL
+
+Missing	O
+URL:	O
+http://www.carrot951.com	B-URL
+
+Check	O
+URL:	O
+http://www.apple94.com	B-URL
+
+Check	O
+URL:	O
+http://www.naver187.com	B-URL
+
+사단법인	B-COMPANY
+진근디자인	I-COMPANY
+@	O
+경상남도	B-ADDRESS
+나건군	I-ADDRESS
+남건로	I-ADDRESS
+400-20,	I-ADDRESS
+Tel:	O
+010-4065-1507,	B-PHONE
+Web:	O
+http://www.instagram685.com.	B-URL
+
+(주)	B-COMPANY
+최소미디어	I-COMPANY
+@	O
+전라북도	B-ADDRESS
+맹영구	I-ADDRESS
+여운대로	I-ADDRESS
+586,	I-ADDRESS
+Tel:	O
+010-5011-1612,	B-PHONE
+Web:	O
+http://www.apple866.com.	B-URL
+
+Check	O
+URL:	O
+http://www.line367.com	B-URL
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.toss683.com	B-URL
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.toss640.com	B-URL
+
+Please	O
+provide	O
+http://www.microsoft563.com	B-URL
+for	O
+URL.	O
+
+Missing	O
+URL:	O
+http://www.samsung846.com	B-URL
+
+Please	O
+provide	O
+http://www.microsoft320.com	B-URL
+for	O
+URL.	O
+
+주식회사	B-COMPANY
+어엄위컨설팅	I-COMPANY
+@	O
+서울시	B-ADDRESS
+임엄시	I-ADDRESS
+송태길	I-ADDRESS
+728,	I-ADDRESS
+Tel:	O
+010-8366-8312,	B-PHONE
+Web:	O
+http://www.facebook710.com.	B-URL
+
+Missing	O
+URL:	O
+http://www.toss411.com	B-URL
+
+Missing	O
+URL:	O
+http://www.instagram572.com	B-URL
+
+(주)	B-COMPANY
+신원전자	I-COMPANY
+@	O
+인천시	B-ADDRESS
+손위군	I-ADDRESS
+육율해길	I-ADDRESS
+174-50,	I-ADDRESS
+Tel:	O
+010-6700-6543,	B-PHONE
+Web:	O
+http://www.microsoft127.com.	B-URL
+
+Check	O
+URL:	O
+http://www.woowahan214.com	B-URL
+
+(주)	B-COMPANY
+방성위바이오	I-COMPANY
+@	O
+서울시	B-ADDRESS
+은호시	I-ADDRESS
+인위길	I-ADDRESS
+704,	I-ADDRESS
+Tel:	O
+010-6270-3702,	B-PHONE
+Web:	O
+http://www.coupang267.com.	B-URL
+
+Check	O
+URL:	O
+http://www.netflix361.com	B-URL
+
+Missing	O
+URL:	O
+http://www.line29.com	B-URL
+
+Check	O
+URL:	O
+http://www.kakao240.com	B-URL
+
+Missing	O
+URL:	O
+http://www.line839.com	B-URL
+
+유한회사	B-COMPANY
+옥제솔기획	I-COMPANY
+@	O
+전라남도	B-ADDRESS
+석규군	I-ADDRESS
+강광로	I-ADDRESS
+658,	I-ADDRESS
+Tel:	O
+010-8443-6059,	B-PHONE
+Web:	O
+http://www.facebook404.com.	B-URL
+
+Please	O
+provide	O
+http://www.naver630.com	B-URL
+for	O
+URL.	O
+
+Missing	O
+URL:	O
+http://www.facebook195.com	B-URL
+
+Missing	O
+URL:	O
+http://www.coupang397.com	B-URL
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.woowahan129.com	B-URL
+
+유한회사	B-COMPANY
+진효컨설팅	I-COMPANY
+@	O
+경기도	B-ADDRESS
+하규군	I-ADDRESS
+염전대로	I-ADDRESS
+296,	I-ADDRESS
+Tel:	O
+010-3328-5436,	B-PHONE
+Web:	O
+http://www.instagram847.com.	B-URL
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.daum847.com	B-URL
+
+주식회사	B-COMPANY
+여춘마전자	I-COMPANY
+@	O
+충청북도	B-ADDRESS
+은우해시	I-ADDRESS
+은학길	I-ADDRESS
+586-10,	I-ADDRESS
+Tel:	O
+010-1801-9049,	B-PHONE
+Web:	O
+http://www.woowahan971.com.	B-URL
+
+Please	O
+provide	O
+http://www.microsoft995.com	B-URL
+for	O
+URL.	O
+
+Check	O
+URL:	O
+http://www.facebook231.com	B-URL
+
+Please	O
+provide	O
+http://www.disney540.com	B-URL
+for	O
+URL.	O
+
+Check	O
+URL:	O
+http://www.daum815.com	B-URL
+
+유한회사	B-COMPANY
+남원컨설팅	I-COMPANY
+@	O
+인천시	B-ADDRESS
+함민군	I-ADDRESS
+인명대로	I-ADDRESS
+472-1,	I-ADDRESS
+Tel:	O
+010-6172-9963,	B-PHONE
+Web:	O
+http://www.samsung719.com.	B-URL
+
+Missing	O
+URL:	O
+http://www.google640.com	B-URL
+
+재단법인	B-COMPANY
+위인통상	I-COMPANY
+@	O
+광주시	B-ADDRESS
+공휘시	I-ADDRESS
+표화길	I-ADDRESS
+726,	I-ADDRESS
+Tel:	O
+010-6242-8207,	B-PHONE
+Web:	O
+http://www.facebook851.com.	B-URL
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.netflix808.com	B-URL
+
+(주)	B-COMPANY
+진광미디어	I-COMPANY
+@	O
+경상북도	B-ADDRESS
+윤철환구	I-ADDRESS
+지자길	I-ADDRESS
+251-39,	I-ADDRESS
+Tel:	O
+010-7289-1501,	B-PHONE
+Web:	O
+http://www.woowahan954.com.	B-URL
+
+주식회사	B-COMPANY
+현해춘홀딩스	I-COMPANY
+@	O
+인천시	B-ADDRESS
+나라하시	I-ADDRESS
+임자혜대로	I-ADDRESS
+416,	I-ADDRESS
+Tel:	O
+010-9930-1755,	B-PHONE
+Web:	O
+http://www.kakao628.com.	B-URL
+
+Please	O
+provide	O
+http://www.facebook299.com	B-URL
+for	O
+URL.	O
+
+Please	O
+provide	O
+http://www.toss84.com	B-URL
+for	O
+URL.	O
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.lg381.com	B-URL
+
+Check	O
+URL:	O
+http://www.lg629.com	B-URL
+
+Missing	O
+URL:	O
+http://www.google169.com	B-URL
+
+Check	O
+URL:	O
+http://www.instagram745.com	B-URL
+
+Please	O
+provide	O
+http://www.apple156.com	B-URL
+for	O
+URL.	O
+
+Check	O
+URL:	O
+http://www.instagram876.com	B-URL
+
+Check	O
+URL:	O
+http://www.disney773.com	B-URL
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.sk546.com	B-URL
+
+Check	O
+URL:	O
+http://www.line337.com	B-URL
+
+Check	O
+URL:	O
+http://www.facebook465.com	B-URL
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.toss136.com	B-URL
+
+재단법인	B-COMPANY
+주설전자	I-COMPANY
+@	O
+전라남도	B-ADDRESS
+최훈혜군	I-ADDRESS
+옥준길	I-ADDRESS
+106-1,	I-ADDRESS
+Tel:	O
+010-2536-6510,	B-PHONE
+Web:	O
+http://www.line227.com.	B-URL
+
+Missing	O
+URL:	O
+http://www.lg281.com	B-URL
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.kakao519.com	B-URL
+
+Check	O
+URL:	O
+http://www.amazon400.com	B-URL
+
+Missing	O
+URL:	O
+http://www.sk873.com	B-URL
+
+재단법인	B-COMPANY
+길이스튜디오	I-COMPANY
+@	O
+울산시	B-ADDRESS
+반재시	I-ADDRESS
+지의길	I-ADDRESS
+110,	I-ADDRESS
+Tel:	O
+010-6900-5267,	B-PHONE
+Web:	O
+http://www.coupang449.com.	B-URL
+
+(주)	B-COMPANY
+소자희스튜디오	I-COMPANY
+@	O
+경상북도	B-ADDRESS
+하원구	I-ADDRESS
+우카로	I-ADDRESS
+208,	I-ADDRESS
+Tel:	O
+010-1358-7806,	B-PHONE
+Web:	O
+http://www.coupang164.com.	B-URL
+
+Check	O
+DESCRIPTION:	O
+세부	B-DESCRIPTION
+사항은	I-DESCRIPTION
+첨부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다.	I-DESCRIPTION
+
+Check	O
+DESCRIPTION:	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실의	I-DESCRIPTION
+원칙에	I-DESCRIPTION
+따라	I-DESCRIPTION
+이행한다.	I-DESCRIPTION
+
+Value	O
+of	O
+DESCRIPTION	O
+is	O
+본	B-DESCRIPTION
+계약의	I-DESCRIPTION
+상세	I-DESCRIPTION
+내용은	I-DESCRIPTION
+별첨과	I-DESCRIPTION
+같다.	I-DESCRIPTION
+
+Value	O
+of	O
+DESCRIPTION	O
+is	O
+기타	B-DESCRIPTION
+사항은	I-DESCRIPTION
+상호	I-DESCRIPTION
+협의하여	I-DESCRIPTION
+결정한다.	I-DESCRIPTION
+
+Value	O
+of	O
+DESCRIPTION	O
+is	O
+분쟁	B-DESCRIPTION
+발생	I-DESCRIPTION
+시	I-DESCRIPTION
+관할	I-DESCRIPTION
+법원의	I-DESCRIPTION
+판결에	I-DESCRIPTION
+따른다.	I-DESCRIPTION
+
+Check	O
+DESCRIPTION:	O
+분쟁	B-DESCRIPTION
+발생	I-DESCRIPTION
+시	I-DESCRIPTION
+관할	I-DESCRIPTION
+법원의	I-DESCRIPTION
+판결에	I-DESCRIPTION
+따른다.	I-DESCRIPTION
+
+Check	O
+DESCRIPTION:	O
+기타	B-DESCRIPTION
+사항은	I-DESCRIPTION
+상호	I-DESCRIPTION
+협의하여	I-DESCRIPTION
+결정한다.	I-DESCRIPTION
+
+Please	O
+provide	O
+분쟁	B-DESCRIPTION
+발생	I-DESCRIPTION
+시	I-DESCRIPTION
+관할	I-DESCRIPTION
+법원의	I-DESCRIPTION
+판결에	I-DESCRIPTION
+따른다.	I-DESCRIPTION
+for	O
+DESCRIPTION.	O
+
+Please	O
+provide	O
+기타	B-DESCRIPTION
+사항은	I-DESCRIPTION
+상호	I-DESCRIPTION
+협의하여	I-DESCRIPTION
+결정한다.	I-DESCRIPTION
+for	O
+DESCRIPTION.	O
+
+Missing	O
+DESCRIPTION:	O
+기타	B-DESCRIPTION
+사항은	I-DESCRIPTION
+상호	I-DESCRIPTION
+협의하여	I-DESCRIPTION
+결정한다.	I-DESCRIPTION
+
+Missing	O
+DESCRIPTION:	O
+특약	B-DESCRIPTION
+사항은	I-DESCRIPTION
+별도로	I-DESCRIPTION
+정한다.	I-DESCRIPTION
+
+Value	O
+of	O
+DESCRIPTION	O
+is	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실의	I-DESCRIPTION
+원칙에	I-DESCRIPTION
+따라	I-DESCRIPTION
+이행한다.	I-DESCRIPTION
+
+Please	O
+provide	O
+세부	B-DESCRIPTION
+사항은	I-DESCRIPTION
+첨부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다.	I-DESCRIPTION
+for	O
+DESCRIPTION.	O
+
+Please	O
+provide	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실의	I-DESCRIPTION
+원칙에	I-DESCRIPTION
+따라	I-DESCRIPTION
+이행한다.	I-DESCRIPTION
+for	O
+DESCRIPTION.	O
+
+Missing	O
+DESCRIPTION:	O
+본	B-DESCRIPTION
+계약의	I-DESCRIPTION
+상세	I-DESCRIPTION
+내용은	I-DESCRIPTION
+별첨과	I-DESCRIPTION
+같다.	I-DESCRIPTION
+
+Missing	O
+DESCRIPTION:	O
+세부	B-DESCRIPTION
+사항은	I-DESCRIPTION
+첨부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다.	I-DESCRIPTION
+
+Please	O
+provide	O
+특약	B-DESCRIPTION
+사항은	I-DESCRIPTION
+별도로	I-DESCRIPTION
+정한다.	I-DESCRIPTION
+for	O
+DESCRIPTION.	O
+
+Check	O
+DESCRIPTION:	O
+본	B-DESCRIPTION
+계약의	I-DESCRIPTION
+상세	I-DESCRIPTION
+내용은	I-DESCRIPTION
+별첨과	I-DESCRIPTION
+같다.	I-DESCRIPTION
+
+Check	O
+DESCRIPTION:	O
+특약	B-DESCRIPTION
+사항은	I-DESCRIPTION
+별도로	I-DESCRIPTION
+정한다.	I-DESCRIPTION
+
+Value	O
+of	O
+DESCRIPTION	O
+is	O
+특약	B-DESCRIPTION
+사항은	I-DESCRIPTION
+별도로	I-DESCRIPTION
+정한다.	I-DESCRIPTION
+
+Please	O
+provide	O
+본	B-DESCRIPTION
+계약의	I-DESCRIPTION
+상세	I-DESCRIPTION
+내용은	I-DESCRIPTION
+별첨과	I-DESCRIPTION
+같다.	I-DESCRIPTION
+for	O
+DESCRIPTION.	O
+
+Missing	O
+DESCRIPTION:	O
+본	B-DESCRIPTION
+계약은	I-DESCRIPTION
+신의성실의	I-DESCRIPTION
+원칙에	I-DESCRIPTION
+따라	I-DESCRIPTION
+이행한다.	I-DESCRIPTION
+
+Value	O
+of	O
+DESCRIPTION	O
+is	O
+세부	B-DESCRIPTION
+사항은	I-DESCRIPTION
+첨부	I-DESCRIPTION
+문서를	I-DESCRIPTION
+참조한다.	I-DESCRIPTION
+
+Missing	O
+DESCRIPTION:	O
+분쟁	B-DESCRIPTION
+발생	I-DESCRIPTION
+시	I-DESCRIPTION
+관할	I-DESCRIPTION
+법원의	I-DESCRIPTION
+판결에	I-DESCRIPTION
+따른다.	I-DESCRIPTION
+
+Please	O
+provide	O
+미술저작물	B-TYPE
+for	O
+TYPE.	O
+
+Transfer	O
+복제권	B-RIGHT_INFO
+of	O
+711일	B-QUANTITY
+소프트웨어	B-TYPE
+for	O
+5758만원.	B-MONEY
+
+Value	O
+of	O
+TYPE	O
+is	O
+미술저작물	B-TYPE
+
+Missing	O
+TYPE:	O
+어문저작물	B-TYPE
+
+Missing	O
+TYPE:	O
+소프트웨어	B-TYPE
+
+Check	O
+TYPE:	O
+소프트웨어	B-TYPE
+
+Transfer	O
+복제권	B-RIGHT_INFO
+of	O
+289매	B-QUANTITY
+소프트웨어	B-TYPE
+for	O
+5473백만원.	B-MONEY
+
+Value	O
+of	O
+TYPE	O
+is	O
+사진저작물	B-TYPE
+
+Transfer	O
+전송권	B-RIGHT_INFO
+of	O
+781편	B-QUANTITY
+편집저작물	B-TYPE
+for	O
+8802억원.	B-MONEY
+
+Please	O
+provide	O
+소프트웨어	B-TYPE
+for	O
+TYPE.	O
+
+Transfer	O
+방송권	B-RIGHT_INFO
+of	O
+598시간	B-QUANTITY
+편집저작물	B-TYPE
+for	O
+2652천만원.	B-MONEY
+
+Transfer	O
+복제권	B-RIGHT_INFO
+of	O
+286개월	B-QUANTITY
+건축저작물	B-TYPE
+for	O
+703천원.	B-MONEY
+
+Please	O
+provide	O
+영상저작물	B-TYPE
+for	O
+TYPE.	O
+
+Please	O
+provide	O
+2차적저작물	B-TYPE
+for	O
+TYPE.	O
+
+Check	O
+TYPE:	O
+2차적저작물	B-TYPE
+
+Missing	O
+TYPE:	O
+사진저작물	B-TYPE
+
+Transfer	O
+공연권	B-RIGHT_INFO
+of	O
+835개월	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+1569천만원.	B-MONEY
+
+Missing	O
+TYPE:	O
+도형저작물	B-TYPE
+
+Missing	O
+TYPE:	O
+편집저작물	B-TYPE
+
+Check	O
+TYPE:	O
+사진저작물	B-TYPE
+
+Missing	O
+TYPE:	O
+건축저작물	B-TYPE
+
+Value	O
+of	O
+TYPE	O
+is	O
+어문저작물	B-TYPE
+
+Check	O
+TYPE:	O
+편집저작물	B-TYPE
+
+Transfer	O
+배포권	B-RIGHT_INFO
+of	O
+908부	B-QUANTITY
+건축저작물	B-TYPE
+for	O
+160천만원.	B-MONEY
+
+Check	O
+TYPE:	O
+연극저작물	B-TYPE
+
+Missing	O
+TYPE:	O
+2차적저작물	B-TYPE
+
+Missing	O
+TYPE:	O
+영상저작물	B-TYPE
+
+Value	O
+of	O
+TYPE	O
+is	O
+소프트웨어	B-TYPE
+
+Value	O
+of	O
+TYPE	O
+is	O
+도형저작물	B-TYPE
+
+Please	O
+provide	O
+편집저작물	B-TYPE
+for	O
+TYPE.	O
+
+Check	O
+TYPE:	O
+도형저작물	B-TYPE
+
+Transfer	O
+퍼블리시티권	B-RIGHT_INFO
+of	O
+186점	B-QUANTITY
+소프트웨어	B-TYPE
+for	O
+5019만원.	B-MONEY
+
+Value	O
+of	O
+TYPE	O
+is	O
+영상저작물	B-TYPE
+
+Check	O
+TYPE:	O
+미술저작물	B-TYPE
+
+Value	O
+of	O
+TYPE	O
+is	O
+음악저작물	B-TYPE
+
+Transfer	O
+출판권	B-RIGHT_INFO
+of	O
+246시간	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+3273만원.	B-MONEY
+
+Check	O
+TYPE:	O
+어문저작물	B-TYPE
+
+Transfer	O
+2차적저작물작성권	B-RIGHT_INFO
+of	O
+179일	B-QUANTITY
+음악저작물	B-TYPE
+for	O
+7854천원.	B-MONEY
+
+Transfer	O
+동일성유지권	B-RIGHT_INFO
+of	O
+912시간	B-QUANTITY
+사진저작물	B-TYPE
+for	O
+936만원.	B-MONEY
+
+Transfer	O
+공표권	B-RIGHT_INFO
+of	O
+851일	B-QUANTITY
+건축저작물	B-TYPE
+for	O
+6192만원.	B-MONEY
+
+Transfer	O
+복제권	B-RIGHT_INFO
+of	O
+858일	B-QUANTITY
+편집저작물	B-TYPE
+for	O
+5345백만원.	B-MONEY
+
+Transfer	O
+방송권	B-RIGHT_INFO
+of	O
+179건	B-QUANTITY
+사진저작물	B-TYPE
+for	O
+4405백만원.	B-MONEY
+
+Transfer	O
+전송권	B-RIGHT_INFO
+of	O
+353매	B-QUANTITY
+소프트웨어	B-TYPE
+for	O
+1459백만원.	B-MONEY
+
+Transfer	O
+동일성유지권	B-RIGHT_INFO
+of	O
+946년	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+8206천원.	B-MONEY
+
+Transfer	O
+출판권	B-RIGHT_INFO
+of	O
+570매	B-QUANTITY
+연극저작물	B-TYPE
+for	O
+9702천만원.	B-MONEY
+
+Transfer	O
+대여권	B-RIGHT_INFO
+of	O
+855시간	B-QUANTITY
+소프트웨어	B-TYPE
+for	O
+1606만원.	B-MONEY
+
+Value	O
+of	O
+TYPE	O
+is	O
+편집저작물	B-TYPE
+
+Check	O
+TYPE:	O
+영상저작물	B-TYPE
+
+Check	O
+TYPE:	O
+음악저작물	B-TYPE
+
+Value	O
+of	O
+TYPE	O
+is	O
+2차적저작물	B-TYPE
+
+Transfer	O
+출판권	B-RIGHT_INFO
+of	O
+111개월	B-QUANTITY
+편집저작물	B-TYPE
+for	O
+8515천만원.	B-MONEY
+
+Transfer	O
+출판권	B-RIGHT_INFO
+of	O
+92부	B-QUANTITY
+건축저작물	B-TYPE
+for	O
+5760억원.	B-MONEY
+
+Transfer	O
+출판권	B-RIGHT_INFO
+of	O
+786점	B-QUANTITY
+건축저작물	B-TYPE
+for	O
+3675억원.	B-MONEY
+
+Transfer	O
+배포권	B-RIGHT_INFO
+of	O
+888일	B-QUANTITY
+도형저작물	B-TYPE
+for	O
+6699백만원.	B-MONEY
+
+Transfer	O
+전시권	B-RIGHT_INFO
+of	O
+824일	B-QUANTITY
+건축저작물	B-TYPE
+for	O
+3441백만원.	B-MONEY
+
+Transfer	O
+공연권	B-RIGHT_INFO
+of	O
+742매	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+4256만원.	B-MONEY
+
+Value	O
+of	O
+TYPE	O
+is	O
+연극저작물	B-TYPE
+
+Missing	O
+TYPE:	O
+미술저작물	B-TYPE
+
+Value	O
+of	O
+TYPE	O
+is	O
+건축저작물	B-TYPE
+
+Transfer	O
+전시권	B-RIGHT_INFO
+of	O
+337건	B-QUANTITY
+음악저작물	B-TYPE
+for	O
+1758억원.	B-MONEY
+
+Transfer	O
+초상권	B-RIGHT_INFO
+of	O
+823일	B-QUANTITY
+어문저작물	B-TYPE
+for	O
+9122백만원.	B-MONEY
+
+Transfer	O
+공표권	B-RIGHT_INFO
+of	O
+877회	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+3380천만원.	B-MONEY
+
+Transfer	O
+초상권	B-RIGHT_INFO
+of	O
+109개월	B-QUANTITY
+어문저작물	B-TYPE
+for	O
+8886억원.	B-MONEY
+
+Transfer	O
+성명표시권	B-RIGHT_INFO
+of	O
+356편	B-QUANTITY
+영상저작물	B-TYPE
+for	O
+282천원.	B-MONEY
+
+Please	O
+provide	O
+연극저작물	B-TYPE
+for	O
+TYPE.	O
+
+Please	O
+provide	O
+음악저작물	B-TYPE
+for	O
+TYPE.	O
+
+Missing	O
+TYPE:	O
+음악저작물	B-TYPE
+
+Please	O
+provide	O
+도형저작물	B-TYPE
+for	O
+TYPE.	O
+
+Transfer	O
+퍼블리시티권	B-RIGHT_INFO
+of	O
+992개	B-QUANTITY
+어문저작물	B-TYPE
+for	O
+9071만원.	B-MONEY
+
+Please	O
+provide	O
+사진저작물	B-TYPE
+for	O
+TYPE.	O
+
+Transfer	O
+저작재산권	B-RIGHT_INFO
+of	O
+330개월	B-QUANTITY
+소프트웨어	B-TYPE
+for	O
+7846백만원.	B-MONEY
+
+Transfer	O
+방송권	B-RIGHT_INFO
+of	O
+539개월	B-QUANTITY
+편집저작물	B-TYPE
+for	O
+4305천원.	B-MONEY
+
+Transfer	O
+전시권	B-RIGHT_INFO
+of	O
+789개	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+4132만원.	B-MONEY
+
+Please	O
+provide	O
+어문저작물	B-TYPE
+for	O
+TYPE.	O
+
+Transfer	O
+배포권	B-RIGHT_INFO
+of	O
+628매	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+8107만원.	B-MONEY
+
+Transfer	O
+2차적저작물작성권	B-RIGHT_INFO
+of	O
+361부	B-QUANTITY
+소프트웨어	B-TYPE
+for	O
+8223백만원.	B-MONEY
+
+Transfer	O
+저작재산권	B-RIGHT_INFO
+of	O
+249편	B-QUANTITY
+연극저작물	B-TYPE
+for	O
+9193천만원.	B-MONEY
+
+Check	O
+TYPE:	O
+건축저작물	B-TYPE
+
+Transfer	O
+2차적저작물작성권	B-RIGHT_INFO
+of	O
+154편	B-QUANTITY
+편집저작물	B-TYPE
+for	O
+729천만원.	B-MONEY
+
+Value	O
+of	O
+STATUS	O
+is	O
+갱신	B-STATUS
+
+Value	O
+of	O
+STATUS	O
+is	O
+작성	B-STATUS
+중	I-STATUS
+
+Check	O
+STATUS:	O
+반려	B-STATUS
+
+Please	O
+provide	O
+만료	B-STATUS
+for	O
+STATUS.	O
+
+Check	O
+STATUS:	O
+체결	B-STATUS
+완료	I-STATUS
+
+Please	O
+provide	O
+작성	B-STATUS
+중	I-STATUS
+for	O
+STATUS.	O
+
+Check	O
+STATUS:	O
+만료	B-STATUS
+
+Missing	O
+STATUS:	O
+갱신	B-STATUS
+
+Value	O
+of	O
+STATUS	O
+is	O
+만료	B-STATUS
+
+Missing	O
+STATUS:	O
+승인	B-STATUS
+대기	I-STATUS
+
+Missing	O
+STATUS:	O
+반려	B-STATUS
+
+Please	O
+provide	O
+해지	B-STATUS
+for	O
+STATUS.	O
+
+Value	O
+of	O
+STATUS	O
+is	O
+해지	B-STATUS
+
+Please	O
+provide	O
+협의	B-STATUS
+중	I-STATUS
+for	O
+STATUS.	O
+
+Value	O
+of	O
+STATUS	O
+is	O
+보류	B-STATUS
+
+Missing	O
+STATUS:	O
+협의	B-STATUS
+중	I-STATUS
+
+Please	O
+provide	O
+갱신	B-STATUS
+for	O
+STATUS.	O
+
+Value	O
+of	O
+STATUS	O
+is	O
+검토	B-STATUS
+중	I-STATUS
+
+Check	O
+STATUS:	O
+협의	B-STATUS
+중	I-STATUS
+
+Missing	O
+STATUS:	O
+보류	B-STATUS
+
+Check	O
+STATUS:	O
+해지	B-STATUS
+
+Check	O
+STATUS:	O
+작성	B-STATUS
+중	I-STATUS
+
+Missing	O
+STATUS:	O
+수정	B-STATUS
+요청	I-STATUS
+
+Value	O
+of	O
+STATUS	O
+is	O
+수정	B-STATUS
+요청	I-STATUS
+
+Please	O
+provide	O
+승인	B-STATUS
+대기	I-STATUS
+for	O
+STATUS.	O
+
+Please	O
+provide	O
+수정	B-STATUS
+요청	I-STATUS
+for	O
+STATUS.	O
+
+Check	O
+STATUS:	O
+승인	B-STATUS
+대기	I-STATUS
+
+Missing	O
+STATUS:	O
+작성	B-STATUS
+중	I-STATUS
+
+Value	O
+of	O
+STATUS	O
+is	O
+반려	B-STATUS
+
+Check	O
+STATUS:	O
+검토	B-STATUS
+중	I-STATUS
+
+Missing	O
+STATUS:	O
+만료	B-STATUS
+
+Missing	O
+STATUS:	O
+체결	B-STATUS
+완료	I-STATUS
+
+Value	O
+of	O
+STATUS	O
+is	O
+협의	B-STATUS
+중	I-STATUS
+
+Please	O
+provide	O
+반려	B-STATUS
+for	O
+STATUS.	O
+
+Please	O
+provide	O
+검토	B-STATUS
+중	I-STATUS
+for	O
+STATUS.	O
+
+Please	O
+provide	O
+보류	B-STATUS
+for	O
+STATUS.	O
+
+Check	O
+STATUS:	O
+갱신	B-STATUS
+
+Please	O
+provide	O
+체결	B-STATUS
+완료	I-STATUS
+for	O
+STATUS.	O
+
+Value	O
+of	O
+STATUS	O
+is	O
+승인	B-STATUS
+대기	I-STATUS
+
+Check	O
+STATUS:	O
+수정	B-STATUS
+요청	I-STATUS
+
+Value	O
+of	O
+STATUS	O
+is	O
+체결	B-STATUS
+완료	I-STATUS
+
+Check	O
+STATUS:	O
+보류	B-STATUS
+
+Missing	O
+STATUS:	O
+검토	B-STATUS
+중	I-STATUS
+
+Missing	O
+STATUS:	O
+해지	B-STATUS
+
+Missing	O
+DEPARTMENT:	O
+홍보팀	B-DEPARTMENT
+
+Value	O
+of	O
+DEPARTMENT	O
+is	O
+연구소	B-DEPARTMENT
+
+Please	O
+provide	O
+영업팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+Attn:	O
+기카	B-NAME
+센터장,	B-POSITION
+총무팀,	B-DEPARTMENT
+유한회사	B-COMPANY
+변주종산업	I-COMPANY
+
+은유	B-NAME
+works	O
+at	O
+마케팅팀.	B-DEPARTMENT
+
+표선익	B-NAME
+works	O
+at	O
+전략팀.	B-DEPARTMENT
+
+우화	B-NAME
+works	O
+at	O
+법무팀.	B-DEPARTMENT
+
+Missing	O
+DEPARTMENT:	O
+개발팀	B-DEPARTMENT
+
+Attn:	O
+인춘천	B-NAME
+상무,	B-POSITION
+보안팀,	B-DEPARTMENT
+재단법인	B-COMPANY
+반초일소프트	I-COMPANY
+
+Please	O
+provide	O
+인사팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+Check	O
+DEPARTMENT:	O
+총무팀	B-DEPARTMENT
+
+기훈비	B-NAME
+works	O
+at	O
+보안팀.	B-DEPARTMENT
+
+Missing	O
+DEPARTMENT:	O
+법무팀	B-DEPARTMENT
+
+백지성	B-NAME
+(파트장)	B-POSITION
+from	O
+(주)	B-COMPANY
+공시산업	I-COMPANY
+해외사업팀.	B-DEPARTMENT
+
+Missing	O
+DEPARTMENT:	O
+재무팀	B-DEPARTMENT
+
+Missing	O
+DEPARTMENT:	O
+디자인팀	B-DEPARTMENT
+
+Check	O
+DEPARTMENT:	O
+법무팀	B-DEPARTMENT
+
+Please	O
+provide	O
+생산팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+Missing	O
+DEPARTMENT:	O
+영업팀	B-DEPARTMENT
+
+Check	O
+DEPARTMENT:	O
+마케팅팀	B-DEPARTMENT
+
+Attn:	O
+신성오	B-NAME
+차장,	B-POSITION
+CS팀,	B-DEPARTMENT
+유한회사	B-COMPANY
+설전제약	I-COMPANY
+
+Value	O
+of	O
+DEPARTMENT	O
+is	O
+구매팀	B-DEPARTMENT
+
+Please	O
+provide	O
+기획팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+Value	O
+of	O
+DEPARTMENT	O
+is	O
+법무팀	B-DEPARTMENT
+
+Attn:	O
+신성	B-NAME
+파트장,	B-POSITION
+인사팀,	B-DEPARTMENT
+재단법인	B-COMPANY
+황서건설	I-COMPANY
+
+허선지	B-NAME
+(이사)	B-POSITION
+from	O
+재단법인	B-COMPANY
+추종중네트웍스	I-COMPANY
+물류팀.	B-DEPARTMENT
+
+Check	O
+DEPARTMENT:	O
+보안팀	B-DEPARTMENT
+
+Please	O
+provide	O
+개발팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+금설찬	B-NAME
+works	O
+at	O
+해외사업팀.	B-DEPARTMENT
+
+방해	B-NAME
+(실장)	B-POSITION
+from	O
+주식회사	B-COMPANY
+용홍그룹	I-COMPANY
+CS팀.	B-DEPARTMENT
+
+Value	O
+of	O
+DEPARTMENT	O
+is	O
+영업팀	B-DEPARTMENT
+
+Attn:	O
+마창위	B-NAME
+선임연구원,	B-POSITION
+CS팀,	B-DEPARTMENT
+재단법인	B-COMPANY
+채철월네트웍스	I-COMPANY
+
+Check	O
+DEPARTMENT:	O
+전략팀	B-DEPARTMENT
+
+편자수	B-NAME
+(사원)	B-POSITION
+from	O
+사단법인	B-COMPANY
+주우윤무역	I-COMPANY
+생산팀.	B-DEPARTMENT
+
+길선	B-NAME
+works	O
+at	O
+회계팀.	B-DEPARTMENT
+
+옥월다	B-NAME
+works	O
+at	O
+CS팀.	B-DEPARTMENT
+
+금형	B-NAME
+works	O
+at	O
+회계팀.	B-DEPARTMENT
+
+최서연	B-NAME
+works	O
+at	O
+인사팀.	B-DEPARTMENT
+
+Value	O
+of	O
+DEPARTMENT	O
+is	O
+회계팀	B-DEPARTMENT
+
+Check	O
+DEPARTMENT:	O
+인사팀	B-DEPARTMENT
+
+Attn:	O
+차규	B-NAME
+대리,	B-POSITION
+전략팀,	B-DEPARTMENT
+주식회사	B-COMPANY
+주준기획	I-COMPANY
+
+강섭	B-NAME
+(전무)	B-POSITION
+from	O
+(주)	B-COMPANY
+변완엔터테인먼트	I-COMPANY
+총무팀.	B-DEPARTMENT
+
+Check	O
+DEPARTMENT:	O
+연구소	B-DEPARTMENT
+
+Value	O
+of	O
+DEPARTMENT	O
+is	O
+생산팀	B-DEPARTMENT
+
+Attn:	O
+제율유	B-NAME
+과장,	B-POSITION
+물류팀,	B-DEPARTMENT
+주식회사	B-COMPANY
+양판판산업	I-COMPANY
+
+Please	O
+provide	O
+보안팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+Please	O
+provide	O
+홍보팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+Please	O
+provide	O
+재무팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+Value	O
+of	O
+DEPARTMENT	O
+is	O
+물류팀	B-DEPARTMENT
+
+최초	B-NAME
+works	O
+at	O
+해외사업팀.	B-DEPARTMENT
+
+노순현	B-NAME
+(회장)	B-POSITION
+from	O
+(주)	B-COMPANY
+민익종전자	I-COMPANY
+해외사업팀.	B-DEPARTMENT
+
+선영	B-NAME
+works	O
+at	O
+회계팀.	B-DEPARTMENT
+
+Value	O
+of	O
+DEPARTMENT	O
+is	O
+개발팀	B-DEPARTMENT
+
+Check	O
+DEPARTMENT:	O
+물류팀	B-DEPARTMENT
+
+최준	B-NAME
+works	O
+at	O
+홍보팀.	B-DEPARTMENT
+
+Attn:	O
+우산	B-NAME
+사원,	B-POSITION
+전략팀,	B-DEPARTMENT
+주식회사	B-COMPANY
+구승디자인	I-COMPANY
+
+Attn:	O
+황규태	B-NAME
+회장,	B-POSITION
+구매팀,	B-DEPARTMENT
+재단법인	B-COMPANY
+어신바디자인	I-COMPANY
+
+Missing	O
+DEPARTMENT:	O
+해외사업팀	B-DEPARTMENT
+
+기효	B-NAME
+(사원)	B-POSITION
+from	O
+유한회사	B-COMPANY
+백학선시스템	I-COMPANY
+해외사업팀.	B-DEPARTMENT
+
+Missing	O
+DEPARTMENT:	O
+CS팀	B-DEPARTMENT
+
+제충순	B-NAME
+works	O
+at	O
+홍보팀.	B-DEPARTMENT
+
+장월	B-NAME
+works	O
+at	O
+홍보팀.	B-DEPARTMENT
+
+Missing	O
+DEPARTMENT:	O
+구매팀	B-DEPARTMENT
+
+송조	B-NAME
+(과장)	B-POSITION
+from	O
+유한회사	B-COMPANY
+임우영제약	I-COMPANY
+총무팀.	B-DEPARTMENT
+
+추중	B-NAME
+works	O
+at	O
+기획팀.	B-DEPARTMENT
+
+홍자	B-NAME
+(회장)	B-POSITION
+from	O
+주식회사	B-COMPANY
+조의바이오	I-COMPANY
+인사팀.	B-DEPARTMENT
+
+Please	O
+provide	O
+마케팅팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+신병	B-NAME
+works	O
+at	O
+구매팀.	B-DEPARTMENT
+
+Attn:	O
+배카	B-NAME
+센터장,	B-POSITION
+영업팀,	B-DEPARTMENT
+재단법인	B-COMPANY
+설재물산	I-COMPANY
+
+Missing	O
+DEPARTMENT:	O
+보안팀	B-DEPARTMENT
+
+Check	O
+DEPARTMENT:	O
+기획팀	B-DEPARTMENT
+
+오원	B-NAME
+(사원)	B-POSITION
+from	O
+사단법인	B-COMPANY
+변철디자인	I-COMPANY
+물류팀.	B-DEPARTMENT
+
+Attn:	O
+손태파	B-NAME
+차장,	B-POSITION
+CS팀,	B-DEPARTMENT
+사단법인	B-COMPANY
+서정홀딩스	I-COMPANY
+
+Value	O
+of	O
+DEPARTMENT	O
+is	O
+보안팀	B-DEPARTMENT
+
+고재천	B-NAME
+works	O
+at	O
+영업팀.	B-DEPARTMENT
+
+황수솔	B-NAME
+works	O
+at	O
+개발팀.	B-DEPARTMENT
+
+Attn:	O
+신신임	B-NAME
+회장,	B-POSITION
+홍보팀,	B-DEPARTMENT
+사단법인	B-COMPANY
+모한산업	I-COMPANY
+
+Check	O
+DEPARTMENT:	O
+CS팀	B-DEPARTMENT
+
+우웅	B-NAME
+works	O
+at	O
+전략팀.	B-DEPARTMENT
+
+Missing	O
+LANGUAGE:	O
+러시아어	B-LANGUAGE
+
+Value	O
+of	O
+LANGUAGE	O
+is	O
+독일어	B-LANGUAGE
+
+Check	O
+LANGUAGE:	O
+독일어	B-LANGUAGE
+
+Missing	O
+LANGUAGE:	O
+독일어	B-LANGUAGE
+
+Please	O
+provide	O
+러시아어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+Please	O
+provide	O
+프랑스어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+Check	O
+LANGUAGE:	O
+영어	B-LANGUAGE
+
+Check	O
+LANGUAGE:	O
+스페인어	B-LANGUAGE
+
+Please	O
+provide	O
+독일어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+Value	O
+of	O
+LANGUAGE	O
+is	O
+중국어	B-LANGUAGE
+
+Please	O
+provide	O
+중국어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+Please	O
+provide	O
+일본어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+Missing	O
+LANGUAGE:	O
+중국어	B-LANGUAGE
+
+Check	O
+LANGUAGE:	O
+중국어	B-LANGUAGE
+
+Missing	O
+LANGUAGE:	O
+일본어	B-LANGUAGE
+
+Missing	O
+LANGUAGE:	O
+스페인어	B-LANGUAGE
+
+Value	O
+of	O
+LANGUAGE	O
+is	O
+프랑스어	B-LANGUAGE
+
+Missing	O
+LANGUAGE:	O
+한국어	B-LANGUAGE
+
+Value	O
+of	O
+LANGUAGE	O
+is	O
+영어	B-LANGUAGE
+
+Value	O
+of	O
+LANGUAGE	O
+is	O
+러시아어	B-LANGUAGE
+
+Value	O
+of	O
+LANGUAGE	O
+is	O
+아랍어	B-LANGUAGE
+
+Please	O
+provide	O
+스페인어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+Missing	O
+LANGUAGE:	O
+아랍어	B-LANGUAGE
+
+Check	O
+LANGUAGE:	O
+러시아어	B-LANGUAGE
+
+Check	O
+LANGUAGE:	O
+한국어	B-LANGUAGE
+
+Please	O
+provide	O
+아랍어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+Value	O
+of	O
+LANGUAGE	O
+is	O
+스페인어	B-LANGUAGE
+
+Value	O
+of	O
+LANGUAGE	O
+is	O
+일본어	B-LANGUAGE
+
+Check	O
+LANGUAGE:	O
+프랑스어	B-LANGUAGE
+
+Value	O
+of	O
+LANGUAGE	O
+is	O
+한국어	B-LANGUAGE
+
+Missing	O
+LANGUAGE:	O
+프랑스어	B-LANGUAGE
+
+Check	O
+LANGUAGE:	O
+일본어	B-LANGUAGE
+
+Please	O
+provide	O
+한국어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+Missing	O
+LANGUAGE:	O
+영어	B-LANGUAGE
+
+Please	O
+provide	O
+영어	B-LANGUAGE
+for	O
+LANGUAGE.	O
+
+Check	O
+LANGUAGE:	O
+아랍어	B-LANGUAGE
+
+Check	O
+QUANTITY:	O
+986개	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+995일	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+612개	B-QUANTITY
+
+Transfer	O
+출판권	B-RIGHT_INFO
+of	O
+535부	B-QUANTITY
+소프트웨어	B-TYPE
+for	O
+1593천만원.	B-MONEY
+
+Missing	O
+QUANTITY:	O
+766개	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+750편	B-QUANTITY
+
+Transfer	O
+초상권	B-RIGHT_INFO
+of	O
+760점	B-QUANTITY
+영상저작물	B-TYPE
+for	O
+3440천만원.	B-MONEY
+
+Check	O
+QUANTITY:	O
+926시간	B-QUANTITY
+
+Please	O
+provide	O
+774편	B-QUANTITY
+for	O
+QUANTITY.	O
+
+Missing	O
+QUANTITY:	O
+741일	B-QUANTITY
+
+Please	O
+provide	O
+583시간	B-QUANTITY
+for	O
+QUANTITY.	O
+
+Transfer	O
+저작재산권	B-RIGHT_INFO
+of	O
+666시간	B-QUANTITY
+미술저작물	B-TYPE
+for	O
+6978만원.	B-MONEY
+
+Please	O
+provide	O
+326시간	B-QUANTITY
+for	O
+QUANTITY.	O
+
+Transfer	O
+동일성유지권	B-RIGHT_INFO
+of	O
+913개	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+475억원.	B-MONEY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+96시간	B-QUANTITY
+
+Missing	O
+QUANTITY:	O
+259곡	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+327일	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+184곡	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+317부	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+998건	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+450점	B-QUANTITY
+
+Please	O
+provide	O
+131시간	B-QUANTITY
+for	O
+QUANTITY.	O
+
+Please	O
+provide	O
+842부	B-QUANTITY
+for	O
+QUANTITY.	O
+
+Transfer	O
+출판권	B-RIGHT_INFO
+of	O
+896개월	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+7371백만원.	B-MONEY
+
+Missing	O
+QUANTITY:	O
+839편	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+366일	B-QUANTITY
+
+Please	O
+provide	O
+927일	B-QUANTITY
+for	O
+QUANTITY.	O
+
+Check	O
+QUANTITY:	O
+630점	B-QUANTITY
+
+Missing	O
+QUANTITY:	O
+531곡	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+209시간	B-QUANTITY
+
+Transfer	O
+초상권	B-RIGHT_INFO
+of	O
+218편	B-QUANTITY
+도형저작물	B-TYPE
+for	O
+8754천만원.	B-MONEY
+
+Missing	O
+QUANTITY:	O
+942점	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+534시간	B-QUANTITY
+
+Please	O
+provide	O
+621시간	B-QUANTITY
+for	O
+QUANTITY.	O
+
+Transfer	O
+저작재산권	B-RIGHT_INFO
+of	O
+798회	B-QUANTITY
+미술저작물	B-TYPE
+for	O
+8968백만원.	B-MONEY
+
+Please	O
+provide	O
+500회	B-QUANTITY
+for	O
+QUANTITY.	O
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+462곡	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+194편	B-QUANTITY
+
+Transfer	O
+공표권	B-RIGHT_INFO
+of	O
+530건	B-QUANTITY
+건축저작물	B-TYPE
+for	O
+2085억원.	B-MONEY
+
+Check	O
+QUANTITY:	O
+321일	B-QUANTITY
+
+Please	O
+provide	O
+35편	B-QUANTITY
+for	O
+QUANTITY.	O
+
+Check	O
+QUANTITY:	O
+633점	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+208매	B-QUANTITY
+
+Missing	O
+QUANTITY:	O
+41일	B-QUANTITY
+
+Transfer	O
+동일성유지권	B-RIGHT_INFO
+of	O
+896건	B-QUANTITY
+미술저작물	B-TYPE
+for	O
+7626만원.	B-MONEY
+
+Missing	O
+QUANTITY:	O
+73시간	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+98일	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+567일	B-QUANTITY
+
+Missing	O
+QUANTITY:	O
+760일	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+134부	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+163회	B-QUANTITY
+
+Please	O
+provide	O
+40매	B-QUANTITY
+for	O
+QUANTITY.	O
+
+Missing	O
+QUANTITY:	O
+242곡	B-QUANTITY
+
+Missing	O
+QUANTITY:	O
+873매	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+376회	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+534개월	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+184시간	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+637회	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+396개월	B-QUANTITY
+
+Transfer	O
+공연권	B-RIGHT_INFO
+of	O
+761일	B-QUANTITY
+사진저작물	B-TYPE
+for	O
+745억원.	B-MONEY
+
+Missing	O
+QUANTITY:	O
+696개	B-QUANTITY
+
+Missing	O
+QUANTITY:	O
+64개월	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+80점	B-QUANTITY
+
+Transfer	O
+공표권	B-RIGHT_INFO
+of	O
+616건	B-QUANTITY
+어문저작물	B-TYPE
+for	O
+8650만원.	B-MONEY
+
+Please	O
+provide	O
+503일	B-QUANTITY
+for	O
+QUANTITY.	O
+
+Check	O
+QUANTITY:	O
+625시간	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+814개월	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+656건	B-QUANTITY
+
+Transfer	O
+성명표시권	B-RIGHT_INFO
+of	O
+909매	B-QUANTITY
+소프트웨어	B-TYPE
+for	O
+6723백만원.	B-MONEY
+
+Check	O
+QUANTITY:	O
+414개	B-QUANTITY
+
+Missing	O
+QUANTITY:	O
+127시간	B-QUANTITY
+
+Transfer	O
+복제권	B-RIGHT_INFO
+of	O
+226일	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+8161천만원.	B-MONEY
+
+Missing	O
+QUANTITY:	O
+214점	B-QUANTITY
+
+Check	O
+QUANTITY:	O
+320점	B-QUANTITY
+
+Missing	O
+QUANTITY:	O
+874건	B-QUANTITY
+
+Transfer	O
+전시권	B-RIGHT_INFO
+of	O
+789곡	B-QUANTITY
+미술저작물	B-TYPE
+for	O
+4387천만원.	B-MONEY
+
+Missing	O
+QUANTITY:	O
+426점	B-QUANTITY
+
+Value	O
+of	O
+QUANTITY	O
+is	O
+559개	B-QUANTITY
+
+Transfer	O
+전시권	B-RIGHT_INFO
+of	O
+920건	B-QUANTITY
+2차적저작물	B-TYPE
+for	O
+1435백만원.	B-MONEY
+
+Email	O
+address:	O
+user317@example.com	B-EMAIL
+
+License:	O
+210711-3******	B-ID_NUM
+
+Call	O
+010-4038-9402	B-PHONE
+now.	O
+
+Check	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제21조	I-LAW_REFERENCE
+8항	I-LAW_REFERENCE
+
+SMS:	O
+010-7747-2684	B-PHONE
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+W7	I-PROJECT_NAME
+
+License:	O
+330205-1******	B-ID_NUM
+
+This	O
+근로계약서	B-CONTRACT_TYPE
+is	O
+valid	O
+from	O
+2025년	B-DATE
+11월	I-DATE
+25일	I-DATE
+for	O
+16개월,	B-PERIOD
+value	O
+6119천원.	B-MONEY
+
+User:	O
+양여철	B-NAME
+
+Signed	O
+on	O
+2021년	B-DATE
+10월	I-DATE
+9일	I-DATE
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제68조	I-LAW_REFERENCE
+4항,	I-LAW_REFERENCE
+we	O
+sign	O
+MOU.	B-CONTRACT_TYPE
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.apple97.com	B-URL
+
+Cost:	O
+3588억원	B-MONEY
+
+Contact	O
+person:	O
+도예	B-NAME
+
+Copyright	O
+(주)	B-COMPANY
+지종재건설	I-COMPANY
+
+Send	O
+to	O
+user821@example.com	B-EMAIL
+
+User:	O
+배재	B-NAME
+
+Info:	O
+1.홍섭한	B-NAME
+2.010-3789-2702	B-PHONE
+3.user836@example.com	B-EMAIL
+
+Please	O
+provide	O
+배포권	B-RIGHT_INFO
+for	O
+RIGHT_INFO.	O
+
+Missing	O
+CONTRACT_TYPE:	O
+근로계약서	B-CONTRACT_TYPE
+
+License:	O
+570822-4******	B-ID_NUM
+
+Expires:	O
+2002년	B-DATE
+12월	I-DATE
+13일	I-DATE
+
+허창	B-NAME
+works	O
+at	O
+CS팀.	B-DEPARTMENT
+
+Signed	O
+on	O
+2014년	B-DATE
+11월	I-DATE
+10일	I-DATE
+
+Missing	O
+QUANTITY:	O
+553개월	B-QUANTITY
+
+Made	O
+by	O
+유한회사	B-COMPANY
+신웅제약	I-COMPANY
+
+Date:	O
+2019년	B-DATE
+12월	I-DATE
+20일	I-DATE
+
+Fee:	O
+2160천원	B-MONEY
+
+Attn:	O
+변홍	B-NAME
+사장,	B-POSITION
+기획팀,	B-DEPARTMENT
+재단법인	B-COMPANY
+선섭제약	I-COMPANY
+
+Value	O
+of	O
+URL	O
+is	O
+http://www.toss868.com	B-URL
+
+Site:	O
+인천시	B-ADDRESS
+방철택구	I-ADDRESS
+연주길	I-ADDRESS
+282-31	I-ADDRESS
+
+국해	B-NAME
+(상무)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-8561-6639.	B-PHONE
+
+Missing	O
+TITLE:	O
+옥장철	B-TITLE
+관련	I-TITLE
+보고서	I-TITLE
+
+Value	O
+of	O
+TITLE	O
+is	O
+조실	B-TITLE
+관련	I-TITLE
+명세서	I-TITLE
+
+Please	O
+contact	O
+주수	B-NAME
+at	O
+010-3892-3526.	B-PHONE
+
+위진	B-NAME
+signed	O
+here.	O
+
+Mail:	O
+user202@example.com	B-EMAIL
+
+Transfer	O
+대여권	B-RIGHT_INFO
+of	O
+515개월	B-QUANTITY
+영상저작물	B-TYPE
+for	O
+3499만원.	B-MONEY
+
+소민세	B-NAME
+(수석연구원)	B-POSITION
+from	O
+주식회사	B-COMPANY
+편효건설	I-COMPANY
+생산팀.	B-DEPARTMENT
+
+Vendor:	O
+(주)	B-COMPANY
+심현시스템	I-COMPANY
+
+Party	O
+A:	O
+주식회사	B-COMPANY
+유동엔터테인먼트,	I-COMPANY
+Party	O
+B:	O
+선진,	B-NAME
+Date:	O
+2025년	B-DATE
+11월	I-DATE
+8일	I-DATE
+
+Certificate:	O
+임비민	B-NAME
+joined	O
+유한회사	B-COMPANY
+서신그룹	I-COMPANY
+on	O
+2017년	B-DATE
+2월	I-DATE
+1일.	I-DATE
+
+Identity	O
+verified:	O
+석회,	B-NAME
+921010-2******.	B-ID_NUM
+
+Missing	O
+LAW_REFERENCE:	O
+저작권법	B-LAW_REFERENCE
+제64조	I-LAW_REFERENCE
+4항	I-LAW_REFERENCE
+
+Missing	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+L67	I-PROJECT_NAME
+
+Submit	O
+to	O
+user205@example.com	B-EMAIL
+by	O
+2016년	B-DATE
+12월	I-DATE
+27일.	I-DATE
+
+Mail:	O
+user502@example.com	B-EMAIL
+
+Budget	O
+for	O
+프로젝트	B-PROJECT_NAME
+T75:	I-PROJECT_NAME
+28만원.	B-MONEY
+
+Reach	O
+me	O
+at	O
+010-4568-1629	B-PHONE
+
+Residence:	O
+제주시	B-ADDRESS
+염옥빈구	I-ADDRESS
+연태대로	I-ADDRESS
+154-49	I-ADDRESS
+
+Due	O
+by	O
+2000년	B-DATE
+7월	I-DATE
+22일	I-DATE
+
+Price:	O
+414천만원	B-MONEY
+
+User:	O
+길혜자	B-NAME
+
+2023년	B-DATE
+4월	I-DATE
+27일	I-DATE
+-	O
+전속계약서	B-CONTRACT_TYPE
+
+신아	B-NAME
+(사원)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2010년	B-DATE
+1월	I-DATE
+25일	I-DATE
+->	O
+user209@example.com.	B-EMAIL
+
+Phone	O
+Number:	O
+010-5099-7321	B-PHONE
+
+Submit	O
+to	O
+user499@example.com	B-EMAIL
+by	O
+2017년	B-DATE
+4월	I-DATE
+18일.	I-DATE
+
+Attn:	O
+함수중	B-NAME
+팀장,	B-POSITION
+개발팀,	B-DEPARTMENT
+재단법인	B-COMPANY
+전설소프트	I-COMPANY
+
+To:	O
+은주	B-NAME
+
+Located	O
+at	O
+충청북도	B-ADDRESS
+현요구	I-ADDRESS
+탁형수로	I-ADDRESS
+730	I-ADDRESS
+
+User:	O
+서회환	B-NAME
+
+Transfer	O
+퍼블리시티권	B-RIGHT_INFO
+of	O
+383매	B-QUANTITY
+어문저작물	B-TYPE
+for	O
+2203천원.	B-MONEY
+
+Missing	O
+URL:	O
+http://www.naver138.com	B-URL
+
+Please	O
+provide	O
+이용허락계약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYPE.	O
+
+Please	O
+provide	O
+디자인팀	B-DEPARTMENT
+for	O
+DEPARTMENT.	O
+
+Missing	O
+QUANTITY:	O
+162점	B-QUANTITY
+
+Please	O
+provide	O
+엄임상	B-TITLE
+관련	I-TITLE
+확약서	I-TITLE
+for	O
+TITLE.	O
+
+Under	O
+저작권법	B-LAW_REFERENCE
+제63조	I-LAW_REFERENCE
+4항,	I-LAW_REFERENCE
+we	O
+sign	O
+라이선스계약서.	B-CONTRACT_TYPE
+
+Due	O
+by	O
+2002년	B-DATE
+12월	I-DATE
+12일	I-DATE
+
+2007년	B-DATE
+10월	I-DATE
+14일:	I-DATE
+(주)	B-COMPANY
+안유무역	I-COMPANY
+
+유한회사	B-COMPANY
+변소홀딩스	I-COMPANY
+@	O
+충청북도	B-ADDRESS
+조연시	I-ADDRESS
+제운길	I-ADDRESS
+545,	I-ADDRESS
+Tel:	O
+010-4684-3071,	B-PHONE
+Web:	O
+http://www.instagram115.com.	B-URL
+
+양현	B-NAME
+(대표)	B-POSITION
+from	O
+재단법인	B-COMPANY
+성의민시스템	I-COMPANY
+보안팀.	B-DEPARTMENT
+
+Vendor:	O
+(주)	B-COMPANY
+선섭소프트	I-COMPANY
+
+Mail:	O
+user666@example.com	B-EMAIL
+
+Check	O
+QUANTITY:	O
+924건	B-QUANTITY
+
+강예	B-NAME
+(상무)	B-POSITION
+can	O
+be	O
+reached	O
+at	O
+010-8891-2501.	B-PHONE
+
+Located	O
+at	O
+충청북도	B-ADDRESS
+여만시	I-ADDRESS
+방환로	I-ADDRESS
+33-35	I-ADDRESS
+
+010-1919-3322	B-PHONE
+(옥요)	B-NAME
+
+2020년	B-DATE
+12월	I-DATE
+8일	I-DATE
+/	O
+2324백만원	B-MONEY
+
+민재	B-NAME
+(책임)	B-POSITION
+signed	O
+개인정보	B-CONSENT_TYPE
+수집	I-CONSENT_TYPE
+이용	I-CONSENT_TYPE
+동의	I-CONSENT_TYPE
+on	O
+2014년	B-DATE
+6월	I-DATE
+28일	I-DATE
+->	O
+user457@example.com.	B-EMAIL
+
+To:	O
+하유	B-NAME
+
+2007년	B-DATE
+5월	I-DATE
+12일:	I-DATE
+사단법인	B-COMPANY
+한해충기획	I-COMPANY
+
+Date:	O
+2007년	B-DATE
+2월	I-DATE
+3일	I-DATE
+
+Amount:	O
+8387천원	B-MONEY
+
+재단법인	B-COMPANY
+석훈다엔터테인먼트	I-COMPANY
+@	O
+전라남도	B-ADDRESS
+구형시	I-ADDRESS
+표소로	I-ADDRESS
+210,	I-ADDRESS
+Tel:	O
+010-8171-3726,	B-PHONE
+Web:	O
+http://www.hyundai566.com.	B-URL
+
+Please	O
+provide	O
+맹재춘	B-TITLE
+관련	I-TITLE
+각서	I-TITLE
+for	O
+TITLE.	O
+
+Ship	O
+to:	O
+제주시	B-ADDRESS
+금택이시	I-ADDRESS
+임학대로	I-ADDRESS
+349-18	I-ADDRESS
+
+ID:	O
+100710-4******	B-ID_NUM
+
+Copyright	O
+주식회사	B-COMPANY
+방훈시스템	I-COMPANY
+
+Email	O
+address:	O
+user640@example.com	B-EMAIL
+
+Since	O
+2022년	B-DATE
+10월	I-DATE
+2일	I-DATE
+
+Please	O
+provide	O
+선임연구원	B-POSITION
+for	O
+POSITION.	O
+
+천종	B-NAME
+lives	O
+in	O
+대전시	B-ADDRESS
+황근시	I-ADDRESS
+석학규로	I-ADDRESS
+30.	I-ADDRESS
+
+Value	O
+of	O
+PERIOD	O
+is	O
+7개월	B-PERIOD
+
+Mail:	O
+user578@example.com	B-EMAIL
+
+Missing	O
+QUANTITY:	O
+110개월	B-QUANTITY
+
+Please	O
+provide	O
+저작권법	B-LAW_REFERENCE
+제90조	I-LAW_REFERENCE
+3항	I-LAW_REFERENCE
+for	O
+LAW_REFERENCE.	O
+
+Cost:	O
+7348만원	B-MONEY
+
+Effective	O
+from	O
+2008년	B-DATE
+3월	I-DATE
+4일	I-DATE
+
+License:	O
+181025-4******	B-ID_NUM
+
+Contact	O
+person:	O
+천순이	B-NAME
+
+Total:	O
+5954백만원	B-MONEY
+
+Transfer	O
+전시권	B-RIGHT_INFO
+of	O
+649부	B-QUANTITY
+연극저작물	B-TYPE
+for	O
+2541억원.	B-MONEY
+
+Dial	O
+010-1314-9043	B-PHONE
+
+Check	O
+PROJECT_NAME:	O
+프로젝트	B-PROJECT_NAME
+F14	I-PROJECT_NAME
+
+Deposit	O
+3164백만원	B-MONEY
+on	O
+2025년	B-DATE
+4월	I-DATE
+1일,	I-DATE
+Balance	O
+3164백만원	O
+on	O
+2025년	O
+4월	O
+1일.	O
+
+Please	O
+provide	O
+매매계약서	B-CONTRACT_TYPE
+for	O
+CONTRACT_TYPE.	O
+
+Fee:	O
+1161만원	B-MONEY
+
+2024년	B-DATE
+7월	I-DATE
+5일:	I-DATE
+유한회사	B-COMPANY
+제희엔터테인먼트	I-COMPANY
+
+From:	O
+추애석	B-NAME
+
+Value	O
+of	O
+LAW_REFERENCE	O
+is	O
+저작권법	B-LAW_REFERENCE
+제79조	I-LAW_REFERENCE
+1항	I-LAW_REFERENCE
+
+Missing	O
+TITLE:	O
+지근여	B-TITLE
+관련	I-TITLE
+약정서	I-TITLE
+
+사단법인	B-COMPANY
+원웅명디자인	I-COMPANY
+CEO	O
+구휘우	B-NAME
+
+Identity	O
+verified:	O
+강비,	B-NAME
+370510-2******.	B-ID_NUM
+
+왕마	B-NAME
+works	O
+at	O
+기획팀.	B-DEPARTMENT
+
+Please	O
+contact	O
+원동혁	B-NAME
+at	O
+010-2498-5568.	B-PHONE
+
