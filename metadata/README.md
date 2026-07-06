@@ -16,7 +16,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
 pip install -r requirements.txt
 
-# end-to-end 실행 — OCR(Qwen3-VL) + regex + NER(mBERT) + LLM placeholder
+# end-to-end 실행 — OCR(Qwen3-VL) + regex + NER(xlm-roberta-base) + LLM placeholder
 python main.py
 ```
 
@@ -40,7 +40,7 @@ PDF/이미지/txt
 OCR 평문 텍스트 (data/out/ocr/result/*.txt)
      │
      ├──▶ regex (9 strict-format 라벨)            module/extractor/regex.py
-     ├──▶ NER  (17 free-form 라벨, mBERT fine-tune) module/extractor/ner/
+     ├──▶ NER  (17 free-form 라벨, xlm-roberta-base fine-tune) module/extractor/ner/
      ├──▶ post-process                            module/extractor/ner/postprocess.py::postprocess_metadata
      │     ├─ closed-vocab keyword 매칭 (ri_copyright, ri_info, copyright_type 등)
      │     ├─ form-cue line capture (성명:, 주소:, 전화번호:, 기관명: 등)
@@ -63,7 +63,7 @@ metadata/
 ├── main.py                       # 진입점 — extract_metadata 호출만
 ├── eval_compare.py               # (옛 실험) Regex/NER/Train 3-way 비교
 ├── eval/
-│   └── eval_audit.py             # line-cue ground truth 기반 전수 recall 평가
+│   └── (gold 라벨별 평가는 configs/integrated/gold/ 기준 — README 정확도 표 참조)
 ├── module/
 │   ├── api.py                    # ★ extract_metadata public facade
 │   ├── extractor/
@@ -128,16 +128,24 @@ xlsx 출력 시 7 role-free author 라벨이 21 role-prefixed 필드(`ch_co_*`,
 NER 단독 결과는 한국 양식 (성명:, 주소:, 기관명:) 의 entity 를 자주 놓치고
 경계 오류·1글자 노이즈가 많음. `postprocess_metadata` 가 3가지로 보정:
 
-1. **closed-vocab 매칭** (`CLOSED_VOCAB`): NER 가 노이즈 심한 라벨
-   (ri_copyright, ri_contract_type, ri_info, copyright_type, copyright_status,
-   copyright_language) 은 정해진 키워드 직접 검색 → NER 대체
-2. **form-cue line-capture** (`FORM_CUE_PATTERNS`): "성명:", "주소:",
-   "전화번호:", "기관명:" 등 cue 뒤 줄 끝까지 그대로 캡처. OCR 변형
-   (콤마 separator, % 문자, 자릿수 잘림, `(주)` paren 누락 등) 도 전부 보존
-3. **휴리스틱 필터**: `name` 한글 1자 이상 + 2-20자, `address` 2-200자,
-   `ri_period` 시간 cue 필수, `ri_data` ← date fallback 등
+1. **closed-vocab 매칭** (`CLOSED_VOCAB`): ri_copyright, ri_contract_type, ri_info,
+   copyright_type, copyright_status, copyright_language 는 정해진 키워드 검색.
+   **vocab 우선, 없으면 NER 폴백** (기존엔 무조건 NER 대체 → 닫힌 목록에 없는
+   정답을 전부 버려 gold 정확도가 급락했음). `copyright_status` 는 파일 확장자
+   (`_extract_file_ext`)도 함께 인정.
+2. **form-cue line-capture** (`FORM_CUE_PATTERNS`): "성명:", "주소:", "전화번호:",
+   "기관명:" 등 cue 뒤 줄 끝까지 캡처. OCR 변형(콤마, %, 자릿수 잘림, `(주)` 누락)
+   보존.
+3. **gazetteer / lexicon 회수**: 지자체(`_extract_region_address`)→address,
+   기관 접미사·접두어(`_extract_org_company`: …청/관/원/회/재단, 국립/한국/정부…)
+   →company, 직위 lexicon + 크레딧(무대장치-이름)→position. NER 이 지자체·기관명을
+   name 으로 오태깅하는 문제를 이름 정밀도 손실 없이 보정.
+4. **휴리스틱 필터**: `name` 한글+2-20자, `address` 2-200자 + 부분문자열 중복 제거,
+   `ri_period` 시간 cue 또는 날짜, `copyright_kotitle` 길이만(접미사 강제 폐지),
+   `company` 한자 허용, `ri_data` ← date fallback.
 
-이 후처리가 100% recall 의 결정적 요인.
+증강 학습으로 모델 자체(raw)가 크게 개선됐고, 위 결정적 후처리가 남은 격차를 메워
+gold 17/17 라벨 relaxed ≥0.90 을 달성한다.
 
 ## Models & Accuracy
 
@@ -150,42 +158,58 @@ NER 단독 결과는 한국 양식 (성명:, 주소:, 기관명:) 의 entity 를
 - 설정: `configs/labels.yaml::ocr.qwen3vl` (model_id, render_zoom, max_new_tokens)
 - 더 큰 GPU 면 `Qwen/Qwen3-VL-4B-Instruct` (BF16 ~9GB) 또는 8B BF16 권장
 
-### NER — 7개 backbone 학습 완료, mBERT 기본
+### NER — xlm-roberta-base 기본 (백본 토너먼트 채택, 2026-07)
 
-`configs/integrated/silver/` (654,377 BIO 레코드; 논문 실험은 `paper/configs/integrated/silver/`
-사본 657,377건 — copyright_status 합성 3,000 포함 — 사용) 로 fine-tune.
-silver validation split (seed=42) best-epoch:
+`configs/integrated/silver/` (654,377 BIO 레코드) + 증강 silver(지자체→address,
+"저작권자:<기관>"→company; 기존 silver 에서 파생, gold 누출 없음) 로 full fine-tune.
 
-| Alias | HuggingFace ID | eval_accuracy | eval_F1 | 학습 |
-|---|---|---:|---:|:---:|
-| **mbert (기본)** | `google-bert/bert-base-multilingual-cased` | **0.9858** | **0.9506** | ✓ |
-| klue | `klue/bert-base` | ~0.985 | ~0.95 | ✓ |
-| koelectra | `monologg/koelectra-base-v3-discriminator` | 0.9845 | 0.9487 | ✓ |
-| distilbert | `distilbert-base-multilingual-cased` | 0.9859 | 0.9547 | ✓ |
-| xlmr-base | `FacebookAI/xlm-roberta-base` | 0.9861 | 0.9502 | ✓ |
-| xlmr-large | `FacebookAI/xlm-roberta-large` | — | — | ✓ (어댑터만) |
-| deberta | `microsoft/deberta-v3-base` | 0.9859 | 0.9608 | ✓ |
+**백본 토너먼트 (6종, gold 라벨별 정확도 기준 — silver seqeval 아님).**
+`mean_raw` = 후처리 없는 모델 자체 정확도, `mean_final` = regex+NER+후처리 제품 출력:
 
-`main.py` 기본값: mBERT + threshold 0.25. 학습된 가중치는
-`models/<id>/adapter/model.safetensors` (full fine-tune, 709MB).
+| HuggingFace ID | mean_raw | mean_final | name | address | company |
+|---|---:|---:|---:|---:|---:|
+| **FacebookAI/xlm-roberta-base (채택)** | 0.866 | 0.982 | 0.937 | **0.990** | 0.905 |
+| klue/roberta-base | 0.866 | 0.980 | 0.893 | 0.941 | 0.803 |
+| google-bert/bert-base-multilingual-cased | 0.862 | 0.979 | 0.920 | 0.951 | 0.840 |
+| kakaobank/kf-deberta-base | 0.858 | 0.979 | 0.907 | 0.901 | 0.833 |
+| jhu-clsp/mmBERT-base (2025) | 0.857 | 0.984 | 0.963 | 0.946 | 0.670 |
+| microsoft/mdeberta-v3-base | 0.000 | 0.456 | — | — | — |
 
-### 실측 recall — 63 문서 전수 audit (`eval/eval_audit.py`)
+(mdeberta-v3-base 는 deberta-v2 sentencepiece + `is_split_into_words` word-align 파손으로
+raw 0.0 — 이 토큰 정렬 파이프라인에 부적합.)
 
-line-cue ground truth (성명:, 주소:, 전화번호:, 기관명: 등) 기반 전수 측정:
+채택 근거: address(0.990 최고)·name 균형 최강, company 무난, 운영 안정(OOM 없음).
+증강 학습으로 **address raw 0.60→0.99, company raw 0.60→0.74** — 규칙 의존을 벗고
+모델 자체가 지자체=address / 기관=company 를 학습.
 
-| 라벨 | gt | match | recall |
-|---|---:|---:|---:|
-| address | 98 | 98 | **100%** |
-| company | 40 | 40 | **100%** |
-| date | 38 | 38 | **100%** |
-| name | 113 | 113 | **100%** |
-| phone | 309 | 309 | **100%** |
-| ri_money | 2 | 2 | **100%** |
-| **OVERALL** | 600 | 600 | **100%** |
+`main.py` 기본값: `configs/labels.yaml::ner.model_name = FacebookAI/xlm-roberta-base`
++ threshold 0.25. 가중치는 `models/FacebookAI--xlm-roberta-base/adapter/model.safetensors`
+(full fine-tune). 다른 백본은 정리(제거)됨 — 필요 시 silver 로 재학습.
 
-모든 63개 doc 100%. 측정 가능한 라벨은 phone/email/date/ri_money/address/name/
-company (line-cue 가 명확). description/status/info 등은 cue 가 없어 자동 측정
-불가 — 수동 검수 영역.
+학습 속도: `LengthGroupedSampler`(길이 그룹핑) + `NER_MAX_LENGTH`(기본 512) env 로
+동적 패딩 낭비 제거. silver 는 p50≈12·p99≈384 토큰이라 이 조합으로 학습 처리량
+약 3배(3.6→11 it/s, batch 32). 대형 vocab/deberta 는 `NER_MAX_LENGTH=256` +
+batch 축소 권장(disentangled attention O(n²) 메모리).
+
+### 정확도 — gold 라벨별 실측 (`configs/integrated/gold/`)
+
+라벨별 `{text, answer}` gold 로 예측을 1대1 대조. 지표는 relaxed(정답 엔티티가
+예측에 포함) 기준. 채택된 xlm-roberta-base + 후처리 결과 **17/17 NER 라벨 ≥0.90**:
+
+| 라벨 | relaxed | 라벨 | relaxed |
+|---|---:|---|---:|
+| name | 0.937 | copyright_status | 0.999 |
+| address | 1.000 | copyright_type | 0.995 |
+| company | 0.905 | copyright_language | 1.000 |
+| department | 0.993 | copyright_kotitle | 0.956 |
+| position | 0.986 | copyright_description | 0.995 |
+| ri_data | 1.000 | copyright_Keyword | 0.974 |
+| ri_period | 0.953 | ri_contract_type | 1.000 |
+| ri_law_reference | 1.000 | ri_info | 1.000 |
+| ri_copyright | 0.969 | | |
+
+주의: 저장돼 있던 "eval_accuracy 0.98" 류는 **토큰 단위**(대부분 `O` 토큰)라
+엔티티 정확도를 과대평가한다. 위 gold relaxed 가 실제 지표.
 
 ### LLM — 미구현
 
@@ -213,10 +237,10 @@ company (line-cue 가 명확). description/status/info 등은 cue 가 없어 자
 | Regex 패턴 | `module/extractor/regex.py::PATTERNS` |
 | OCR 모델·설정 | `configs/labels.yaml::ocr.qwen3vl` |
 | NER threshold 기본값 | `module/extractor/ner/_runtime.py::DEFAULT_THRESHOLD` |
-| 진입점 기본값 | `main.py` (mBERT + threshold 0.25) |
+| 진입점 기본값 | `configs/labels.yaml::ner.model_name` (xlm-roberta-base + threshold 0.25) |
 | Post-process 규칙 | `module/extractor/ner/postprocess.py::CLOSED_VOCAB`, `FORM_CUE_PATTERNS`, `postprocess_metadata` |
 | 50-필드 xlsx 매핑 | `NER_LLM_METADATA_CONNECTION.md` |
-| Recall 평가 | `eval/eval_audit.py` |
+| 정확도 평가 | `configs/integrated/gold/` 라벨별 gold (relaxed 지표) |
 
 스키마/엔진/후처리 규칙이 바뀌면 `labels.py` → `api.py` → 본 README 순으로 함께
 갱신.

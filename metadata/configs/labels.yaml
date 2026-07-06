@@ -53,7 +53,10 @@ regex:
 # ──────────────────────────────────────────────
 ner:
   # ner_predict 기본값 (인자 미지정 시 사용)
-  model_name: google-bert/bert-base-multilingual-cased
+  # 2026-07 백본 토너먼트(6종, gold 라벨별 정확도 기준) 결과 xlm-roberta-base 채택.
+  # 증강 silver(지자체→address, cue+기관→company) full FT. address raw 0.60→0.99,
+  # company raw 0.60→0.74, gold 17/17 라벨 relaxed ≥0.90.
+  model_name: FacebookAI/xlm-roberta-base
   threshold: 0.25
   result_phase: latest
   labels:

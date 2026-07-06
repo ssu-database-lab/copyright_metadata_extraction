@@ -80,8 +80,16 @@ GRADIENT_CHECKPOINTING = os.environ.get("NER_GRADIENT_CHECKPOINTING", "0") == "1
 EVAL_BATCH_MULT = int(os.environ.get("NER_EVAL_BATCH_MULT", "3"))
 # TRAIN_BATCH_MULT>1: VRAM 추가 활용. frozen-eval 비교 시 1 유지.
 TRAIN_BATCH_MULT = int(os.environ.get("NER_TRAIN_BATCH_MULT", "1"))
-DATALOADER_NUM_WORKERS = int(os.environ.get("NER_DATALOADER_NUM_WORKERS", "4"))
+DATALOADER_NUM_WORKERS = int(os.environ.get("NER_DATALOADER_NUM_WORKERS", "8"))
 DATALOADER_PIN_MEMORY = os.environ.get("NER_DATALOADER_PIN_MEMORY", "1") == "1"
+# 길이 그룹핑: 비슷한 길이끼리 배치 → 동적 패딩 낭비 제거. silver 는 길이 편차가
+# 커서(p50≈12, p99≈384) 대부분 배치가 최대 길이로 패딩됨. LengthGroupedSampler 로
+# 배치당 패딩을 줄여 가속. transformers 5.x 는 group_by_length 인자를 제거했으므로
+# 커스텀 Trainer(_LenGroupTrainer)로 sampler 를 직접 주입한다. 결과 영향은 미미.
+GROUP_BY_LENGTH = os.environ.get("NER_GROUP_BY_LENGTH", "1") == "1"
+# 학습 토큰 최대 길이. silver 는 p50≈12, p99≈384 라 512 는 과함. 짧게 잡으면 disentangled
+# attention(deberta-v2) 메모리 O(n²) 급감 + 패딩 감소로 가속. 기본 512(제품 호환).
+MAX_LENGTH = int(os.environ.get("NER_MAX_LENGTH", "512"))
 
 if torch is not None:
     # TF32 matmul on Ampere+ (Blackwell included). ~10-15% speedup, no
@@ -589,7 +597,7 @@ class TokenClassNER:
                 examples["tokens"],
                 is_split_into_words=True,
                 truncation=True,
-                max_length=512,
+                max_length=MAX_LENGTH,
                 padding=False,
             )
             aligned = []
@@ -809,7 +817,34 @@ class TokenClassNER:
             ner_debug_print(f"[NER debug][token_cls.train] tokenized_rows={len(tokenized_ds)}")
             ner_debug_print(f"[NER debug][token_cls.train] TrainingArguments={training_args}")
 
-        trainer = Trainer(
+        # 길이 그룹핑: transformers 5.x 에서 group_by_length 인자가 사라져 커스텀
+        # Trainer 로 LengthGroupedSampler 를 주입해 배치당 패딩(→연산 낭비)을 줄인다.
+        _TrainerCls = Trainer
+        if GROUP_BY_LENGTH:
+            try:
+                from transformers.trainer_pt_utils import LengthGroupedSampler
+
+                class _LenGroupTrainer(Trainer):
+                    def _get_train_sampler(self, *a, **k):
+                        ds = self.train_dataset
+                        if ds is not None and "input_ids" in getattr(ds, "column_names", []):
+                            try:
+                                lengths = [len(x) for x in ds["input_ids"]]
+                                return LengthGroupedSampler(
+                                    self.args.train_batch_size,
+                                    dataset=ds, lengths=lengths,
+                                    model_input_name="input_ids",
+                                )
+                            except Exception as _e:  # pragma: no cover
+                                log.warning("LengthGroupedSampler 실패, 기본 sampler 사용: %s", _e)
+                        return super()._get_train_sampler(*a, **k)
+
+                _TrainerCls = _LenGroupTrainer
+                print("  길이 그룹핑 sampler 활성 (동적 패딩 감소)")
+            except Exception as _lg_err:
+                log.warning("LengthGroupedSampler 임포트 실패, 기본 Trainer 사용: %s", _lg_err)
+
+        trainer = _TrainerCls(
             model=model,
             args=training_args,
             train_dataset=tokenized_ds,

@@ -3,9 +3,10 @@
 - ocr_extract       : module.extractor.ocr        → PDF/이미지 → 텍스트
 - regex_extract     : module.extractor.regex      → 9 strict-format 라벨
 - ner_predict       : module.extractor.ner.base   → 35-라벨 메타데이터 (regex+NER+후처리+LLM placeholder)
-- ner_train         : module.extractor.ner.base   → NER 학습
+- ner_train         : module.extractor.ner.base   → NER 학습 (저수준, 인자 직접 지정)
 - llm_extract       : module.extractor.llm.llm    → 9 위임 라벨 (미구현)
-- extract_metadata  : ★ OCR + NER + LLM end-to-end 오케스트레이터
+- extract_metadata  : ★ OCR + NER + LLM end-to-end 오케스트레이터 (main.py)
+- train_metadata    : ★ 배포 NER 모델 재학습 (train.py) — silver + 증강 full FT
 """
 from module.extractor.ner import base as ner_base
 from module.extractor.llm import llm
@@ -27,6 +28,37 @@ def ner_predict(**kwargs):
 
 def ner_train(**kwargs):
     return ner_base.ner_train(**kwargs)
+
+
+def train_metadata(**overrides):
+    """배포 NER 모델 재학습 — ``train.py`` 의 단일 진입점.
+
+    ``configs/labels.yaml::ner.model_name`` 백본을 ``configs/integrated/silver``
+    (654k BIO) + ``configs/integrated/silver_aug`` (지자체→address, cue+기관→company
+    증강) 로 full fine-tune 한다. 기본값은 현재 배포 모델(xlm-roberta-base)을 재현하는
+    설정. 학습 산출물은 gitignore 대상이라, 새 환경에서는 ``python train.py`` 로 학습한
+    뒤 ``python main.py`` 로 예측한다.
+
+    ``force=False`` (기본): silver 서명이 같고 어댑터가 이미 있으면 스킵.
+    하이퍼파라미터는 keyword 로 override 가능 (예: ``train_metadata(epochs=5)``).
+    """
+    from module.extractor.ner._runtime import load_ner_defaults
+    model_name = load_ner_defaults().get("model_name") or "FacebookAI/xlm-roberta-base"
+    cfg = dict(
+        model_name=model_name,
+        input_path="configs/integrated/silver",
+        extra_input_paths=["configs/integrated/silver_aug"],
+        fine_tuning_method="full",
+        epochs=3,
+        batch_size=32,
+        lr=2e-5,
+        warmup_ratio=0.1,
+        weight_decay=0.01,
+        max_per_label=10000,
+        split_seed=42,
+    )
+    cfg.update(overrides)
+    return ner_train(**cfg)
 
 
 def llm_extract(*args, **kwargs):

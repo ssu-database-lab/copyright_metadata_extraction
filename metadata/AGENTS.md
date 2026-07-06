@@ -39,16 +39,25 @@ The product pipeline is a one-way extraction flow exposed as a single function
    `REGEX_LABEL_SET` (phone, email, copyright_url, copyright_uci, date,
    ri_money, copyright_num, copyright_idnum, copyright_quantity).
 3. NER (`module/extractor/ner/`) — 17 free-form span labels in `NER_LABEL_SET`,
-   BERT token classification (mBERT default, threshold 0.25).
-4. **Post-process** (`module/api.py::postprocess_metadata`) — deterministic
-   cleanup that drives recall to 100% on measurable labels:
-   - `CLOSED_VOCAB`: keyword matching replaces NER for ri_copyright,
-     ri_contract_type, ri_info, copyright_type, copyright_status,
-     copyright_language (NER is too noisy for these closed vocabularies).
-   - `FORM_CUE_PATTERNS`: line-capture cues (성명:, 주소:, 전화번호:, 기관명:,
-     보유 및 이용 기간:, 저작권법 제Xa조, etc.) unioned with NER output.
-   - Heuristic filters (length, Hangul presence, period cue) drop OCR noise.
-   - `ri_data` falls back to regex `date` if NER missed it.
+   token classification. **Default: `FacebookAI/xlm-roberta-base`, threshold 0.25**
+   (`configs/labels.yaml::ner.model_name`). Chosen by a 2026-07 backbone tournament
+   scored on per-label gold accuracy (not silver seqeval); full fine-tune on silver
+   + augmentation. Other backbones were removed — retrain from silver if needed.
+4. **Post-process** (`module/extractor/ner/postprocess.py::postprocess_metadata`) —
+   deterministic cleanup (drives gold 17/17 NER labels to relaxed ≥0.90):
+   - `CLOSED_VOCAB`: keyword search for ri_copyright, ri_contract_type, ri_info,
+     copyright_type, copyright_status, copyright_language — **vocab-first, NER
+     fallback** (was replace-NER, which discarded any answer outside the closed
+     list). `copyright_status` also accepts file extensions (`_extract_file_ext`).
+   - `FORM_CUE_PATTERNS`: line-capture cues (성명:, 주소:, 전화번호:, 기관명:, …)
+     unioned with NER output.
+   - Gazetteer/lexicon recovery: 지자체→address (`_extract_region_address`),
+     org suffix/prefix→company (`_extract_org_company`), position lexicon + credit
+     roles→position. Fixes NER mislabeling 지자체/기관 as name, name-precision-safe.
+   - Heuristic filters (length, Hangul/CJK, period-or-date, substring dedup);
+     `ri_data` falls back to regex `date`.
+   Note: training augmentation lifted the model itself (address raw 0.60→0.99,
+   company 0.60→0.74), so these rules now correct a smaller residual gap.
 5. LLM extraction is still a stub in `module/extractor/llm/`. `extract_metadata`
    accepts an `llm_fn` callback; without it, the 9 delegated labels are filled
    with `["N/A"]` placeholders.

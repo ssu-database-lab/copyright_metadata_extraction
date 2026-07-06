@@ -155,7 +155,12 @@ def _build_full_metadata(
                 out[label] = _normalize_llm_values(llm_updates[label])
     for label in LLM_DELEGATED_LABEL_SET:
         out.setdefault(label, ["N/A"])
-    return out
+
+    # 출력 순서: 검출된(비-N/A) 라벨 우선, 그 다음 라벨 이름순(알파벳).
+    def _detected(values: List[str]) -> bool:
+        return bool(values) and any(v and v != "N/A" and str(v).strip() for v in values)
+
+    return {k: out[k] for k in sorted(out, key=lambda k: (not _detected(out[k]), k))}
 
 
 def _predict_one_text(

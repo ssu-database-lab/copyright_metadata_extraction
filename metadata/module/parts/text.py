@@ -116,13 +116,34 @@ def normalize_whitespace(text: str) -> str:
 # 문장 / 토큰 / 스팬
 # ---------------------------------------------------------------------------
 
+# 이 길이를 넘는 "한 줄"만 추가로 문장 분할(kiwi/blingfire). 폼/표의 짧은 줄은
+# 줄 자체를 한 단위로 보존한다 — kiwi 가 줄바꿈을 무시하고 표 여러 행을 한 문장으로
+# 합쳐 NER 이 행별 엔티티를 통째로 놓치는 문제를 막는다.
+_LINE_SPLIT_MAX = 100
+
+
+def _split_one_line(line: str) -> List[str]:
+    if len(line) <= _LINE_SPLIT_MAX:
+        return [line]
+    if _KOREAN_RE.search(line):
+        return _kiwi_split_sentences(line) or [line]
+    return [s.strip() for s in text_to_sentences(line).split("\n") if s.strip()] or [line]
+
+
 def split_sentences(clean_text_all: str) -> List[str]:
-    """문장 분리 (한국어는 kiwipiepy, 그 외는 BlingFire)."""
+    """문장 분리 — 줄바꿈을 1차 경계로 보존하고, 긴 줄만 kiwi/BlingFire 로 추가 분할.
+
+    표/양식(연번 성명 주소 …, 성명:, 주소:)은 줄 구조가 곧 논리 단위이므로 줄을 우선
+    존중한다. 긴 산문 줄(약관 등)만 문장 단위로 세분한다.
+    """
     if not clean_text_all:
         return []
-    if _KOREAN_RE.search(clean_text_all):
-        return _kiwi_split_sentences(clean_text_all)
-    return [s.strip() for s in text_to_sentences(clean_text_all).split("\n") if s.strip()]
+    out: List[str] = []
+    for raw_line in clean_text_all.split("\n"):
+        line = raw_line.strip()
+        if line:
+            out.extend(_split_one_line(line))
+    return [s.strip() for s in out if s.strip()]
 
 
 def tokenize(s: str) -> List[str]:
