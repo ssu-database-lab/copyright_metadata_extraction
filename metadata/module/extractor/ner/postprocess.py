@@ -161,7 +161,8 @@ FORM_CUE_PATTERNS: Dict[str, List[re.Pattern]] = {
     ],
     "company": [
         re.compile(
-            r"(?:^|\n)[ \t]*[○●·•∙*◦▫▪]?[ \t]*기[ \t]*관[ \t]*명?[ \t]*[:：][ \t]+([^\n]+?)[ \t]*$",
+            r"(?:^|\n)[ \t]*[○●·•∙*◦▫▪]?[ \t]*기[ \t]*관[ \t]*명?[ \t]*[:：][ \t]+"
+            r"([^\n]+?)(?:[ \t]+대표자|[ \t]+연락처|[ \t]+전화|[ \t]*$)",
             re.MULTILINE,
         ),
         re.compile(
