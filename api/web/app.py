@@ -94,7 +94,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # 허용된 파일 확장자
-ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tif', 'tiff'}
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tif', 'tiff', 'webp', 'bmp', 'gif'}
 
 # OCR 설정 확인
 def check_ocr_availability() -> Dict[str, bool]:
@@ -843,6 +843,7 @@ async def llm_extract_metadata(
     ner_model: str = Form(default="klue-roberta-large"),
     consolidate: bool = Form(default=True),
     consolidation_model: str = Form(default="alibaba-qwen3.5-122b-a10b"),
+    vlm_prefer: str = Form(default="gemma"),  # 멀티모달(이미지) VLM 우선: gemma(기본)→qwen 폴백
     stream: bool = Form(default=False)
 ):
     """LLM을 사용한 메타데이터 추출 (SSE 지원, 통합 기능 포함)"""
@@ -882,6 +883,54 @@ async def llm_extract_metadata(
                 ctx = pipeline_orchestrator.setup(file_content, filename)
                 yield _send_progress_update("파일 업로드 완료", 1, 10, {"request_id": ctx["request_id"]})
                 await asyncio.sleep(0.01)
+
+                # ── Modality routing: image → VLM(Gemma→Qwen); video/audio → guarded; doc/text → OCR path ──
+                modality = pipeline_orchestrator.run_router(ctx)["modality"]
+                yield _send_progress_update(f"입력 유형 감지: {modality}", 1, 15, {"modality": modality})
+                await asyncio.sleep(0.01)
+
+                if modality == "image":
+                    yield _send_progress_update(f"시각 메타데이터 추출 중 (VLM: {vlm_prefer})...", 2, 35)
+                    await asyncio.sleep(0.01)
+                    vlm_result = await asyncio.to_thread(pipeline_orchestrator.run_vlm, ctx, vlm_prefer)
+                    backend = vlm_result.get("model_used")
+                    if not vlm_result.get("success"):
+                        error_response = {"success": False, "error": vlm_result.get("error", "VLM 추출 실패"),
+                                          "request_id": ctx["request_id"], "filename": ctx["filename"],
+                                          "modality": "image", "vlm_backend": backend}
+                        yield _send_progress_update(f"VLM 추출 실패 ({backend})", 0, 0, {"error": vlm_result.get("error"), "result": error_response})
+                        return
+                    yield _send_progress_update(f"VLM 추출 완료 ({backend})", 3, 70, {"vlm_backend": backend})
+                    await asyncio.sleep(0.01)
+                    con_result, con_success, con_error = None, False, None
+                    do_con = consolidate and vlm_result.get("success")
+                    if do_con:
+                        yield _send_progress_update("메타데이터 통합 중...", 4, 90)
+                        await asyncio.sleep(0.01)
+                        con_result, con_success, con_error = await asyncio.to_thread(
+                            pipeline_orchestrator.run_consolidation, vlm_result,
+                            {"success": False, "entities": {}, "total_entities": 0, "extracted_entities": []},
+                            "", document_type, ctx["result_dir"], consolidation_model)
+                    response = pipeline_orchestrator.build_response(
+                        ctx, model_name=backend or "VLM", document_type=document_type,
+                        ocr_text="", ocr_provider="(image/VLM)", ocr_model=None,
+                        llm_result=vlm_result, ner_model=None, ner_result=None,
+                        consolidate=do_con, consolidation_model=consolidation_model,
+                        consolidation_result=con_result, consolidation_success=con_success,
+                        consolidation_error=con_error)
+                    response["modality"] = "image"; response["vlm_backend"] = backend
+                    response["vlm_raw"] = vlm_result.get("_vlm_raw")
+                    pipeline_orchestrator.save_results(ctx["result_dir"], response, con_result, con_success)
+                    yield _send_progress_update("처리 완료", 5, 100, {"result": response})
+                    await asyncio.sleep(0.01)
+                    return
+
+                if modality in ("video", "audio"):
+                    error_response = {"success": False, "modality": modality, "request_id": ctx["request_id"],
+                                      "filename": ctx["filename"],
+                                      "error": f"{modality} 처리는 아직 지원되지 않습니다 (멀티모달 P3 예정)"}
+                    yield _send_progress_update(f"{modality} 미지원 (P3 예정)", 0, 0, {"error": error_response["error"], "result": error_response})
+                    return
 
                 yield _send_progress_update("OCR 텍스트 추출 중...", 2, 20)
                 await asyncio.sleep(0.01)
@@ -966,6 +1015,7 @@ async def llm_extract_metadata(
             ocr_provider=ocr_provider, ocr_model=ocr_model,
             ner_model=ner_model, consolidate=consolidate,
             consolidation_model=consolidation_model,
+            vlm_prefer=vlm_prefer,
         )
         status_code = 200 if result.get("success", False) else 500
         return JSONResponse(content=result, status_code=status_code)

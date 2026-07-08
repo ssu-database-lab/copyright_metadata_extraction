@@ -1,0 +1,28 @@
+# Extra deps for the CLIP benchmark prototype (Year 2 work).
+# Install with: pip install -r api/module/clip_extraction/requirements.txt
+
+# SigLIP 2 requires transformers >= 4.49 (released Feb 2025).
+# This overrides the >=4.40.0 pin in the root requirements.txt.
+transformers>=4.49.0
+
+# Multilingual-CLIP wrapper + image embedding pipeline
+# Pinned <3.0 — sentence-transformers 3.x pulls in torchcodec which
+# requires a system FFmpeg install (annoying on WSL2 without sudo).
+sentence-transformers>=2.7.0,<3.0
+
+# NLLB translator (OpenAICLIP+translation baseline)
+sacremoses>=0.1.0
+
+# Memory snapshots in benchmark.py
+psutil>=5.9.0
+
+# Already in root requirements.txt but listed here for clarity:
+# torch>=2.0.0
+# pillow
+# numpy
+
+# Optional — pin if Jina CLIP v2 needs einops:
+einops>=0.7.0
+
+# For Gemma 4 (when enabled): timm
+# timm>=1.0.0

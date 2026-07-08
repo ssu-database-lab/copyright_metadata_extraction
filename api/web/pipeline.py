@@ -264,6 +264,57 @@ class PipelineOrchestrator:
             return None, False, str(e)
 
     # ------------------------------------------------------------------
+    # Multimodal: modality routing + VLM (image) extraction
+    # ------------------------------------------------------------------
+
+    def run_router(self, ctx: Dict) -> Dict[str, Any]:
+        """Detect modality (image/video/audio/document/text) + extractor plan."""
+        from module.clip_extraction.router import route
+        plan = route(str(ctx["upload_path"]))
+        logger.info(f"Router: {ctx['filename']} → modality={plan['modality']}")
+        return plan
+
+    def run_vlm(self, ctx: Dict, prefer: str = "gemma") -> Dict[str, Any]:
+        """Extract visual metadata from an image work via the Gemma(primary)→
+        Qwen(backup) VLM fallback chain, mapped to the unified schema.
+
+        Returns an llm_result-shaped dict so it slots straight into
+        run_consolidation() and build_response() with no arbiter changes.
+        """
+        import time
+        from module.clip_extraction.vlm.extractor import VLMExtractor
+        from module.clip_extraction.schema_mapping import map_vlm_to_unified
+
+        t0 = time.perf_counter()
+        try:
+            extractor = VLMExtractor(prefer=prefer, max_tokens=2048)
+            res = extractor.extract(ctx["upload_path"])
+            backend = getattr(res, "backend_used", "?")
+            if not res.ok or not res.parse_ok or not res.parsed:
+                return {"success": False, "metadata": {}, "confidence": 0.0,
+                        "model_used": backend,
+                        "error": res.error or "VLM ran but JSON parse failed",
+                        "extraction_time": round(time.perf_counter() - t0, 2)}
+            unified = map_vlm_to_unified(res.parsed, str(ctx["upload_path"]))
+            file_meta = unified.pop("_file_meta", {})
+            logger.info(f"VLM extraction complete via {backend}: "
+                        f"work_type={unified.get('work_type')}")
+            return {
+                "success": True,
+                "metadata": unified,
+                "confidence": 0.7,  # VLM does not self-score; fixed visual-extraction prior
+                "model_used": backend,
+                "extraction_time": round(time.perf_counter() - t0, 2),
+                "_file_meta": file_meta,
+                "_vlm_raw": res.parsed,
+            }
+        except Exception as e:
+            logger.error(f"VLM extraction error: {e}", exc_info=True)
+            return {"success": False, "metadata": {}, "confidence": 0.0,
+                    "model_used": "none", "error": str(e),
+                    "extraction_time": round(time.perf_counter() - t0, 2)}
+
+    # ------------------------------------------------------------------
     # Response building
     # ------------------------------------------------------------------
 
@@ -293,7 +344,9 @@ class PipelineOrchestrator:
             "ocr_provider": ocr_provider,
             "ocr_model": ocr_model,
             "error": llm_result.get("error"),
-            "ner_model": self.available_ner_models[ner_model]["display_name"],
+            # None-safe: image/video (VLM) works have no NER model
+            "ner_model": (self.available_ner_models.get(ner_model, {}).get("display_name")
+                          if ner_model else None),
             "ner_model_key": ner_model,
             "entities": self._format_ner_entities(ner_result),
             "entity_count": self._count_ner_entities(ner_result),
@@ -338,6 +391,55 @@ class PipelineOrchestrator:
         consolidation_model = kwargs.get("consolidation_model", "alibaba-qwen3.5-122b-a10b")
 
         ctx = self.setup(file_bytes, filename)
+
+        # --- Modality routing: image → VLM (Gemma→Qwen); document/text → existing path ---
+        modality = self.run_router(ctx)["modality"]
+
+        if modality == "image":
+            vlm_result = self.run_vlm(ctx, prefer=kwargs.get("vlm_prefer", "gemma"))
+            vlm_ok = vlm_result.get("success", False)
+            do_con = consolidate and vlm_ok
+            if do_con:
+                con_result, con_success, con_error = self.run_consolidation(
+                    vlm_result,
+                    {"success": False, "entities": {}, "total_entities": 0, "extracted_entities": []},
+                    "", document_type, ctx["result_dir"], consolidation_model,
+                )
+            else:
+                con_result, con_success, con_error = None, False, None
+            response = self.build_response(
+                ctx,
+                model_name=vlm_result.get("model_used", "VLM"), document_type=document_type,
+                ocr_text="", ocr_provider="(image/VLM)", ocr_model=None,
+                llm_result=vlm_result, ner_model=None, ner_result=None,
+                consolidate=do_con, consolidation_model=consolidation_model,
+                consolidation_result=con_result, consolidation_success=con_success,
+                consolidation_error=con_error,
+            )
+            response["modality"] = "image"
+            response["vlm_backend"] = vlm_result.get("model_used")
+            response["vlm_raw"] = vlm_result.get("_vlm_raw")
+            self.save_results(ctx["result_dir"], response, con_result, con_success)
+            return response
+
+        if modality in ("video", "audio"):
+            # Video keyframe track = P3; audio has no image-VLM path → guarded out.
+            response = self.build_response(
+                ctx,
+                model_name="(multimodal)", document_type=document_type,
+                ocr_text="", ocr_provider="(none)", ocr_model=None,
+                llm_result={"success": False, "metadata": {},
+                            "error": f"{modality} track not enabled in this build (multimodal P3)"},
+                ner_model=None, ner_result=None,
+                consolidate=False, consolidation_model=consolidation_model,
+                consolidation_result=None, consolidation_success=False,
+                consolidation_error=f"{modality} not yet supported",
+            )
+            response["modality"] = modality
+            self.save_results(ctx["result_dir"], response, None, False)
+            return response
+
+        # --- Document/text branch: existing OCR → LLM ∥ NER → consolidation (unchanged) ---
         ocr_text, ocr_result = self.run_ocr(ctx, ocr_provider, ocr_model)
 
         # Guard: stop early if OCR returned no text

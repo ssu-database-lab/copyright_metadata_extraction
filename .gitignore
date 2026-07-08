@@ -1,3 +1,6 @@
+# KOGL dataset builder output (downloaded thumbnails + manifest)
+/dataset/
+
 # Model files (large)
 OCR/gpt-oss-20b/original/model.safetensors
 *.safetensors
