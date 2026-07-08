@@ -1,0 +1,260 @@
+================================================================
+Related Work (short paragraphs) — English  [updated]
+A NER–LLM Extractor for Metadata Extraction from
+Korean Public-Domain Rights Documents
+================================================================
+
+[Notes]
+· Sentences beginning with "this study/here" are suggestions; adjust to match
+  the actual contributions. The six subheadings are organizational only.
+
+
+[1] BIO Tagging and BIO-based Sequence-labeling NER
+
+Ramshaw & Marcus (1995) recast chunking as a sequence-labeling problem by
+assigning B (beginning), I (inside), or O (outside) tags to each token,
+introducing the IOB (BIO) scheme now widely used in NER. The NER stage of this
+study also adopts this BIO scheme.
+
+Huang et al. (2015) show that a BiLSTM with a CRF layer (BiLSTM-CRF) jointly
+exploits both left/right context and the sequential dependency among token
+labels, establishing the starting point for neural sequence-labeling NER.
+
+Lample et al. (2016) achieve state-of-the-art results on CoNLL-2003 with a
+BiLSTM-CRF that combines pretrained word and character embeddings, forming the
+standard NER lineage that later extends to pretrained-transformer token
+classification. This study's KLUE-BERT-based BIO token classification builds on
+that lineage.
+
+
+[2] LLM-based NER and Information Extraction
+
+GPT-NER (Wang, S. et al., 2023) introduces a self-verification strategy in
+which the LLM re-checks its own outputs, achieving performance comparable to
+fully supervised models on five standard datasets and significantly surpassing
+supervised models in low-resource settings. However, it has the LLM perform
+NER directly in English, general-domain text, and does not examine a
+configuration that divides the work between a dedicated NER model and an LLM.
+
+InstructUIE (Wang, X. et al., 2023) models NER, relation extraction, and event
+extraction in a unified instruction-based text-to-text format and proposes a
+benchmark of 32 IE datasets. It is on par with BERT-based models under
+supervision and substantially outperforms GPT-3.5 in the zero-shot setting,
+but, being general-domain, it does not address domain-specific entities such
+as the rightsholders and usage conditions found in public-domain rights
+documents.
+
+UniversalNER (Zhou et al., 2024) distills ChatGPT's NER ability into smaller
+models that, without any direct supervision, far surpass general
+instruction-tuned models across 43 datasets in 9 domains. Its strength,
+however, lies in arbitrary open entity types; predefined general categories
+alone cannot capture the fine-grained rights and license entities required
+here.
+
+
+[3] Using the LLM as a Verification/Reranking Step
+    (the direct basis for the proposed pipeline)
+
+Ma et al. (2023) report that, in most settings, recent LLMs are inferior to
+fine-tuned small language models (SLMs) in accuracy, latency, and cost. Yet
+they show that, with appropriate prompting, an LLM can complement an SLM on
+hard samples, and they propose a filter-then-rerank paradigm in which the SLM
+screens samples and the LLM re-ranks the difficult ones.
+
+VerifiNER (Kim, S. et al., 2024) presents a verification-augmented NER
+framework that uses the LLM's knowledge-grounded reasoning to verify and
+refine the outputs of an existing NER model. It is not, however, specialized
+for the rights-document domain or for Korean rights entities.
+
+NESTLE (Cho et al., 2024) combines a commercial LLM with an internal
+small-scale IE model and attains GPT-4-comparable performance on Korean
+precedent information extraction using only 4 human-labeled and 192
+LLM-labeled examples. Its target, however, is statistical analysis of court
+precedents, and it does not address extraction of public-domain rights/license
+metadata or normalization into a rights-expression schema.
+
+
+[4] Difficulty of NER in Legal/Specialized Domains and Domain Adaptation
+
+CUAD (Hendrycks et al., 2021) is an expert-annotated contract-review dataset
+(510 contracts, 41 clause categories, 13,101 labels) showing that Transformer
+performance depends heavily on model design and data scale. It is, however,
+limited to clause-level review of English contracts and does not cover the
+rights relations and usage conditions of Korean public-domain works.
+
+E-NER (Au et al., 2022), a legal NER corpus built from U.S. SEC EDGAR filings,
+finds that applying a model trained on general English (CoNLL-2003) to legal
+text drops F1 by 29.4–60.4%. This demonstrates that naively applying general
+NER models is inadequate, but it targets English SEC filings and does not
+address domain adaptation for Korean rights documents.
+
+Skylaki et al. (2020) propose a text-to-text NER approach that, instead of
+token labeling, uses a pointer-generator network to directly generate entities
+from noisy U.S. court text containing PDF-extraction and OCR errors and
+incomplete labels. It targets English court cases, however, and does not
+combine LLM verification or a rights-expression schema.
+
+Yang & Agrawal (2023) combine document layout analysis with weak supervision
+to extract complex named entities from legal documents, showing that a model
+trained only on pseudo-labels outperforms the supervised baseline when gold
+data is scarce. It targets English legal documents, however, and does not
+address Korean rights documents or rights-expression normalization.
+
+
+[5] Joint NER+RE and Structured Output
+
+Zhong & Chen (2021) (PURE) show that a simple pipeline—recognizing entities
+first and then feeding their types as markers into a relation model—outperforms
+joint models by 1.7–2.8% relation F1 on ACE04, ACE05, and SciERC, and find that
+entity and relation representations capture distinct information so that sharing
+them hurts performance. This supports the present study's staged separation of
+NER and LLM verification.
+
+Dunn et al. (2022) fine-tune a pretrained GPT-3 on roughly 500 prompt–
+completion pairs to perform NER and relation extraction jointly and output
+results in structured formats such as JSON objects. It targets the
+materials-science domain, however, and does not address normalization into a
+rights-metadata schema.
+
+
+[6] Korean Resources and LLM-assisted Labeling
+
+KLUE (Park et al., 2021) is a standard Korean NLU benchmark that includes NER
+and relation extraction and provides baseline performance for the Korean
+pretrained models KLUE-BERT/RoBERTa. As a general-domain benchmark, however,
+it does not sufficiently cover the copyright- and rights-specific entities of
+public-domain works.
+
+KBMC (Byun et al., 2024) builds a Korean medical NER dataset with ChatGPT
+assistance, improving medical NER performance by about 20% over models trained
+on general Korean NER data. Although a medical-domain study, it suggests—being
+a low-resource Korean specialized domain—that LLM-assisted labeling is also
+viable for rights documents.
+
+Song (2024) uses BERT-based NER to extract 173 person names and 314
+organization names from 1960s–70s handwritten Guro Industrial Complex records
+(~1,200 pages) for use as metadata and search indexes. As the closest domestic
+precedent for extracting metadata from Korean documents via NER, it nonetheless
+targets archival records and does not address copyright or rights entities.
+
+
+[7] Rights-Expression Schemas and LLM-based Rights Extraction
+
+The ODRL Information Model 2.2 (W3C, 2018) is a policy language for
+machine-interpretable expression of permissions, prohibitions, and duties over
+use, defining concepts such as Policy, Permission, Prohibition, Duty, Asset,
+Party, and Constraint. As an expression vocabulary, however, it does not
+address extraction from unstructured documents; this study uses it as the
+target schema for normalization.
+
+ccREL (Abelson et al., 2008) is an RDF-based rights-expression scheme for
+copyright licenses that links works, licenses, and permitted/prohibited/
+required actions via properties such as cc:permits, cc:prohibits, cc:requires,
+and cc:attributionName. As another standard vocabulary, it serves here as a
+reference for designing a metadata schema suited to rights documents.
+
+The Korea Open Government License (KOGL; Korea Copyright Commission) is the
+standard licensing-mark system that lets the public freely use public works
+under type-specific conditions without individual permission, specifying
+obligations such as attribution and prohibitions such as non-commercial use and
+no modification. Not a research paper, it is the concrete definition of the
+usage conditions/prohibitions/duties this study extracts and normalizes, and is
+cited here as a domain primary source.
+
+Mustafa et al. (2024) have GPT-4 automatically generate ODRL policies from
+natural-language instructions, using the ODRL ontology and its documentation
+as the prompt and applying self-correction rules for refinement. This
+addresses generating policies from clean instructions, however, not extraction
+from noisy real-world rights documents.
+
+The Pr²Graph framework (2025, arXiv:2509.01716) uses an LLM to extract key
+rights/practice information from privacy policies, builds a knowledge graph,
+and converts it into formal policy representations such as ODRL or psDToU. It
+is the closest precedent for this study's "unstructured rights document → LLM
+extraction → ODRL normalization" pipeline, though its domain is privacy
+policies rather than copyright rights documents.
+
+
+================================================================
+References (updated)
+================================================================
+- Abelson, H., Adida, B., Linksvayer, M., & Yergler, N. (2008). ccREL: The
+  Creative Commons Rights Expression Language. W3C Member Submission, 1 May 2008.
+- Au, T. W. T., Lampos, V., & Cox, I. (2022). E-NER — An Annotated Named Entity
+  Recognition Corpus of Legal Text. NLLP Workshop @ EMNLP 2022. arXiv:2212.09306.
+- Byun, S., Hong, J., Park, S., Jang, D., Seo, J., Kim, M., Oh, C., & Shin, H.
+  (2024). Korean Bio-Medical Corpus (KBMC) for Medical Named Entity Recognition.
+  LREC-COLING 2024. arXiv:2403.16158.
+- Cho, K., Han, S., Choi, Y. R., & Hwang, W. (2024). NESTLE: A No-Code Tool for
+  Statistical Analysis of Legal Corpus. EACL 2024 (System Demonstrations).
+  arXiv:2309.04146.
+- Dunn, A., Dagdelen, J., Walker, N., Lee, S., Rosen, A. S., Ceder, G.,
+  Persson, K., & Jain, A. (2022). Structured Information Extraction from Complex
+  Scientific Text with Fine-tuned Large Language Models. arXiv:2212.05238.
+- Hendrycks, D., Burns, C., Chen, A., & Ball, S. (2021). CUAD: An
+  Expert-Annotated NLP Dataset for Legal Contract Review. NeurIPS 2021 D&B.
+  arXiv:2103.06268.
+- Huang, Z., Xu, W., & Yu, K. (2015). Bidirectional LSTM-CRF Models for Sequence
+  Tagging. arXiv:1508.01991.
+- Iannella, R., & Villata, S. (Eds.) (2018). ODRL Information Model 2.2. W3C
+  Recommendation, 15 Feb 2018.
+- Kim, S., Seo, K., Chae, H., Yeo, J., & Lee, D. (2024). VerifiNER:
+  Verification-augmented NER via Knowledge-grounded Reasoning with Large
+  Language Models. ACL 2024, 2441–2461.
+- Korea Copyright Commission. Korea Open Government License (KOGL).
+  https://www.copyright.or.kr/gov/nuri/
+- Lample, G., Ballesteros, M., Subramanian, S., Kawakami, K., & Dyer, C. (2016).
+  Neural Architectures for Named Entity Recognition. NAACL-HLT 2016, 260–270.
+- (LLM-enabled semantic-centric framework / Pr²Graph) (2025). An LLM-enabled
+  semantic-centric framework to consume privacy policies. arXiv:2509.01716.
+  (verify author list)
+- Ma, Y., Cao, Y., Hong, Y., & Sun, A. (2023). Large Language Model Is Not a
+  Good Few-shot Information Extractor, but a Good Reranker for Hard Samples!
+  Findings of EMNLP 2023, 10572–10601. arXiv:2303.08559.
+- Mustafa, D. M., Nadgeri, A., Collarana, D., Arnold, B. T., Quix, C., Lange, C.,
+  & Decker, S. (2024). From Instructions to ODRL Usage Policies: An Ontology
+  Guided Approach. LLM+KG Workshop @ VLDB 2024. (arXiv:2506.03301, 2025)
+- Park, S., Moon, J., Kim, S., et al. (2021). KLUE: Korean Language Understanding
+  Evaluation. NeurIPS 2021 D&B. arXiv:2105.09680.
+- Ramshaw, L. A., & Marcus, M. P. (1995). Text Chunking using Transformation-
+  Based Learning. Third Workshop on Very Large Corpora (WVLC). arXiv:cmp-lg/9505040.
+- Skylaki, S., Oskooei, A., Bari, O., Herger, N., & Kriegman, Z. (2020). Named
+  Entity Recognition in the Legal Domain using a Pointer Generator Network.
+  arXiv:2012.09936.
+- Song, C. (2024). A Method for Metadata Extraction from a Collection of Records
+  using Named Entity Recognition in NLP. Journal of Korean Society of Archives
+  and Records Management, 24(2), 65–88. doi:10.14404/JKSARM.2024.24.2.065.
+  (verify author romanization)
+- Wang, S., Sun, X., Li, X., Ouyang, R., Wu, F., Zhang, T., Li, J., & Wang, G.
+  (2023). GPT-NER: Named Entity Recognition via Large Language Models.
+  arXiv:2304.10428. (Findings of NAACL 2025)
+- Wang, X., Zhou, W., Zu, C., et al. (2023). InstructUIE: Multi-task Instruction
+  Tuning for Unified Information Extraction. arXiv:2304.08085.
+- Xu, D., Chen, W., Peng, W., Zhang, C., Xu, T., Zhao, X., Wu, X., Zheng, Y.,
+  Wang, Y., & Chen, E. (2024). Large Language Models for Generative Information
+  Extraction: A Survey. Frontiers of Computer Science, 18(6), 186357.
+  arXiv:2312.17617.
+- Yang, H.-W., & Agrawal, A. (2023). Extracting Complex Named Entities in Legal
+  Documents via Weakly Supervised Object Detection. SIGIR 2023. arXiv:2305.05836.
+- Zhong, Z., & Chen, D. (2021). A Frustratingly Easy Approach for Entity and
+  Relation Extraction (PURE). NAACL-HLT 2021, 50–61. arXiv:2010.12812.
+- Zhou, W., Zhang, S., Gu, Y., Chen, M., & Poon, H. (2024). UniversalNER:
+  Targeted Distillation from Large Language Models for Open Named Entity
+  Recognition. ICLR 2024. arXiv:2308.03279.
+
+
+================================================================
+[Appendix] Items excluded/deferred in this update
+================================================================
+· Replaced/removed: Giorgi et al. (2019) — pre-2020, moderately cited, and its
+  "avoid pipelines" stance conflicts with this study's design. Superseded by
+  PURE (2021).
+· Pre-2020 optional (not included): Ma & Hovy (2016, ACL) / Tjong Kim Sang &
+  Veenstra (1999, EACL). Redundant with Lample / Ramshaw & Marcus; can be added
+  if the paper discusses the choice of tagging scheme in depth.
+· Post-2020 candidates (not included; add on request): LLM-based extraction from
+  privacy policies / terms of service — (1) Privacy policy analysis at scale
+  (arXiv:2405.20900, 2024); (2) Detecting unfair ToS with LLMs (arXiv:2409.00077,
+  2024). Deferred as they concern the privacy/ToS domain rather than copyright.
+
+(End)

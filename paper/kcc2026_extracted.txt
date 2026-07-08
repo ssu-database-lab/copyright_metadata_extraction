@@ -1,0 +1,60 @@
+
+<표>
+1. 서론
+  메타데이터의 자동 정보추출은 대표적인 개체명 인식(Named Entity Recognition, 이하 NER) 추출로, 현재도 매우 활발히 연구되고 있다. NER은 자연어 처리(Natural Language Processing) 중 하나이며, 일반적으로 B-I-O 태깅[1] 시스템으로 학습된다. NER의 학습에서 라벨은 분류의 기준이 되며, 각 라벨에 해당하는 학습데이터의 양이 많을수록 AI의 추출 능력을 향상시킬 수 있다.
+  그러나 한국어 공공저작물 권리문서(계약서, 동의서, 양도서 등) 대상의 NER의 경우 세분화된 라벨과 부족한 학습데이터로 인해 높은 정확도 확보가 어려운 저자원 문제로 존재한다.
+  본 연구는 이러한 저자원 환경에서 공공저작물 권리문서를 분석하는 경우를 가정하고, NER의 학습을 위해 B-I-O 태깅 시스템으로 구성된 학습 데이터의 문맥 구성방식이 한국어 메타데이터의 추출 성능을 얼마나 올릴 수 있는지 정량적으로 분석한다.
+
+2. 실험 구성
+2.1 데이터셋 구조
+  본 연구에서는 골드(Gold)와 실버(Silver) 두가지 데이터를 준비하였다. 골드 데이터를 먼저 준비하며, 이 데이터는 웹 크롤링과 제공받은 계약서, 동의서 관련 데이터들을 종합하여 26개 라벨, 약 50,000개 내외로 구성하였다. 데이터 구조는 모두 JSONL 구조를 따르며, 이때 실버 데이터는 AI 증강[2]을 통하여 골드 데이터를 참고해 전체적인 데이터량을 5배 가량 늘렸다. 여기서 실버 데이터는 텍스트와 답만 존재하는 골드 데이터와 달리 B-I-O의 학습이 가능한 데이터로 구성하며, 각 라벨에 대한 양이 동일하도록 증폭한다. 이에 대한 실버 데이터 구조 예시는 표 1과 같다.
+
+2.2 B-I-O 태깅
+  B-I-O 태깅 시스템은 NER에서 개체의 위치를 표현하기 위한 방식으로, B는 개체의 시작(Begin), I는 개체의 내부
+<표>
+(Inside), O는 개체가 아닌 외부 토큰(Outside)을 의미한다. 예를 들어 추출 대상 메타데이터에 해당하는 표현은 B 또는 I로 태깅되며, 정답 주변의 일반 문맥이나 노이즈는 O로 태깅된다. 이러한 B-I-O 태깅 체계를 활용하여 정답 주변 문맥의 포함 여부가 모델 성능에 미치는 영향을 비교하였다. 또한 위 데이터는 오직 답만 존재하는 경우인 모드 1(이하 M1), 답과 노이즈가 같이 존재하는 경우인 모드 2(이하 M2), 답이 존재하지 않는 네거티브 샘플이 25% 정도 포함된 모드 3(이하 M3) 이렇게 3가지로 준비하였다.
+
+3. 실험 및 실험 결과
+3.1 모델 특징
+  Klue BERT는[3] 한국어를 위해 특별히 설계된 사전 학습된 BERT[4] 모델로, 주제 분류, 의미론적 텍스트 유사성, 자연어 추론, NER 등 8가지 한국어 및 자연어 이해 작업을 수행하도록 설계되었다. 형태소 기반의 하위 단어 토큰화 방식을 사용하며, 형태소 분석기를 사용하여 원시 텍스트를 형태소로 토큰화한 후 바이트 페어 인코딩(BPE)을 적용하는 특징이 있다.
+
+3.2 실험 환경
+  사용한 컴퓨터는 CPU 인텔 Ultra 5 225F이며, 메모리 64GB, GPU는 NVIDIA GeForce RTX 5070이다. Ubuntu 24.04 LTS에서 테스트 하였고, 모델은 한국어 NLP에 자주 사용되는 Klue BERT를 이용하였다. 위 모델은 본 실험에서 동일하게 사용되었다.
+
+
+3.3 학습 과정
+  학습 방식은 전체 파인튜닝(Full Fine-Tuning)이며, 최적화는 AdamW 방식[5]을 사용하였다. 배치 크기(Batch size)는 32이고, 에포크(Epoch)는 3으로 학습하였다.
+  실버 데이터는 골드 데이터에서 증폭하여 구성하였고 각 라벨의 총량을 10,000개로 제한하여 학습데이터 8(6,666개), 테스트 데이터 2(1,666개), 검증 데이터 2(1,668개)로 구성하여 학습하였고, 골드 데이터는 오직 실증용 데이터로만 활용하였다. 그림 1을 통해 학습은 충분히 이루어졌음을 볼 수 있으며, 조기 중단(Early Stopping)[6]을 적용해 오버피팅(Overfitting)에 대한 위험을 방지하였다.
+
+<그림>
+  
+
+3.4 실험 결과
+  M1, M2, M3 모두 실버 데이터로 평가한 결과는 표 2와 같이 표면상으로는 정확도(Accuracy), F1-점수(F1-Score), 정밀도(Precision), 재현율(Recall)을 고려할 때 어떠한 방식으로 학습해도 차이가 미미하다. 
+하지만 그림 2와 같이 골드 데이터를 통해서 평가한 결과는 M2, M3의 경우 서로 비슷한 값을 보이는 반면, M1의 경우는 정확도가 매우 떨어짐을 알 수 있다. 이를 통해 B-I-O 태깅 시스템에서 B, I 뿐 아니라 O도 매우 중요한 요소임을
+<표>
+ 확인할 수 있다.
+
+<그림>
+
+  라벨 단위로 분해하면 M1에 대해 비대칭적인 결과를  관찰할 수 있다. 형식이 자유로운 라벨(Free, 예: 회사명, 직책)과 정형적 라벨(Regular, 예: 전화번호, 이메일)은 M1에서 크게 무너지는 반면, 문서 구조 단서가 강한 반정형적 라벨(Semi-Regular, 예: 법령 참조, 저작물 키워드)은 M1에서도 높은 정확도를 유지한다. 그림 3은 위 세가지 종류의 라벨에 대하여 각 모드의 정확도를 그래프로 표현한 것이다.
+
+<그림>
+
+
+  그러나 모델의 개수가 오직 1개이므로 다른 모델에서도 동일한 그래프를 그리게 될지는 알 수 없는 한계가 존재한다. 따라서 추후 더 많은 모델들을 동원해 비교하여 일반화를 할 수 있는지 검증이 필요하다.
+
+4. 결론
+  본 연구에서는 한국어 공공저작물 권리문서를 중심으로 하여, B-I-O 태깅을 기반으로 NER 학습 데이터의 문맥 구성 방식이 메타데이터 추출 성능에 미치는 영향을 분석하였다. 실험 결과, 정답 주변의 문맥(O 토큰)을 함께 학습하는 구성이 성능 유지에 도움이 되는 반면 M3와 같은 별도의 네거티브 샘플 추가로는 이득이 크지 않다는 점을 확인할 수 있었다.
+
+5. 감사의 글
+  본 연구는 과학기술정보통신부 및 정보통신기획평가원의 SW중심대학사업의 지원을 받아 수행되었음
+(2024-0-00071).
+
+6. 참고자료
+[1] L. A. Ramshaw and M. P. Marcus, "Text Chunking using Transformation-Based Learning," in Proc. Third Workshop on Very Large Corpora, 1995, pp. 82–94.
+[2] X. Dai and H. Adel, “An Analysis of Simple Data Augmentation for Named Entity Recognition,” Proceedings of the 28th International Conference on Computational Linguistics, pp. 3861–3867, 2020. doi: 10.18653/v1/2020.coling-main.343.
+[3] S. Park et al., “KLUE: Korean Language Understanding Evaluation,” Proceedings of the Neural Information Processing Systems Track on Datasets and Benchmarks, 2021. doi: 10.48550/arXiv.2105.09680.
+[4] J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova, “BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding,” Proceedings of NAACL-HLT, pp. 4171–4186, 2019. doi: 10.18653/v1/N19-1423.
+[5] I. Loshchilov and F. Hutter, “Decoupled Weight Decay Regularization,” International Conference on Learning Representations, 2019. doi: 10.48550/arXiv.1711.05101.
+[6] L. Prechelt, “Early Stopping — But When?,” in Neural Networks: Tricks of the Trade, Lecture Notes in Computer Science, vol. 7700, pp. 53–67, Springer, 2012. doi: 10.1007/978-3-642-35289-8_5.
