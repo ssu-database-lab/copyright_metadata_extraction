@@ -68,7 +68,7 @@ class AlibabaCloudOCRProvider:
         try:
             self.client = OpenAI(
                 api_key=api_key,
-                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                base_url=os.getenv("DASHSCOPE_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"),
                 timeout=60.0,       # 60s timeout per request
                 max_retries=3       # retry up to 3 times on transient errors
             )

@@ -53,7 +53,7 @@ DEFAULT_IMAGES = THIS_DIR.parent / "test_data" / "sample_works"
 SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
 # Backend definitions — kept in sync with compare.py -----------------------
-DASHSCOPE_BASE = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+DASHSCOPE_BASE = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
 DEFAULT_GEMMA_URL = "http://127.0.0.1:8001/v1"
 GEMMA_MODEL = "google/gemma-4-31B-it"
 QWEN_MODEL = "qwen3-vl-235b-a22b-instruct"
@@ -90,7 +90,7 @@ USER_PROMPT = _prompts_mod.USER_PROMPT
 
 
 _MANAGED_KEYS = ("OPENROUTER_API_KEY", "DASHSCOPE_API_KEY", "OPENROUTER_VLM_MODEL",
-                 "OPENROUTER_BASE_URL", "GEMMA_URL")
+                 "OPENROUTER_BASE_URL", "DASHSCOPE_BASE_URL", "GEMMA_URL")
 
 
 def _ensure_env_loaded() -> None:
@@ -171,7 +171,7 @@ def make_qwen_backend():
     _ensure_env_loaded()
     return VLMClient(
         model_label="Qwen3-VL-235B (DashScope)",
-        base_url=DASHSCOPE_BASE,
+        base_url=os.getenv("DASHSCOPE_BASE_URL", DASHSCOPE_BASE),
         model=QWEN_MODEL,
         api_key=os.getenv("DASHSCOPE_API_KEY", ""),
         image_first=False,  # matches existing OCR pipeline ordering

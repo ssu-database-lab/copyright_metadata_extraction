@@ -48,7 +48,7 @@ REPORTS_DIR = THIS_DIR.parent / "reports"
 SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
 # Backend definitions ------------------------------------------------------
-DASHSCOPE_BASE = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+DASHSCOPE_BASE = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
 DEFAULT_GEMMA_URL = "http://127.0.0.1:8001/v1"
 GEMMA_MODEL = "google/gemma-4-31B-it"
 QWEN_MODEL = "qwen3-vl-235b-a22b-instruct"

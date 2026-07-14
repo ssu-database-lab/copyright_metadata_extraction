@@ -52,7 +52,7 @@ from pathlib import Path
 # ----------------------------------------------------------------- config ---
 GEMMA_DEFAULT_URL = "http://127.0.0.1:8001/v1"
 GEMMA_MODEL = "google/gemma-4-31B-it"
-DASHSCOPE_BASE = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+DASHSCOPE_BASE = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
 QWEN_MODEL = "qwen3-vl-235b-a22b-instruct"
 MAX_LONG_EDGE = 1536  # px — downscale cap (keeps files under provider limits)
 SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
