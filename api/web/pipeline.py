@@ -314,6 +314,39 @@ class PipelineOrchestrator:
                     "model_used": "none", "error": str(e),
                     "extraction_time": round(time.perf_counter() - t0, 2)}
 
+    def apply_contract_inheritance(self, response: Dict[str, Any],
+                                   contract_metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """계약서 메타데이터를 저작물(이미지) 응답에 상속 병합 (post-consolidation).
+
+        consolidated_metadata 가 있으면 거기에, 없으면 metadata 에 병합하고,
+        상속 provenance 를 consolidation_decisions 와 동일 스키마로 덧붙인다.
+        response 를 in-place 수정 후 반환. 실패해도 응답 자체는 깨지 않는다.
+        """
+        try:
+            from module.clip_extraction.contract_inheritance import inherit_contract_fields
+            target_key = "consolidated_metadata" if response.get("consolidated_metadata") else "metadata"
+            merged, decisions, summary = inherit_contract_fields(
+                response.get(target_key) or {},
+                contract_metadata,
+                work_filename=response.get("filename", ""),
+            )
+            response[target_key] = merged
+            if decisions:
+                existing = response.get("consolidation_decisions") or []
+                # 상속 필드가 기존 decisions 에 MISSING 으로 남아있으면 교체, 아니면 추가
+                inherited_fields = {d["field"] for d in decisions}
+                existing = [d for d in existing
+                            if not (d.get("field") in inherited_fields
+                                    and d.get("decision") == "MISSING")]
+                response["consolidation_decisions"] = existing + decisions
+            response["contract_inheritance"] = {"applied": True, **summary}
+            logger.info(f"Contract inheritance: +{summary['inherited']} fields "
+                        f"(title_match={summary['title_match']})")
+        except Exception as e:
+            logger.error(f"Contract inheritance failed: {e}", exc_info=True)
+            response["contract_inheritance"] = {"applied": False, "error": str(e)}
+        return response
+
     # ------------------------------------------------------------------
     # Response building
     # ------------------------------------------------------------------
@@ -419,6 +452,9 @@ class PipelineOrchestrator:
             response["modality"] = "image"
             response["vlm_backend"] = vlm_result.get("model_used")
             response["vlm_raw"] = vlm_result.get("_vlm_raw")
+            # 계약서→저작물 권리정보 상속 (HF Space 연동: contract_metadata 동봉 시)
+            if kwargs.get("contract_metadata"):
+                self.apply_contract_inheritance(response, kwargs["contract_metadata"])
             self.save_results(ctx["result_dir"], response, con_result, con_success)
             return response
 

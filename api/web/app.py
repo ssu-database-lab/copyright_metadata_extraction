@@ -844,6 +844,7 @@ async def llm_extract_metadata(
     consolidate: bool = Form(default=True),
     consolidation_model: str = Form(default="alibaba-qwen3.5-122b-a10b"),
     vlm_prefer: str = Form(default="gemma"),  # 멀티모달(이미지) VLM 우선: gemma(기본)→qwen 폴백
+    contract_metadata: str = Form(default=None),  # 계약서→저작물 상속용: 계약서 분석 결과 JSON (이미지 처리 시)
     stream: bool = Form(default=False)
 ):
     """LLM을 사용한 메타데이터 추출 (SSE 지원, 통합 기능 포함)"""
@@ -861,6 +862,20 @@ async def llm_extract_metadata(
             return StreamingResponse(error_stream(), media_type="text/event-stream",
                                      headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"})
         return JSONResponse(content=error_response, status_code=400)
+
+    # 계약서 메타데이터(JSON 문자열) 파싱 — 잘못된 JSON 은 400 으로 조기 반환
+    contract_meta_dict = None
+    if contract_metadata:
+        if len(contract_metadata) > 200_000:
+            return JSONResponse(content={"success": False,
+                                         "error": "contract_metadata too large (>200KB)"}, status_code=400)
+        try:
+            contract_meta_dict = json.loads(contract_metadata)
+            if not isinstance(contract_meta_dict, dict):
+                raise ValueError("contract_metadata must be a JSON object")
+        except Exception as e:
+            return JSONResponse(content={"success": False,
+                                         "error": f"contract_metadata JSON 파싱 실패: {e}"}, status_code=400)
 
     # Validate inputs
     if not filename or not allowed_file(filename):
@@ -920,6 +935,9 @@ async def llm_extract_metadata(
                         consolidation_error=con_error)
                     response["modality"] = "image"; response["vlm_backend"] = backend
                     response["vlm_raw"] = vlm_result.get("_vlm_raw")
+                    if contract_meta_dict:
+                        yield _send_progress_update("계약서 권리정보 상속 중...", 4, 95)
+                        pipeline_orchestrator.apply_contract_inheritance(response, contract_meta_dict)
                     pipeline_orchestrator.save_results(ctx["result_dir"], response, con_result, con_success)
                     yield _send_progress_update("처리 완료", 5, 100, {"result": response})
                     await asyncio.sleep(0.01)
@@ -1016,6 +1034,7 @@ async def llm_extract_metadata(
             ner_model=ner_model, consolidate=consolidate,
             consolidation_model=consolidation_model,
             vlm_prefer=vlm_prefer,
+            contract_metadata=contract_meta_dict,
         )
         status_code = 200 if result.get("success", False) else 500
         return JSONResponse(content=result, status_code=status_code)
