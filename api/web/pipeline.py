@@ -333,11 +333,11 @@ class PipelineOrchestrator:
             response[target_key] = merged
             if decisions:
                 existing = response.get("consolidation_decisions") or []
-                # 상속 필드가 기존 decisions 에 MISSING 으로 남아있으면 교체, 아니면 추가
+                # 상속이 발생한 필드는 원래 값이 비어있던 필드다 — arbiter 가 남긴 기존
+                # 항목(MISSING 또는 null 값 LLM_ONLY 등)을 종류 불문 제거하고 상속
+                # 항목으로 대체해야 UI/클라이언트의 field 단건 조회가 올바른 출처를 본다.
                 inherited_fields = {d["field"] for d in decisions}
-                existing = [d for d in existing
-                            if not (d.get("field") in inherited_fields
-                                    and d.get("decision") == "MISSING")]
+                existing = [d for d in existing if d.get("field") not in inherited_fields]
                 response["consolidation_decisions"] = existing + decisions
             response["contract_inheritance"] = {"applied": True, **summary}
             logger.info(f"Contract inheritance: +{summary['inherited']} fields "

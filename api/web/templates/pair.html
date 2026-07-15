@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>검사 모드 — 계약서+저작물 통합 검사</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Pretendard','Segoe UI','Malgun Gothic',sans-serif; background:#f4f6fa; color:#1a2233; padding:24px; }
+  .wrap { max-width:1060px; margin:0 auto; }
+  h1 { font-size:1.35rem; margin-bottom:4px; }
+  .sub { color:#5a6a85; font-size:.9rem; margin-bottom:20px; }
+  .sub a { color:#3b6ef5; text-decoration:none; }
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:12px; padding:20px 22px; margin-bottom:16px; }
+  .card.disabled { opacity:.45; pointer-events:none; }
+  .card h2 { font-size:1.02rem; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .step-no { background:#3b6ef5; color:#fff; border-radius:50%; width:22px; height:22px; font-size:.8rem; display:inline-flex; align-items:center; justify-content:center; }
+  input[type=file] { border:1px dashed #b9c4d8; border-radius:8px; padding:10px; width:100%; background:#fafbfe; font-size:.88rem; }
+  button { background:#3b6ef5; color:#fff; border:0; border-radius:8px; padding:9px 18px; font-size:.9rem; cursor:pointer; margin-top:10px; }
+  button:disabled { background:#b9c4d8; cursor:default; }
+  button.ghost { background:#eef2fb; color:#3b6ef5; }
+  .status { font-size:.85rem; color:#5a6a85; margin-top:8px; min-height:1.2em; }
+  .status.err { color:#d33; }
+  .summary { margin-top:12px; background:#f6f9ff; border:1px solid #dfe8fb; border-radius:8px; padding:12px 14px; font-size:.86rem; display:none; }
+  .summary b { color:#28406e; }
+  .work-card { border:1px solid #e3e8f0; border-radius:10px; padding:14px 16px; margin-top:12px; background:#fdfefe; }
+  .work-card h3 { font-size:.92rem; margin-bottom:8px; }
+  .badge { display:inline-block; font-size:.7rem; border-radius:5px; padding:2px 7px; margin-left:6px; vertical-align:1px; }
+  .b-vlm { background:#e7f3ec; color:#1d7a46; }
+  .b-inh { background:#e8eefc; color:#2b56c4; }
+  .b-amb { background:#fdf0e0; color:#b26a08; }
+  .b-info { background:#eef1f6; color:#5a6a85; }
+  table { width:100%; border-collapse:collapse; font-size:.83rem; margin-top:8px; }
+  th, td { border-bottom:1px solid #edf0f6; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { color:#5a6a85; font-weight:600; background:#f8fafd; white-space:nowrap; }
+  td.k { white-space:nowrap; color:#28406e; font-weight:500; }
+  .muted { color:#9aa7bd; }
+  .toggle-row { margin-top:10px; }
+  .hidden { display:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:4px 18px; }
+  @media (max-width:760px){ .grid2{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>검사 모드 <span style="font-weight:400;color:#5a6a85;">— 계약서 + 저작물 통합 검사</span></h1>
+  <div class="sub">계약서를 먼저 분석하고, 그 결과(권리정보)를 저작물 이미지 분석에 상속합니다.
+    무하유 연동(HF Space)과 동일한 호출 순서를 사용합니다. <a href="/v2">← 단일 파일 모드(v2)로</a></div>
+
+  <!-- STEP 1: 계약서 -->
+  <div class="card" id="card1">
+    <h2><span class="step-no">1</span> 계약서 업로드 · 분석</h2>
+    <input type="file" id="contractFile" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff">
+    <button id="btnContract">계약서 분석</button>
+    <div class="status" id="st1"></div>
+    <div class="summary" id="sum1"></div>
+  </div>
+
+  <!-- STEP 2: 저작물 -->
+  <div class="card disabled" id="card2">
+    <h2><span class="step-no">2</span> 저작물 이미지 업로드 · 분석 <span class="badge b-info">계약서 메타데이터 자동 상속</span></h2>
+    <input type="file" id="workFiles" accept=".png,.jpg,.jpeg,.tif,.tiff,.webp,.bmp,.gif" multiple>
+    <button id="btnWorks">저작물 분석</button>
+    <div class="status" id="st2"></div>
+    <div id="workResults"></div>
+  </div>
+</div>
+
+<script>
+let contractMeta = null;   // 계약서 consolidated_metadata (상속 소스)
+let contractName = "";
+
+const MUHAYU20 = [
+  ["work_name","work_title","저작물명"],["work_type","work_type","유형"],
+  ["digital_format","digital_format","디지털화 형태"],["description","description","설명"],
+  ["keywords","keyword","주제어"],["language","language","언어"],
+  ["created_date","created_date","제작일"],["creator",null,"계약서(파일명)"],
+  ["copyright_holder","copyright_holder","저작권자"],["co_authors","co_author","공동저작자"],
+  ["neighboring_rights_holder","neighboring_rights_holder","저작인접권자"],
+  ["disclosure_type","disclosure_type","공개유형"],["copyrightability","copyrightability","저작물성"],
+  ["non_protected_work","unprotected_work","비보호저작물"],["work_for_hire","work_for_hire","업무상저작물"],
+  ["commercial_use","commercial_use","상업적 이용허락"],["property_rights","economic_rights","저작재산권"],
+  ["co_author_consent","co_author_consent","공동저작자 동의"],["validity_period","valid_period","유효기간"],
+  ["portrait_rights","portrait_rights","초상권"]];
+
+function fmt(v){
+  if (v === null || v === undefined || v === "" || (Array.isArray(v)&&!v.length)) return '<span class="muted">—</span>';
+  if (Array.isArray(v)) return v.map(x=>String(x)).join(", ");
+  if (typeof v === "object") return Object.entries(v).map(([k,x])=>`${k}: ${x}`).join(" / ");
+  return String(v);
+}
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+function tick(el, msg, isErr){ el.textContent = msg; el.className = "status" + (isErr ? " err" : ""); }
+
+async function callExtract(file, extra){
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("stream", "false");
+  for (const [k,v] of Object.entries(extra||{})) fd.append(k, v);
+  const r = await fetch("/api/llm-extract", { method:"POST", body: fd });
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0,200)}`);
+  return r.json();
+}
+
+// ---------- STEP 1 ----------
+document.getElementById("btnContract").onclick = async () => {
+  const f = document.getElementById("contractFile").files[0];
+  const st = document.getElementById("st1"), sum = document.getElementById("sum1");
+  if (!f) return tick(st, "계약서 파일을 선택하세요.", true);
+  document.getElementById("btnContract").disabled = true;
+  const t0 = Date.now();
+  const timer = setInterval(()=>tick(st, `계약서 분석 중… (OCR → LLM ∥ NER → 통합) ${Math.round((Date.now()-t0)/1000)}s`), 1000);
+  try {
+    const res = await callExtract(f, { document_type: "계약서" });
+    clearInterval(timer);
+    if (!res.success) throw new Error(res.error || "분석 실패");
+    contractMeta = res.consolidated_metadata || res.metadata || {};
+    contractName = f.name;
+    const filled = Object.values(contractMeta).filter(v=>v!==null&&v!==""&&!(Array.isArray(v)&&!v.length)).length;
+    sum.style.display = "block";
+    sum.innerHTML = `<div class="grid2">
+      <div><b>저작물명:</b> ${fmt(contractMeta.work_title)}</div>
+      <div><b>저작권자:</b> ${fmt(contractMeta.copyright_holder)}</div>
+      <div><b>공공누리:</b> ${fmt(contractMeta.kogl_type)}</div>
+      <div><b>상업적 이용:</b> ${fmt(contractMeta.commercial_use)}</div>
+      <div><b>유효기간:</b> ${fmt(contractMeta.valid_period)}</div>
+      <div><b>채워진 필드:</b> ${filled} / 67</div></div>`;
+    tick(st, `✅ 계약서 분석 완료 (${Math.round((Date.now()-t0)/1000)}s) — 아래에서 저작물을 분석하세요.`);
+    document.getElementById("card2").classList.remove("disabled");
+  } catch(e){ clearInterval(timer); tick(st, "❌ " + e.message, true); }
+  document.getElementById("btnContract").disabled = false;
+};
+
+// ---------- STEP 2 ----------
+document.getElementById("btnWorks").onclick = async () => {
+  const files = [...document.getElementById("workFiles").files];
+  const st = document.getElementById("st2"), out = document.getElementById("workResults");
+  if (!files.length) return tick(st, "저작물 이미지를 선택하세요.", true);
+  if (!contractMeta) return tick(st, "계약서를 먼저 분석하세요.", true);
+  document.getElementById("btnWorks").disabled = true;
+  out.innerHTML = "";
+  for (let i = 0; i < files.length; i++){
+    const f = files[i];
+    tick(st, `저작물 분석 중 (${i+1}/${files.length}): ${f.name} …`);
+    try {
+      const res = await callExtract(f, { contract_metadata: JSON.stringify(contractMeta) });
+      out.insertAdjacentHTML("beforeend", renderWork(f.name, res));
+    } catch(e){
+      out.insertAdjacentHTML("beforeend",
+        `<div class="work-card"><h3>${esc(f.name)}</h3><div class="status err">❌ ${esc(e.message)}</div></div>`);
+    }
+  }
+  tick(st, `✅ 저작물 ${files.length}건 분석 완료`);
+  document.getElementById("btnWorks").disabled = false;
+};
+
+function decisionOf(res, field){
+  const d = (res.consolidation_decisions||[]).find(x=>x.field===field);
+  return d ? d.decision : null;
+}
+function badgeFor(dec){
+  if (!dec) return "";
+  if (dec === "CONTRACT_INHERITED") return '<span class="badge b-inh">계약서 상속</span>';
+  if (dec === "CONTRACT_AMBIGUOUS") return '<span class="badge b-amb">상속 보류(후보 다수)</span>';
+  if (dec === "MISSING") return "";
+  return '<span class="badge b-vlm">저작물 분석</span>';
+}
+
+function renderWork(name, res){
+  const meta = res.consolidated_metadata || res.metadata || {};
+  const ci = res.contract_inheritance || {};
+  const uid = "w" + Math.random().toString(36).slice(2,8);
+  // 상세(주요 필드) 행
+  const mainFields = ["description","work_type","keyword","work_title","copyright_holder",
+                      "kogl_type","commercial_use","valid_period","portrait_rights"];
+  const rows = mainFields.map(k=>{
+    const dec = decisionOf(res,k);
+    return `<tr><td class="k">${k}</td><td>${fmt(meta[k])} ${badgeFor(dec)}</td></tr>`;
+  }).join("");
+  // 무하유 20필드 프로젝션
+  const rows20 = MUHAYU20.map(([mk, ok, label])=>{
+    const v = ok ? meta[ok] : (ok===null ? contractName : null);
+    const dec = ok ? decisionOf(res, ok) : null;
+    const src = ok===null ? '<span class="badge b-info">클라이언트</span>' : badgeFor(dec);
+    return `<tr><td class="k">${mk}</td><td>${esc(label)}</td><td>${fmt(v)}</td><td>${src||'<span class="muted">—</span>'}</td></tr>`;
+  }).join("");
+  return `<div class="work-card">
+    <h3>${esc(name)}
+      <span class="badge b-vlm">VLM: ${esc(res.vlm_backend||"?")}</span>
+      <span class="badge b-inh">상속 ${ci.inherited ?? 0}필드</span>
+      ${ci.title_match==="ambiguous" ? '<span class="badge b-amb">제목 매칭 보류</span>' : ""}
+    </h3>
+    <table><tbody>${rows}</tbody></table>
+    <div class="toggle-row">
+      <button class="ghost" onclick="document.getElementById('${uid}').classList.toggle('hidden')">무하유 20필드 뷰 보기/닫기</button>
+    </div>
+    <div id="${uid}" class="hidden">
+      <table><thead><tr><th>works 컬럼</th><th>항목</th><th>값</th><th>출처</th></tr></thead>
+      <tbody>${rows20}</tbody></table>
+    </div>
+  </div>`;
+}
+</script>
+</body>
+</html>

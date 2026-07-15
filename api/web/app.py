@@ -520,6 +520,11 @@ async def index(request: Request):
         }
     )
 
+@app.get("/pair")
+async def index_pair(request: Request):
+    """검사 모드 — 계약서+저작물 통합 검사 (contract→work 상속 데모/테스트 UI)"""
+    return templates.TemplateResponse("pair.html", {"request": request})
+
 @app.get("/v2")
 async def index_v2(request: Request):
     """메인 페이지 v2 (새 디자인)"""
