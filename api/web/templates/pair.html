@@ -12,9 +12,9 @@
   .sub { color:#5a6a85; font-size:.9rem; margin-bottom:20px; }
   .sub a { color:#3b6ef5; text-decoration:none; }
   .card { background:#fff; border:1px solid #e3e8f0; border-radius:12px; padding:20px 22px; margin-bottom:16px; }
-  .card.disabled { opacity:.45; pointer-events:none; }
   .card h2 { font-size:1.02rem; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
   .step-no { background:#3b6ef5; color:#fff; border-radius:50%; width:22px; height:22px; font-size:.8rem; display:inline-flex; align-items:center; justify-content:center; }
+  label.fld { display:block; font-size:.84rem; color:#28406e; font-weight:600; margin-bottom:6px; }
   input[type=file] { border:1px dashed #b9c4d8; border-radius:8px; padding:10px; width:100%; background:#fafbfe; font-size:.88rem; }
   button { background:#3b6ef5; color:#fff; border:0; border-radius:8px; padding:9px 18px; font-size:.9rem; cursor:pointer; margin-top:10px; }
   button:disabled { background:#b9c4d8; cursor:default; }
@@ -30,6 +30,7 @@
   .b-inh { background:#e8eefc; color:#2b56c4; }
   .b-amb { background:#fdf0e0; color:#b26a08; }
   .b-info { background:#eef1f6; color:#5a6a85; }
+  .b-wait { background:#fbf6e4; color:#8a6d0b; }
   table { width:100%; border-collapse:collapse; font-size:.83rem; margin-top:8px; }
   th, td { border-bottom:1px solid #edf0f6; padding:6px 8px; text-align:left; vertical-align:top; }
   th { color:#5a6a85; font-weight:600; background:#f8fafd; white-space:nowrap; }
@@ -38,29 +39,45 @@
   .toggle-row { margin-top:10px; }
   .hidden { display:none; }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:4px 18px; }
-  @media (max-width:760px){ .grid2{grid-template-columns:1fr;} }
+  .upload-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:760px){ .grid2,.upload-grid{grid-template-columns:1fr;} }
+  .spin { display:inline-block; width:12px; height:12px; border:2px solid #c9d5ec; border-top-color:#3b6ef5; border-radius:50%; animation:sp .8s linear infinite; vertical-align:-2px; margin-right:4px; }
+  @keyframes sp { to { transform:rotate(360deg); } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>검사 모드 <span style="font-weight:400;color:#5a6a85;">— 계약서 + 저작물 통합 검사</span></h1>
-  <div class="sub">계약서를 먼저 분석하고, 그 결과(권리정보)를 저작물 이미지 분석에 상속합니다.
-    무하유 연동(HF Space)과 동일한 호출 순서를 사용합니다. <a href="/v2">← 단일 파일 모드(v2)로</a></div>
+  <div class="sub">계약서와 저작물을 <b>동시에</b> 분석하고, 계약서 분석이 끝나는 즉시 권리정보를 각 저작물에 상속 병합합니다
+    (무하유 검사와 동일한 단일 제출 방식). <a href="/v2">← 단일 파일 모드(v2)로</a></div>
 
-  <!-- STEP 1: 계약서 -->
-  <div class="card" id="card1">
-    <h2><span class="step-no">1</span> 계약서 업로드 · 분석</h2>
-    <input type="file" id="contractFile" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff">
-    <button id="btnContract">계약서 분석</button>
+  <!-- 업로드 (단일 폼) -->
+  <div class="card" id="cardUpload">
+    <h2><span class="step-no">1</span> 파일 업로드 — 계약서 1건 + 저작물 N건</h2>
+    <div class="upload-grid">
+      <div>
+        <label class="fld">계약서 (PDF/이미지)</label>
+        <input type="file" id="contractFile" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.docx,.hwp">
+      </div>
+      <div>
+        <label class="fld">저작물 이미지 (여러 장 선택 가능)</label>
+        <input type="file" id="workFiles" accept=".png,.jpg,.jpeg,.tif,.tiff,.webp,.bmp,.gif" multiple>
+      </div>
+    </div>
+    <button id="btnRun">동시 분석 시작</button>
+    <div class="status" id="st0"></div>
+  </div>
+
+  <!-- 계약서 결과 -->
+  <div class="card" id="cardContract" style="display:none;">
+    <h2><span class="step-no">2</span> 계약서 분석 결과 <span class="badge b-info">권리정보 상속 소스</span></h2>
     <div class="status" id="st1"></div>
     <div class="summary" id="sum1"></div>
   </div>
 
-  <!-- STEP 2: 저작물 -->
-  <div class="card disabled" id="card2">
-    <h2><span class="step-no">2</span> 저작물 이미지 업로드 · 분석 <span class="badge b-info">계약서 메타데이터 자동 상속</span></h2>
-    <input type="file" id="workFiles" accept=".png,.jpg,.jpeg,.tif,.tiff,.webp,.bmp,.gif" multiple>
-    <button id="btnWorks">저작물 분석</button>
+  <!-- 저작물 결과 -->
+  <div class="card" id="cardWorks" style="display:none;">
+    <h2><span class="step-no">3</span> 저작물 분석 결과 <span class="badge b-info">계약서 완료 즉시 자동 상속</span></h2>
     <div class="status" id="st2"></div>
     <div id="workResults"></div>
   </div>
@@ -69,6 +86,8 @@
 <script>
 let contractMeta = null;   // 계약서 consolidated_metadata (상속 소스)
 let contractName = "";
+
+const CONCURRENCY = 3;     // 저작물 병렬 분석 동시 실행 수
 
 const MUHAYU20 = [
   ["work_name","work_title","저작물명"],["work_type","work_type","유형"],
@@ -90,7 +109,7 @@ function fmt(v){
   return String(v);
 }
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
-function tick(el, msg, isErr){ el.textContent = msg; el.className = "status" + (isErr ? " err" : ""); }
+function tick(el, msg, isErr){ el.innerHTML = msg; el.className = "status" + (isErr ? " err" : ""); }
 
 async function callExtract(file, extra){
   const fd = new FormData();
@@ -102,20 +121,52 @@ async function callExtract(file, extra){
   return r.json();
 }
 
-// ---------- STEP 1 ----------
-document.getElementById("btnContract").onclick = async () => {
-  const f = document.getElementById("contractFile").files[0];
-  const st = document.getElementById("st1"), sum = document.getElementById("sum1");
-  if (!f) return tick(st, "계약서 파일을 선택하세요.", true);
-  document.getElementById("btnContract").disabled = true;
+async function applyInheritance(workRes){
+  const r = await fetch("/api/apply-inheritance", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ contract_metadata: contractMeta, work_response: workRes })
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0,200)}`);
+  return r.json();
+}
+
+// ---------- 동시 분석 오케스트레이션 ----------
+document.getElementById("btnRun").onclick = async () => {
+  const cf = document.getElementById("contractFile").files[0];
+  const files = [...document.getElementById("workFiles").files];
+  const st0 = document.getElementById("st0"), st1 = document.getElementById("st1"),
+        st2 = document.getElementById("st2"), out = document.getElementById("workResults");
+  if (!cf) return tick(st0, "계약서 파일을 선택하세요.", true);
+  if (!files.length) return tick(st0, "저작물 이미지를 1장 이상 선택하세요.", true);
+
+  const btn = document.getElementById("btnRun");
+  btn.disabled = true;
+  contractMeta = null; contractName = cf.name;
+  document.getElementById("cardContract").style.display = "";
+  document.getElementById("cardWorks").style.display = "";
+  document.getElementById("sum1").style.display = "none";
+  out.innerHTML = "";
+  // 자리표시 카드 — 순서 고정
+  files.forEach((f,i)=> out.insertAdjacentHTML("beforeend",
+    `<div class="work-card" id="wc${i}"><h3>${esc(f.name)}</h3>
+     <div class="status"><span class="spin"></span>분석 대기/진행 중…</div></div>`));
+
   const t0 = Date.now();
-  const timer = setInterval(()=>tick(st, `계약서 분석 중… (OCR → LLM ∥ NER → 통합) ${Math.round((Date.now()-t0)/1000)}s`), 1000);
-  try {
-    const res = await callExtract(f, { document_type: "계약서" });
-    clearInterval(timer);
-    if (!res.success) throw new Error(res.error || "분석 실패");
+  const sec = () => Math.round((Date.now()-t0)/1000);
+  let worksDone = 0, inheritedCnt = 0, failedCnt = 0;
+  const overall = () => tick(st0,
+    `<span class="spin"></span>동시 분석 중 — 계약서: ${contractMeta ? "완료" : "진행"} · ` +
+    `저작물: ${worksDone}/${files.length} 분석 · 상속 병합: ${inheritedCnt}건 · ${sec()}s`);
+  const ovTimer = setInterval(overall, 1000); overall();
+
+  // ── 계약서: 저작물과 동시에 시작 ──
+  const timer1 = setInterval(()=>tick(st1, `<span class="spin"></span>계약서 분석 중… (OCR → LLM ∥ NER → 통합) ${sec()}s`), 1000);
+  tick(st1, `<span class="spin"></span>계약서 분석 중…`);
+  const contractPromise = (async () => {
+    const res = await callExtract(cf, { document_type: "계약서" });
+    if (!res.success) throw new Error(res.error || "계약서 분석 실패");
     contractMeta = res.consolidated_metadata || res.metadata || {};
-    contractName = f.name;
+    const sum = document.getElementById("sum1");
     const filled = Object.values(contractMeta).filter(v=>v!==null&&v!==""&&!(Array.isArray(v)&&!v.length)).length;
     sum.style.display = "block";
     sum.innerHTML = `<div class="grid2">
@@ -125,33 +176,53 @@ document.getElementById("btnContract").onclick = async () => {
       <div><b>상업적 이용:</b> ${fmt(contractMeta.commercial_use)}</div>
       <div><b>유효기간:</b> ${fmt(contractMeta.valid_period)}</div>
       <div><b>채워진 필드:</b> ${filled} / 67</div></div>`;
-    tick(st, `✅ 계약서 분석 완료 (${Math.round((Date.now()-t0)/1000)}s) — 아래에서 저작물을 분석하세요.`);
-    document.getElementById("card2").classList.remove("disabled");
-  } catch(e){ clearInterval(timer); tick(st, "❌ " + e.message, true); }
-  document.getElementById("btnContract").disabled = false;
-};
+    tick(st1, `✅ 계약서 분석 완료 (${sec()}s) — 완료된 저작물부터 순차 상속 병합`);
+    return contractMeta;
+  })();
+  contractPromise
+    .then(()=>clearInterval(timer1))
+    .catch(e=>{ clearInterval(timer1); tick(st1, "❌ " + e.message + " — 저작물은 자체 분석 결과만 표시됩니다.", true); });
 
-// ---------- STEP 2 ----------
-document.getElementById("btnWorks").onclick = async () => {
-  const files = [...document.getElementById("workFiles").files];
-  const st = document.getElementById("st2"), out = document.getElementById("workResults");
-  if (!files.length) return tick(st, "저작물 이미지를 선택하세요.", true);
-  if (!contractMeta) return tick(st, "계약서를 먼저 분석하세요.", true);
-  document.getElementById("btnWorks").disabled = true;
-  out.innerHTML = "";
-  for (let i = 0; i < files.length; i++){
-    const f = files[i];
-    tick(st, `저작물 분석 중 (${i+1}/${files.length}): ${f.name} …`);
+  // ── 저작물: 상속 없이 병렬 분석 → 계약서 도착 즉시 병합 ──
+  const inheritTasks = [];
+  async function mergeWhenReady(i, name, res){
     try {
-      const res = await callExtract(f, { contract_metadata: JSON.stringify(contractMeta) });
-      out.insertAdjacentHTML("beforeend", renderWork(f.name, res));
-    } catch(e){
-      out.insertAdjacentHTML("beforeend",
-        `<div class="work-card"><h3>${esc(f.name)}</h3><div class="status err">❌ ${esc(e.message)}</div></div>`);
+      await contractPromise;                    // 계약서가 아직이면 여기서 대기
+      const merged = await applyInheritance(res);
+      inheritedCnt++;
+      renderInto(i, name, merged, "merged");
+    } catch(_e){
+      renderInto(i, name, res, "no-contract");  // 계약서 실패/병합 오류 → 자체 분석 결과 유지
     }
   }
-  tick(st, `✅ 저작물 ${files.length}건 분석 완료`);
-  document.getElementById("btnWorks").disabled = false;
+  let next = 0;
+  async function worker(){
+    while (next < files.length){
+      const i = next++, f = files[i];
+      try {
+        const res = await callExtract(f, {});   // contract_metadata 없이 즉시 분석
+        worksDone++;
+        renderInto(i, f.name, res, "waiting"); // 병합 전 상태 (계약서 완료 시 즉시 병합됨)
+        inheritTasks.push(mergeWhenReady(i, f.name, res));
+      } catch(e){
+        worksDone++; failedCnt++;
+        document.getElementById("wc"+i).innerHTML =
+          `<h3>${esc(f.name)}</h3><div class="status err">❌ ${esc(e.message)}</div>`;
+      }
+    }
+  }
+  const workers = Array.from({length: Math.min(CONCURRENCY, files.length)}, worker);
+
+  await Promise.allSettled([contractPromise, ...workers]);
+  await Promise.allSettled(inheritTasks);
+  clearInterval(ovTimer);
+  const okMsg = `✅ 완료 (${sec()}s) — 저작물 ${files.length - failedCnt}/${files.length}건 분석` +
+                (inheritedCnt ? `, ${inheritedCnt}건 계약서 상속 병합` : "") +
+                (failedCnt ? ` · ❌ ${failedCnt}건 실패` : "");
+  tick(st0, okMsg, false);
+  tick(st2, contractMeta ? "권리정보는 [계약서 상속] 배지로 표시됩니다." :
+                           "계약서 분석 실패로 상속이 생략되었습니다.", !contractMeta);
+  btn.disabled = false;
 };
 
 function decisionOf(res, field){
@@ -166,28 +237,35 @@ function badgeFor(dec){
   return '<span class="badge b-vlm">저작물 분석</span>';
 }
 
-function renderWork(name, res){
+// state: "waiting"(분석 완료, 계약서 대기) | "merged"(상속 반영) | "no-contract"(상속 생략)
+function renderInto(i, name, res, state){
+  document.getElementById("wc"+i).outerHTML = renderWork(i, name, res, state);
+}
+
+function renderWork(i, name, res, state){
   const meta = res.consolidated_metadata || res.metadata || {};
   const ci = res.contract_inheritance || {};
-  const uid = "w" + Math.random().toString(36).slice(2,8);
-  // 상세(주요 필드) 행
+  const uid = "wtbl" + i;
+  const stateBadge =
+    state === "waiting"     ? '<span class="badge b-wait"><span class="spin"></span>권리정보 상속 대기</span>' :
+    state === "no-contract" ? '<span class="badge b-amb">상속 생략(계약서 없음)</span>' :
+                              `<span class="badge b-inh">상속 ${ci.inherited ?? 0}필드</span>`;
   const mainFields = ["description","work_type","keyword","work_title","copyright_holder",
                       "kogl_type","commercial_use","valid_period","portrait_rights"];
   const rows = mainFields.map(k=>{
     const dec = decisionOf(res,k);
     return `<tr><td class="k">${k}</td><td>${fmt(meta[k])} ${badgeFor(dec)}</td></tr>`;
   }).join("");
-  // 무하유 20필드 프로젝션
   const rows20 = MUHAYU20.map(([mk, ok, label])=>{
     const v = ok ? meta[ok] : (ok===null ? contractName : null);
     const dec = ok ? decisionOf(res, ok) : null;
     const src = ok===null ? '<span class="badge b-info">클라이언트</span>' : badgeFor(dec);
     return `<tr><td class="k">${mk}</td><td>${esc(label)}</td><td>${fmt(v)}</td><td>${src||'<span class="muted">—</span>'}</td></tr>`;
   }).join("");
-  return `<div class="work-card">
+  return `<div class="work-card" id="wc${i}">
     <h3>${esc(name)}
       <span class="badge b-vlm">VLM: ${esc(res.vlm_backend||"?")}</span>
-      <span class="badge b-inh">상속 ${ci.inherited ?? 0}필드</span>
+      ${stateBadge}
       ${ci.title_match==="ambiguous" ? '<span class="badge b-amb">제목 매칭 보류</span>' : ""}
     </h3>
     <table><tbody>${rows}</tbody></table>

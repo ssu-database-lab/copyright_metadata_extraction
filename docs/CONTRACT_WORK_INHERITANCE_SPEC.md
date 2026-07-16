@@ -21,6 +21,8 @@
 
 ## 2. 권장 호출 순서 (검사 1건 = 계약서 1 + 저작물 N)
 
+### 방식 A — 순차 (단순)
+
 ```
 1) 계약서 파일 → POST /api/llm-extract            → 응답 A (기존과 동일)
 2) 각 저작물 파일 → POST /api/llm-extract
@@ -29,6 +31,25 @@
    → 응답 B: 시각 필드(VLM) + 권리 필드(계약서 상속) 병합 완료 레코드
 3) 응답 B 를 works 테이블 20개 컬럼에 매핑 (아래 §4 표)
 ```
+
+### 방식 B — 병렬 + 사후 병합 (권장: 검사 1건 전체 소요시간 최소화)
+
+계약서 분석(~2분)을 기다리지 않고 저작물 분석을 **동시에** 시작한 뒤,
+두 결과가 모두 도착하면 병합 전용 엔드포인트로 합칩니다 (LLM 호출 없음, 수 ms).
+
+```
+1) 계약서   → POST /api/llm-extract (document_type=계약서)      ─┐ 동시 실행
+2) 각 저작물 → POST /api/llm-extract (contract_metadata 없이)    ─┘
+3) 두 응답이 모두 도착하면:
+   POST /api/apply-inheritance      (Content-Type: application/json)
+   Body: { "contract_metadata": <응답 A 의 consolidated_metadata>,
+           "work_response":     <응답 B 전체> }
+   → 방식 A 의 2) 와 동일한 스키마의 병합 완료 레코드
+```
+
+- 전체 소요시간 ≈ max(계약서, 가장 느린 저작물) — 순차 방식 대비 저작물 N건일수록 이득.
+- `/api/apply-inheritance` 오류 응답: 400(JSON 파싱 실패·필수 키 누락), 413(본문 >2MB).
+- 데모 UI: `GET /pair` 가 이 방식으로 동작 (단일 제출 → 동시 분석 → 완료 즉시 자동 병합).
 
 ## 3. 병합 규칙 (서버 동작)
 

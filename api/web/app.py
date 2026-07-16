@@ -30,6 +30,7 @@ else:
     load_dotenv()  # fallback: cwd
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -1032,7 +1033,10 @@ async def llm_extract_metadata(
 
     # ── Non-streaming mode (simple) ──
     try:
-        result = pipeline_orchestrator.run(
+        # 블로킹 파이프라인을 threadpool 에서 실행 — 이벤트 루프를 막지 않아
+        # 계약서+저작물 동시 분석(/pair) 등 병렬 요청이 실제로 병렬 처리된다
+        result = await run_in_threadpool(
+            pipeline_orchestrator.run,
             file_content, filename,
             model_name=model_name, document_type=document_type,
             ocr_provider=ocr_provider, ocr_model=ocr_model,
@@ -1046,6 +1050,49 @@ async def llm_extract_metadata(
     except Exception as e:
         logger.error(f"Pipeline error: {e}", exc_info=True)
         return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
+
+@app.post("/api/apply-inheritance")
+async def apply_inheritance(request: Request):
+    """계약서→저작물 상속 병합 전용 엔드포인트 (LLM 호출 없음, 순수 병합).
+
+    계약서와 저작물을 '동시에' 분석한 뒤 사후 병합할 때 사용:
+      1) 계약서 → /api/llm-extract (document_type=계약서)
+      2) 저작물 → /api/llm-extract (contract_metadata 없이, 병렬 실행)
+      3) 두 결과가 모두 도착하면 → 본 엔드포인트로 병합
+
+    Body(JSON): {
+      "contract_metadata": {...},   # 계약서 consolidated_metadata (또는 metadata)
+      "work_response": {...}        # 저작물 /api/llm-extract 응답 전체
+    }
+    Returns: contract_metadata 를 상속 적용한 work_response
+             (/api/llm-extract 에 contract_metadata 를 준 것과 동일한 스키마 —
+              consolidation_decisions 에 CONTRACT_INHERITED/AMBIGUOUS 추가,
+              contract_inheritance 요약 포함).
+    """
+    raw = await request.body()
+    if len(raw) > 2_000_000:
+        return JSONResponse(content={"success": False,
+                                     "error": "request body too large (>2MB)"}, status_code=413)
+    try:
+        body = json.loads(raw)
+        if not isinstance(body, dict):
+            raise ValueError("body must be a JSON object")
+    except Exception as e:
+        return JSONResponse(content={"success": False,
+                                     "error": f"JSON 파싱 실패: {e}"}, status_code=400)
+
+    contract_meta = body.get("contract_metadata")
+    work_response = body.get("work_response")
+    if not isinstance(contract_meta, dict) or not contract_meta:
+        return JSONResponse(content={"success": False,
+                                     "error": "contract_metadata (non-empty object) is required"}, status_code=400)
+    if not isinstance(work_response, dict) or not work_response:
+        return JSONResponse(content={"success": False,
+                                     "error": "work_response (non-empty object) is required"}, status_code=400)
+
+    # apply_contract_inheritance 는 내부에서 예외를 삼키고 applied=False 로 표시한다
+    merged = pipeline_orchestrator.apply_contract_inheritance(work_response, contract_meta)
+    return JSONResponse(content=merged, status_code=200)
 
 @app.get("/api/llm-models")
 async def get_llm_models():
