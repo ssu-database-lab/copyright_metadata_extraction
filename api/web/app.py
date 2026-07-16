@@ -1092,6 +1092,20 @@ async def apply_inheritance(request: Request):
 
     # apply_contract_inheritance 는 내부에서 예외를 삼키고 applied=False 로 표시한다
     merged = pipeline_orchestrator.apply_contract_inheritance(work_response, contract_meta)
+
+    # 병합 결과를 결과 디렉토리에 반영 — 순차 방식(run() 내 상속→저장)과 동일하게
+    # 저장본(llm_metadata.json)이 상속 반영본이 되도록 갱신한다
+    rid = str(merged.get("request_id") or "")
+    if len(rid) == 22 and rid.replace("_", "").isdigit():  # YYYYMMDD_HHMMSS_ffffff
+        result_dir = RESULTS_DIR / rid
+        if result_dir.is_dir():
+            try:
+                with open(result_dir / "llm_metadata.json", "w", encoding="utf-8") as f:
+                    json.dump(merged, f, ensure_ascii=False, indent=2)
+                merged["saved_to_server"] = True
+            except Exception as e:
+                logger.warning(f"상속 병합 결과 저장 실패 ({rid}): {e}")
+
     return JSONResponse(content=merged, status_code=200)
 
 @app.get("/api/llm-models")

@@ -43,6 +43,16 @@
   @media (max-width:760px){ .grid2,.upload-grid{grid-template-columns:1fr;} }
   .spin { display:inline-block; width:12px; height:12px; border:2px solid #c9d5ec; border-top-color:#3b6ef5; border-radius:50%; animation:sp .8s linear infinite; vertical-align:-2px; margin-right:4px; }
   @keyframes sp { to { transform:rotate(360deg); } }
+  .detail h4 { font-size:.84rem; color:#28406e; margin:14px 0 2px; }
+  .detail .info-line { font-size:.8rem; color:#5a6a85; background:#f8fafd; border-radius:6px; padding:7px 10px; margin-top:8px; }
+  .scrollbox { max-height:320px; overflow:auto; border:1px solid #edf0f6; border-radius:8px; margin-top:6px; }
+  .scrollbox table { margin-top:0; }
+  pre.ocr { background:#f7f9fc; border:1px solid #e3e8f0; border-radius:8px; padding:10px 12px; font-size:.78rem; line-height:1.5; white-space:pre-wrap; word-break:break-all; max-height:300px; overflow:auto; margin-top:6px; }
+  .chips { margin-top:6px; }
+  .chips span { display:inline-block; background:#eef2fb; color:#2b56c4; border-radius:6px; padding:3px 9px; font-size:.76rem; margin:2px 4px 2px 0; }
+  .dl-links { font-size:.8rem; margin-top:8px; }
+  .dl-links a { color:#3b6ef5; text-decoration:none; margin-right:12px; }
+  details > summary { cursor:pointer; font-size:.84rem; color:#28406e; font-weight:600; margin-top:10px; }
 </style>
 </head>
 <body>
@@ -73,6 +83,7 @@
     <h2><span class="step-no">2</span> 계약서 분석 결과 <span class="badge b-info">권리정보 상속 소스</span></h2>
     <div class="status" id="st1"></div>
     <div class="summary" id="sum1"></div>
+    <div id="cdetWrap"></div>
   </div>
 
   <!-- 저작물 결과 -->
@@ -177,6 +188,9 @@ document.getElementById("btnRun").onclick = async () => {
       <div><b>유효기간:</b> ${fmt(contractMeta.valid_period)}</div>
       <div><b>채워진 필드:</b> ${filled} / 67</div></div>`;
     tick(st1, `✅ 계약서 분석 완료 (${sec()}s) — 완료된 저작물부터 순차 상속 병합`);
+    document.getElementById("cdetWrap").innerHTML =
+      `<div class="toggle-row"><button class="ghost" onclick="document.getElementById('cdet').classList.toggle('hidden')">전체 결과 보기/닫기 (OCR · NER · LLM · 통합)</button></div>
+       <div id="cdet" class="hidden detail">${detailHTML(res)}</div>`;
     return contractMeta;
   })();
   contractPromise
@@ -237,6 +251,38 @@ function badgeFor(dec){
   return '<span class="badge b-vlm">저작물 분석</span>';
 }
 
+// 전체 결과 상세 뷰 — 메타데이터 전체 + 통합 판정 + NER + OCR + 저장본 다운로드
+function detailHTML(res){
+  const meta = res.consolidated_metadata || res.metadata || {};
+  const filled = Object.entries(meta).filter(([k,v])=>v!==null&&v!==""&&!(Array.isArray(v)&&!v.length));
+  const metaRows = filled.map(([k,v])=>
+    `<tr><td class="k">${esc(k)}</td><td>${fmt(v)} ${badgeFor(decisionOf(res,k))}</td></tr>`).join("");
+  const decs = (res.consolidation_decisions||[]).filter(d=>d.decision!=="MISSING" &&
+    d.final_value!==null && d.final_value!=="" && !(Array.isArray(d.final_value)&&!d.final_value.length));
+  const decRows = decs.map(d=>
+    `<tr><td class="k">${esc(d.field)}</td><td>${esc(d.decision||"")}</td><td>${fmt(d.final_value)}</td>
+     <td>${(d.confidence??0).toFixed(2)}</td><td>${esc(String(d.reasoning||d.evidence||"").slice(0,200))}</td></tr>`).join("");
+  const ents = res.entities || {};
+  const entChips = Object.entries(ents).map(([k,v])=>`<span>${esc(k)}: ${esc(String(v))}</span>`).join("");
+  const rid = res.request_id || "";
+  const info = `LLM: ${esc(res.model_used||"—")} · OCR: ${esc(res.ocr_provider||"—")}` +
+    `${res.ocr_model ? " ("+esc(res.ocr_model)+")" : ""} · NER: ${esc(res.ner_model||"—")}` +
+    ` · 통합: ${esc(res.consolidation_model_used||"—")} · 처리 ${res.processing_time??"?"}s · ID ${esc(rid)}`;
+  return `
+    <div class="info-line">${info}</div>
+    <h4>전체 메타데이터 — ${filled.length}필드 채워짐 / 67</h4>
+    <div class="scrollbox"><table><tbody>${metaRows || '<tr><td class="muted">—</td></tr>'}</tbody></table></div>
+    <h4>통합(Consolidation) 판정 — ${decs.length}건</h4>
+    <div class="scrollbox"><table>
+      <thead><tr><th>필드</th><th>판정</th><th>최종값</th><th>신뢰도</th><th>근거</th></tr></thead>
+      <tbody>${decRows || '<tr><td colspan="5" class="muted">—</td></tr>'}</tbody></table></div>
+    ${entChips ? `<h4>NER 엔티티 — ${res.entity_count??0}개 (${esc(res.ner_model||"")})</h4><div class="chips">${entChips}</div>` : ""}
+    ${res.ocr_text ? `<details><summary>OCR 텍스트 보기 (${res.ocr_text.length.toLocaleString()}자)</summary><pre class="ocr">${esc(res.ocr_text)}</pre></details>` : ""}
+    ${rid ? `<div class="dl-links">서버 저장본:
+        <a href="/download/${esc(rid)}/llm_metadata.json" target="_blank">llm_metadata.json</a>
+        <a href="/download/${esc(rid)}/consolidated_metadata.json" target="_blank">consolidated_metadata.json</a></div>` : ""}`;
+}
+
 // state: "waiting"(분석 완료, 계약서 대기) | "merged"(상속 반영) | "no-contract"(상속 생략)
 function renderInto(i, name, res, state){
   document.getElementById("wc"+i).outerHTML = renderWork(i, name, res, state);
@@ -271,11 +317,13 @@ function renderWork(i, name, res, state){
     <table><tbody>${rows}</tbody></table>
     <div class="toggle-row">
       <button class="ghost" onclick="document.getElementById('${uid}').classList.toggle('hidden')">무하유 20필드 뷰 보기/닫기</button>
+      <button class="ghost" onclick="document.getElementById('${uid}d').classList.toggle('hidden')">전체 결과 보기/닫기</button>
     </div>
     <div id="${uid}" class="hidden">
       <table><thead><tr><th>works 컬럼</th><th>항목</th><th>값</th><th>출처</th></tr></thead>
       <tbody>${rows20}</tbody></table>
     </div>
+    <div id="${uid}d" class="hidden detail">${detailHTML(res)}</div>
   </div>`;
 }
 </script>
