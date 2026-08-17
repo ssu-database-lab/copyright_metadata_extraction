@@ -48,15 +48,46 @@ def target_frame_count(duration_s: float) -> int:
 
 
 def probe_duration(video_path: str) -> float:
-    """ffprobe 로 재생시간(초). 실패하면 0."""
+    """재생시간(초). 못 구하면 0.
+
+    SWF(ShockWave Flash)는 타임라인이 스크립트로 구동돼 컨테이너가 duration 을
+    선언하지 않는다 — 보유 데이터에 125건 있다. 하지만 내용은 실제로 들어 있어서
+    (샘플 실측: flv1 640x360, 1,382프레임, 24fps) **프레임 수 ÷ fps** 로 길이를
+    복원할 수 있다. 그래야 순차 폴백 대신 정상 시크 경로를 타고 시점도 남는다.
+    """
+    # 1) 컨테이너/스트림이 선언한 duration
+    for entries in ("format=duration", "stream=duration"):
+        try:
+            out = subprocess.run(
+                ["ffprobe", "-v", "quiet", "-select_streams", "v:0",
+                 "-show_entries", entries, "-of", "csv=p=0", str(video_path)],
+                capture_output=True, text=True, timeout=60).stdout.strip().split("\n")[0]
+            d = float(out)
+            if d > 0:
+                return d
+        except (FileNotFoundError, subprocess.SubprocessError, ValueError, TypeError):
+            pass
+    # 2) 프레임 수 ÷ fps — 전수 디코딩이라 작은 파일에만 시도한다
     try:
-        out = subprocess.run(
-            ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+        if os.path.getsize(video_path) > 60_000_000:
+            return 0.0
+        info = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-count_frames", "-select_streams", "v:0",
+             "-show_entries", "stream=nb_read_frames,r_frame_rate",
              "-of", "csv=p=0", str(video_path)],
-            capture_output=True, text=True, timeout=60).stdout.strip()
-        return max(0.0, float(out))
-    except (FileNotFoundError, subprocess.SubprocessError, ValueError, TypeError):
-        return 0.0
+            capture_output=True, text=True, timeout=300).stdout.strip()
+        parts = [x for x in info.replace("\n", ",").split(",") if x]
+        rate = next((x for x in parts if "/" in x), None)
+        frames = next((x for x in parts if x.isdigit()), None)
+        if rate and frames:
+            num, den = rate.split("/")
+            fps = float(num) / float(den) if float(den) else 0.0
+            if fps > 0:
+                return int(frames) / fps
+    except (FileNotFoundError, subprocess.SubprocessError, ValueError,
+            TypeError, ZeroDivisionError, OSError):
+        pass
+    return 0.0
 
 
 def _dhash(path: str, size: int = 8) -> Optional[List[int]]:
@@ -160,8 +191,13 @@ def _farthest_point_select(cands: List[Tuple[float, str, List[int]]],
     return sorted(chosen, key=lambda x: x[0])
 
 
-def _extract_without_duration(video_path: str, out: Path, target: int) -> Dict:
-    """재생시간을 알 수 없는 컨테이너용 — 전체를 디코딩하며 대표 프레임 N장."""
+def _extract_sequential(video_path: str, out: Path, target: int,
+                        duration: float = 0.0) -> Dict:
+    """시크가 통하지 않는 컨테이너용 — 전체를 디코딩하며 대표 프레임 N장.
+
+    SWF 는 duration 을 복원해도 `-ss` 시크가 신뢰할 수 없어(앵커 대부분이 빈손)
+    이 경로가 필요하다. duration 을 알면 시점을 균등 보간해 기록한다.
+    """
     tmp = Path(tempfile.mkdtemp(prefix="kfnd_", dir=str(out)))
     try:
         pattern = str(tmp / "seq%03d.jpg")
@@ -176,17 +212,21 @@ def _extract_without_duration(video_path: str, out: Path, target: int) -> Dict:
             return {"frames": [], "duration": 0.0, "target": target, "sampled": 0,
                     "kept": 0,
                     "error": "재생시간 미상 + 순차 디코딩에서도 프레임을 얻지 못했습니다"}
+        sel = got[:target]
         frames = []
-        for i, src in enumerate(got[:target], 1):
-            dst = out / f"frame{i:02d}_seq.jpg"
+        for i, src in enumerate(sel, 1):
+            # duration 을 알면 균등 보간, 모르면 순번을 시점 자리에 둔다
+            t = (duration * (i - 0.5) / len(sel)) if duration > 0 else float(i - 1)
+            dst = out / f"frame{i:02d}_t{t:.1f}s.jpg" if duration > 0 else out / f"frame{i:02d}_seq.jpg"
             shutil.copy2(src, dst)
-            frames.append({"path": str(dst), "t": float(i - 1)})   # 시점 미상 → 순번
-        return {"frames": frames, "duration": 0.0, "target": target,
-                "sampled": len(got), "kept": len(frames),
-                "error": None, "note": "재생시간 미상 — 순차 디코딩으로 추출(시점은 순번)"}
+            frames.append({"path": str(dst), "t": round(t, 1)})
+        note = ("시크 불가 컨테이너 — 순차 디코딩(시점은 균등 보간)" if duration > 0
+                else "재생시간 미상 — 순차 디코딩(시점은 순번)")
+        return {"frames": frames, "duration": round(duration, 1), "target": target,
+                "sampled": len(got), "kept": len(frames), "error": None, "note": note}
     except (FileNotFoundError, subprocess.SubprocessError, OSError) as e:
-        return {"frames": [], "duration": 0.0, "target": target, "sampled": 0,
-                "kept": 0, "error": f"순차 디코딩 실패: {type(e).__name__}"}
+        return {"frames": [], "duration": round(duration, 1), "target": target,
+                "sampled": 0, "kept": 0, "error": f"순차 디코딩 실패: {type(e).__name__}"}
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -207,7 +247,7 @@ def extract_keyframes(video_path: str, out_dir: str,
         # SWF(flv1) 처럼 컨테이너가 duration 을 노출하지 않는 경우가 있다.
         # 보유 데이터에 125건 존재하므로 통째로 버릴 수 없다 — 시크 대신 순차
         # 디코딩으로 대표 프레임을 뽑는다(파일이 작아 비용이 크지 않다).
-        return _extract_without_duration(video_path, out, target or 5)
+        return _extract_sequential(video_path, out, target or 5)
 
     tgt = target or target_frame_count(duration)
     n_over = max(tgt + 2, int(round(tgt * oversample)))
@@ -228,10 +268,13 @@ def extract_keyframes(video_path: str, out_dir: str,
                 continue
             cands.append((t, raw, h))
 
-        if not cands:
-            return {"frames": [], "duration": round(duration, 1), "target": tgt,
-                    "sampled": len(anchors), "kept": 0,
-                    "error": "품질 조건을 통과한 프레임이 없습니다 (전체 암전이거나 디코딩 실패)"}
+        # 시크가 통하지 않는 컨테이너(SWF 등)는 앵커 대부분이 빈손으로 돌아온다.
+        # 목표의 절반도 못 건지면 시크를 포기하고 순차 디코딩으로 전환한다 —
+        # 적은 프레임으로 영상을 대표하게 두면 설명 품질이 그만큼 떨어진다.
+        if len(cands) < max(2, (tgt + 1) // 2):
+            logger.info("시크 수확 부족(%d/%d) → 순차 디코딩 전환: %s",
+                        len(cands), tgt, os.path.basename(str(video_path)))
+            return _extract_sequential(video_path, out, tgt, duration)
 
         # 사전 중복제거는 하지 않는다. farthest-point 가 이미 '서로 가장 먼' 것을
         # 고르므로 근접 중복은 자연히 배제되고, 사전 제거는 오히려 시간축 끝단
