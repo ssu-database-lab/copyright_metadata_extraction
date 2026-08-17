@@ -189,6 +189,23 @@ def make_gemma_backend(gemma_url: str | None = None):
     )
 
 
+def make_omni_backend():
+    """qwen3.5-omni-plus on DashScope — **영상 트랙 1순위**.
+
+    8개 모델 × 5영상 비교시험에서 정확도 92.3%(24/26)로 1위이면서 평균 5.0초로
+    상위권 중 유일하게 빨랐다(2위 qwen3.7-plus 84.6%/15.0초).
+    근거: docs/영상모델_비교보고서_20260803.md
+    """
+    _ensure_env_loaded()
+    return VLMClient(
+        model_label="Qwen3.5-Omni-Plus (DashScope)",
+        base_url=os.getenv("DASHSCOPE_BASE_URL", DASHSCOPE_BASE),
+        model=os.getenv("OMNI_MODEL", "qwen3.5-omni-plus"),
+        api_key=os.getenv("DASHSCOPE_API_KEY", ""),
+        image_first=False,
+    )
+
+
 def default_backends(prefer: str = "gemma", gemma_url: str | None = None) -> list:
     """
     Build the default ordered backend chain (2026-07-08 운영 결정):
@@ -206,6 +223,9 @@ def default_backends(prefer: str = "gemma", gemma_url: str | None = None) -> lis
     openrouter = make_openrouter_backend()
     gemma_local = make_gemma_backend(gemma_url)
     qwen = make_qwen_backend()
+    if prefer == "omni":
+        # 영상 트랙 기본 체인 — 비교시험 순위 그대로(92.3% → 80.8% → 76.9%)
+        return [make_omni_backend(), qwen, openrouter, gemma_local]
     if prefer == "qwen":
         return [qwen, openrouter, gemma_local]
     if prefer == "gemma-local":
@@ -363,6 +383,61 @@ class VLMExtractor:
             latency_s=0.0,
             error=f"all {len(self.backends)} backend(s) failed; last: {last_error}",
         )
+        _attach_backend(fail, "none")
+        return fail
+
+    def extract_video(self, frame_paths: list, frame_times: list | None = None,
+                      label: str = "video"):
+        """키프레임 여러 장을 한 번의 호출로 보내 영상 속성을 추출한다.
+
+        extract() 와 동일한 폴백 체인 규칙을 따른다 — 실패하면 다음 백엔드로
+        넘어가고, 성공한 백엔드를 승격시켜 이후 호출이 거기서 시작하게 한다.
+        """
+        from .prompts import VIDEO_SYSTEM_PROMPT, video_user_prompt
+
+        if not frame_paths:
+            fail = VLMResult(model_label="none", image=label, ok=False, latency_s=0.0,
+                             error="키프레임이 없습니다")
+            _attach_backend(fail, "none")
+            return fail
+
+        user_prompt = video_user_prompt(frame_times or [])
+        if self._active is None:
+            self.active_backend()
+        start = self._active_index or 0
+
+        last_error = ""
+        for idx in range(start, len(self.backends)):
+            backend = self.backends[idx]
+            try:
+                result = backend.extract_frames(
+                    frame_paths, VIDEO_SYSTEM_PROMPT, user_prompt,
+                    max_tokens=self.max_tokens, temperature=self.temperature,
+                    label=label,
+                )
+            except Exception as e:  # noqa: BLE001
+                last_error = f"{type(e).__name__}: {e}"
+                result = None
+
+            if result is not None and result.ok:
+                _attach_backend(result, backend.model_label)
+                if idx != start:
+                    logger.info("video fallback succeeded on %s for %s",
+                                backend.model_label, label)
+                    self._active, self._active_index = backend, idx
+                return result
+
+            err = result.error if result is not None else last_error
+            last_error = err or "unknown error"
+            if idx + 1 < len(self.backends):
+                logger.warning("video: %s failed (%s) → %s", backend.model_label,
+                               last_error, self.backends[idx + 1].model_label)
+            else:
+                logger.error("video: %s failed (%s); no more fallbacks",
+                             backend.model_label, last_error)
+
+        fail = VLMResult(model_label="none", image=label, ok=False, latency_s=0.0,
+                         error=f"all {len(self.backends)} backend(s) failed; last: {last_error}")
         _attach_backend(fail, "none")
         return fail
 

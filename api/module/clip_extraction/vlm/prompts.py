@@ -118,3 +118,42 @@ def build_messages(image_data_url: str, image_first: bool = True) -> list[dict]:
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": content},
     ]
+
+
+# ── 영상 트랙 프롬프트 ───────────────────────────────────────────────────────
+# 이미지 프롬프트를 그대로 쓰면 모델이 프레임을 '개별 이미지 N장'으로 취급한다.
+# 영상은 전개(시간 흐름)를 봐야 하므로 각 프레임의 시점을 알려주고 "영상 전체"를
+# 파악하라고 명시한다. 영상 모델 비교시험(40콜)에서 이 형태로 측정했다.
+VIDEO_SYSTEM_PROMPT = (
+    "당신은 공유저작물(공공저작물·CCL·퍼블릭 도메인) 메타데이터 추출 전문가입니다. "
+    "주어진 프레임들은 하나의 영상에서 시간순으로 추출한 대표 장면입니다. "
+    "개별 이미지가 아니라 영상 전체의 내용을 파악하여 속성 정보를 추출합니다. "
+    "반드시 유효한 JSON 객체 하나만 출력하고, 그 외의 설명·코드블록·마크다운은 절대 출력하지 마세요."
+)
+
+_VIDEO_USER_TEMPLATE = """다음 {n}장은 하나의 영상에서 시간순으로 추출한 대표 프레임입니다(각 시점: {times}).
+개별 이미지가 아니라 **영상 전체**의 내용을 파악하여 아래 JSON 스키마로만 답하세요.
+
+{{
+  "description": "영상 내용을 한국어 2~3문장으로 구체적으로 (무엇이 어떻게 전개되는지)",
+  "work_type": "영상저작물",
+  "work_type_reason": "그 매체로 판단한 근거 한 문장",
+  "keywords": ["핵심 키워드 5~7개"],
+  "main_subjects": ["영상에 등장하는 주요 객체/인물/피사체 목록"],
+  "dominant_colors": ["주요 색상 2~3개 (한국어)"],
+  "text_in_image": "화면에 보이는 글자·자막(있으면 그대로, 없으면 null)",
+  "scene_type": "실내/실외/스튜디오/애니메이션/그래픽 등",
+  "estimated_quality": "고화질/중간/저화질 중 하나"
+}}
+
+★ 고유명사(인물명·작품명)는 확실하지 않으면 지어내지 말고 일반 명사로 쓰세요.
+   비교시험에서 모델들이 등장인물 이름을 창작하는 사례가 다수 확인되었습니다.
+★ 모든 값은 한국어로 작성하세요.
+
+JSON 객체 하나만 출력하세요."""
+
+
+def video_user_prompt(frame_times) -> str:
+    """프레임 시점 목록을 넣은 영상용 사용자 프롬프트."""
+    times = ", ".join(f"{float(t):.0f}초" for t in frame_times) if frame_times else "미상"
+    return _VIDEO_USER_TEMPLATE.format(n=len(frame_times or []), times=times)

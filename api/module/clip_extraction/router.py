@@ -23,8 +23,11 @@ from typing import Dict, List
 # 확장자 → modality 매핑 (점(.) 제외, 소문자 기준)
 # ---------------------------------------------------------------------------
 _IMAGE_EXTS = {"jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "webp"}
-_AUDIO_EXTS = {"mp3", "wav", "flac", "m4a", "ogg"}
-_VIDEO_EXTS = {"mp4", "avi", "mov", "mkv", "webm"}
+_AUDIO_EXTS = {"mp3", "wav", "flac", "m4a", "ogg", "wma", "aac"}
+# ⚠️ 목록 누락은 조용한 오분류로 이어진다. wmv/swf 가 빠져 있어 보유 영상 623건이
+#    "unknown" → 문서 경로로 흘러가 OCR 공백 실패로 처리됐다(전체 영상의 31%).
+_VIDEO_EXTS = {"mp4", "avi", "mov", "mkv", "webm",
+               "wmv", "swf", "mpg", "mpeg", "m4v", "ts", "flv", "3gp", "ogv"}
 _DOCUMENT_EXTS = {"pdf", "hwp", "docx", "doc", "pptx", "xlsx"}
 _TEXT_EXTS = {"txt", "md", "ocr"}
 

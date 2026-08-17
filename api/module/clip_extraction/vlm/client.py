@@ -165,3 +165,57 @@ class VLMClient:
                 latency_s=round(time.perf_counter() - t0, 2),
                 error=f"{type(e).__name__}: {e}",
             )
+
+    def extract_frames(
+        self,
+        frame_paths: list,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 1024,
+        temperature: float = 0.0,
+        label: str = "video",
+    ) -> VLMResult:
+        """여러 프레임을 **한 번의 호출**로 보내 영상 전체 속성을 추출한다.
+
+        프레임을 한 장씩 따로 호출하면 모델이 '개별 이미지 N장'으로 볼 뿐 영상의
+        전개를 보지 못한다. 영상 모델 비교시험도 이 방식(다중 이미지 1회 호출)으로
+        측정했고 qwen3.5-omni-plus 가 92.3% 로 1위였다.
+
+        네이티브 비디오 입력(type:"video")은 base64 크기 제한(9.4MB→HTTP 413)에
+        걸려 쓰지 않는다.
+        """
+        parts = [{"type": "image_url", "image_url": {"url": _encode_image(Path(p))}}
+                 for p in frame_paths]
+        text_part = {"type": "text", "text": user_prompt}
+        content = parts + [text_part] if self.image_first else [text_part] + parts
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": content},
+        ]
+
+        t0 = time.perf_counter()
+        try:
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            latency = time.perf_counter() - t0
+            text = resp.choices[0].message.content or ""
+            parsed = _extract_json(text)
+            usage = {}
+            if resp.usage:
+                usage = {"prompt_tokens": resp.usage.prompt_tokens,
+                         "completion_tokens": resp.usage.completion_tokens}
+            return VLMResult(
+                model_label=self.model_label, image=label, ok=True,
+                latency_s=round(latency, 2), raw_text=text, parsed=parsed,
+                parse_ok=parsed is not None, usage=usage,
+            )
+        except Exception as e:  # noqa: BLE001
+            return VLMResult(
+                model_label=self.model_label, image=label, ok=False,
+                latency_s=round(time.perf_counter() - t0, 2),
+                error=f"{type(e).__name__}: {e}",
+            )

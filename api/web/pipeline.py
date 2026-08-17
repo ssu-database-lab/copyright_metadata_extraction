@@ -330,6 +330,58 @@ class PipelineOrchestrator:
                     "model_used": "none", "error": str(e),
                     "extraction_time": round(time.perf_counter() - t0, 2)}
 
+    def run_video(self, ctx: Dict, prefer: str = "omni") -> Dict[str, Any]:
+        """영상 저작물 → 키프레임 추출 → 다중 프레임 VLM 1회 호출 → 통합 스키마.
+
+        run_vlm(이미지)과 같은 llm_result 모양을 돌려주므로 통합검증·응답조립
+        경로를 그대로 재사용한다. 새로 필요한 것은 키프레임 추출뿐이다.
+        """
+        import time
+        from module.clip_extraction.keyframes import extract_keyframes
+        from module.clip_extraction.schema_mapping import map_vlm_to_unified
+        from module.clip_extraction.vlm.extractor import VLMExtractor
+
+        t0 = time.perf_counter()
+        try:
+            frame_dir = ctx["result_dir"] / "keyframes"
+            kf = extract_keyframes(str(ctx["upload_path"]), str(frame_dir))
+            if not kf.get("frames"):
+                return {"success": False, "metadata": {}, "confidence": 0.0,
+                        "model_used": "none",
+                        "error": f"키프레임 추출 실패: {kf.get('error') or '프레임 없음'}",
+                        "extraction_time": round(time.perf_counter() - t0, 2),
+                        "_keyframes": kf}
+
+            paths = [f["path"] for f in kf["frames"]]
+            times = [f["t"] for f in kf["frames"]]
+            extractor = VLMExtractor(prefer=prefer, max_tokens=2048)
+            res = extractor.extract_video(paths, times, label=ctx["filename"])
+            backend = getattr(res, "backend_used", "?")
+            if not res.ok or not res.parse_ok or not res.parsed:
+                return {"success": False, "metadata": {}, "confidence": 0.0,
+                        "model_used": backend,
+                        "error": res.error or "VLM ran but JSON parse failed",
+                        "extraction_time": round(time.perf_counter() - t0, 2),
+                        "_keyframes": kf}
+
+            unified = map_vlm_to_unified(res.parsed, str(ctx["upload_path"]))
+            file_meta = unified.pop("_file_meta", {})
+            logger.info(f"Video extraction via {backend}: {kf['kept']} frames "
+                        f"({kf['duration']}s), work_type={unified.get('work_type')}")
+            return {
+                "success": True, "metadata": unified, "confidence": 0.7,
+                "model_used": backend,
+                "extraction_time": round(time.perf_counter() - t0, 2),
+                "_file_meta": file_meta, "_vlm_raw": res.parsed,
+                "_keyframes": {k: v for k, v in kf.items() if k != "frames"},
+                "_frame_times": times,
+            }
+        except Exception as e:
+            logger.error(f"Video extraction error: {e}", exc_info=True)
+            return {"success": False, "metadata": {}, "confidence": 0.0,
+                    "model_used": "none", "error": str(e),
+                    "extraction_time": round(time.perf_counter() - t0, 2)}
+
     def apply_contract_inheritance(self, response: Dict[str, Any],
                                    contract_metadata: Dict[str, Any]) -> Dict[str, Any]:
         """계약서 메타데이터를 저작물(이미지) 응답에 상속 병합 (post-consolidation).
@@ -474,20 +526,52 @@ class PipelineOrchestrator:
             self.save_results(ctx["result_dir"], response, con_result, con_success)
             return response
 
-        if modality in ("video", "audio"):
-            # Video keyframe track = P3; audio has no image-VLM path → guarded out.
+        if modality == "video":
+            # 키프레임 → 다중 프레임 VLM 1회 호출. 이미지 경로와 동일한 모양을
+            # 돌려주므로 통합검증·응답조립은 그대로 재사용된다.
+            vid_result = self.run_video(ctx, prefer=kwargs.get("video_prefer", "omni"))
+            vid_ok = vid_result.get("success", False)
+            do_con = consolidate and vid_ok
+            if do_con:
+                con_result, con_success, con_error = self.run_consolidation(
+                    vid_result,
+                    {"success": False, "entities": {}, "total_entities": 0,
+                     "extracted_entities": []},
+                    "", document_type, ctx["result_dir"], consolidation_model,
+                )
+            else:
+                con_result, con_success, con_error = None, False, None
             response = self.build_response(
                 ctx,
-                model_name="(multimodal)", document_type=document_type,
+                model_name=vid_result.get("model_used", "VLM"), document_type=document_type,
+                ocr_text="", ocr_provider="(video/keyframes)", ocr_model=None,
+                llm_result=vid_result, ner_model=None, ner_result=None,
+                consolidate=do_con, consolidation_model=consolidation_model,
+                consolidation_result=con_result, consolidation_success=con_success,
+                consolidation_error=con_error,
+            )
+            response["modality"] = modality
+            response["keyframes"] = vid_result.get("_keyframes")
+            self._backfill_file_attributes(ctx, response)
+            self.save_results(ctx["result_dir"], response, con_result, con_success)
+            return response
+
+        if modality == "audio":
+            # ASR 은 1차 구현 제외(계획서 §5): 한국어 음성이 데이터의 0.19%뿐이고
+            # 환각 위험이 실측 확인됐다. 기술 메타데이터만 채우고 종료한다.
+            response = self.build_response(
+                ctx,
+                model_name="(none)", document_type=document_type,
                 ocr_text="", ocr_provider="(none)", ocr_model=None,
                 llm_result={"success": False, "metadata": {},
-                            "error": f"{modality} track not enabled in this build (multimodal P3)"},
+                            "error": "audio track not enabled (ASR excluded in v1 — 구현계획서 §5)"},
                 ner_model=None, ner_result=None,
                 consolidate=False, consolidation_model=consolidation_model,
                 consolidation_result=None, consolidation_success=False,
-                consolidation_error=f"{modality} not yet supported",
+                consolidation_error="audio not yet supported",
             )
             response["modality"] = modality
+            self._backfill_file_attributes(ctx, response)
             self.save_results(ctx["result_dir"], response, None, False)
             return response
 
