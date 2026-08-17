@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import threading
 import time
 import traceback
@@ -65,7 +66,38 @@ class RunConfig:
     skip_tiers: tuple = ("D",)
 
 
-def _estimate_cost(resp: Dict[str, Any], media: str, is_contract: bool) -> float:
+def _pdf_page_count(path: str) -> int:
+    """PDF 페이지 수. OCR 비용이 페이지 비례라 추정의 정확도를 좌우한다.
+
+    PyMuPDF(fitz) → pypdf → pdfinfo 순으로 시도한다. 전부 실패하면 1로 본다
+    (과소추정이지만 비용 상한이 조기에 걸리는 것보다 낫다).
+    """
+    p = str(path)
+    if not p.lower().endswith(".pdf"):
+        return 1
+    try:
+        import fitz                                   # PyMuPDF
+        with fitz.open(p) as doc:
+            return max(1, doc.page_count)
+    except Exception:
+        pass
+    try:
+        from pypdf import PdfReader
+        return max(1, len(PdfReader(p).pages))
+    except Exception:
+        pass
+    try:
+        out = subprocess.run(["pdfinfo", p], capture_output=True, text=True, timeout=20).stdout
+        for line in out.splitlines():
+            if line.lower().startswith("pages:"):
+                return max(1, int(line.split()[1]))
+    except Exception:
+        pass
+    return 1
+
+
+def _estimate_cost(resp: Dict[str, Any], media: str, is_contract: bool,
+                   pages: Optional[int] = None) -> float:
     """실측 단가 기반 추정치. 토큰 실측이 응답에 있으면 그것을 우선한다."""
     # 실패한 처리는 실제로 모델을 부르지 않았다. 정상 요금을 매기면 비용 상한이
     # 헛돌고(예: 영상 P3 no-op 에 ₩37.41) 리포트의 비용도 부풀려진다.
@@ -79,15 +111,14 @@ def _estimate_cost(resp: Dict[str, Any], media: str, is_contract: bool) -> float
         except (TypeError, ValueError):
             pass
     if is_contract or media == "text":
-        pages = 1
+        n = pages if pages else 1
         for key in ("page_count", "pages", "total_pages"):
-            if (resp or {}).get(key):
+            if not pages and (resp or {}).get(key):
                 try:
-                    pages = max(1, int(resp[key]))
-                    break
+                    n = max(1, int(resp[key])); break
                 except (TypeError, ValueError):
                     pass
-        return COST_OCR_PER_PAGE * pages + COST_LLM_EXTRACT + COST_CONSOLIDATION_DOC
+        return COST_OCR_PER_PAGE * n + COST_LLM_EXTRACT + COST_CONSOLIDATION_DOC
     vlm = COST_VLM_VIDEO if media == "video" else COST_VLM_IMAGE
     return vlm + COST_CONSOLIDATION_IMG
 
@@ -180,7 +211,11 @@ class BatchRunner:
                 consolidation_model=self.cfg.consolidation_model,
             )
             contract_meta = _final_metadata(cresp)
-            cost_box["v"] += _estimate_cost(cresp, "text", True)
+            cost_box["v"] += _estimate_cost(cresp, "text", True,
+                                            pages=_pdf_page_count(entry.contract))
+            # request_id 로 results/{id}/ 에 OCR·NER·LLM·통합검증 산출물이 저장돼 있다.
+            # 이걸 남겨야 세트별로 파이프라인 원본 출력을 되찾을 수 있다.
+            out["contract_request_id"] = cresp.get("request_id")
             stages["contract"] = {"ok": bool(cresp.get("success")) and bool(contract_meta),
                                   "error": cresp.get("error"),
                                   "fields": sum(1 for v in contract_meta.values()
@@ -199,6 +234,7 @@ class BatchRunner:
             vlm_prefer=self.cfg.vlm_prefer,
         )
         cost_box["v"] += _estimate_cost(wresp, entry.media, False)
+        out["work_request_id"] = wresp.get("request_id")
 
         # ⚠️ 저작물 처리가 실제로 성공했는지 반드시 확인한다.
         #    파이프라인은 실패해도 예외를 던지지 않고 success=False + metadata={} 를 돌려준다:

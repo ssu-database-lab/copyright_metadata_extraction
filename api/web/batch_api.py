@@ -44,15 +44,61 @@ _JOBS: Dict[str, "BatchJob"] = {}
 _JOBS_LOCK = threading.Lock()
 
 BATCH_ROOT: Path = Path("batch_jobs")        # app.py 가 init_batch_api() 로 덮어쓴다
+RESULTS_ROOT: Path = Path("results")         # 파이프라인 단계별 산출물 위치
 _ORCH = None                                 # 파이프라인 오케스트레이터(공유)
 
 
-def init_batch_api(orchestrator, batch_root: Path):
+def init_batch_api(orchestrator, batch_root: Path, results_root: Path = None):
     """app.py 에서 1회 호출 — 오케스트레이터와 저장 위치를 주입한다."""
-    global _ORCH, BATCH_ROOT
+    global _ORCH, BATCH_ROOT, RESULTS_ROOT
     _ORCH = orchestrator
     BATCH_ROOT = Path(batch_root)
     BATCH_ROOT.mkdir(parents=True, exist_ok=True)
+    if results_root is not None:
+        RESULTS_ROOT = Path(results_root)
+    _recover_jobs()
+
+
+def _recover_jobs():
+    """서버 재기동 시 디스크에 남은 작업을 목록에 되살린다.
+
+    작업 상태는 메모리에만 있어서 재시작·배포 한 번에 목록이 통째로 사라졌다.
+    실행 자체는 재개할 수 없지만(스레드가 죽었으므로), 결과와 산출물은 디스크에
+    그대로 있으므로 **리포트 조회와 세트별 다운로드는 되어야 한다**.
+    4,000세트를 몇 시간 돌린 뒤 배포 한 번에 접근 경로를 잃으면 곤란하다.
+    """
+    if not BATCH_ROOT.is_dir():
+        return
+    recovered = 0
+    for d in sorted(BATCH_ROOT.iterdir()):
+        if not d.is_dir() or d.name in _JOBS:
+            continue
+        res = d / "_eval_out" / "results.jsonl"
+        if not res.exists():
+            continue
+        job = BatchJob(d.name, d, name=d.name)
+        try:
+            job.created_at = d.stat().st_mtime
+        except OSError:
+            pass
+        n = sum(1 for _ in res.open(encoding="utf-8"))
+        job.total = n
+        job.progress = {"i": n, "total": n, "failed": 0, "cost_krw_total": 0.0}
+        rep = d / "_eval_out" / "report.json"
+        if rep.exists():
+            try:
+                job.summary = {"aggregate": json.loads(rep.read_text(encoding="utf-8")),
+                               "recovered": True}
+            except (OSError, json.JSONDecodeError):
+                pass
+        # 실행 스레드는 없다. 리포트가 있으면 완료로, 없으면 중단된 것으로 표시한다.
+        job.state = "done" if rep.exists() else "cancelled"
+        job.error = None if rep.exists() else "서버 재시작으로 중단됨 (결과는 보존)"
+        with _JOBS_LOCK:
+            _JOBS[d.name] = job
+        recovered += 1
+    if recovered:
+        logger.info(f"배치 작업 {recovered}건 복구 (디스크 기준)")
 
 
 def _safe_extract(zf: zipfile.ZipFile, dest: Path) -> None:
@@ -357,3 +403,88 @@ async def job_results(job_id: str, limit: int = 0):
             r.pop("traceback", None)
             rows.append(r)
     return {"job_id": job_id, "count": len(rows), "results": rows}
+
+
+# ---------------------------------------------------------------------------
+# 세트별 파이프라인 산출물 — OCR 텍스트 · NER 엔티티 · LLM 메타데이터 · 통합검증
+# ---------------------------------------------------------------------------
+# 파이프라인은 실행할 때마다 results/{request_id}/ 에 단계별 산출물을 남긴다.
+# 배치 결과에 그 request_id 를 기록해 두었으므로(contract/work 각각) 세트 단위로
+# 되찾을 수 있다. 채점 결과만 보고 "왜 틀렸는지" 확인할 방법이 없으면 곤란하다.
+
+def _set_result(job: "BatchJob", set_id: str) -> Dict[str, Any]:
+    path = job.out_dir / "results.jsonl"
+    if not path.exists():
+        raise HTTPException(404, "결과가 아직 없습니다")
+    found = None
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if str(r.get("set_id")) == str(set_id):
+                found = r          # 재개로 여러 번 있으면 마지막 것
+    if not found:
+        raise HTTPException(404, f"세트를 찾을 수 없습니다: {set_id}")
+    return found
+
+
+def _leg_dirs(rec: Dict[str, Any]) -> Dict[str, Path]:
+    legs = {}
+    for leg, key in (("contract", "contract_request_id"), ("work", "work_request_id")):
+        rid = rec.get(key)
+        if rid:
+            d = RESULTS_ROOT / str(rid)
+            if d.is_dir():
+                legs[leg] = d
+    return legs
+
+
+@router.get("/{job_id}/set/{set_id}/artifacts")
+async def set_artifacts(job_id: str, set_id: str):
+    """세트의 단계별 산출물 파일 목록 (계약서 leg + 저작물 leg)."""
+    job = _get(job_id)
+    rec = _set_result(job, set_id)
+    legs = _leg_dirs(rec)
+    out = {"set_id": set_id, "job_id": job_id,
+           "contract_request_id": rec.get("contract_request_id"),
+           "work_request_id": rec.get("work_request_id"),
+           "legs": {}}
+    for leg, d in legs.items():
+        files = []
+        for f in sorted(d.rglob("*")):
+            if f.is_file():
+                files.append({"path": str(f.relative_to(d)), "bytes": f.stat().st_size})
+        out["legs"][leg] = {"request_id": str(d.name), "files": files}
+    if not legs:
+        out["note"] = "산출물 디렉터리가 없습니다 (구버전 실행이거나 정리됨)"
+    return out
+
+
+@router.get("/{job_id}/set/{set_id}/download")
+async def set_download(job_id: str, set_id: str):
+    """세트의 모든 파이프라인 산출물을 ZIP 하나로 내려받는다.
+
+    contract/ 와 work/ 하위에 OCR·NER·llm_metadata.json·consolidated_metadata.json 이
+    그대로 들어간다 — 채점 결과를 다시 따져볼 때 필요한 원본이다.
+    """
+    import io
+    job = _get(job_id)
+    rec = _set_result(job, set_id)
+    legs = _leg_dirs(rec)
+    if not legs:
+        raise HTTPException(404, "이 세트의 산출물을 찾을 수 없습니다")
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for leg, d in legs.items():
+            for f in sorted(d.rglob("*")):
+                if f.is_file():
+                    zf.writestr(f"{leg}/{f.relative_to(d)}", f.read_bytes())
+        # 채점 결과도 같이 넣어 둔다 — 산출물과 판정을 따로 보관하면 대조가 번거롭다
+        zf.writestr("scoring.json", json.dumps(rec, ensure_ascii=False, indent=1))
+    buf.seek(0)
+    return StreamingResponse(
+        buf, media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="set_{set_id}_artifacts.zip"'})

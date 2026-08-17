@@ -426,6 +426,10 @@
         .main { margin-left:0; padding:24px 16px 40px; padding-top:64px; }
         .headline-num { font-size:38px; }
     }
+  .dl-link { color:#3b6ef5; text-decoration:none; font-size:.76rem; font-weight:600;
+             border:1px solid #cfdcfa; border-radius:5px; padding:1px 6px; margin-right:3px;
+             display:inline-block; white-space:nowrap; }
+  .dl-link:hover { background:#eef2fb; }
 </style>
 </head>
 <body>
@@ -731,7 +735,10 @@
                 <div class="stat-grid" style="margin-top:18px;">
                     <div class="stat"><div class="stat-label">완료</div><div class="stat-value grad" id="stDone">0</div><div class="stat-sub" id="stDoneSub">/ 0 세트</div></div>
                     <div class="stat"><div class="stat-label">실패</div><div class="stat-value" id="stFail">0</div><div class="stat-sub" id="stFailSub">—</div></div>
-                    <div class="stat"><div class="stat-label">누적 비용</div><div class="stat-value" id="stCost">₩0</div><div class="stat-sub" id="stCostSub">—</div></div>
+                    <div class="stat" title="공개 단가(비용산정서) × 단계 수로 계산한 추정치입니다. 실제 토큰 사용량 측정값이 아니며, 비용 상한 판단용입니다.">
+                        <div class="stat-label">추정 비용 <span style="font-weight:400;opacity:.6">(참고)</span></div>
+                        <div class="stat-value" id="stCost">₩0</div>
+                        <div class="stat-sub" id="stCostSub">단가표 기반 추정 · 실측 아님</div></div>
                     <div class="stat"><div class="stat-label">경과</div><div class="stat-value" id="stElapsed">—</div><div class="stat-sub" id="stElapsedSub">—</div></div>
                     <div class="stat"><div class="stat-label">예상 잔여 (ETA)</div><div class="stat-value" id="stEta">—</div><div class="stat-sub" id="stEtaSub">관측 처리량 기준</div></div>
                     <div class="stat"><div class="stat-label">채점 속성</div><div class="stat-value" id="stScored">0</div><div class="stat-sub" id="stScoredSub">적중 0</div></div>
@@ -1533,7 +1540,9 @@ function renderMonitor() {
     $("stFail").className = "stat-value" + (S.failN ? " bad" : "");
     $("stFailSub").textContent = done ? pct(ratePct(S.failN || 0, done)) + " 실패율" : "—";
     $("stCost").textContent = krw(S.cost || 0);
-    $("stCostSub").textContent = done ? "세트당 " + krw((S.cost || 0) / done) : "—";
+    // '세트당 ₩42' 같은 표기는 실측처럼 읽혀 오해를 부른다 — 추정임을 계속 명시한다.
+    $("stCostSub").textContent = done ? "단가표 기반 추정 · 세트당 약 " + krw((S.cost || 0) / done)
+                                     : "단가표 기반 추정 · 실측 아님";
 
     const startAt = j.started_at || j.created_at;
     const endAt = j.finished_at || (Date.now() / 1000);
@@ -1730,6 +1739,17 @@ function attrCellsHtml(perAttr) {
     }).join("") + "</div>";
 }
 
+// 세트별 파이프라인 산출물(OCR·NER·LLM·통합검증) 다운로드 링크.
+// 채점 결과만 보고 "왜 틀렸는지" 확인할 방법이 없으면 곤란하다.
+function artifactCellHtml(r) {
+    if (!S.job) return "—";
+    const has = r.work_request_id || r.contract_request_id;
+    if (!has) return '<span class="muted tiny" title="구버전 실행 — request_id 미기록">—</span>';
+    const base = "/api/batch/" + encodeURIComponent(S.job) + "/set/" + encodeURIComponent(r.set_id);
+    return '<a class="dl-link" href="' + base + '/download" title="OCR·NER·LLM·통합검증 산출물 + 채점결과 ZIP">ZIP</a>'
+         + ' <a class="dl-link" href="' + base + '/artifacts" target="_blank" title="파일 목록 보기">목록</a>';
+}
+
 function renderResults() {
     const q = ($("resFilter").value || "").trim().toLowerCase();
     const rows = S.results.filter(r => !q || String(r.set_id || "").toLowerCase().indexOf(q) >= 0);
@@ -1753,7 +1773,7 @@ function renderResults() {
             "<td class='num'>" + accHtml + "</td>" +
             "<td class='num tiny'>" + (okv ? (r.n_match || 0) + " / " + (r.n_scored || 0) : "—") + "</td>" +
             "<td class='num tiny'>" + (r.elapsed_sec !== undefined && r.elapsed_sec !== null ? r.elapsed_sec + "s" : "—") + "</td>" +
-            "<td class='num tiny'>" + (r.cost_krw !== undefined && r.cost_krw !== null ? krw(r.cost_krw) : "—") + "</td>" +
+            "<td class='num tiny'>" + artifactCellHtml(r) + "</td>" +
             "<td>" + (okv ? attrCellsHtml(r.per_attr)
                           : '<span class="tiny" style="color:var(--danger)">' + esc(String(r.error || "원인 미상").slice(0, 160)) + "</span>") +
             "</td></tr>";
@@ -1761,7 +1781,7 @@ function renderResults() {
     $("resWrap").innerHTML =
         '<div class="scrollbox"><table><thead><tr>' +
         "<th>set_id</th><th>미디어</th><th>권리유형</th><th>정확도</th><th>적중/채점</th>" +
-        "<th>소요</th><th>비용</th><th>속성별 (11)</th>" +
+        "<th>소요</th><th>산출물</th><th>속성별 (11)</th>" +
         "</tr></thead><tbody>" + body + "</tbody></table></div>";
 }
 

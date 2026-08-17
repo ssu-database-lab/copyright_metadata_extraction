@@ -204,7 +204,7 @@ pipeline_orchestrator = PipelineOrchestrator(
 # CLI 하네스(module.evaluation.cli)와 동일한 BatchRunner 를 공유한다.
 from web.batch_api import router as batch_router, init_batch_api  # noqa: E402
 
-init_batch_api(pipeline_orchestrator, RESULTS_DIR.parent / "batch_jobs")
+init_batch_api(pipeline_orchestrator, RESULTS_DIR.parent / "batch_jobs", RESULTS_DIR)
 app.include_router(batch_router)
 
 def allowed_file(filename: str) -> bool:
