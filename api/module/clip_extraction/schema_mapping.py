@@ -1,5 +1,5 @@
 """
-Schema mapping: VLM / 임베딩 출력 → 프로젝트의 기존 통합 67-필드 메타데이터 스키마.
+Schema mapping: VLM / 임베딩 출력 → 프로젝트의 통합 메타데이터 스키마.
 
 생성형 VLM이 뱉은 JSON(prompts.py의 USER_PROMPT 키)을 기존 LLM 추출
 파이프라인이 만드는 것과 *똑같은 모양*의 unified-schema dict로 변환한다.
@@ -31,16 +31,19 @@ from typing import Any, Dict, List, Optional
 #   work_type    -> work_type     (스키마: 유형/저작물 유형)
 #   keywords     -> keyword       (스키마: 주제어 — string|array 허용)
 #
-# 스키마에 자리가 없어 의도적으로 버리는(또는 _file_meta로만 보존하는) 키:
-#   work_type_reason, main_subjects, dominant_colors, text_in_image,
-#   scene_type, estimated_quality
-#   → keyword 필드를 main_subjects로 보강할 수는 있으나, keyword(주제어)는
-#     "키워드/태그"이고 main_subjects는 "피사체 목록"이라 의미가 겹치므로
-#     keywords가 비었을 때만 main_subjects를 fallback으로 사용한다.
+# 스키마에 자리가 없어 의도적으로 _file_meta로만 보존하는 키:
+#   work_type_reason, text_in_image, scene_type, estimated_quality
+#
+# main_subjects / dominant_colors 는 2026-08-03 스키마에 정식 필드가 생겼다.
+#   연구개발계획서 2-4의 '시각적 속성 — 해상도, 주요 색상, 개체 범주'가 평가
+#   대상이라, VLM이 이미 뽑고 있는 값을 _file_meta에만 두면 평가에서 미추출로
+#   집계된다. dominant_colors → 주요 색상, main_subjects → 개체 범주.
 _VLM_DIRECT_MAP: Dict[str, str] = {
     "description": "description",
     "work_type": "work_type",
     "keywords": "keyword",
+    "main_subjects": "main_subjects",
+    "dominant_colors": "dominant_colors",
 }
 
 
@@ -100,7 +103,7 @@ def map_vlm_to_unified(
     file_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    VLM JSON 출력을 통합 67-필드 스키마 dict로 변환한다.
+    VLM JSON 출력을 통합 스키마 dict로 변환한다.
 
     Args:
         vlm_output: VLM이 생성한 dict (prompts.py USER_PROMPT 키들).
@@ -108,11 +111,11 @@ def map_vlm_to_unified(
                     파일 SHA256 해시를 계산해 `_file_meta`에 넣는다.
 
     Returns:
-        스키마-complete dict. 모든 67개 필드가 존재(매핑 못한 건 null/[]),
+        스키마-complete dict. 스키마의 모든 필드가 존재(매핑 못한 건 null/[]),
         매핑 가능한 필드만 채워짐. 스키마에 자리 없는 부가정보(해시, VLM
         진단 키들)는 `_file_meta` 키 아래 별도 dict로 동봉된다.
 
-        주의: 반환 dict는 스키마 67개 키 + (옵션) `_file_meta` 1개를 가진다.
+        주의: 반환 dict는 스키마 전체 키 + (옵션) `_file_meta` 1개를 가진다.
         `_file_meta`는 스키마 필드가 아니며 언더스코어 접두사로 구분된다.
     """
     vlm_output = vlm_output or {}
@@ -141,6 +144,17 @@ def map_vlm_to_unified(
         if digital_format:
             unified["digital_format"] = digital_format
 
+        # 해상도 · 파일크기 · 파일 생성일 — 파일에서 결정적으로 산출한다.
+        # VLM에게 추론시키지 않는다(환각 위험 + 어차피 파일이 정답을 갖고 있음).
+        from module.clip_extraction.technical_metadata import extract_technical_metadata
+
+        tech = extract_technical_metadata(file_path)
+        for key in ("resolution", "file_size", "file_created_date"):
+            if tech.get(key) is not None:
+                unified[key] = tech[key]
+        if tech.get("_technical"):
+            file_meta["technical"] = tech["_technical"]
+
         sha256 = _sha256_of_file(file_path)
         # 스키마에는 해시/UCI 전용 필드가 없으므로 _file_meta로만 보존한다.
         file_meta["file_path"] = str(file_path)
@@ -148,14 +162,13 @@ def map_vlm_to_unified(
         file_meta["sha256"] = sha256
 
     # --- 4) 스키마에 자리 없는 VLM 진단 키를 _file_meta에 보존(분실 방지) ----
-    #     work_type_reason / scene_type / dominant_colors / text_in_image /
-    #     estimated_quality / main_subjects 등은 다운스트림 디버깅/근거용으로만.
+    #     work_type_reason / text_in_image / scene_type / estimated_quality 는
+    #     평가 대상 속성이 아니므로 다운스트림 디버깅·근거용으로만 남긴다.
+    #     (main_subjects / dominant_colors 는 위 1)에서 정식 필드로 매핑됨)
     vlm_extras = {
         k: vlm_output[k]
         for k in (
             "work_type_reason",
-            "main_subjects",
-            "dominant_colors",
             "text_in_image",
             "scene_type",
             "estimated_quality",
@@ -266,5 +279,5 @@ if __name__ == "__main__":
         "output is not schema-complete: "
         f"missing={sorted(schema_keys - schema_emitted)}"
     )
-    print("OK: all emitted schema keys exist in get_unified_schema() "
-          "and output is schema-complete (67 fields).")
+    print(f"OK: all emitted schema keys exist in get_unified_schema() "
+          f"and output is schema-complete ({len(schema_keys)} fields).")

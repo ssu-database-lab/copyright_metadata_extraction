@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>배치 평가 콘솔 — 저작권 메타데이터 v3</title>
+<style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    :root {
+        --sidebar-w: 280px;
+        --navy: #0f172a;
+        --navy-light: #1e293b;
+        --navy-lighter: #334155;
+        --accent-from: #6366f1;
+        --accent-to: #8b5cf6;
+        --accent: #7c3aed;
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --text: #1e293b;
+        --text-muted: #64748b;
+        --text-light: #94a3b8;
+        --border: #e2e8f0;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+        --radius: 16px;
+        --radius-sm: 10px;
+        --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+        --shadow-lg: 0 4px 24px rgba(0,0,0,0.08);
+        --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        --mono: 'JetBrains Mono', 'Fira Code', 'D2Coding', Consolas, monospace;
+    }
+
+    body {
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                     'Malgun Gothic', system-ui, sans-serif;
+        font-size: 15px;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        overflow-x: hidden;
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+        width: var(--sidebar-w);
+        min-height: 100vh;
+        background: var(--navy);
+        position: fixed;
+        left: 0; top: 0; bottom: 0;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        transition: transform var(--transition);
+    }
+    .sidebar-header { padding: 28px 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .sidebar-logo { display:flex; align-items:center; gap:12px; }
+    .sidebar-logo-icon {
+        width:36px; height:36px;
+        background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+        border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .sidebar-logo-text { color:#f1f5f9; font-size:15px; font-weight:700; line-height:1.3; }
+    .sidebar-logo-sub { color: var(--text-light); font-size:13px; margin-top:2px; }
+
+    .nav { padding: 24px 20px; flex:1; }
+    .nav-label {
+        color: var(--text-light); font-size:11px; font-weight:600;
+        text-transform: uppercase; letter-spacing:1.2px; margin-bottom:14px; padding-left:4px;
+    }
+    .nav-item {
+        display:flex; align-items:center; gap:14px;
+        padding:12px 10px; border-radius: var(--radius-sm);
+        cursor:pointer; transition: background var(--transition); margin-bottom:4px;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.04); }
+    .nav-item.active { background: rgba(99,102,241,0.14); }
+    .nav-icon {
+        width:32px; height:32px; border-radius:10px;
+        border:2px solid var(--navy-lighter);
+        display:flex; align-items:center; justify-content:center;
+        color: var(--text-light); flex-shrink:0; transition: all var(--transition);
+    }
+    .nav-icon svg { width:16px; height:16px; }
+    .nav-item.active .nav-icon {
+        background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+        border-color: var(--accent-from); color:#fff;
+        box-shadow: 0 0 16px rgba(99,102,241,0.4);
+    }
+    .nav-title { color: var(--text-light); font-size:14px; font-weight:600; }
+    .nav-item.active .nav-title { color:#fff; }
+    .nav-desc { color: rgba(148,163,184,0.6); font-size:12px; margin-top:2px; }
+
+    .side-job {
+        margin: 4px 20px 12px; padding:12px 14px;
+        background: rgba(255,255,255,0.04); border-radius: var(--radius-sm);
+        border:1px solid rgba(255,255,255,0.06);
+    }
+    .side-job-label { color: var(--text-light); font-size:11px; letter-spacing:1px;
+        text-transform:uppercase; font-weight:600; margin-bottom:6px; }
+    .side-job-name { color:#e2e8f0; font-size:13px; font-weight:600; word-break:break-all; }
+    .side-job-meta { color: var(--text-light); font-size:12px; margin-top:4px; font-family: var(--mono); }
+    .side-bar { height:6px; border-radius:4px; background: rgba(255,255,255,0.1); margin-top:8px; overflow:hidden; }
+    .side-bar span { display:block; height:100%; border-radius:4px;
+        background: linear-gradient(90deg, var(--accent-from), var(--accent-to)); transition: width .4s ease; }
+
+    .sidebar-footer { padding:16px 24px; border-top:1px solid rgba(255,255,255,0.06); }
+    .sidebar-footer-text { color: var(--text-light); font-size:11px; text-align:center;
+        opacity:.65; line-height:1.7; }
+    .sidebar-footer-text a { color:#8fb0ff; text-decoration:none; }
+
+    /* ===== MAIN ===== */
+    .main { margin-left: var(--sidebar-w); flex:1; min-height:100vh; padding:32px 40px; }
+    .main-header { margin-bottom:26px; display:flex; align-items:flex-start;
+        justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .main-title { font-size:24px; font-weight:700; }
+    .main-subtitle { color: var(--text-muted); font-size:14px; margin-top:4px; }
+
+    .panel { display:none; animation: fadeSlideIn .3s ease; }
+    .panel.active { display:block; }
+    @keyframes fadeSlideIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+
+    .card {
+        background: var(--card); border-radius: var(--radius); border:1px solid var(--border);
+        box-shadow: var(--shadow); padding:24px 26px; margin-bottom:18px;
+    }
+    .card-title { font-size:15px; font-weight:700; margin-bottom:16px;
+        display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .card-title .step-no {
+        background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+        color:#fff; border-radius:50%; width:22px; height:22px; font-size:12px;
+        display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .card-sub { color: var(--text-muted); font-size:13px; margin:-8px 0 16px; line-height:1.6; }
+
+    /* Buttons */
+    button { font-family: inherit; }
+    .btn {
+        padding:9px 18px; border:1px solid var(--border); border-radius: var(--radius-sm);
+        background: var(--card); font-size:14px; font-weight:600; color: var(--text);
+        cursor:pointer; transition: all var(--transition);
+        display:inline-flex; align-items:center; gap:6px;
+    }
+    .btn:hover:not(:disabled) { border-color: var(--accent-from); color: var(--accent); box-shadow: var(--shadow); }
+    .btn:disabled { opacity:.45; cursor:not-allowed; }
+    .btn.primary {
+        background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+        color:#fff; border-color:transparent;
+    }
+    .btn.primary:hover:not(:disabled) { color:#fff; box-shadow: 0 4px 16px rgba(99,102,241,.35); transform: translateY(-1px); }
+    .btn.danger { background: rgba(239,68,68,.06); color: var(--danger); border-color: rgba(239,68,68,.25); }
+    .btn.danger:hover:not(:disabled) { background: rgba(239,68,68,.12); color: var(--danger); border-color: rgba(239,68,68,.4); }
+    .btn.ghost { background: rgba(99,102,241,.06); color: var(--accent); border-color: transparent; }
+    .btn-cta {
+        width:100%; padding:15px 32px; margin-top:22px;
+        background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+        color:#fff; border:none; border-radius: var(--radius-sm);
+        font-size:15px; font-weight:700; cursor:pointer; transition: all var(--transition);
+        display:flex; align-items:center; justify-content:center; gap:10px;
+    }
+    .btn-cta:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(99,102,241,.35); }
+    .btn-cta:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+    /* Pills (mode toggle) */
+    .pill-group { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+    .pill {
+        padding:10px 18px; border:2px solid var(--border); border-radius:12px;
+        background: var(--card); cursor:pointer; transition: all var(--transition);
+        display:flex; align-items:center; gap:9px; font-size:14px; font-weight:500;
+        color: var(--text); position:relative;
+    }
+    .pill:hover { border-color: var(--accent-from); background: rgba(99,102,241,.03); }
+    .pill.selected {
+        border-color: var(--accent-from);
+        background: linear-gradient(135deg, rgba(99,102,241,.06), rgba(139,92,246,.06));
+        color: var(--accent); font-weight:600;
+    }
+    .pill.selected::after {
+        content:''; position:absolute; top:7px; right:7px; width:7px; height:7px;
+        border-radius:50%; background: var(--success);
+    }
+
+    /* Form */
+    .settings-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:16px; }
+    .settings-full { grid-column: 1 / -1; }
+    .fld-label { font-size:12px; font-weight:700; color: var(--text-muted);
+        text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; display:block; }
+    .fld-hint { font-size:12px; color: var(--text-light); margin-top:6px; }
+    input[type=text], input[type=number], select {
+        width:100%; padding:10px 14px; border:2px solid var(--border);
+        border-radius: var(--radius-sm); background: var(--card);
+        font-family: inherit; font-size:14px; color: var(--text);
+        transition: border-color var(--transition);
+    }
+    input[type=text]:focus, input[type=number]:focus, select:focus {
+        outline:none; border-color: var(--accent-from);
+    }
+    input[type=text].mono { font-family: var(--mono); font-size:13px; }
+    select { appearance:none; cursor:pointer; padding-right:36px;
+        background-image: linear-gradient(45deg, transparent 50%, #64748b 50%),
+                          linear-gradient(135deg, #64748b 50%, transparent 50%);
+        background-position: calc(100% - 18px) 52%, calc(100% - 13px) 52%;
+        background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+
+    /* Dropzone */
+    .dropzone {
+        border:2px dashed var(--border); border-radius: var(--radius);
+        padding:34px 24px; text-align:center; cursor:pointer;
+        transition: all var(--transition);
+        background: linear-gradient(135deg, rgba(99,102,241,.02), rgba(139,92,246,.02));
+    }
+    .dropzone:hover, .dropzone.dragover {
+        border-color: var(--accent-from);
+        background: linear-gradient(135deg, rgba(99,102,241,.06), rgba(139,92,246,.06));
+    }
+    .dropzone-icon {
+        width:56px; height:56px; margin:0 auto 16px;
+        background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+        border-radius:16px; display:flex; align-items:center; justify-content:center;
+    }
+    .dropzone-icon svg { width:26px; height:26px; color:#fff; }
+    .dropzone-title { font-size:15px; font-weight:600; margin-bottom:5px; }
+    .dropzone-desc { color: var(--text-muted); font-size:13px; }
+    .file-preview {
+        display:none; align-items:center; gap:14px; padding:14px 18px; margin-top:14px;
+        background: rgba(99,102,241,.04); border:1px solid rgba(99,102,241,.15);
+        border-radius: var(--radius-sm);
+    }
+    .file-preview.show { display:flex; }
+    .file-preview-info { flex:1; min-width:0; }
+    .file-preview-name { font-size:14px; font-weight:600; word-break:break-all; }
+    .file-preview-size { color: var(--text-muted); font-size:12px; margin-top:2px; font-family: var(--mono); }
+
+    /* Progress bars */
+    .bar { height:10px; border-radius:6px; background: var(--border); overflow:hidden; }
+    .bar > span { display:block; height:100%; border-radius:6px;
+        background: linear-gradient(90deg, var(--accent-from), var(--accent-to));
+        transition: width .35s ease; }
+    .bar.thin { height:6px; }
+    .bar.ok > span { background: linear-gradient(90deg, #10b981, #34d399); }
+    .bar.bad > span { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+
+    .upload-progress { display:none; margin-top:16px; }
+    .upload-progress.show { display:block; }
+    .upload-progress-text { display:flex; justify-content:space-between;
+        font-size:12px; color: var(--text-muted); margin-bottom:6px; font-family: var(--mono); }
+
+    /* Stat tiles */
+    .stat-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap:12px; }
+    .stat {
+        background: var(--card); border:1px solid var(--border); border-radius: var(--radius-sm);
+        padding:14px 16px; transition: all var(--transition);
+    }
+    .stat:hover { border-color: var(--accent-from); box-shadow: var(--shadow); }
+    .stat-label { font-size:12px; color: var(--text-muted); font-weight:600; }
+    .stat-value { font-size:21px; font-weight:700; margin-top:4px; font-variant-numeric: tabular-nums; }
+    .stat-value.grad {
+        background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+        -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .stat-value.ok { color: var(--success); }
+    .stat-value.warn { color: var(--warning); }
+    .stat-value.bad { color: var(--danger); }
+    .stat-sub { font-size:12px; color: var(--text-light); margin-top:2px; font-family: var(--mono); }
+
+    /* Accuracy meter with 85% target marker */
+    .meter-wrap { margin-top:6px; padding-top:20px; }
+    .meter {
+        position:relative; height:26px; border-radius:8px;
+        background: var(--bg); border:1px solid var(--border);
+    }
+    .meter-fill { height:100%; border-radius:7px 0 0 7px; transition: width .4s ease;
+        background: linear-gradient(90deg, var(--accent-from), var(--accent-to)); }
+    .meter-fill.ok { background: linear-gradient(90deg, #059669, #34d399); }
+    .meter-fill.bad { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .meter-target {
+        position:absolute; top:-4px; bottom:-4px; width:2px; background: var(--navy);
+        left:85%; z-index:2;
+    }
+    .meter-target::after {
+        content:'목표 85%'; position:absolute; top:-19px; left:50%; transform:translateX(-50%);
+        font-size:10px; font-weight:700; color: var(--navy); white-space:nowrap;
+    }
+    .meter-scale { display:flex; justify-content:space-between; font-size:11px;
+        color: var(--text-light); margin-top:4px; font-family: var(--mono); }
+
+    /* Badges */
+    .badge { display:inline-block; font-size:11px; font-weight:700; border-radius:6px;
+        padding:3px 9px; letter-spacing:.2px; white-space:nowrap; }
+    .badge.pending   { background: rgba(100,116,139,.12); color: var(--text-muted); }
+    .badge.running   { background: rgba(59,130,246,.12); color: var(--info); }
+    .badge.done      { background: rgba(16,185,129,.12); color: var(--success); }
+    .badge.cancelled { background: rgba(245,158,11,.14); color: #b26a08; }
+    .badge.error     { background: rgba(239,68,68,.10); color: var(--danger); }
+    .badge.info      { background: rgba(99,102,241,.10); color: var(--accent); }
+    .badge.muted     { background: rgba(100,116,139,.10); color: var(--text-muted); }
+    .badge.running::before {
+        content:''; display:inline-block; width:6px; height:6px; border-radius:50%;
+        background: var(--info); margin-right:6px; vertical-align:1px;
+        animation: blink 1.2s ease infinite;
+    }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:.25; } }
+
+    /* Tables */
+    table { width:100%; border-collapse: collapse; font-size:13px; }
+    th, td { border-bottom:1px solid #edf0f6; padding:8px 10px; text-align:left; vertical-align:middle; }
+    th { color: var(--text-muted); font-weight:700; background:#f8fafd; white-space:nowrap;
+        position:sticky; top:0; z-index:1; }
+    td.num { text-align:right; font-variant-numeric: tabular-nums; font-family: var(--mono); }
+    td.k { color:#28406e; font-weight:600; white-space:nowrap; }
+    tr.clickable { cursor:pointer; }
+    tr.clickable:hover { background: rgba(99,102,241,.045); }
+    tr.attached { background: rgba(99,102,241,.08); }
+    tr.row-fail td { background: rgba(239,68,68,.035); }
+    .scrollbox { max-height:460px; overflow:auto; border:1px solid var(--border);
+        border-radius: var(--radius-sm); }
+    .scrollbox.short { max-height:300px; }
+    .muted { color: var(--text-light); }
+    .mono { font-family: var(--mono); }
+    .nowrap { white-space:nowrap; }
+    .tiny { font-size:12px; }
+
+    /* Inline rate bar in table cells */
+    .rate-cell { display:flex; align-items:center; gap:8px; min-width:130px; }
+    .rate-bar { flex:1; height:7px; border-radius:4px; background: var(--border); overflow:hidden; }
+    .rate-bar > span { display:block; height:100%; border-radius:4px; background: var(--accent-from); }
+    .rate-bar > span.ok { background: var(--success); }
+    .rate-bar > span.bad { background: var(--warning); }
+    .rate-num { font-family: var(--mono); font-size:12px; width:48px; text-align:right; }
+
+    /* per-attribute compact cells */
+    .attr-cells { display:flex; gap:3px; }
+    .attr-cell {
+        width:19px; height:19px; border-radius:4px; font-size:11px; font-weight:700;
+        display:inline-flex; align-items:center; justify-content:center; cursor:default;
+    }
+    .attr-cell.hit  { background: rgba(16,185,129,.14); color:#0f8a63; }
+    .attr-cell.miss { background: rgba(239,68,68,.12); color: var(--danger); }
+    .attr-cell.na   { background: rgba(100,116,139,.10); color: var(--text-light); }
+    .attr-cell.nogt { background: rgba(245,158,11,.12); color:#b26a08; }
+    .attr-legend { display:flex; gap:14px; flex-wrap:wrap; font-size:12px;
+        color: var(--text-muted); margin-top:10px; align-items:center; }
+    .attr-legend .attr-cell { margin-right:5px; }
+
+    /* Log */
+    .log-box {
+        max-height:300px; overflow-y:auto; padding:14px 16px; background: var(--navy);
+        border-radius: var(--radius-sm); font-family: var(--mono); font-size:12.5px;
+        line-height:1.85; color:#a5f3fc;
+    }
+    .log-line { white-space:pre-wrap; word-break:break-all; }
+    .log-time { color:#64748b; margin-right:8px; }
+    .lv-info { color:#67e8f9; }
+    .lv-ok { color:#6ee7b7; }
+    .lv-warn { color:#fcd34d; }
+    .lv-err { color:#fca5a5; }
+    .lv-dim { color:#7d8ba1; }
+
+    /* Notices */
+    .notice {
+        padding:13px 16px; border-radius: var(--radius-sm); font-size:13.5px;
+        display:flex; align-items:flex-start; gap:10px; line-height:1.6;
+    }
+    .notice.err  { background: rgba(239,68,68,.06); border:1px solid rgba(239,68,68,.2); color:#b3261e; }
+    .notice.warn { background: rgba(245,158,11,.07); border:1px solid rgba(245,158,11,.22); color:#8a6d0b; }
+    .notice.ok   { background: rgba(16,185,129,.06); border:1px solid rgba(16,185,129,.2); color:#0f6f52; }
+    .notice.info { background:#f6f9ff; border:1px solid #dfe8fb; color:#28406e; }
+    .notice + .notice { margin-top:10px; }
+    .hidden { display:none !important; }
+
+    .empty {
+        text-align:center; padding:48px 24px; color: var(--text-muted);
+    }
+    .empty-icon {
+        width:56px; height:56px; margin:0 auto 14px; border-radius:18px;
+        background: rgba(99,102,241,.08); display:flex; align-items:center; justify-content:center;
+    }
+    .empty-icon svg { width:24px; height:24px; color: var(--accent); }
+    .empty-title { font-size:15px; font-weight:600; color: var(--text); margin-bottom:6px; }
+
+    .headline {
+        display:flex; align-items:center; gap:26px; flex-wrap:wrap;
+        padding:22px 24px; border-radius: var(--radius);
+        border:1px solid var(--border); background: linear-gradient(135deg,#fbfcff,#f6f8ff);
+    }
+    .headline.pass { border-color: rgba(16,185,129,.35); background: linear-gradient(135deg,#f2fdf9,#ecfdf5); }
+    .headline.fail { border-color: rgba(245,158,11,.35); background: linear-gradient(135deg,#fffaf0,#fef6e7); }
+    .headline-num { font-size:46px; font-weight:800; line-height:1; font-variant-numeric: tabular-nums; }
+    .headline.pass .headline-num { color:#0f8a63; }
+    .headline.fail .headline-num { color:#b26a08; }
+    .headline-label { font-size:13px; color: var(--text-muted); font-weight:600; margin-bottom:6px; }
+    .headline-side { display:flex; gap:26px; flex-wrap:wrap; }
+    .headline-side div .v { font-size:19px; font-weight:700; font-variant-numeric: tabular-nums; }
+
+    .toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+    .toolbar .spacer { flex:1; }
+    .toolbar input[type=text] { width:200px; }
+    .toolbar select { width:auto; }
+
+    .spin {
+        display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,.35);
+        border-top-color:#fff; border-radius:50%; animation: sp .8s linear infinite; vertical-align:-2px;
+    }
+    .spin.dark { border-color:#c9d5ec; border-top-color: var(--accent); }
+    @keyframes sp { to { transform: rotate(360deg); } }
+
+    .sidebar-toggle {
+        display:none; position:fixed; top:14px; left:14px; z-index:200;
+        width:40px; height:40px; border-radius:10px; border:none;
+        background: var(--navy); color:#fff; cursor:pointer;
+        align-items:center; justify-content:center;
+    }
+    .sidebar-toggle svg { width:20px; height:20px; }
+    .sidebar-overlay { display:none; position:fixed; inset:0; background: rgba(0,0,0,.4); z-index:99; }
+
+    @media (max-width: 900px) {
+        :root { --sidebar-w: 0px; }
+        .sidebar { transform: translateX(-280px); width:280px; }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-toggle { display:flex; }
+        .sidebar-overlay.show { display:block; }
+        .main { margin-left:0; padding:24px 16px 40px; padding-top:64px; }
+        .headline-num { font-size:38px; }
+    }
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle" title="메뉴 열기">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1.5"/><polyline points="14.5 17.5 16.5 19.5 21 15"/>
+                </svg>
+            </div>
+            <div>
+                <div class="sidebar-logo-text">저작권 메타데이터</div>
+                <div class="sidebar-logo-sub">배치 평가 콘솔 v3</div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <div class="nav-label">배치 평가</div>
+
+        <div class="nav-item active" data-panel="create">
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            </div>
+            <div>
+                <div class="nav-title">새 작업</div>
+                <div class="nav-desc">ZIP 업로드 · 서버 경로</div>
+            </div>
+        </div>
+
+        <div class="nav-item" data-panel="jobs">
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                    <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+            </div>
+            <div>
+                <div class="nav-title">작업 목록</div>
+                <div class="nav-desc">전체 배치 작업</div>
+            </div>
+        </div>
+
+        <div class="nav-item" data-panel="monitor">
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+            </div>
+            <div>
+                <div class="nav-title">실시간 모니터</div>
+                <div class="nav-desc">진행률 · 정확도 추이</div>
+            </div>
+        </div>
+
+        <div class="nav-item" data-panel="report">
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+            </div>
+            <div>
+                <div class="nav-title">채점 리포트</div>
+                <div class="nav-desc">속성 정확도 · 세트별</div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="side-job" id="sideJob">
+        <div class="side-job-label">연결된 작업</div>
+        <div class="side-job-name" id="sideJobName">없음</div>
+        <div class="side-job-meta" id="sideJobMeta">작업을 선택하세요</div>
+        <div class="side-bar"><span id="sideJobBar" style="width:0%"></span></div>
+    </div>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-footer-text">
+            <a href="/v2">← 단일 파일 모드(v2)</a> · <a href="/pair">검사 모드</a><br>
+            주관: 무하유 · 참여: HM컴퍼니 · 숭실대<br>
+            수요: 한국문화정보원 · 한국저작권위원회
+        </div>
+    </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+    <!-- ============ PANEL: 새 작업 ============ -->
+    <section class="panel active" id="panel-create">
+        <div class="main-header">
+            <div>
+                <div class="main-title">새 배치 평가 작업</div>
+                <div class="main-subtitle">계약서+저작물 세트를 일괄 처리하고 11개 속성의 추출 정확도를 채점합니다 (목표 85%)</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="step-no">1</span> 평가 데이터 지정</div>
+            <div class="card-sub">
+                ZIP 안에는 <b>manifest.jsonl</b> 이 반드시 포함되어야 하며, 같은 폴더의
+                <b>ground_truth.jsonl</b> 이 정답으로 사용됩니다. 저작물·계약서 파일 경로는 매니페스트 기준으로 해석됩니다.
+                작업은 <b>서버가 소유</b>하므로 탭을 닫아도 계속 실행되고, 나중에 다시 붙을 수 있습니다.
+            </div>
+
+            <div class="pill-group">
+                <div class="pill selected" data-mode="zip">
+                    <span>📦</span> ZIP 업로드
+                </div>
+                <div class="pill" data-mode="path">
+                    <span>🗂</span> 서버 경로 지정
+                </div>
+            </div>
+
+            <div id="modeZip">
+                <div class="dropzone" id="dropzone">
+                    <div class="dropzone-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="dropzone-title">평가 세트 ZIP을 끌어다 놓거나 클릭해 선택</div>
+                    <div class="dropzone-desc">manifest.jsonl + ground_truth.jsonl + contracts/ + works/ · 최대 8GB</div>
+                    <input type="file" id="zipInput" accept=".zip" class="hidden">
+                </div>
+                <div class="file-preview" id="filePreview">
+                    <div class="file-preview-info">
+                        <div class="file-preview-name" id="fileName">—</div>
+                        <div class="file-preview-size" id="fileSize">—</div>
+                    </div>
+                    <button class="btn danger" id="btnClearFile" type="button">제거</button>
+                </div>
+            </div>
+
+            <div id="modePath" class="hidden">
+                <label class="fld-label" for="manifestPath">서버 매니페스트 경로</label>
+                <input type="text" id="manifestPath" class="mono" placeholder="/home/ubuntu/eval_sets/manifest.jsonl">
+                <div class="fld-hint">서버에 이미 올라가 있는 매니페스트를 그대로 사용합니다 (업로드 없음 — 대용량 세트 권장).</div>
+            </div>
+
+            <div class="upload-progress" id="uploadProgress">
+                <div class="upload-progress-text">
+                    <span id="upText">업로드 중…</span><span id="upPct">0%</span>
+                </div>
+                <div class="bar"><span id="upBar" style="width:0%"></span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="step-no">2</span> 실행 옵션</div>
+            <div class="settings-grid">
+                <div class="settings-full">
+                    <label class="fld-label" for="jobName">작업 이름</label>
+                    <input type="text" id="jobName" placeholder="예: 2단계 검증 1차 (image 400세트)">
+                </div>
+                <div>
+                    <label class="fld-label" for="workers">동시 실행 수 (workers)</label>
+                    <input type="number" id="workers" value="4" min="1" max="16">
+                    <div class="fld-hint">1–16. 클라우드 API 한도에 맞춰 조절.</div>
+                </div>
+                <div>
+                    <label class="fld-label" for="limit">세트 수 제한 (limit)</label>
+                    <input type="number" id="limit" value="0" min="0">
+                    <div class="fld-hint">0 = 전체 실행. 시험 실행 시 20 등으로.</div>
+                </div>
+                <div>
+                    <label class="fld-label" for="maxCost">비용 상한 (₩)</label>
+                    <input type="number" id="maxCost" value="0" min="0" step="1000">
+                    <div class="fld-hint">0 = 제한 없음. 초과 시 자동 중단.</div>
+                </div>
+                <div>
+                    <label class="fld-label" for="vlmPrefer">이미지 VLM 우선 백엔드</label>
+                    <select id="vlmPrefer">
+                        <option value="gemma">gemma (OpenRouter 우선)</option>
+                        <option value="qwen">qwen (Alibaba)</option>
+                    </select>
+                    <div class="fld-hint">실패 시 체인 폴백은 서버가 처리.</div>
+                </div>
+            </div>
+
+            <details class="model-advanced" style="margin-top:18px;">
+                <summary style="cursor:pointer;font-size:.86rem;font-weight:600;color:#28406e;">
+                    단계별 모델 설정 — 기본값은 단일처리(/api/llm-extract)와 동일
+                </summary>
+                <div class="settings-grid" style="margin-top:14px;">
+                    <div>
+                        <label class="fld-label" for="ocrProvider">① OCR 제공자</label>
+                        <select id="ocrProvider">
+                            <option value="alibaba">alibaba (기본)</option>
+                            <option value="mistral">mistral</option>
+                            <option value="google">google</option>
+                            <option value="naver">naver</option>
+                        </select>
+                        <div class="fld-hint">실패 시 alibaba→mistral→google→naver 폴백.</div>
+                    </div>
+                    <div>
+                        <label class="fld-label" for="ocrModel">① OCR 모델</label>
+                        <input type="text" id="ocrModel" placeholder="비우면 제공자 기본값">
+                        <div class="fld-hint">alibaba 기본 = qwen3-vl-235b-a22b-instruct</div>
+                    </div>
+                    <div>
+                        <label class="fld-label" for="modelName">② LLM 메타데이터 추출</label>
+                        <select id="modelName"></select>
+                        <div class="fld-hint">계약서·어문 본문에서 속성 추출.</div>
+                    </div>
+                    <div>
+                        <label class="fld-label" for="nerModel">③ NER (로컬 CPU)</label>
+                        <select id="nerModel">
+                            <option value="klue-roberta-large">klue-roberta-large (기본)</option>
+                            <option value="bert-base-multilingual-cased">bert-base-multilingual-cased</option>
+                            <option value="xlm-roberta-large">xlm-roberta-large</option>
+                        </select>
+                        <div class="fld-hint">외부 전송 없음.</div>
+                    </div>
+                    <div>
+                        <label class="fld-label" for="consolidationModel">④ 통합검증 중재자</label>
+                        <select id="consolidationModel"></select>
+                        <div class="fld-hint">LLM↔NER 판정·신뢰도·근거 생성.</div>
+                    </div>
+                    <div>
+                        <label class="fld-label" for="consolidate">④ 통합검증 실행</label>
+                        <select id="consolidate">
+                            <option value="true">실행 (기본)</option>
+                            <option value="false">생략 — 비용 절감</option>
+                        </select>
+                        <div class="fld-hint">생략 시 세트당 약 ₩35 절감. 단 필드별 판정·신뢰도·근거가 사라진다.</div>
+                    </div>
+                </div>
+            </details>
+
+            <button class="btn-cta" id="btnCreate">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                배치 평가 시작
+            </button>
+            <div id="createMsg" style="margin-top:14px;"></div>
+        </div>
+    </section>
+
+    <!-- ============ PANEL: 작업 목록 ============ -->
+    <section class="panel" id="panel-jobs">
+        <div class="main-header">
+            <div>
+                <div class="main-title">작업 목록</div>
+                <div class="main-subtitle">행을 클릭하면 해당 작업에 연결됩니다 — 실행 중인 작업은 스트림에 다시 붙습니다</div>
+            </div>
+            <div class="btn-row">
+                <button class="btn" id="btnRefreshJobs">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    새로고침
+                </button>
+                <button class="btn primary" id="btnGoCreate">+ 새 작업</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div id="jobsWrap"></div>
+        </div>
+    </section>
+
+    <!-- ============ PANEL: 모니터 ============ -->
+    <section class="panel" id="panel-monitor">
+        <div class="main-header">
+            <div>
+                <div class="main-title" id="monTitle">실시간 모니터</div>
+                <div class="main-subtitle" id="monSubtitle">연결된 작업이 없습니다</div>
+            </div>
+            <div class="btn-row" id="monActions"></div>
+        </div>
+
+        <div id="monEmpty" class="card">
+            <div class="empty">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <div class="empty-title">연결된 작업이 없습니다</div>
+                <div class="tiny">작업 목록에서 작업을 선택하거나 새 배치 평가를 시작하세요.</div>
+                <div class="btn-row" style="justify-content:center; margin-top:18px;">
+                    <button class="btn" onclick="showPanel('jobs')">작업 목록 열기</button>
+                    <button class="btn primary" onclick="showPanel('create')">+ 새 작업</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="monBody" class="hidden">
+            <div class="card">
+                <div class="card-title">진행률 <span id="monStateBadge"></span></div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); margin-bottom:8px;">
+                    <span id="progLabel" class="mono">0 / 0</span>
+                    <span id="progPct" class="mono">0%</span>
+                </div>
+                <div class="bar"><span id="progBar" style="width:0%"></span></div>
+                <div class="stat-grid" style="margin-top:18px;">
+                    <div class="stat"><div class="stat-label">완료</div><div class="stat-value grad" id="stDone">0</div><div class="stat-sub" id="stDoneSub">/ 0 세트</div></div>
+                    <div class="stat"><div class="stat-label">실패</div><div class="stat-value" id="stFail">0</div><div class="stat-sub" id="stFailSub">—</div></div>
+                    <div class="stat"><div class="stat-label">누적 비용</div><div class="stat-value" id="stCost">₩0</div><div class="stat-sub" id="stCostSub">—</div></div>
+                    <div class="stat"><div class="stat-label">경과</div><div class="stat-value" id="stElapsed">—</div><div class="stat-sub" id="stElapsedSub">—</div></div>
+                    <div class="stat"><div class="stat-label">예상 잔여 (ETA)</div><div class="stat-value" id="stEta">—</div><div class="stat-sub" id="stEtaSub">관측 처리량 기준</div></div>
+                    <div class="stat"><div class="stat-label">채점 속성</div><div class="stat-value" id="stScored">0</div><div class="stat-sub" id="stScoredSub">적중 0</div></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">실행 중 속성 정확도 (micro) <span class="badge info" id="accSourceBadge">스트림 누적</span></div>
+                <div class="card-sub">진행하는 동안 <b>적중 속성 / 채점 속성</b>을 누적해 계산합니다. 목표선(85%)을 넘는지 실시간으로 확인하세요.</div>
+                <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:14px;">
+                    <div class="headline-num" id="accBig" style="font-size:38px;">—</div>
+                    <div id="accVerdict"></div>
+                </div>
+                <div class="meter-wrap">
+                    <div class="meter">
+                        <div class="meter-fill" id="accFill" style="width:0%"></div>
+                        <div class="meter-target"></div>
+                    </div>
+                    <div class="meter-scale"><span>0%</span><span>50%</span><span>100%</span></div>
+                </div>
+            </div>
+
+            <div class="card" id="valCard">
+                <div class="card-title">매니페스트 검증</div>
+                <div id="valBody" class="tiny muted">검증 결과 대기 중…</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    실시간 로그
+                    <span class="spacer" style="flex:1"></span>
+                    <button class="btn tiny" id="btnClearLog" style="padding:5px 12px; font-size:12px;">화면 지우기</button>
+                </div>
+                <div class="log-box" id="logBox"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ PANEL: 리포트 ============ -->
+    <section class="panel" id="panel-report">
+        <div class="main-header">
+            <div>
+                <div class="main-title">채점 리포트</div>
+                <div class="main-subtitle" id="repSubtitle">연결된 작업이 없습니다</div>
+            </div>
+            <div class="btn-row">
+                <button class="btn" id="btnReloadReport">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    리포트 새로고침
+                </button>
+                <button class="btn" id="btnOpenMd">📄 Markdown 리포트</button>
+                <button class="btn" id="btnOpenJson">{ } JSON 리포트</button>
+            </div>
+        </div>
+
+        <div id="repEmpty" class="card">
+            <div class="empty">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="empty-title">연결된 작업이 없습니다</div>
+                <div class="tiny">작업 목록에서 작업을 선택하면 채점 리포트를 불러옵니다.</div>
+                <div class="btn-row" style="justify-content:center; margin-top:18px;">
+                    <button class="btn" onclick="showPanel('jobs')">작업 목록 열기</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="repBody" class="hidden">
+            <div id="repNotice"></div>
+            <div id="repAgg"></div>
+            <div class="card">
+                <div class="card-title">세트별 결과</div>
+                <div class="toolbar">
+                    <input type="text" id="resFilter" placeholder="set_id 검색…">
+                    <select id="resLimit">
+                        <option value="100">최근 100건</option>
+                        <option value="200" selected>최근 200건</option>
+                        <option value="500">최근 500건</option>
+                        <option value="1000">최근 1000건</option>
+                        <option value="0">전체</option>
+                    </select>
+                    <button class="btn" id="btnReloadResults">결과 다시 불러오기</button>
+                    <div class="spacer"></div>
+                    <span class="tiny muted" id="resCount"></span>
+                </div>
+                <div id="resWrap"></div>
+                <div class="attr-legend">
+                    <span><span class="attr-cell hit">✓</span>적중</span>
+                    <span><span class="attr-cell miss">✗</span>불일치</span>
+                    <span><span class="attr-cell na">–</span>해당없음</span>
+                    <span><span class="attr-cell nogt">·</span>정답없음</span>
+                    <span class="muted">속성 순서: 제목 · 저자 · 설명 · 라이선스 · 키워드 · 해상도 · 색상 · 개체 · 크기 · 포맷 · 생성일</span>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+"use strict";
+
+/* ===================== 상수 ===================== */
+const ATTRS = ["제목","저자","설명","라이선스 유형","키워드","해상도",
+               "주요 색상","개체 범주","파일크기","파일포맷","파일 생성 날짜"];
+const TARGET = 0.85;
+const LS_KEY = "v3_batch_attached_job";
+
+/* ===================== 유틸 ===================== */
+function esc(s) {
+    const d = document.createElement("div");
+    d.textContent = (s === null || s === undefined) ? "" : String(s);
+    return d.innerHTML;
+}
+function pct(x, digits) {
+    if (x === null || x === undefined || isNaN(x)) return "—";
+    return (x * 100).toFixed(digits === undefined ? 1 : digits) + "%";
+}
+function ratePct(n, d) { return d ? (n / d) : null; }
+function krw(v) {
+    if (v === null || v === undefined || isNaN(v)) return "—";
+    return "₩" + Math.round(v).toLocaleString("ko-KR");
+}
+function dur(sec) {
+    if (sec === null || sec === undefined || isNaN(sec) || sec < 0) return "—";
+    sec = Math.round(sec);
+    if (sec < 60) return sec + "초";
+    const m = Math.floor(sec / 60), s = sec % 60;
+    if (m < 60) return m + "분 " + s + "초";
+    const h = Math.floor(m / 60);
+    return h + "시간 " + (m % 60) + "분";
+}
+function tstr(epoch) {
+    if (!epoch) return "—";
+    const d = new Date(epoch * 1000);
+    const p = n => String(n).padStart(2, "0");
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) +
+           " " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+}
+function clock() {
+    const d = new Date(), p = n => String(n).padStart(2, "0");
+    return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+}
+function bytes(n) {
+    if (!n && n !== 0) return "—";
+    const u = ["B","KB","MB","GB","TB"];
+    let i = 0, v = n;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return v.toFixed(i === 0 ? 0 : 1) + " " + u[i];
+}
+const STATE_KO = { pending:"대기", running:"실행 중", done:"완료", cancelled:"중단됨", error:"오류" };
+function stateBadge(st) {
+    const s = STATE_KO[st] || st || "—";
+    return '<span class="badge ' + esc(st || "pending") + '">' + esc(s) + "</span>";
+}
+function $(id) { return document.getElementById(id); }
+
+/** fetch 래퍼 — 404/500 에도 절대 throw 하지 않는다 (빈 화면 방지). */
+async function api(url, opts) {
+    try {
+        const r = await fetch(url, opts || {});
+        let data = null, text = "";
+        try {
+            text = await r.text();
+            data = text ? JSON.parse(text) : null;
+        } catch (e) { data = null; }
+        const detail = (data && (data.detail || data.error)) || (text ? text.slice(0, 200) : "");
+        return { ok: r.ok, status: r.status, data: data, detail: detail };
+    } catch (e) {
+        return { ok: false, status: 0, data: null, detail: "네트워크 오류: " + e.message };
+    }
+}
+
+/* ===================== 전역 상태 ===================== */
+const S = {
+    jobs: [],
+    jobId: null,
+    job: null,          // /status 응답
+    es: null,           // EventSource
+    lastSeq: 0,
+    streaming: false,
+    // 스트림 누적치
+    sumMatch: 0, sumScored: 0,
+    total: 0, doneN: 0, failN: 0, cost: 0,
+    firstObs: null, lastObs: null,   // ETA 계산용 {i, ts}
+    agg: null,          // report.json
+    results: [],
+    tick: null,
+};
+
+/* ===================== 패널 전환 ===================== */
+function showPanel(name) {
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    const el = $("panel-" + name);
+    if (el) el.classList.add("active");
+    document.querySelectorAll(".nav-item").forEach(n =>
+        n.classList.toggle("active", n.dataset.panel === name));
+    $("sidebar").classList.remove("open");
+    $("sidebarOverlay").classList.remove("show");
+    window.scrollTo(0, 0);
+}
+document.querySelectorAll(".nav-item").forEach(n => {
+    n.addEventListener("click", () => showPanel(n.dataset.panel));
+});
+$("sidebarToggle").addEventListener("click", () => {
+    $("sidebar").classList.toggle("open");
+    $("sidebarOverlay").classList.toggle("show");
+});
+$("sidebarOverlay").addEventListener("click", () => {
+    $("sidebar").classList.remove("open");
+    $("sidebarOverlay").classList.remove("show");
+});
+$("btnGoCreate").addEventListener("click", () => showPanel("create"));
+
+/* ===================== 작업 생성 ===================== */
+let uploadMode = "zip";
+let pickedFile = null;
+
+document.querySelectorAll(".pill[data-mode]").forEach(p => {
+    p.addEventListener("click", () => {
+        uploadMode = p.dataset.mode;
+        document.querySelectorAll(".pill[data-mode]").forEach(x =>
+            x.classList.toggle("selected", x === p));
+        $("modeZip").classList.toggle("hidden", uploadMode !== "zip");
+        $("modePath").classList.toggle("hidden", uploadMode !== "path");
+    });
+});
+
+const dz = $("dropzone");
+dz.addEventListener("click", () => $("zipInput").click());
+dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("dragover"); });
+dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+dz.addEventListener("drop", e => {
+    e.preventDefault();
+    dz.classList.remove("dragover");
+    if (e.dataTransfer.files && e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+});
+$("zipInput").addEventListener("change", e => {
+    if (e.target.files && e.target.files.length) setFile(e.target.files[0]);
+});
+$("btnClearFile").addEventListener("click", () => {
+    pickedFile = null;
+    $("zipInput").value = "";
+    $("filePreview").classList.remove("show");
+});
+function setFile(f) {
+    if (!f.name.toLowerCase().endsWith(".zip")) {
+        createMsg("err", "ZIP 파일만 업로드할 수 있습니다: " + esc(f.name));
+        return;
+    }
+    pickedFile = f;
+    $("fileName").textContent = f.name;
+    $("fileSize").textContent = bytes(f.size);
+    $("filePreview").classList.add("show");
+    createMsg("", "");
+}
+function createMsg(kind, html) {
+    const box = $("createMsg");
+    if (!kind) { box.innerHTML = ""; return; }
+    box.innerHTML = '<div class="notice ' + kind + '">' + html + "</div>";
+}
+
+$("btnCreate").addEventListener("click", () => {
+    const btn = $("btnCreate");
+    const fd = new FormData();
+    if (uploadMode === "zip") {
+        if (!pickedFile) { createMsg("err", "평가 세트 ZIP 파일을 선택하세요."); return; }
+        fd.append("archive", pickedFile);
+    } else {
+        const p = $("manifestPath").value.trim();
+        if (!p) { createMsg("err", "서버 매니페스트 경로를 입력하세요."); return; }
+        fd.append("manifest_path", p);
+    }
+    fd.append("name", $("jobName").value.trim());
+    fd.append("workers", String(Math.max(1, Math.min(16, parseInt($("workers").value || "4", 10)))));
+    fd.append("limit", String(Math.max(0, parseInt($("limit").value || "0", 10))));
+    fd.append("max_cost_krw", String(Math.max(0, parseFloat($("maxCost").value || "0"))));
+    fd.append("vlm_prefer", $("vlmPrefer").value);
+    // 단계별 모델 — 서버 기본값과 동일하면 그대로 보내도 무해하다
+    fd.append("model_name", $("modelName").value);
+    fd.append("ocr_provider", $("ocrProvider").value);
+    fd.append("ocr_model", $("ocrModel").value.trim());
+    fd.append("ner_model", $("nerModel").value);
+    fd.append("consolidate", $("consolidate").value);
+    fd.append("consolidation_model", $("consolidationModel").value);
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> 작업 생성 중…';
+    createMsg("info", "서버로 전송 중입니다. 큰 ZIP은 시간이 걸립니다 — 이 창을 닫지 마세요.");
+
+    const up = $("uploadProgress");
+    up.classList.toggle("show", uploadMode === "zip");
+    $("upBar").style.width = "0%";
+    $("upPct").textContent = "0%";
+    $("upText").textContent = "업로드 중…";
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/batch/create");
+    xhr.upload.addEventListener("progress", e => {
+        if (!e.lengthComputable) return;
+        const r = e.loaded / e.total;
+        $("upBar").style.width = (r * 100).toFixed(1) + "%";
+        $("upPct").textContent = (r * 100).toFixed(1) + "%";
+        $("upText").textContent = "업로드 중… " + bytes(e.loaded) + " / " + bytes(e.total);
+        if (r >= 1) $("upText").textContent = "업로드 완료 — 서버에서 압축 해제 및 검증 중…";
+    });
+    xhr.addEventListener("load", () => {
+        btn.disabled = false;
+        btn.innerHTML = "배치 평가 시작";
+        let data = null;
+        try { data = JSON.parse(xhr.responseText); } catch (e) { data = null; }
+        if (xhr.status >= 200 && xhr.status < 300 && data && data.job_id) {
+            up.classList.remove("show");
+            createMsg("ok", "작업 생성 완료 — <b>" + esc(data.job_id) + "</b> · 매니페스트: <span class='mono'>" +
+                esc(data.manifest || "") + "</span>");
+            pickedFile = null;
+            $("zipInput").value = "";
+            $("filePreview").classList.remove("show");
+            refreshJobs();
+            attach(data.job_id);
+            showPanel("monitor");
+        } else {
+            up.classList.remove("show");
+            const msg = (data && (data.detail || data.error)) || xhr.responseText.slice(0, 300) ||
+                        ("HTTP " + xhr.status);
+            createMsg("err", "작업 생성 실패 (HTTP " + xhr.status + "): " + esc(msg));
+        }
+    });
+    xhr.addEventListener("error", () => {
+        btn.disabled = false;
+        btn.innerHTML = "배치 평가 시작";
+        up.classList.remove("show");
+        createMsg("err", "네트워크 오류로 업로드에 실패했습니다. 서버 상태와 파일 크기(≤8GB)를 확인하세요.");
+    });
+    xhr.addEventListener("abort", () => {
+        btn.disabled = false;
+        btn.innerHTML = "배치 평가 시작";
+        up.classList.remove("show");
+        createMsg("warn", "업로드가 중단되었습니다.");
+    });
+    xhr.send(fd);
+});
+
+/* ===================== 작업 목록 ===================== */
+const DEFAULT_LLM = "alibaba-qwen3.5-122b-a10b";
+
+// 단계별 모델 셀렉트(② LLM 추출 / ④ 통합검증 중재자)를 서버 모델 목록으로 채운다.
+// 목록을 못 받아도 기본값 하나로는 반드시 동작해야 한다 — 빈 셀렉트는 곧 전송 실패다.
+async function loadModels() {
+    const sels = [$("modelName"), $("consolidationModel")];
+    let ids = [], meta = {};
+    try {
+        const r = await fetch("/api/llm-models");
+        if (r.ok) {
+            const d = await r.json();
+            // /api/llm-models 는 {id: {name, description, type}} 평면 dict 를 돌려준다.
+            // 배열이나 {models:...} 래핑으로 바뀌어도 견디도록 세 형태를 모두 받는다.
+            const raw = (d && d.models) ? d.models : d;
+            if (Array.isArray(raw)) {
+                for (const m of raw) {
+                    const id = (typeof m === "string") ? m : (m && (m.id || m.name));
+                    if (id) { ids.push(id); if (typeof m === "object") meta[id] = m; }
+                }
+            } else if (raw && typeof raw === "object") {
+                ids = Object.keys(raw);
+                meta = raw;
+            }
+        }
+    } catch (e) {
+        console.warn("모델 목록 조회 실패 — 기본값으로 진행", e);
+    }
+    if (!ids.length) ids = [DEFAULT_LLM];
+    for (const sel of sels) {
+        if (!sel) continue;
+        sel.innerHTML = "";
+        for (const id of ids) {
+            const m = meta[id] || {};
+            const o = document.createElement("option");
+            o.value = id;
+            o.textContent = (m.name ? m.name + " — " : "") + id + (id === DEFAULT_LLM ? "  (기본)" : "");
+            if (m.description) o.title = m.description;
+            sel.appendChild(o);
+        }
+        sel.value = ids.indexOf(DEFAULT_LLM) >= 0 ? DEFAULT_LLM : ids[0];
+    }
+}
+
+async function refreshJobs() {
+    const r = await api("/api/batch/jobs");
+    if (!r.ok) {
+        $("jobsWrap").innerHTML = '<div class="notice err">작업 목록을 불러오지 못했습니다 (HTTP ' +
+            r.status + "): " + esc(r.detail) + "</div>";
+        return;
+    }
+    S.jobs = (r.data && r.data.jobs) || [];
+    renderJobs();
+}
+
+function jobAccuracy(j) {
+    const agg = j.summary && j.summary.aggregate;
+    if (agg && agg.micro_accuracy !== null && agg.micro_accuracy !== undefined)
+        return { v: agg.micro_accuracy, live: false };
+    if (j.job_id === S.jobId && S.sumScored > 0)
+        return { v: S.sumMatch / S.sumScored, live: true };
+    const p = j.progress || {};
+    if (p.last_accuracy !== null && p.last_accuracy !== undefined)
+        return { v: p.last_accuracy, live: true };
+    return { v: null, live: false };
+}
+
+function renderJobs() {
+    const wrap = $("jobsWrap");
+    if (!S.jobs.length) {
+        wrap.innerHTML =
+            '<div class="empty">' +
+            '<div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+            '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>' +
+            '<rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>' +
+            '<div class="empty-title">아직 생성된 배치 작업이 없습니다</div>' +
+            '<div class="tiny">평가 세트 ZIP을 올리거나 서버 매니페스트 경로를 지정해 첫 작업을 시작하세요.</div>' +
+            '<div class="btn-row" style="justify-content:center;margin-top:18px;">' +
+            '<button class="btn primary" onclick="showPanel(\'create\')">+ 새 배치 작업 만들기</button></div></div>';
+        return;
+    }
+    const rows = S.jobs.map(j => {
+        const p = j.progress || {};
+        const total = p.total || j.total || 0;
+        const i = p.i || 0;
+        const r = total ? Math.min(1, i / total) : 0;
+        const acc = jobAccuracy(j);
+        const cost = (j.summary && j.summary.cost_krw !== undefined) ? j.summary.cost_krw : (p.cost_krw_total || 0);
+        const failed = (j.summary && j.summary.failed !== undefined) ? j.summary.failed : (p.failed || 0);
+        const accHtml = acc.v === null ? '<span class="muted">—</span>' :
+            '<span style="font-weight:700;color:' + (acc.v >= TARGET ? "#0f8a63" : "#b26a08") + '">' +
+            pct(acc.v) + "</span>" + (acc.live ? ' <span class="badge muted">진행</span>' : "");
+        return "<tr class='clickable" + (j.job_id === S.jobId ? " attached" : "") +
+               "' data-job='" + esc(j.job_id) + "'>" +
+            "<td>" + stateBadge(j.state) + "</td>" +
+            "<td><div style='font-weight:600'>" + esc(j.name || j.job_id) + "</div>" +
+            "<div class='tiny mono muted'>" + esc(j.job_id) + "</div></td>" +
+            "<td style='min-width:170px'><div class='rate-cell'><div class='rate-bar'><span style='width:" +
+               (r * 100).toFixed(1) + "%'></span></div><div class='rate-num'>" + i + "/" + total + "</div></div></td>" +
+            "<td class='num'>" + accHtml + "</td>" +
+            "<td class='num'>" + (failed ? '<span style="color:var(--danger);font-weight:700">' + failed + "</span>" : "0") + "</td>" +
+            "<td class='num'>" + krw(cost) + "</td>" +
+            "<td class='num tiny nowrap'>" + esc(tstr(j.created_at)) + "</td>" +
+            "<td>" + (j.error ? '<span class="tiny" style="color:var(--danger)">' + esc(String(j.error).slice(0, 90)) + "</span>" : "") + "</td>" +
+            "</tr>";
+    }).join("");
+    wrap.innerHTML =
+        '<div class="scrollbox"><table><thead><tr>' +
+        "<th>상태</th><th>이름 / ID</th><th>진행</th><th>정확도(micro)</th><th>실패</th>" +
+        "<th>비용</th><th>생성 시각</th><th>오류</th>" +
+        "</tr></thead><tbody>" + rows + "</tbody></table></div>";
+    wrap.querySelectorAll("tr[data-job]").forEach(tr => {
+        tr.addEventListener("click", () => {
+            attach(tr.dataset.job);
+            showPanel("monitor");
+        });
+    });
+}
+$("btnRefreshJobs").addEventListener("click", refreshJobs);
+
+/* ===================== 스트림 연결/해제 ===================== */
+function closeStream() {
+    if (S.es) {
+        try { S.es.close(); } catch (e) {}
+        S.es = null;
+    }
+    S.streaming = false;
+}
+window.addEventListener("beforeunload", closeStream);
+window.addEventListener("pagehide", closeStream);
+
+function connectStream(jobId, after) {
+    closeStream();
+    const es = new EventSource("/api/batch/" + encodeURIComponent(jobId) + "/stream?after=" + (after || 0));
+    S.es = es;
+    S.streaming = true;
+    es.onmessage = ev => {
+        if (jobId !== S.jobId) return;          // 작업 전환 후 도착한 잔여 이벤트 무시
+        let data = null;
+        try { data = JSON.parse(ev.data); } catch (e) { return; }
+        handleEvent(data);
+    };
+    es.onerror = () => {
+        // 브라우저 자동 재연결(같은 URL)로 이벤트가 재전송될 수 있으나 seq 로 중복 제거된다.
+        if (jobId !== S.jobId) { closeStream(); return; }
+        if (es.readyState === EventSource.CLOSED) {
+            addLog("warn", "스트림이 끊겼습니다 — seq " + S.lastSeq + " 이후로 재연결합니다…");
+            setTimeout(() => {
+                if (jobId === S.jobId && (!S.job || S.job.state === "running" || S.job.state === "pending")) {
+                    connectStream(jobId, S.lastSeq);
+                }
+            }, 2000);
+        }
+    };
+}
+
+/* ===================== 이벤트 처리 ===================== */
+function handleEvent(ev) {
+    if (!ev || !ev.type) return;
+    if (ev.seq !== undefined && ev.seq !== null) {
+        if (ev.seq <= S.lastSeq) return;        // 재연결 중복 방지
+        S.lastSeq = ev.seq;
+        try { localStorage.setItem(LS_KEY, JSON.stringify({ job_id: S.jobId, seq: S.lastSeq })); } catch (e) {}
+    }
+    switch (ev.type) {
+        case "validated": {
+            renderValidation(ev);
+            addLog("info", "매니페스트 검증 — 총 " + (ev.total || 0) + "세트 · 중복 " + (ev.duplicate_count || 0) +
+                " · 저작물 누락 " + (ev.missing_work_count || 0) + " · 계약서 누락 " + (ev.missing_contract_count || 0) +
+                " · 저작물 단독 " + (ev.work_only || 0) + " · 정답 " + (ev.ground_truth || 0) + "건");
+            if (!S.total) S.total = ev.total || 0;
+            break;
+        }
+        case "start": {
+            S.total = ev.total || S.total;
+            addLog("info", "실행 시작 — 대상 " + (ev.total || 0) + "세트 · 동시 " + (ev.workers || "?") +
+                (ev.already_done ? " · 이미 완료 " + ev.already_done + "건은 건너뜀(재개)" : ""));
+            break;
+        }
+        case "progress": {
+            S.total = ev.total || S.total;
+            S.doneN = ev.i || S.doneN;
+            S.failN = ev.failed !== undefined ? ev.failed : S.failN;
+            S.cost = ev.cost_krw_total !== undefined ? ev.cost_krw_total : S.cost;
+            if (ev.ok && ev.n_scored) {
+                S.sumScored += ev.n_scored;
+                S.sumMatch += (ev.n_match || 0);
+            }
+            const obs = { i: S.doneN, ts: ev.ts || (Date.now() / 1000) };
+            if (!S.firstObs) S.firstObs = obs;
+            S.lastObs = obs;
+            const accTxt = (ev.accuracy === null || ev.accuracy === undefined) ? "채점 없음" :
+                pct(ev.accuracy) + " (" + (ev.n_match || 0) + "/" + (ev.n_scored || 0) + ")";
+            if (ev.ok) {
+                addLog("ok", "[" + ev.i + "/" + ev.total + "] " + (ev.set_id || "?") + " ✓ " + accTxt +
+                    " · " + (ev.elapsed_sec !== undefined && ev.elapsed_sec !== null ? ev.elapsed_sec + "s" : "—"));
+            } else {
+                addLog("err", "[" + ev.i + "/" + ev.total + "] " + (ev.set_id || "?") + " ✗ 실패 — " +
+                    String(ev.error || "원인 미상").slice(0, 160));
+            }
+            renderMonitor();
+            break;
+        }
+        case "cost_limit": {
+            addLog("warn", "비용 상한 도달 — 누적 " + krw(ev.cost_krw) + " ≥ 상한 " + krw(ev.limit) + " · 실행을 중단합니다");
+            break;
+        }
+        case "cancel_requested": {
+            addLog("warn", "중단 요청 접수 — 진행 중인 세트가 끝나면 종료됩니다");
+            break;
+        }
+        case "done": {
+            S.cost = ev.cost_krw !== undefined ? ev.cost_krw : S.cost;
+            addLog("ok", "실행 종료 — 총 " + (ev.total || 0) + " · 성공 " + (ev.ok || 0) + " · 실패 " + (ev.failed || 0) +
+                " · 비용 " + krw(ev.cost_krw) + " · 소요 " + dur(ev.elapsed_sec) +
+                (ev.cancelled ? " · [중단됨]" : "") + (ev.cost_exceeded ? " · [비용 상한 초과]" : ""));
+            break;
+        }
+        case "error": {
+            addLog("err", "작업 오류 — " + String(ev.error || "").slice(0, 300));
+            break;
+        }
+        case "finished":
+        case "closed": {
+            addLog("info", "작업 상태: " + (STATE_KO[ev.state] || ev.state));
+            closeStream();
+            onJobFinished();
+            break;
+        }
+        default: {
+            addLog("dim", ev.type + " " + JSON.stringify(ev).slice(0, 200));
+        }
+    }
+}
+
+let _finishing = false;
+async function onJobFinished() {
+    if (_finishing) return;               // finished + closed 가 연달아 와도 1회만
+    _finishing = true;
+    setTimeout(() => { _finishing = false; }, 3000);
+    if (S.tick) { clearInterval(S.tick); S.tick = null; }
+    await loadStatus(S.jobId);
+    renderMonitor();
+    renderMonitorHeader();
+    refreshJobs();
+    loadReport(S.jobId);
+    loadResults(S.jobId);
+}
+
+/* ===================== 로그 ===================== */
+function addLog(level, text) {
+    const box = $("logBox");
+    const pinned = box.scrollTop + box.clientHeight >= box.scrollHeight - 50;
+    const cls = level === "ok" ? "lv-ok" : level === "warn" ? "lv-warn" :
+                level === "err" ? "lv-err" : level === "dim" ? "lv-dim" : "lv-info";
+    const div = document.createElement("div");
+    div.className = "log-line " + cls;
+    div.innerHTML = '<span class="log-time">' + clock() + "</span>" + esc(text);
+    box.appendChild(div);
+    while (box.childElementCount > 400) box.removeChild(box.firstChild);
+    if (pinned) box.scrollTop = box.scrollHeight;
+}
+$("btnClearLog").addEventListener("click", () => { $("logBox").innerHTML = ""; });
+
+/* ===================== 검증 카드 ===================== */
+function renderValidation(v) {
+    if (!v) {
+        $("valBody").innerHTML = '<span class="muted tiny">검증 결과 대기 중…</span>';
+        return;
+    }
+    const problems = (v.duplicate_count || 0) + (v.missing_work_count || 0) + (v.missing_contract_count || 0);
+    const items = [
+        ["총 세트", v.total || 0, false],
+        ["중복 ID", v.duplicate_count || 0, (v.duplicate_count || 0) > 0],
+        ["저작물 파일 누락", v.missing_work_count || 0, (v.missing_work_count || 0) > 0],
+        ["계약서 파일 누락", v.missing_contract_count || 0, (v.missing_contract_count || 0) > 0],
+        ["계약서 없는 세트", v.work_only || 0, false],
+        ["정답(ground truth)", v.ground_truth || 0, false],
+    ];
+    const tiles = items.map(it =>
+        '<div class="stat"><div class="stat-label">' + esc(it[0]) + "</div>" +
+        '<div class="stat-value' + (it[2] ? " bad" : "") + '">' + it[1] + "</div></div>").join("");
+    $("valBody").innerHTML =
+        '<div class="stat-grid">' + tiles + "</div>" +
+        (problems
+            ? '<div class="notice warn" style="margin-top:14px;">누락·중복 항목이 있습니다 — 해당 세트는 실패로 기록될 수 있습니다.</div>'
+            : '<div class="notice ok" style="margin-top:14px;">매니페스트 점검 통과 — 누락·중복 없음.</div>');
+}
+
+/* ===================== 작업 연결 ===================== */
+async function attach(jobId) {
+    if (!jobId) return;
+    closeStream();
+    if (S.tick) { clearInterval(S.tick); S.tick = null; }
+
+    S.jobId = jobId;
+    S.job = null;
+    S.lastSeq = 0;
+    S.sumMatch = 0; S.sumScored = 0;
+    S.total = 0; S.doneN = 0; S.failN = 0; S.cost = 0;
+    S.firstObs = null; S.lastObs = null;
+    S.agg = null; S.results = [];
+    _finishing = false;
+    $("logBox").innerHTML = "";
+    renderValidation(null);
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ job_id: jobId, seq: 0 })); } catch (e) {}
+
+    $("monEmpty").classList.add("hidden");
+    $("monBody").classList.remove("hidden");
+    $("repEmpty").classList.add("hidden");
+    $("repBody").classList.remove("hidden");
+
+    const ok = await loadStatus(jobId);
+    if (!ok) return;
+
+    renderValidation(S.job.validation);
+    renderMonitorHeader();
+    renderMonitor();
+    renderJobs();
+
+    const st = S.job.state;
+    if (st === "pending" || st === "running") {
+        // after=0 — 서버 버퍼의 전체 이벤트를 재생해 진행률·누적 정확도를 복원한다.
+        addLog("info", "작업 " + jobId + " 에 연결 — 이벤트 스트림 재생 중…");
+        connectStream(jobId, 0);
+        S.tick = setInterval(() => { renderMonitor(); }, 1000);
+    } else {
+        addLog("info", "작업 " + jobId + " (" + (STATE_KO[st] || st) + ") — 스트림 없이 저장된 결과를 표시합니다.");
+    }
+    loadReport(jobId);
+    loadResults(jobId);
+}
+
+async function loadStatus(jobId) {
+    const r = await api("/api/batch/" + encodeURIComponent(jobId) + "/status");
+    if (!r.ok) {
+        S.job = null;
+        const msg = r.status === 404
+            ? "작업을 찾을 수 없습니다 (서버 재시작 시 메모리의 작업 목록이 초기화됩니다): " + esc(jobId)
+            : "상태 조회 실패 (HTTP " + r.status + "): " + esc(r.detail);
+        $("monBody").classList.add("hidden");
+        $("monEmpty").classList.remove("hidden");
+        $("monEmpty").innerHTML = '<div class="notice err">' + msg + "</div>" +
+            '<div class="btn-row" style="margin-top:14px;"><button class="btn" onclick="showPanel(\'jobs\')">작업 목록으로</button></div>';
+        S.jobId = null;
+        closeStream();
+        if (S.tick) { clearInterval(S.tick); S.tick = null; }
+        try { localStorage.removeItem(LS_KEY); } catch (e) {}
+        updateSideJob();
+        return false;
+    }
+    S.job = r.data;
+    const p = S.job.progress || {};
+    // 스트림 이전 상태를 시드 — 새로고침 직후에도 숫자가 비지 않게.
+    S.total = S.total || p.total || S.job.total || 0;
+    S.doneN = Math.max(S.doneN, p.i || 0);
+    S.failN = Math.max(S.failN, p.failed || 0);
+    S.cost = Math.max(S.cost, p.cost_krw_total || 0);
+    updateSideJob();
+    return true;
+}
+
+function updateSideJob() {
+    if (!S.job) {
+        $("sideJobName").textContent = "없음";
+        $("sideJobMeta").textContent = "작업을 선택하세요";
+        $("sideJobBar").style.width = "0%";
+        return;
+    }
+    const total = S.total || 0, done = S.doneN || 0;
+    $("sideJobName").textContent = S.job.name || S.job.job_id;
+    $("sideJobMeta").textContent = (STATE_KO[S.job.state] || S.job.state) + " · " + done + "/" + total;
+    $("sideJobBar").style.width = (total ? Math.min(100, done / total * 100) : 0).toFixed(1) + "%";
+}
+
+/* ===================== 모니터 렌더 ===================== */
+function renderMonitorHeader() {
+    const j = S.job;
+    if (!j) return;
+    $("monTitle").innerHTML = esc(j.name || j.job_id);
+    $("monSubtitle").innerHTML =
+        '<span class="mono">' + esc(j.job_id) + "</span> · 생성 " + esc(tstr(j.created_at)) +
+        (j.started_at ? " · 시작 " + esc(tstr(j.started_at)) : "") +
+        (j.finished_at ? " · 종료 " + esc(tstr(j.finished_at)) : "");
+    $("monStateBadge").innerHTML = stateBadge(j.state);
+
+    const running = (j.state === "running" || j.state === "pending");
+    const acts = [];
+    acts.push('<button class="btn" id="btnMonRefresh">상태 새로고침</button>');
+    if (running) acts.push('<button class="btn danger" id="btnCancel">■ 작업 중단</button>');
+    acts.push('<button class="btn" id="btnMonReport">채점 리포트 보기</button>');
+    $("monActions").innerHTML = acts.join("");
+
+    const rf = $("btnMonRefresh");
+    if (rf) rf.addEventListener("click", async () => {
+        await loadStatus(S.jobId);
+        renderMonitorHeader();
+        renderMonitor();
+        refreshJobs();
+    });
+    const cb = $("btnCancel");
+    if (cb) cb.addEventListener("click", async () => {
+        cb.disabled = true;
+        cb.innerHTML = '<span class="spin dark"></span> 중단 요청 중…';
+        const r = await api("/api/batch/" + encodeURIComponent(S.jobId) + "/cancel", { method: "POST" });
+        if (r.ok) {
+            addLog("warn", "중단을 요청했습니다 — 진행 중인 세트가 끝나는 대로 종료됩니다.");
+        } else {
+            addLog("err", "중단 요청 실패 (HTTP " + r.status + "): " + r.detail);
+            cb.disabled = false;
+            cb.innerHTML = "■ 작업 중단";
+        }
+        await loadStatus(S.jobId);
+        renderMonitorHeader();
+        renderMonitor();
+    });
+    const rb = $("btnMonReport");
+    if (rb) rb.addEventListener("click", () => {
+        showPanel("report");
+        loadReport(S.jobId);
+        loadResults(S.jobId);
+    });
+
+    if (j.error) {
+        addLogOnce("joberr", "err", "작업 오류: " + String(j.error).slice(0, 300));
+    }
+}
+const _logged = {};
+function addLogOnce(key, level, text) {
+    if (_logged[S.jobId + "|" + key]) return;
+    _logged[S.jobId + "|" + key] = true;
+    addLog(level, text);
+}
+
+function currentAccuracy() {
+    if (S.sumScored > 0) return { v: S.sumMatch / S.sumScored, src: "스트림 누적" };
+    if (S.agg && S.agg.micro_accuracy !== null && S.agg.micro_accuracy !== undefined)
+        return { v: S.agg.micro_accuracy, src: "리포트(micro)" };
+    return { v: null, src: "채점 대기" };
+}
+
+function renderMonitor() {
+    if (!S.job) return;
+    const j = S.job;
+    const total = S.total || 0;
+    const done = S.doneN || 0;
+    const ratio = total ? Math.min(1, done / total) : 0;
+
+    $("progLabel").textContent = done + " / " + total + " 세트";
+    $("progPct").textContent = (ratio * 100).toFixed(1) + "%";
+    $("progBar").style.width = (ratio * 100).toFixed(1) + "%";
+
+    $("stDone").textContent = String(done - (S.failN || 0));
+    $("stDoneSub").textContent = "처리 " + done + " / " + total;
+    $("stFail").textContent = String(S.failN || 0);
+    $("stFail").className = "stat-value" + (S.failN ? " bad" : "");
+    $("stFailSub").textContent = done ? pct(ratePct(S.failN || 0, done)) + " 실패율" : "—";
+    $("stCost").textContent = krw(S.cost || 0);
+    $("stCostSub").textContent = done ? "세트당 " + krw((S.cost || 0) / done) : "—";
+
+    const startAt = j.started_at || j.created_at;
+    const endAt = j.finished_at || (Date.now() / 1000);
+    const elapsed = startAt ? (endAt - startAt) : null;
+    $("stElapsed").textContent = dur(elapsed);
+    $("stElapsedSub").textContent = j.finished_at ? "종료됨" : (j.state === "running" ? "진행 중" : (STATE_KO[j.state] || ""));
+
+    // ETA — 추측이 아니라 관측 처리량(세트/초) 기준
+    let eta = null, rate = null;
+    if (S.firstObs && S.lastObs && S.lastObs.i > S.firstObs.i && S.lastObs.ts > S.firstObs.ts) {
+        rate = (S.lastObs.i - S.firstObs.i) / (S.lastObs.ts - S.firstObs.ts);
+    } else if (done > 0 && elapsed > 0) {
+        rate = done / elapsed;
+    }
+    if (rate && rate > 0 && total > done && (j.state === "running" || j.state === "pending")) {
+        eta = (total - done) / rate;
+    }
+    $("stEta").textContent = (j.state === "running" || j.state === "pending") ? dur(eta) : "—";
+    $("stEtaSub").textContent = rate ? (rate * 60).toFixed(1) + " 세트/분" : "관측 처리량 기준";
+
+    $("stScored").textContent = String(S.sumScored);
+    $("stScoredSub").textContent = "적중 " + S.sumMatch;
+
+    const acc = currentAccuracy();
+    $("accSourceBadge").textContent = acc.src;
+    if (acc.v === null) {
+        $("accBig").textContent = "—";
+        $("accBig").style.color = "var(--text-light)";
+        $("accFill").className = "meter-fill";
+        $("accFill").style.width = "0%";
+        $("accVerdict").innerHTML = '<span class="tiny muted">채점된 속성이 아직 없습니다</span>';
+    } else {
+        const passed = acc.v >= TARGET;
+        const diff = (acc.v - TARGET) * 100;
+        $("accBig").textContent = pct(acc.v);
+        $("accBig").style.color = passed ? "#0f8a63" : "#b26a08";
+        $("accFill").style.width = Math.min(100, acc.v * 100).toFixed(1) + "%";
+        $("accFill").className = "meter-fill " + (passed ? "ok" : "bad");
+        $("accVerdict").innerHTML =
+            '<span class="badge ' + (passed ? "done" : "cancelled") + '">' +
+            (passed ? "목표 달성 +" + diff.toFixed(1) + "p" : "목표 미달 " + diff.toFixed(1) + "p") +
+            "</span> <span class='tiny muted'>적중 " + S.sumMatch + " / 채점 " + S.sumScored + " 속성 · 목표 85%</span>";
+    }
+    updateSideJob();
+}
+
+/* ===================== 리포트 ===================== */
+async function loadReport(jobId) {
+    if (!jobId) return;
+    $("repSubtitle").innerHTML = '<span class="mono">' + esc(jobId) + "</span>" +
+        (S.job ? " · " + esc(S.job.name || "") + " · " + (STATE_KO[S.job.state] || S.job.state) : "");
+    const r = await api("/api/batch/" + encodeURIComponent(jobId) + "/report?fmt=json");
+    if (!r.ok) {
+        S.agg = null;
+        const running = S.job && (S.job.state === "running" || S.job.state === "pending");
+        $("repNotice").innerHTML = '<div class="notice ' + (running ? "info" : "warn") + '">' +
+            (r.status === 404
+                ? (running
+                    ? "집계 리포트는 작업이 끝난 뒤 생성됩니다. 진행 중에는 아래 <b>세트별 결과</b> 표와 실시간 모니터의 누적 정확도로 확인하세요."
+                    : "이 작업에는 아직 리포트가 없습니다 (실행 전이거나 결과가 기록되지 않았습니다).")
+                : "리포트를 불러오지 못했습니다 (HTTP " + r.status + "): " + esc(r.detail)) + "</div>";
+        $("repAgg").innerHTML = "";
+        return;
+    }
+    $("repNotice").innerHTML = "";
+    S.agg = r.data || {};
+    renderReport(S.agg);
+    renderMonitor();
+}
+
+function rateCell(n, d) {
+    const v = d ? n / d : null;
+    const cls = v === null ? "" : (v >= TARGET ? "ok" : "bad");
+    const w = v === null ? 0 : v * 100;
+    return '<div class="rate-cell"><div class="rate-bar"><span class="' + cls +
+           '" style="width:' + w.toFixed(1) + '%"></span></div>' +
+           '<div class="rate-num">' + (v === null ? "—" : pct(v)) + "</div></div>";
+}
+
+function renderReport(a) {
+    const mic = a.micro_accuracy, mac = a.macro_accuracy;
+    const passed = (mic !== null && mic !== undefined) && mic >= TARGET;
+    const diff = (mic === null || mic === undefined) ? null : (mic - TARGET) * 100;
+
+    let html = "";
+    html += '<div class="card"><div class="headline ' +
+        ((mic === null || mic === undefined) ? "" : (passed ? "pass" : "fail")) + '">' +
+        "<div><div class='headline-label'>속성 정확도 (micro) — 계획서 §2-4 목표 85%</div>" +
+        '<div class="headline-num">' + pct(mic) + "</div>" +
+        "<div style='margin-top:8px'>" +
+        ((diff === null)
+            ? '<span class="badge muted">채점 결과 없음</span>'
+            : '<span class="badge ' + (passed ? "done" : "cancelled") + '">' +
+              (passed ? "목표 달성 (+" + diff.toFixed(1) + "p)" : "목표 미달 (" + diff.toFixed(1) + "p)") + "</span>") +
+        "</div></div>" +
+        '<div class="headline-side">' +
+        "<div><div class='headline-label'>세트 평균 (macro)</div><div class='v'>" + pct(mac) + "</div></div>" +
+        "<div><div class='headline-label'>채점 / 적중</div><div class='v'>" + (a.total_match || 0) + " / " + (a.total_scored || 0) + "</div></div>" +
+        "<div><div class='headline-label'>세트</div><div class='v'>" + (a.n_sets || 0) + "</div>" +
+        "<div class='tiny muted'>성공 " + (a.n_ok || 0) + " · 실패 " + (a.n_failed || 0) + "</div></div>" +
+        "<div><div class='headline-label'>비용 / 평균 소요</div><div class='v'>" + krw(a.cost_krw) + "</div>" +
+        "<div class='tiny muted'>세트당 " + (a.elapsed_mean_sec || 0) + "초</div></div>" +
+        "</div></div>";
+    html += '<div class="meter-wrap" style="margin-top:20px;"><div class="meter">' +
+        '<div class="meter-fill ' + (passed ? "ok" : "bad") + '" style="width:' +
+        ((mic === null || mic === undefined) ? 0 : Math.min(100, mic * 100)).toFixed(1) + '%"></div>' +
+        '<div class="meter-target"></div></div>' +
+        '<div class="meter-scale"><span>0%</span><span>50%</span><span>100%</span></div></div>';
+    html += "</div>";
+
+    // 속성별
+    const per = a.per_attr || {};
+    const attrRows = ATTRS.map(name => {
+        const d = per[name];
+        if (!d) {
+            return "<tr><td class='k'>" + esc(name) + "</td><td class='num muted'>—</td><td class='num muted'>—</td>" +
+                   "<td><span class='muted tiny'>채점 기록 없음</span></td><td class='num muted'>—</td><td class='num muted'>—</td></tr>";
+        }
+        return "<tr><td class='k'>" + esc(name) + "</td>" +
+            "<td class='num'>" + (d.scored || 0) + "</td>" +
+            "<td class='num'>" + (d.match || 0) + "</td>" +
+            "<td style='min-width:150px'>" + rateCell(d.match || 0, d.scored || 0) + "</td>" +
+            "<td class='num'>" + (d.na || 0) + "</td>" +
+            "<td class='num'>" + (d.no_gt || 0) + "</td></tr>";
+    }).join("");
+    html += '<div class="card"><div class="card-title">속성별 정확도 <span class="badge info">11개 속성</span></div>' +
+        '<div class="card-sub">해당없음 = 어문 저작물의 시각 속성 등 채점 대상 아님 · 정답없음 = 정답 데이터 미확보로 채점 제외</div>' +
+        '<div class="scrollbox"><table><thead><tr><th>속성</th><th>채점</th><th>적중</th><th>정확도</th>' +
+        "<th>해당없음</th><th>정답없음</th></tr></thead><tbody>" + attrRows + "</tbody></table></div></div>";
+
+    // 권리유형별 / 미디어별
+    const secTable = (title, obj, keyLabel) => {
+        const rows = Object.keys(obj || {}).sort().map(k => {
+            const d = obj[k] || {};
+            return "<tr><td class='k'>" + esc(k) + "</td><td class='num'>" + (d.n || 0) + "</td>" +
+                "<td class='num'>" + (d.scored || 0) + "</td><td class='num'>" + (d.match || 0) + "</td>" +
+                "<td style='min-width:150px'>" + rateCell(d.match || 0, d.scored || 0) + "</td></tr>";
+        }).join("");
+        return '<div class="card"><div class="card-title">' + esc(title) + "</div>" +
+            (rows
+                ? '<div class="scrollbox short"><table><thead><tr><th>' + esc(keyLabel) +
+                  "</th><th>세트</th><th>채점</th><th>적중</th><th>정확도</th></tr></thead><tbody>" +
+                  rows + "</tbody></table></div>"
+                : '<div class="tiny muted">데이터 없음</div>') + "</div>";
+    };
+    html += "<div style='display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px;'>" +
+        secTable("권리유형별 (license bucket)", a.by_bucket, "구분") +
+        secTable("미디어별 (media)", a.by_media, "구분") + "</div>";
+
+    // 실패 목록
+    const fails = a.failures || [];
+    html += '<div class="card"><div class="card-title">실패 세트 <span class="badge ' +
+        (fails.length ? "error" : "done") + '">' + fails.length + "건" + (fails.length >= 20 ? " (상위 20)" : "") + "</span></div>" +
+        (fails.length
+            ? '<div class="scrollbox short"><table><thead><tr><th>set_id</th><th>오류</th></tr></thead><tbody>' +
+              fails.map(f => "<tr class='row-fail'><td class='k mono'>" + esc(f.set_id) + "</td><td class='tiny'>" +
+                  esc(String(f.error || "").slice(0, 300)) + "</td></tr>").join("") +
+              "</tbody></table></div>"
+            : '<div class="tiny muted">실패한 세트가 없습니다.</div>') + "</div>";
+
+    $("repAgg").innerHTML = html;
+}
+
+/* ===================== 세트별 결과 ===================== */
+async function loadResults(jobId) {
+    if (!jobId) return;
+    const lim = $("resLimit").value;
+    $("resWrap").innerHTML = '<div class="tiny muted" style="padding:14px 4px;"><span class="spin dark"></span> 결과 불러오는 중…</div>';
+    const r = await api("/api/batch/" + encodeURIComponent(jobId) + "/results?limit=" + encodeURIComponent(lim));
+    if (!r.ok) {
+        S.results = [];
+        $("resCount").textContent = "";
+        $("resWrap").innerHTML = '<div class="notice ' + (r.status === 404 ? "info" : "warn") + '">' +
+            (r.status === 404 ? "아직 기록된 세트 결과가 없습니다. 첫 세트가 끝나면 여기에 나타납니다."
+                              : "결과를 불러오지 못했습니다 (HTTP " + r.status + "): " + esc(r.detail)) + "</div>";
+        return;
+    }
+    S.results = (r.data && r.data.results) || [];
+    renderResults();
+}
+
+function attrCellsHtml(perAttr) {
+    const pa = perAttr || {};
+    return '<div class="attr-cells">' + ATTRS.map(name => {
+        const d = pa[name];
+        let cls = "nogt", ch = "·", tip = name + ": 정답없음";
+        if (!d) { cls = "nogt"; ch = "·"; tip = name + ": 기록없음"; }
+        else if (d.status === "scored") {
+            if (d.match) { cls = "hit"; ch = "✓"; tip = name + ": 적중"; }
+            else { cls = "miss"; ch = "✗"; tip = name + ": 불일치"; }
+        } else if (d.status === "not_applicable") { cls = "na"; ch = "–"; tip = name + ": 해당없음"; }
+        else { cls = "nogt"; ch = "·"; tip = name + ": 정답없음"; }
+        return '<span class="attr-cell ' + cls + '" title="' + esc(tip) + '">' + ch + "</span>";
+    }).join("") + "</div>";
+}
+
+function renderResults() {
+    const q = ($("resFilter").value || "").trim().toLowerCase();
+    const rows = S.results.filter(r => !q || String(r.set_id || "").toLowerCase().indexOf(q) >= 0);
+    $("resCount").textContent = rows.length + " / " + S.results.length + "건 표시";
+    if (!rows.length) {
+        $("resWrap").innerHTML = '<div class="tiny muted" style="padding:16px 4px;">' +
+            (S.results.length ? "검색 조건에 맞는 세트가 없습니다." : "표시할 세트 결과가 없습니다.") + "</div>";
+        return;
+    }
+    const body = rows.map(r => {
+        const okv = !!r.ok;
+        const acc = (r.accuracy === null || r.accuracy === undefined) ? null : r.accuracy;
+        const accHtml = !okv
+            ? '<span class="badge error">실패</span>'
+            : (acc === null ? '<span class="muted">채점없음</span>'
+                : '<span style="font-weight:700;color:' + (acc >= TARGET ? "#0f8a63" : "#b26a08") + '">' + pct(acc) + "</span>");
+        return "<tr class='" + (okv ? "" : "row-fail") + "'>" +
+            "<td class='k mono'>" + esc(r.set_id) + "</td>" +
+            "<td class='tiny'>" + esc(r.media || "—") + "</td>" +
+            "<td class='tiny'>" + esc(r.license_bucket || "—") + "</td>" +
+            "<td class='num'>" + accHtml + "</td>" +
+            "<td class='num tiny'>" + (okv ? (r.n_match || 0) + " / " + (r.n_scored || 0) : "—") + "</td>" +
+            "<td class='num tiny'>" + (r.elapsed_sec !== undefined && r.elapsed_sec !== null ? r.elapsed_sec + "s" : "—") + "</td>" +
+            "<td class='num tiny'>" + (r.cost_krw !== undefined && r.cost_krw !== null ? krw(r.cost_krw) : "—") + "</td>" +
+            "<td>" + (okv ? attrCellsHtml(r.per_attr)
+                          : '<span class="tiny" style="color:var(--danger)">' + esc(String(r.error || "원인 미상").slice(0, 160)) + "</span>") +
+            "</td></tr>";
+    }).join("");
+    $("resWrap").innerHTML =
+        '<div class="scrollbox"><table><thead><tr>' +
+        "<th>set_id</th><th>미디어</th><th>권리유형</th><th>정확도</th><th>적중/채점</th>" +
+        "<th>소요</th><th>비용</th><th>속성별 (11)</th>" +
+        "</tr></thead><tbody>" + body + "</tbody></table></div>";
+}
+
+$("resFilter").addEventListener("input", () => { if (S.results.length) renderResults(); });
+$("resLimit").addEventListener("change", () => loadResults(S.jobId));
+$("btnReloadResults").addEventListener("click", () => loadResults(S.jobId));
+$("btnReloadReport").addEventListener("click", async () => {
+    if (!S.jobId) { showPanel("jobs"); return; }
+    await loadStatus(S.jobId);
+    loadReport(S.jobId);
+    loadResults(S.jobId);
+});
+$("btnOpenMd").addEventListener("click", () => {
+    if (!S.jobId) { showPanel("jobs"); return; }
+    window.open("/api/batch/" + encodeURIComponent(S.jobId) + "/report?fmt=md", "_blank");
+});
+$("btnOpenJson").addEventListener("click", () => {
+    if (!S.jobId) { showPanel("jobs"); return; }
+    window.open("/api/batch/" + encodeURIComponent(S.jobId) + "/report?fmt=json", "_blank");
+});
+
+/* ===================== 초기화 ===================== */
+(async function init() {
+    // 모델 셀렉트 채우기가 실패하더라도 작업 목록·재연결까지 죽어서는 안 된다.
+    try { await loadModels(); } catch (e) { console.error("loadModels 실패", e); }
+    await refreshJobs();
+
+    // 새로고침 후 재연결 — 서버가 작업을 소유하므로 상태를 잃지 않는다.
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) { saved = null; }
+    let target = saved && saved.job_id;
+    if (target && !S.jobs.some(j => j.job_id === target)) target = null;
+    if (!target) {
+        const live = S.jobs.find(j => j.state === "running" || j.state === "pending");
+        if (live) target = live.job_id;
+    }
+    if (target) {
+        await attach(target);
+        showPanel("monitor");
+    } else if (S.jobs.length) {
+        showPanel("jobs");
+    }
+
+    // 목록은 주기적으로 갱신 (다른 탭/CLI 가 만든 작업도 보이도록)
+    setInterval(refreshJobs, 7000);
+})();
+</script>
+</body>
+</html>

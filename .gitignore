@@ -216,3 +216,12 @@ kogl-classifier/
 
 # Node modules
 node_modules/
+
+# 배치 평가 런타임 산출물 (업로드된 세트·결과물 — 용량 크고 재현 가능)
+api/web/batch_jobs/
+api/web/uploads/
+
+# 비공개 자료 — 공개 저장소에 올리지 않는다
+# (통화 녹취록: 실명 포함 사적 대화 / 사용계획서: 개인정보 포함)
+docs/Call recording*.txt
+docs/사용계획서_작성내용_*.md

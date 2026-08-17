@@ -1196,6 +1196,34 @@ class DocumentSchemas:
                     "type": ["string", "null"],
                     "description": "디지털화 형태 (디지털 파일 형식: PDF, JPG, MP4, HWP 등)"
                 },
+                # ============================================
+                # 파일 기술 속성 / 시각 속성
+                # 연구개발계획서 2-4 '메타데이터 속성 추출' 평가 대상 항목.
+                # ⚠️ 아래 5개는 파일·VLM에서 자동 산출되는 값이다.
+                #    문서 본문에서 LLM이 추론할 대상이 아니므로 계약서·동의서
+                #    추출 시에는 null로 두어야 한다.
+                # ============================================
+                "resolution": {
+                    "type": ["string", "null"],
+                    "description": "해상도 (이미지·영상 픽셀 크기, 예: 1920x1080). 파일에서 자동 산출 — 문서에서 추론하지 말 것"
+                },
+                "file_size": {
+                    "type": ["integer", "null"],
+                    "description": "파일크기 (바이트). 파일에서 자동 산출 — 문서에서 추론하지 말 것"
+                },
+                "file_created_date": {
+                    "type": ["string", "null"],
+                    "format": "date",
+                    "description": "파일 생성 날짜 (YYYY-MM-DD). EXIF/컨테이너 태그 우선, 없으면 파일시스템 시각. 파일에서 자동 산출 — 문서에서 추론하지 말 것"
+                },
+                "dominant_colors": {
+                    "type": ["string", "array", "null"],
+                    "description": "주요 색상 (이미지·영상의 대표 색상 목록). VLM 또는 픽셀 분석에서 자동 산출 — 문서에서 추론하지 말 것"
+                },
+                "main_subjects": {
+                    "type": ["string", "array", "null"],
+                    "description": "개체 범주 (화면에 등장하는 주요 피사체·객체 목록). VLM에서 자동 산출 — 문서에서 추론하지 말 것"
+                },
                 "description": {
                     "type": ["string", "null"],
                     "description": "설명 (콘텐츠 설명, 계약 목적, 동의 내용 요약)"

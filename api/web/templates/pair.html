@@ -178,7 +178,12 @@ document.getElementById("btnRun").onclick = async () => {
     if (!res.success) throw new Error(res.error || "계약서 분석 실패");
     contractMeta = res.consolidated_metadata || res.metadata || {};
     const sum = document.getElementById("sum1");
-    const filled = Object.values(contractMeta).filter(v=>v!==null&&v!==""&&!(Array.isArray(v)&&!v.length)).length;
+    // 분모는 스키마 필드 수에서 직접 센다 — 하드코딩하면 스키마가 늘 때마다 틀어진다.
+    // 언더스코어로 시작하는 키(_file_meta 등)는 스키마 필드가 아니므로 제외.
+    const schemaKeys = Object.keys(contractMeta).filter(k=>!k.startsWith("_"));
+    const total = schemaKeys.length;
+    const filled = schemaKeys.filter(k=>{const v=contractMeta[k];
+      return v!==null&&v!==""&&!(Array.isArray(v)&&!v.length);}).length;
     sum.style.display = "block";
     sum.innerHTML = `<div class="grid2">
       <div><b>저작물명:</b> ${fmt(contractMeta.work_title)}</div>
@@ -186,7 +191,7 @@ document.getElementById("btnRun").onclick = async () => {
       <div><b>공공누리:</b> ${fmt(contractMeta.kogl_type)}</div>
       <div><b>상업적 이용:</b> ${fmt(contractMeta.commercial_use)}</div>
       <div><b>유효기간:</b> ${fmt(contractMeta.valid_period)}</div>
-      <div><b>채워진 필드:</b> ${filled} / 67</div></div>`;
+      <div><b>채워진 필드:</b> ${filled} / ${total}</div></div>`;
     tick(st1, `✅ 계약서 분석 완료 (${sec()}s) — 완료된 저작물부터 순차 상속 병합`);
     document.getElementById("cdetWrap").innerHTML =
       `<div class="toggle-row"><button class="ghost" onclick="document.getElementById('cdet').classList.toggle('hidden')">전체 결과 보기/닫기 (OCR · NER · LLM · 통합)</button></div>
@@ -254,7 +259,8 @@ function badgeFor(dec){
 // 전체 결과 상세 뷰 — 메타데이터 전체 + 통합 판정 + NER + OCR + 저장본 다운로드
 function detailHTML(res){
   const meta = res.consolidated_metadata || res.metadata || {};
-  const filled = Object.entries(meta).filter(([k,v])=>v!==null&&v!==""&&!(Array.isArray(v)&&!v.length));
+  const schemaKeys = Object.keys(meta).filter(k=>!k.startsWith("_"));
+  const filled = Object.entries(meta).filter(([k,v])=>!k.startsWith("_")&&v!==null&&v!==""&&!(Array.isArray(v)&&!v.length));
   const metaRows = filled.map(([k,v])=>
     `<tr><td class="k">${esc(k)}</td><td>${fmt(v)} ${badgeFor(decisionOf(res,k))}</td></tr>`).join("");
   const decs = (res.consolidation_decisions||[]).filter(d=>d.decision!=="MISSING" &&
@@ -270,7 +276,7 @@ function detailHTML(res){
     ` · 통합: ${esc(res.consolidation_model_used||"—")} · 처리 ${res.processing_time??"?"}s · ID ${esc(rid)}`;
   return `
     <div class="info-line">${info}</div>
-    <h4>전체 메타데이터 — ${filled.length}필드 채워짐 / 67</h4>
+    <h4>전체 메타데이터 — ${filled.length}필드 채워짐 / ${schemaKeys.length}</h4>
     <div class="scrollbox"><table><tbody>${metaRows || '<tr><td class="muted">—</td></tr>'}</tbody></table></div>
     <h4>통합(Consolidation) 판정 — ${decs.length}건</h4>
     <div class="scrollbox"><table>

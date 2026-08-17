@@ -22,6 +22,7 @@ Usage (SSE streaming — call stages individually)::
 
 import json
 import logging
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
@@ -133,16 +134,31 @@ class PipelineOrchestrator:
     # Stage 2: LLM extraction
     # ------------------------------------------------------------------
 
+    # 파일에서 결정적으로 산출되는 필드 — 문서 본문에서 추론할 대상이 아니다.
+    # 스키마 설명에도 "추론하지 말 것"이라 적었지만 프롬프트 지시는 보장이 아니므로,
+    # LLM이 값을 지어내도 여기서 걷어낸다. 이 값들은 technical_metadata가 채운다.
+    _FILE_DERIVED_FIELDS = ("resolution", "file_size", "file_created_date")
+
     def run_llm(self, ocr_text: str, document_type: str,
                 filename: str, model_name: str) -> Dict[str, Any]:
         """Run LLM metadata extraction on OCR text."""
         logger.info(f"LLM extraction start: model={model_name}")
-        return self.llm_processor.extract_metadata_from_text(
+        result = self.llm_processor.extract_metadata_from_text(
             text=ocr_text,
             document_type=document_type,
             document_name=filename,
             model_name=model_name,
         )
+        metadata = (result or {}).get("metadata")
+        if isinstance(metadata, dict):
+            hallucinated = [f for f in self._FILE_DERIVED_FIELDS
+                            if metadata.get(f) not in (None, "", [])]
+            for field in hallucinated:
+                metadata[field] = None
+            if hallucinated:
+                logger.warning(
+                    f"LLM이 파일 유래 필드를 본문에서 추론함 → 제거: {hallucinated}")
+        return result
 
     # ------------------------------------------------------------------
     # Stage 3: NER
@@ -525,12 +541,44 @@ class PipelineOrchestrator:
             consolidation_success=con_success, consolidation_error=con_error,
         )
 
+        # 문서 경로에도 파일 기술속성을 채운다. 이미지 경로는 map_vlm_to_unified 가
+        # 이미 채우지만 문서 경로는 비어 있어, 평가에서 파일크기·파일포맷·해상도가
+        # 구조적으로 오답이 된다(어문 저작물 825건 해당). 값은 파일에서 결정적으로 나오므로
+        # 계약서든 저작물이든 채워 두는 편이 일관된다.
+        self._backfill_file_attributes(ctx, response)
+
         self.save_results(ctx["result_dir"], response, con_result, con_success)
         return response
 
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _backfill_file_attributes(ctx: Dict, response: Dict) -> None:
+        """업로드 파일에서 해상도·파일크기·파일생성일을 산출해 빈 값만 채운다.
+
+        모델이 만든 값을 덮어쓰지 않는다 — 비어 있을 때만 넣는다.
+        """
+        try:
+            from module.clip_extraction.technical_metadata import extract_technical_metadata
+            tech = extract_technical_metadata(str(ctx["upload_path"]))
+        except Exception as e:  # 기술속성 산출 실패가 파이프라인을 죽이면 안 된다
+            logger.warning(f"파일 기술속성 산출 실패: {e}")
+            return
+        for key in ("metadata", "consolidated_metadata"):
+            meta = response.get(key)
+            if not isinstance(meta, dict):
+                continue
+            for field in ("resolution", "file_size", "file_created_date"):
+                if meta.get(field) in (None, "", []) and tech.get(field) is not None:
+                    meta[field] = tech[field]
+            # digital_format 도 이미지 경로(map_vlm_to_unified)에서만 채워지고 있었다.
+            # 문서 경로에서 비면 평가의 '파일포맷' 속성이 통째로 오답이 된다.
+            if meta.get("digital_format") in (None, "", []):
+                ext = os.path.splitext(str(ctx["upload_path"]))[1].lstrip(".").upper()
+                if ext:
+                    meta["digital_format"] = ext
 
     @staticmethod
     def _format_ner_entities(ner_result: Optional[Dict]) -> Dict:

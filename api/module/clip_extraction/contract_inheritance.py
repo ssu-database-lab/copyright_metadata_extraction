@@ -25,7 +25,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-# 계약서에서 저작물 레코드로 상속 가능한 권리/계약 필드 (67-field unified schema 부분집합).
+# 계약서에서 저작물 레코드로 상속 가능한 권리/계약 필드 (unified schema 부분집합).
 # 시각/식별 필드(description, keyword, digital_format, language 등)는 제외.
 INHERITABLE_FIELDS = [
     # 권리 주체

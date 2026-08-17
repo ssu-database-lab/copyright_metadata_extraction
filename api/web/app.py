@@ -200,6 +200,13 @@ pipeline_orchestrator = PipelineOrchestrator(
 
 # Universal OCR는 별도 엔드포인트(/api/ocr-universal)에서 처리
 
+# 배치 평가 API — 매니페스트 기반 계약서+저작물 세트 일괄 처리 (/v3 UI가 사용)
+# CLI 하네스(module.evaluation.cli)와 동일한 BatchRunner 를 공유한다.
+from web.batch_api import router as batch_router, init_batch_api  # noqa: E402
+
+init_batch_api(pipeline_orchestrator, RESULTS_DIR.parent / "batch_jobs")
+app.include_router(batch_router)
+
 def allowed_file(filename: str) -> bool:
     """허용된 파일 형식인지 확인"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -531,6 +538,17 @@ async def index_v2(request: Request):
     """메인 페이지 v2 (새 디자인)"""
     return templates.TemplateResponse(
         "index2.html",
+        {
+            "request": request,
+            "models": AVAILABLE_MODELS
+        }
+    )
+
+@app.get("/v3")
+async def index_v3(request: Request):
+    """v3 — 배치 평가 콘솔. 매니페스트(ZIP) 업로드 → 세트 일괄 처리 → 채점 리포트."""
+    return templates.TemplateResponse(
+        "v3.html",
         {
             "request": request,
             "models": AVAILABLE_MODELS
