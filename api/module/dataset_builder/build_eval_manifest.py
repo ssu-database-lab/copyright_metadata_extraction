@@ -43,6 +43,9 @@ if str(_API_ROOT) not in sys.path:
     sys.path.insert(0, str(_API_ROOT))
 
 GONGU_ROOT = Path("/mnt/d/copyright_dataset_metadata")
+# 파이프라인이 처리할 수 없는 확장자 — 평가 대상에서 제외한다.
+# image 버킷에 pptx·zip 이 섞여 있어 media=image 로 문서 경로에 들어가 실패한다.
+UNPROCESSABLE = {".zip", ".pptx", ".ppt", ".xlsx", ".xls", ".hwpx"}
 MEDIA = ("text", "image", "video")
 BUCKETS = ("expired", "donated", "ccl", "kogl")
 
@@ -80,7 +83,8 @@ def _from_gongu(per_bucket: Optional[int], seed: int) -> List[Dict]:
                         g = json.loads(line)
                     except json.JSONDecodeError:
                         continue
-                    if g.get("file_exists"):
+                    if g.get("file_exists") and \
+                            Path(g.get("file", "")).suffix.lower() not in UNPROCESSABLE:
                         by_bucket[bucket].append(g)
     out: List[Dict] = []
     for bucket, rows in by_bucket.items():

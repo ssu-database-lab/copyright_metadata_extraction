@@ -22,7 +22,10 @@ from typing import Dict, List
 # ---------------------------------------------------------------------------
 # 확장자 → modality 매핑 (점(.) 제외, 소문자 기준)
 # ---------------------------------------------------------------------------
-_IMAGE_EXTS = {"jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "webp"}
+# ⚠️ technical_metadata.IMAGE_EXTS 와 목록이 어긋나면 조용한 오분류가 난다.
+#    실제로 psd·heic 가 여기 빠져 있어 "unknown" → 문서 경로 → OCR 공백 실패로 갔다.
+#    한쪽만 고치지 말 것.
+_IMAGE_EXTS = {"jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "webp", "psd", "heic"}
 _AUDIO_EXTS = {"mp3", "wav", "flac", "m4a", "ogg", "wma", "aac"}
 # ⚠️ 목록 누락은 조용한 오분류로 이어진다. wmv/swf 가 빠져 있어 보유 영상 623건이
 #    "unknown" → 문서 경로로 흘러가 OCR 공백 실패로 처리됐다(전체 영상의 31%).
