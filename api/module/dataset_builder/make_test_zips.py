@@ -224,19 +224,24 @@ def main() -> int:
     img = _load("image", 1_500_000, need_desc=True)
     vid = _load("video", 3_000_000)
     txt = _short_text(6)
+    # 고정 세트 조회는 **필터를 걸지 않은** 풀에서 한다.
+    # need_desc 같은 필터는 정답셋이 바뀔 때마다 통과 집합이 달라지므로,
+    # 필터된 풀에서 찾으면 고정해 둔 세트가 조용히 빠져나간다
+    # (설명 출처문구 제외 후 실제로 8세트 → 6세트로 줄었다).
+    pin_pool = _load("image", 1_500_000) + vid + txt
     print(f"후보 — 이미지 {len(img)} · 영상 {len(vid)} · 단문 어문 {len(txt)}\n")
 
     if on("quick"):
-        build_zip("v3_test_quick_3", _apply_pin("v3_test_quick_3", _stratify(img, 3, rng), img, pins, args.repin), out,
+        build_zip("v3_test_quick_3", _apply_pin("v3_test_quick_3", _stratify(img, 3, rng), pin_pool, pins, args.repin), out,
                   "# 빠른 왕복 확인 (3세트)\n\n이미지 3건. 업로드→진행률→리포트까지 2~5분.\n"
                   "계약서가 없으므로 제목·저자·라이선스는 비어 정확도가 낮게 나옵니다 — 정상입니다.\n")
     if on("images"):
-        build_zip("v3_test_images_25", _apply_pin("v3_test_images_25", _stratify(img, 25, rng), img, pins, args.repin), out,
+        build_zip("v3_test_images_25", _apply_pin("v3_test_images_25", _stratify(img, 25, rng), pin_pool, pins, args.repin), out,
                   "# 이미지 25세트\n\n진행률·ETA·동시실행·**새로고침 재연결**을 충분한 시간 동안 확인하는 용도.\n"
                   "4 workers 기준 약 15~25분, 추정 비용 약 ₩900.\n\n"
                   "실행 중 F5 를 눌러 작업에 자동 재연결되는지 꼭 확인해 보세요.\n")
     if on("video"):
-        build_zip("v3_test_video_6", _apply_pin("v3_test_video_6", _stratify(vid, 6, rng), vid, pins, args.repin), out,
+        build_zip("v3_test_video_6", _apply_pin("v3_test_video_6", _stratify(vid, 6, rng), pin_pool, pins, args.repin), out,
                   "# 영상 6세트 — 영상 트랙 (2026-08-17 구현 완료)\n\n"
                   "키프레임 추출 → 다중 프레임 VLM 1회 호출 → 통합 스키마.\n"
                   "모델 체인: qwen3.5-omni-plus(92.3%) → Qwen3-VL-235B → Gemma.\n\n"
@@ -245,7 +250,7 @@ def main() -> int:
                   "세트당 1~3분, 추정 비용 세트당 약 ₩37.\n")
     if on("mixed"):
         mixed = _stratify(img, 4, rng) + _stratify(vid, 4, rng) + _stratify(txt, 4, rng)
-        mixed = _apply_pin("v3_test_mixed_12", mixed, img + vid + txt, pins, args.repin)
+        mixed = _apply_pin("v3_test_mixed_12", mixed, pin_pool, pins, args.repin)
         build_zip("v3_test_mixed_12", mixed, out,
                   "# 혼합 12세트 (이미지 4 · 영상 4 · 어문 4)\n\n"
                   "리포트의 **미디어별 분해**를 확인하는 용도.\n"
@@ -253,7 +258,7 @@ def main() -> int:
                   "- 어문: 4페이지 이하 단문만 선별(장문은 1건 23분이라 테스트 부적합).\n"
                   "  어문은 해상도·주요색상·개체범주가 '해당없음' 으로 빠집니다.\n")
     if on("contract"):
-        build_zip("v3_test_contract_8", _apply_pin("v3_test_contract_8", _stratify(img, 7, rng), img, pins, args.repin), out,
+        build_zip("v3_test_contract_8", _apply_pin("v3_test_contract_8", _stratify(img, 7, rng), pin_pool, pins, args.repin), out,
                   "# 계약서 포함 8세트\n\n"
                   "`63155` 만 실제 계약서를 갖고 있어 **11속성 전 경로**(계약서→저작물 상속)를 탑니다.\n"
                   "나머지 7건은 저작물 단독이라 제목·저자·라이선스가 구조적으로 비어 있습니다.\n"
