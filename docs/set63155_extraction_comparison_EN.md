@@ -4,9 +4,10 @@
 **Subject** Why the evaluation score is what it is, and where extracted values diverge from the answer key
 **Set** `63155` — 이학편(천자), the only test set that currently has a real generated contract
 
-> **Note on Korean terms.** Attribute names (제목, 저자, …) are kept in Korean because they are the
-> official wording of the R&D plan's §2-4 attribute list, and all extracted values and ground-truth
-> values are Korean data. Everything else is English.
+> **Note on Korean terms.** Attribute names are written in English with the R&D plan's official
+> Korean wording in brackets — e.g. licence type (라이선스 유형) — so the mapping back to §2-4 of the
+> plan stays exact. Extracted values and ground-truth values are left as-is, because they are
+> Korean data. All other text is English.
 
 ---
 
@@ -21,7 +22,7 @@ Be careful *which* score is being read:
 | 8-set batch average | 29/63 | **46.0%** |
 
 The 46% is an average dominated by **seven sets that have no contract**. With no contract document
-there is nothing to extract 제목 (title), 저자 (author) or 라이선스 유형 (licence type) from, so those
+there is nothing to extract title (제목), author (저자) or licence type (라이선스 유형) from, so those
 three come back empty every time — a structural ceiling, not an extraction failure.
 
 ```
@@ -118,42 +119,42 @@ list is the single control point, so any change to it deserves review against th
 
 | # | Attribute | Ground truth | Extracted | Verdict |
 |---|---|---|---|---|
-| 1 | 제목 (title) | `이학편(천자)` | `이학편 (천자)` | ✓ formatting difference |
-| 2 | 저자 (author) | `전라남도 강진군` | `['전라남도 강진군']` | ✓ type difference |
-| 3 | 설명 (description) | — | photo description | · no ground truth |
-| 4 | 라이선스 유형 (licence type) | `제1유형` | `None` | ✗ **not extracted** |
-| 5 | 키워드 (keywords) | `['소장품','유물']` | `['고서','아학편','천자문','한자','고문헌','전통서적']` | ✗ vocabulary mismatch |
-| 6 | 해상도 (resolution) | `1757x1172` | `1757x1172` | ✓ exact |
-| 7 | 주요 색상 (dominant colours) | — | `['갈색','흰색']` | · no ground truth |
-| 8 | 개체 범주 (object categories) | — | `['고서 표지','안내 문구 종이']` | · no ground truth |
-| 9 | 파일크기 (file size) | `311813` | `311813` | ✓ exact |
-| 10 | 파일포맷 (file format) | `JPG` | `JPG` | ✓ exact |
-| 11 | 파일 생성 날짜 (file creation date) | — | `2026-08-18` | · definition mismatch |
+| 1 | Title (제목) | `이학편(천자)` | `이학편 (천자)` | ✓ formatting difference |
+| 2 | Author (저자) | `전라남도 강진군` | `['전라남도 강진군']` | ✓ type difference |
+| 3 | Description (설명) | — | photo description | · no ground truth |
+| 4 | Licence type (라이선스 유형) | `제1유형` | `None` | ✗ **not extracted** |
+| 5 | Keywords (키워드) | `['소장품','유물']` | `['고서','아학편','천자문','한자','고문헌','전통서적']` | ✗ vocabulary mismatch |
+| 6 | Resolution (해상도) | `1757x1172` | `1757x1172` | ✓ exact |
+| 7 | Dominant colours (주요 색상) | — | `['갈색','흰색']` | · no ground truth |
+| 8 | Object categories (개체 범주) | — | `['고서 표지','안내 문구 종이']` | · no ground truth |
+| 9 | File size (파일크기) | `311813` | `311813` | ✓ exact |
+| 10 | File format (파일포맷) | `JPG` | `JPG` | ✓ exact |
+| 11 | File creation date (파일 생성 날짜) | — | `2026-08-18` | · definition mismatch |
 
 ---
 
 ## 4. Mismatch taxonomy — the actionable part
 
 ### (A) Exact match — 3 attributes
-해상도 (resolution), 파일크기 (file size), 파일포맷 (file format). All file-derived and deterministic. **These are the only attributes that
+Resolution (해상도), file size (파일크기), file format (파일포맷). All file-derived and deterministic. **These are the only attributes that
 will never drift.**
 
 ### (B) Formatting and type differences — 2 attributes (pass today, fail under strict scoring)
 
 ```
-제목   GT "이학편(천자)"       extracted "이학편 (천자)"        ← space before the bracket
-저자   GT "전라남도 강진군"     extracted ["전라남도 강진군"]     ← string vs array
+Title (제목)    GT "이학편(천자)"     extracted "이학편 (천자)"      ← space before the bracket
+Author (저자)   GT "전라남도 강진군"   extracted ["전라남도 강진군"]   ← string vs array
 ```
 
 Both pass only because the comparator normalizes whitespace and unwraps single-element lists. Under
-exact string matching, **both would fail**. The space in 제목 (title) originates in the OCR/extraction of the
+exact string matching, **both would fail**. The space in the title (제목) originates in the OCR/extraction of the
 contract, not in the source metadata. The same artifact appears inside `economic_rights`:
 `2 차적저작물작성권` (space after the numeral).
 
 **Action:** if the certification body scores by exact match, these become losses — roughly 2 of 7
 attributes on this set. It must be settled in the test procedure document.
 
-### (C) Vocabulary mismatch — 키워드 (keywords) — a structural problem
+### (C) Vocabulary mismatch — keywords (키워드) — a structural problem
 
 ```
 GT:        ['소장품', '유물']                                    ← classification vocabulary
@@ -164,10 +165,11 @@ The extraction is arguably **more useful** than the answer key: it identifies th
 (아학편/천자문, a Joseon-era primer for learning Chinese characters), while the key says only
 "collection item, artefact". The two share nothing.
 
-This is the same taxonomy-versus-content mismatch already recorded for 공유마당's `분류_장르` field.
+This is the same taxonomy-versus-content mismatch already recorded for the genre-classification
+field (`분류_장르`) of the 공유마당 (Gongu Madang) public-domain portal.
 **The keyword answer key is the problem, not the model.**
 
-### (D) Not extracted — 라이선스 유형 (licence type) — structurally unavailable
+### (D) Not extracted — licence type (라이선스 유형) — structurally unavailable
 
 The document is an exclusive copyright licence agreement (저작재산권 독점적 이용허락 계약서). It never
 states a 공공누리 (Korea Open Government Licence) type, because that is a licence designation
@@ -179,11 +181,11 @@ HM컴퍼니's rights-type classification indicator — an overlap that needs res
 
 ### (E) No ground truth — 3 attributes
 
-설명 (description), 주요 색상 (dominant colours), 개체 범주 (object categories). The pipeline produced plausible and apparently correct values for all
+Description (설명), dominant colours (주요 색상), object categories (개체 범주). The pipeline produced plausible and apparently correct values for all
 three. **None can be credited**, because no ground truth exists in any source: the KOGL export has no
 description column, and neither colour nor object category exists anywhere.
 
-### (F) Definition mismatch — 파일 생성 날짜 (file creation date)
+### (F) Definition mismatch — file creation date (파일 생성 날짜)
 
 The plan asks for the *file* creation date; the only available truth is 제작일자 = `조선` (a dynasty,
 not a date). Excluded by default as a definition mismatch rather than scored as wrong.
@@ -216,12 +218,12 @@ Two consequences:
 
 | # | Item | Rationale |
 |---|---|---|
-| 1 | **Replace the keyword ground-truth source** | (C), §5 — classification vocabulary vs content vocabulary. KOGL `주제어` (subject terms) is closer, but did not overlap even here |
+| 1 | **Replace the keyword ground-truth source** | (C), §5 — classification vocabulary vs content vocabulary. KOGL subject terms (`주제어`) is closer, but did not overlap even here |
 | 2 | **Agree strict vs fuzzy scoring** | (B) — whitespace and array differences alone flip 2 attributes |
-| 3 | **Decide how 라이선스 유형 (licence type) is handled** | (D) — not extractable from a contract; supply it as input or exclude it from scoring |
-| 4 | **Obtain ground truth for 주요 색상 (dominant colours) and 개체 범주 (object categories)** | (E) — human labelling or a computable rubric |
+| 3 | **Decide how licence type (라이선스 유형) is handled** | (D) — not extractable from a contract; supply it as input or exclude it from scoring |
+| 4 | **Obtain ground truth for dominant colours (주요 색상) and object categories (개체 범주)** | (E) — human labelling or a computable rubric |
 | 5 | **Guard `INHERITABLE_FIELDS` against work-scoped additions** | §2-3 — precedence is already explicit; the list is the control point |
-| 6 | **Agree the definition of 파일 생성 날짜 (file creation date)** | (F) |
+| 6 | **Agree the definition of file creation date (파일 생성 날짜)** | (F) |
 
 Items 1–3 alone determine whether this set scores 71% or 100%.
 
