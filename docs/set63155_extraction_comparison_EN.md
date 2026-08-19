@@ -95,12 +95,22 @@ input but describing a different object:
 | `keyword` | contract vocabulary | work-content vocabulary | **image leg** | ✅ |
 | `work_title` | 이학편 (천자) | (none) | **contract leg** | ✅ |
 
-The merge resolves all five correctly today, but **the precedence is implicit**. Nothing in the code
-states "for a work set, file-derived and visual fields come from the work leg." If a future change
-altered merge order, `digital_format` would silently become `PDF` and `file_size` the contract's —
-both would then score as wrong, with no error raised anywhere.
+**This is enforced explicitly, not by accident.** `contract_inheritance.INHERITABLE_FIELDS` lists
+the 28 rights/contract fields that may be inherited and deliberately omits the visual and
+file-derived ones; the module docstring states the rule outright:
 
-**Recommendation:** make the precedence explicit and documented rather than emergent.
+> INHERITABLE_FIELDS 만 상속. 시각 필드(description, work_type, keyword 등)는 절대 계약서 값으로
+> 덮지 않는다 (저작물 자체 분석이 우선).
+> *(Only INHERITABLE_FIELDS are inherited. Visual fields — description, work_type, keyword — are
+> never overwritten with contract values; the work's own analysis takes precedence.)*
+
+So the answer to "should we keep only the work leg's values for these four fields?" is that the
+pipeline already does exactly that. The contract leg still *computes* them — it runs the full
+document pipeline — but they are discarded at merge time.
+
+The residual risk is narrower than it first appears: it is not that the wrong leg wins, but that a
+field could be **added to `INHERITABLE_FIELDS` in future without noticing it is work-scoped**. The
+list is the single control point, so any change to it deserves review against this table.
 
 ---
 
@@ -125,7 +135,7 @@ both would then score as wrong, with no error raised anywhere.
 ## 4. Mismatch taxonomy — the actionable part
 
 ### (A) Exact match — 3 attributes
-해상도, 파일크기, 파일포맷. All file-derived and deterministic. **These are the only attributes that
+해상도 (resolution), 파일크기 (file size), 파일포맷 (file format). All file-derived and deterministic. **These are the only attributes that
 will never drift.**
 
 ### (B) Formatting and type differences — 2 attributes (pass today, fail under strict scoring)
@@ -136,14 +146,14 @@ will never drift.**
 ```
 
 Both pass only because the comparator normalizes whitespace and unwraps single-element lists. Under
-exact string matching, **both would fail**. The space in 제목 originates in the OCR/extraction of the
+exact string matching, **both would fail**. The space in 제목 (title) originates in the OCR/extraction of the
 contract, not in the source metadata. The same artifact appears inside `economic_rights`:
 `2 차적저작물작성권` (space after the numeral).
 
 **Action:** if the certification body scores by exact match, these become losses — roughly 2 of 7
 attributes on this set. It must be settled in the test procedure document.
 
-### (C) Vocabulary mismatch — 키워드 (structural problem)
+### (C) Vocabulary mismatch — 키워드 (keywords) — a structural problem
 
 ```
 GT:        ['소장품', '유물']                                    ← classification vocabulary
@@ -157,7 +167,7 @@ The extraction is arguably **more useful** than the answer key: it identifies th
 This is the same taxonomy-versus-content mismatch already recorded for 공유마당's `분류_장르` field.
 **The keyword answer key is the problem, not the model.**
 
-### (D) Not extracted — 라이선스 유형 (structurally unavailable)
+### (D) Not extracted — 라이선스 유형 (licence type) — structurally unavailable
 
 The document is an exclusive copyright licence agreement (저작재산권 독점적 이용허락 계약서). It never
 states a 공공누리 (Korea Open Government Licence) type, because that is a licence designation
@@ -169,11 +179,11 @@ HM컴퍼니's rights-type classification indicator — an overlap that needs res
 
 ### (E) No ground truth — 3 attributes
 
-설명, 주요 색상, 개체 범주. The pipeline produced plausible and apparently correct values for all
+설명 (description), 주요 색상 (dominant colours), 개체 범주 (object categories). The pipeline produced plausible and apparently correct values for all
 three. **None can be credited**, because no ground truth exists in any source: the KOGL export has no
 description column, and neither colour nor object category exists anywhere.
 
-### (F) Definition mismatch — 파일 생성 날짜
+### (F) Definition mismatch — 파일 생성 날짜 (file creation date)
 
 The plan asks for the *file* creation date; the only available truth is 제작일자 = `조선` (a dynasty,
 not a date). Excluded by default as a definition mismatch rather than scored as wrong.
@@ -206,12 +216,12 @@ Two consequences:
 
 | # | Item | Rationale |
 |---|---|---|
-| 1 | **Replace the keyword ground-truth source** | (C), §5 — classification vocabulary vs content vocabulary. KOGL `주제어` is closer, but did not overlap even here |
+| 1 | **Replace the keyword ground-truth source** | (C), §5 — classification vocabulary vs content vocabulary. KOGL `주제어` (subject terms) is closer, but did not overlap even here |
 | 2 | **Agree strict vs fuzzy scoring** | (B) — whitespace and array differences alone flip 2 attributes |
-| 3 | **Decide how 라이선스 유형 is handled** | (D) — not extractable from a contract; supply it as input or exclude it from scoring |
-| 4 | **Obtain ground truth for 주요 색상 and 개체 범주** | (E) — human labelling or a computable rubric |
-| 5 | **Make merge precedence explicit** | §2-3 — currently correct by accident |
-| 6 | **Agree the definition of 파일 생성 날짜** | (F) |
+| 3 | **Decide how 라이선스 유형 (licence type) is handled** | (D) — not extractable from a contract; supply it as input or exclude it from scoring |
+| 4 | **Obtain ground truth for 주요 색상 (dominant colours) and 개체 범주 (object categories)** | (E) — human labelling or a computable rubric |
+| 5 | **Guard `INHERITABLE_FIELDS` against work-scoped additions** | §2-3 — precedence is already explicit; the list is the control point |
+| 6 | **Agree the definition of 파일 생성 날짜 (file creation date)** | (F) |
 
 Items 1–3 alone determine whether this set scores 71% or 100%.
 
