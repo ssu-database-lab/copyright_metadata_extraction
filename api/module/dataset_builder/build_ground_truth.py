@@ -40,6 +40,12 @@ BUCKETS = ("expired", "donated", "ccl", "kogl")
 
 # 요약정보가 설명 정답으로 쓸 수 없는 경우들 (실측: 전체의 27%)
 _ADMIN = re.compile(r"기증식별번호|기증신청|신청인구분|저작재산권자 본인|기증자")
+# 요약정보의 10.5%는 시각 설명이 아니라 **출처·귀속 문구**다.
+#   "한국정책방송원(KTV)에서 제공한, 대한민국 근현대의 사진 자료"
+#   "James Duncan Canadian의 국외 일러스트 작품"
+# 모델이 화면에서 만들어낼 수 없는 정보라 설명 정답으로 쓰면 구조적 오답이 된다.
+_PROVENANCE = re.compile(r"에서\s*제공|제공한|제공된|출처\s*[:：]|개인\s*소장|소장품입니다|기탁")
+_ATTRIB_ONLY = re.compile(r"^[^.]{0,40}(의|작)\s*(작품|일러스트\s*작품|사진\s*자료|자료)\s*\.?$")
 _HOLDER_SUFFIX = re.compile(r"\s*\(저작물\s*[\d,]+\s*건\)\s*$")
 _UNKNOWN = {"미상", "-", "없음", "미기재", "불명"}
 # 구 records.jsonl 의 분류_장르 값에는 UCI 위젯 텍스트가 붙어 있다
@@ -87,6 +93,10 @@ def description_gt(summary, title, holder) -> tuple[str | None, str]:
         return None, "기증 행정정보(시각 설명 아님)"
     if len(s) < 15:
         return None, "15자 미만(저자명 복사 등)"
+    if _PROVENANCE.search(s):
+        return None, "출처·제공 문구(시각 설명 아님)"
+    if _ATTRIB_ONLY.match(s):
+        return None, "귀속 표기만(시각 설명 아님)"
     if s in norm(title) + norm(holder):
         return None, "제목/저자 복사"
     return s, "ok"

@@ -174,13 +174,27 @@ def cmp_content_recall(gt, got, threshold: float = 0.30) -> Tuple[bool, Dict]:
 
     정밀도가 아니라 재현율을 쓰는 이유: 출력이 정답보다 길고 상세한 것은
     감점 사유가 아니다. 정답이 말한 핵심을 담았는지가 관심사다.
+
+    ⚠️ 토큰 완전일치를 쓰면 한국어에서 조사 때문에 무너진다. 실측 사례:
+         정답 "…천사의 날개와 왕관 그리고 부를 상징하는 금목걸이를…"
+         출력 "…커다란 날개가 … 왕관이 배치되어 … 금색 체인 목걸이가…"
+       날개·왕관·목걸이가 다 들어 있는데 '날개와'≠'날개가' 라 recall 0.0 이 나왔다.
+       형태소 분석기 의존성을 추가하지 않고, **2자 이상 어간이 상대 문자열에
+       포함되면 적중**으로 본다(긴 어간부터 시도). 위 사례는 0.0 → 0.33 이 된다.
     """
-    G, O = set(tokens(gt)), set(tokens(got))
+    G = tokens(gt)
     if not G:
         return False, {"method": "content_recall", "recall": None}
-    rec = len(G & O) / len(G)
-    return rec >= threshold, {"method": "content_recall", "recall": round(rec, 3),
-                              "hit": sorted(G & O)[:8]}
+    blob = "".join(tokens(got))
+    hit = []
+    for g in G:
+        for n in range(len(g), 1, -1):
+            if g[:n] in blob:
+                hit.append(g)
+                break
+    rec = len(hit) / len(G)
+    return rec >= threshold, {"method": "content_recall(stem)", "recall": round(rec, 3),
+                              "hit": hit[:8], "gt_n": len(G)}
 
 
 # ---------------------------------------------------------------------------
