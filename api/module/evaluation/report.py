@@ -52,7 +52,8 @@ def aggregate(results: List[Dict]) -> Dict[str, Any]:
     tot_match = sum(r.get("n_match", 0) for r in ok)
     macro = [r["accuracy"] for r in ok if r.get("accuracy") is not None]
 
-    per_attr = defaultdict(lambda: {"scored": 0, "match": 0, "na": 0, "no_gt": 0, "tier_skip": 0})
+    per_attr = defaultdict(lambda: {"scored": 0, "match": 0, "na": 0, "no_gt": 0,
+                                    "tier_skip": 0, "batch": 0, "batch_match": 0})
     by_bucket = defaultdict(lambda: {"n": 0, "scored": 0, "match": 0})
     by_media = defaultdict(lambda: {"n": 0, "scored": 0, "match": 0})
 
@@ -69,6 +70,9 @@ def aggregate(results: List[Dict]) -> Dict[str, Any]:
             if st == "scored":
                 a["scored"] += 1
                 a["match"] += bool(info.get("match"))
+                if info.get("batch_level"):
+                    a["batch"] += 1
+                    a["batch_match"] += bool(info.get("match"))
             elif st == "not_applicable":
                 a["na"] += 1
             elif st == "skipped_tier":
@@ -106,14 +110,20 @@ def render_markdown(agg: Dict[str, Any], title: str = "속성정보 추출 평�
     L.append("> 목표: **85%** (연구개발계획서 §2-4, 2단계)")
     L.append("")
 
-    L += ["## 속성별", "", "| 속성 | 채점 | 적중 | 정확도 | 해당없음 | 정답없음 | 정의불일치 |",
-          "|---|---|---|---|---|---|---|"]
+    L += ["## 속성별", "",
+          "| 속성 | 채점 | 적중 | 정확도 | 항목별 정확도 | 해당없음 | 정답없음 | 정의불일치 |",
+          "|---|---|---|---|---|---|---|---|"]
     for a in ATTRIBUTES:
         d = agg["per_attr"].get(a.name)
         if not d:
             continue
+        # 컬렉션 공통 태그를 뺀 '항목별' 정확도를 함께 보여준다 — 모델이 픽셀에서
+        # 만들어낼 수 없는 배치 태그가 섞이면 수치가 왜곡된다.
+        item_n = d["scored"] - d.get("batch", 0)
+        item_h = d["match"] - d.get("batch_match", 0)
+        item = _pct(item_h, item_n) if item_n else "—"
         L.append(f"| {a.name} | {d['scored']} | {d['match']} | "
-                 f"{_pct(d['match'], d['scored'])} | {d['na']} | {d['no_gt']} | "
+                 f"{_pct(d['match'], d['scored'])} | {item} | {d['na']} | {d['no_gt']} | "
                  f"{d.get('tier_skip', 0)} |")
     L.append("")
 

@@ -253,6 +253,11 @@ def score_set(gt_attributes: Dict[str, Dict], extracted: Dict[str, Any],
         match, detail = fn(gt_val, got_val)
         n_scored += 1
         n_match += bool(match)
+        # 컬렉션 공통 태그는 배치를 설명할 뿐 개별 저작물 화면 내용이 아니다.
+        # 채점에는 넣되 표시해 두어, 리포트에서 항목별/컬렉션별을 분리해 볼 수 있게 한다.
+        if gt_entry.get("batch_level"):
+            detail = {**detail, "batch_level": True,
+                      "batch_size": gt_entry.get("batch_size")}
         per[a.name] = {"status": "scored", "match": bool(match), "tier": tier,
                        "gt": gt_val if not isinstance(gt_val, list) else gt_val[:5],
                        "got": got_val if not isinstance(got_val, list) else got_val[:5],

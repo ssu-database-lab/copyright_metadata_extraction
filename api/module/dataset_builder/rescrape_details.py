@@ -50,6 +50,11 @@ _TAG = re.compile(r"<[^>]+>")
 _UCI = re.compile(r"\s*UCI\s*(로고|코드).*$", re.S)
 # 상세페이지에는 문의 폼도 <dl>로 들어있다 — 메타데이터가 아니므로 제외
 _FORM_LABEL = re.compile(r"^필수입력|^문의|^이메일$|^연락처$")
+# 키워드는 <dl> 이 아니라 검색 링크 <li><a href="...list.do?menuNo=200070&kwd=X">X</a></li>
+# 형태로 들어 있다. 초판 파서가 <dl> 만 읽어 이 필드를 통째로 놓쳤다 —
+# 실측 98% 보유, 평균 6.9개로 분류(장르) 3단 체계보다 훨씬 키워드다운 값이다.
+_KEYWORD_LINK = re.compile(
+    r'search/list\.do\?menuNo=200070&(?:amp;)?kwd=[^"]*"[^>]*>([^<]{1,40})</a>')
 
 _print_lock = threading.Lock()
 
@@ -61,6 +66,16 @@ def clean(s: str) -> str:
               .replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"'))
     txt = _UCI.sub("", txt)
     return re.sub(r"\s+", " ", txt).strip()
+
+
+def parse_keywords(html_text: str) -> list:
+    """저작물 키워드(검색 태그) 목록. 등장 순서를 지키며 중복 제거."""
+    out = []
+    for m in _KEYWORD_LINK.findall(html_text):
+        v = clean(m)
+        if v and v not in out:
+            out.append(v)
+    return out
 
 
 def parse_all_labels(html_text: str) -> dict:
@@ -106,7 +121,8 @@ def fetch_one(session: requests.Session, rec: dict, media: str, bucket: str,
             if not fields:
                 return {**base, "ok": False, "error": "no_dl_fields"}
             time.sleep(delay)
-            return {**base, "ok": True, "fields": fields}
+            return {**base, "ok": True, "fields": fields,
+                    "keywords": parse_keywords(r.text)}
         except requests.Timeout:
             if attempt == 3:
                 return {**base, "ok": False, "error": "timeout"}
@@ -135,7 +151,7 @@ def load_done(out_path: Path) -> set:
 
 
 def run_cell(media: str, bucket: str, workers: int, delay: float,
-             limit: int | None) -> dict:
+             limit: int | None, refresh: bool = False) -> dict:
     cell_dir = DATA_ROOT / media / bucket
     src = cell_dir / "records.jsonl"
     if not src.exists():
@@ -152,6 +168,8 @@ def run_cell(media: str, bucket: str, workers: int, delay: float,
                 records.append(r)
 
     out_path = cell_dir / "detail_meta.jsonl"
+    if refresh and out_path.exists():
+        out_path.unlink()          # 파서가 바뀌었으므로 전량 재수집
     done = load_done(out_path)
     todo = [r for r in records if str(r.get("wrtSn")) not in done]
     if limit:
@@ -202,6 +220,8 @@ def main() -> int:
     ap.add_argument("--delay", type=float, default=0.4,
                     help="워커별 요청 간 대기(초). 4워커×0.4s ≈ 2.5 req/s")
     ap.add_argument("--limit", type=int, default=None, help="셀당 상한(파일럿용)")
+    ap.add_argument("--refresh", action="store_true",
+                    help="이미 수집한 건도 다시 받는다(파서 확장 후 재수집용)")
     args = ap.parse_args()
 
     if args.cells == "all":
@@ -215,7 +235,7 @@ def main() -> int:
     t0 = time.time()
     summary = []
     for media, bucket in cells:
-        s = run_cell(media, bucket, args.workers, args.delay, args.limit)
+        s = run_cell(media, bucket, args.workers, args.delay, args.limit, args.refresh)
         summary.append(s)
         print(f"[done] {s}", flush=True)
 
