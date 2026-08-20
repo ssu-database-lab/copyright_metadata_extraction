@@ -1207,7 +1207,7 @@ function legBlock(title, cls, leg) {
         + '<div class="scrollbox" style="max-height:260px;"><table class="kv"><tbody>' + rows + "</tbody></table></div>";
 }
 async function openSetModal(setId) {
-    if (!S.job) return;
+    if (!S.jobId) return;
     const back = $("setModal"), body = $("smBody");
     $("smTitle").textContent = "세트 " + setId;
     $("smSub").textContent = "";
@@ -1215,7 +1215,7 @@ async function openSetModal(setId) {
     back.classList.add("open");
     let d;
     try {
-        const r = await fetch("/api/batch/" + encodeURIComponent(S.job) + "/set/" + encodeURIComponent(setId) + "/detail");
+        const r = await fetch("/api/batch/" + encodeURIComponent(S.jobId) + "/set/" + encodeURIComponent(setId) + "/detail");
         if (!r.ok) throw new Error("HTTP " + r.status);
         d = await r.json();
     } catch (e) {
@@ -1251,7 +1251,7 @@ async function openSetModal(setId) {
     h += legBlock("계약서 leg", "leg-contract", (d.legs || {}).contract);
     h += legBlock("저작물 leg (멀티모달)", "leg-work", (d.legs || {}).work);
     h += '<div class="dlrow" style="margin-top:14px;"><a class="btn-cta" style="text-decoration:none;padding:8px 16px;" href="/api/batch/'
-       + encodeURIComponent(S.job) + "/set/" + encodeURIComponent(setId) + '/download">전체 산출물 ZIP 내려받기</a></div>';
+       + encodeURIComponent(S.jobId) + "/set/" + encodeURIComponent(setId) + '/download">전체 산출물 ZIP 내려받기</a></div>';
     body.innerHTML = h;
 }
 function closeSetModal() { $("setModal").classList.remove("open"); }
@@ -1879,10 +1879,10 @@ function attrCellsHtml(perAttr) {
 // 세트별 파이프라인 산출물(OCR·NER·LLM·통합검증) 다운로드 링크.
 // 채점 결과만 보고 "왜 틀렸는지" 확인할 방법이 없으면 곤란하다.
 function artifactCellHtml(r) {
-    if (!S.job) return "—";
+    if (!S.jobId) return "—";
     const has = r.work_request_id || r.contract_request_id;
     if (!has) return '<span class="muted tiny" title="구버전 실행 — request_id 미기록">—</span>';
-    const base = "/api/batch/" + encodeURIComponent(S.job) + "/set/" + encodeURIComponent(r.set_id);
+    const base = "/api/batch/" + encodeURIComponent(S.jobId) + "/set/" + encodeURIComponent(r.set_id);
     return '<a class="dl-link" href="' + base + '/download" title="OCR·NER·LLM·통합검증 산출물 + 채점결과 ZIP">ZIP</a>'
          + ' <a class="dl-link" href="' + base + '/artifacts" target="_blank" title="파일 목록 보기">목록</a>';
 }
