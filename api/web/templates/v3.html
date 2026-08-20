@@ -430,6 +430,31 @@
              border:1px solid #cfdcfa; border-radius:5px; padding:1px 6px; margin-right:3px;
              display:inline-block; white-space:nowrap; }
   .dl-link:hover { background:#eef2fb; }
+  .setlink { color:#3b6ef5; text-decoration:none; border-bottom:1px dotted #9db6f0; cursor:pointer; }
+  .setlink:hover { background:#eef2fb; }
+  .modal-back { position:fixed; inset:0; background:rgba(16,24,40,.55); display:none;
+                align-items:flex-start; justify-content:center; z-index:900; padding:28px 16px; overflow:auto; }
+  .modal-back.open { display:flex; }
+  .modal { background:#fff; border-radius:14px; width:min(1120px,100%); box-shadow:0 20px 60px rgba(0,0,0,.28);
+           border:1px solid #e3e8f0; }
+  .modal-hd { display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid #edf0f6;
+              position:sticky; top:0; background:#fff; border-radius:14px 14px 0 0; z-index:2; }
+  .modal-hd h3 { font-size:1.02rem; margin:0; }
+  .modal-bd { padding:16px 20px 22px; }
+  .modal-x { margin-left:auto; background:#eef2fb; color:#28406e; border:0; border-radius:8px;
+             padding:6px 12px; cursor:pointer; font-size:.85rem; }
+  .legend { font-size:.78rem; color:#5a6a85; margin:6px 0 12px; }
+  .legend b { margin-right:10px; font-weight:600; }
+  .v-ok { color:#0f8a63; font-weight:700; }
+  .v-no { color:#d33; font-weight:700; }
+  .v-na { color:#9aa7bd; }
+  .leg-pill { font-size:.7rem; border-radius:5px; padding:1px 7px; }
+  .leg-contract { background:#fdf0e0; color:#b26a08; }
+  .leg-work { background:#e7f3ec; color:#1d7a46; }
+  .kv { font-size:.8rem; }
+  .kv td { padding:4px 8px; border-bottom:1px solid #f2f5fa; vertical-align:top; }
+  .kv td.k { color:#28406e; font-weight:500; white-space:nowrap; width:190px; }
+  .dlrow { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 4px; }
 </style>
 </head>
 <body>
@@ -1126,6 +1151,118 @@ async function loadModels() {
     }
 }
 
+
+// ── 세트 상세 모달 — 감사(audit)용 ───────────────────────────────────────
+// 표의 정확도 숫자만으로는 "왜 틀렸는지" 알 수 없다. 속성별 정답/추출/판정과
+// 계약서·저작물 leg 각각의 메타데이터, 단계별 산출물 다운로드를 한 화면에 모은다.
+function fmtVal(v) {
+    if (v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length))
+        return '<span class="muted">—</span>';
+    if (Array.isArray(v)) return esc(v.map(String).join(", "));
+    if (typeof v === "object") return esc(JSON.stringify(v));
+    return esc(String(v));
+}
+function verdictCell(a) {
+    if (a.status === "scored")
+        return a.match ? '<span class="v-ok">✓ 적중</span>' : '<span class="v-no">✗ 불일치</span>';
+    if (a.status === "not_applicable") return '<span class="v-na">– 해당없음</span>';
+    if (a.status === "skipped_tier")  return '<span class="v-na">· 정의불일치</span>';
+    return '<span class="v-na">· 정답없음</span>';
+}
+// 산출물 파일을 단계별로 분류해 직접 내려받게 한다
+function classifyFiles(files, rid) {
+    const g = {OCR: [], NER: [], LLM: [], 통합검증: [], 기타: []};
+    (files || []).forEach(f => {
+        const p = f.path.toLowerCase();
+        if (p.startsWith("ocr/") || p.endsWith(".txt") || p.endsWith(".ocr")) g.OCR.push(f);
+        else if (p.startsWith("ner/")) g.NER.push(f);
+        else if (p.indexOf("consolidated") >= 0) g["통합검증"].push(f);
+        else if (p.indexOf("llm_metadata") >= 0) g.LLM.push(f);
+        else g["기타"].push(f);
+    });
+    let out = '<div class="dlrow">';
+    Object.keys(g).forEach(k => {
+        g[k].forEach(f => {
+            const href = "/download/" + encodeURIComponent(rid) + "/" + f.path.split("/").map(encodeURIComponent).join("/");
+            out += '<a class="dl-link" href="' + href + '" title="' + esc(f.path) + '">'
+                 + esc(k) + " · " + esc(f.path.split("/").pop()) + "</a>";
+        });
+    });
+    return out + "</div>";
+}
+function legBlock(title, cls, leg) {
+    if (!leg || !leg.request_id)
+        return '<h4>' + title + '</h4><div class="tiny muted">이 세트에는 해당 leg 가 없습니다.</div>';
+    if (leg.missing)
+        return '<h4>' + title + '</h4><div class="notice warn tiny">산출물 디렉터리를 찾을 수 없습니다 (' + esc(leg.request_id) + ')</div>';
+    const m = leg.metadata || {};
+    const keys = Object.keys(m);
+    let rows = keys.map(k => "<tr><td class='k'>" + esc(k) + "</td><td>" + fmtVal(m[k]) + "</td></tr>").join("");
+    if (!rows) rows = "<tr><td colspan='2' class='muted tiny'>채워진 필드 없음</td></tr>";
+    return '<h4>' + title + ' <span class="leg-pill ' + cls + '">' + keys.length + '필드</span></h4>'
+        + '<div class="tiny muted" style="margin:4px 0 6px;">request_id ' + esc(leg.request_id)
+        + (leg.ocr_chars != null ? " · OCR " + leg.ocr_chars + "자" : "")
+        + (leg.entity_count != null ? " · NER 엔티티 " + leg.entity_count : "") + "</div>"
+        + classifyFiles(leg.files, leg.request_id)
+        + '<div class="scrollbox" style="max-height:260px;"><table class="kv"><tbody>' + rows + "</tbody></table></div>";
+}
+async function openSetModal(setId) {
+    if (!S.job) return;
+    const back = $("setModal"), body = $("smBody");
+    $("smTitle").textContent = "세트 " + setId;
+    $("smSub").textContent = "";
+    body.innerHTML = '<div class="tiny muted"><span class="spin dark"></span> 불러오는 중…</div>';
+    back.classList.add("open");
+    let d;
+    try {
+        const r = await fetch("/api/batch/" + encodeURIComponent(S.job) + "/set/" + encodeURIComponent(setId) + "/detail");
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        d = await r.json();
+    } catch (e) {
+        body.innerHTML = '<div class="notice warn">상세를 불러오지 못했습니다: ' + esc(String(e.message || e)) + "</div>";
+        return;
+    }
+    const acc = (d.accuracy === null || d.accuracy === undefined) ? "—" : pct(d.accuracy);
+    $("smSub").textContent = (d.media || "") + " / " + (d.license_bucket || "") +
+        " · " + (d.n_match || 0) + "/" + (d.n_scored || 0) + " = " + acc +
+        (d.elapsed_sec ? " · " + d.elapsed_sec + "s" : "");
+    let h = "";
+    if (!d.ok) h += '<div class="notice warn">실패: ' + esc(String(d.error || "원인 미상")) + "</div>";
+    h += '<div class="legend"><b class="v-ok">✓ 적중</b><b class="v-no">✗ 불일치</b>'
+       + '<b class="v-na">– 해당없음</b><b class="v-na">· 정답없음 / 정의불일치</b></div>';
+    h += '<div class="scrollbox"><table><thead><tr><th>속성</th><th>기대값 (정답)</th>'
+       + "<th>추출값</th><th>판정</th><th>산출 leg</th><th>비고</th></tr></thead><tbody>";
+    (d.attributes || []).forEach(a => {
+        const legCls = a.leg === "contract" ? "leg-contract" : "leg-work";
+        const legTxt = a.leg === "contract" ? "계약서" : "저작물";
+        let note = a.note ? esc(a.note) : "";
+        if (a.recall != null) note = (note ? note + " · " : "") + "recall " + a.recall;
+        if (a.batch_level) note = (note ? note + " · " : "") + "컬렉션 공통 태그";
+        if (a.tier) note = (note ? note + " · " : "") + "tier " + esc(a.tier);
+        h += "<tr><td class='k'>" + esc(a.name) + "</td><td>" + fmtVal(a.expected) + "</td><td>"
+           + fmtVal(a.extracted) + "</td><td>" + verdictCell(a) + "</td><td><span class='leg-pill "
+           + legCls + "'>" + legTxt + "</span></td><td class='tiny muted'>" + note + "</td></tr>";
+    });
+    h += "</tbody></table></div>";
+    if (d.classification)
+        h += '<div class="tiny muted" style="margin-top:8px;">분류(장르): '
+           + esc([d.classification.detail, d.classification.genre, d.classification.category].filter(Boolean).join(" · "))
+           + " <span class='muted'>(우리 11속성 아님 — 유형 분류 지표 영역)</span></div>";
+    h += legBlock("계약서 leg", "leg-contract", (d.legs || {}).contract);
+    h += legBlock("저작물 leg (멀티모달)", "leg-work", (d.legs || {}).work);
+    h += '<div class="dlrow" style="margin-top:14px;"><a class="btn-cta" style="text-decoration:none;padding:8px 16px;" href="/api/batch/'
+       + encodeURIComponent(S.job) + "/set/" + encodeURIComponent(setId) + '/download">전체 산출물 ZIP 내려받기</a></div>';
+    body.innerHTML = h;
+}
+function closeSetModal() { $("setModal").classList.remove("open"); }
+document.addEventListener("click", e => {
+    const a = e.target.closest && e.target.closest("a.setlink");
+    if (a) { e.preventDefault(); openSetModal(a.getAttribute("data-set")); return; }
+    if (e.target && e.target.id === "smClose") closeSetModal();
+    if (e.target && e.target.id === "setModal") closeSetModal();   // 배경 클릭
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSetModal(); });
+
 async function refreshJobs() {
     const r = await api("/api/batch/jobs");
     if (!r.ok) {
@@ -1767,7 +1904,8 @@ function renderResults() {
             : (acc === null ? '<span class="muted">채점없음</span>'
                 : '<span style="font-weight:700;color:' + (acc >= TARGET ? "#0f8a63" : "#b26a08") + '">' + pct(acc) + "</span>");
         return "<tr class='" + (okv ? "" : "row-fail") + "'>" +
-            "<td class='k mono'>" + esc(r.set_id) + "</td>" +
+            "<td class='k mono'><a class='setlink' href='#' data-set='" + esc(r.set_id) +
+                "' title='세트 상세 · 감사'>" + esc(r.set_id) + "</a></td>" +
             "<td class='tiny'>" + esc(r.media || "—") + "</td>" +
             "<td class='tiny'>" + esc(r.license_bucket || "—") + "</td>" +
             "<td class='num'>" + accHtml + "</td>" +
@@ -1829,5 +1967,15 @@ $("btnOpenJson").addEventListener("click", () => {
     setInterval(refreshJobs, 7000);
 })();
 </script>
+<div class="modal-back" id="setModal">
+  <div class="modal">
+    <div class="modal-hd">
+      <h3 id="smTitle">세트 상세</h3>
+      <span id="smSub" class="tiny muted"></span>
+      <button class="modal-x" id="smClose">닫기 (Esc)</button>
+    </div>
+    <div class="modal-bd" id="smBody"></div>
+  </div>
+</div>
 </body>
 </html>

@@ -488,3 +488,107 @@ async def set_download(job_id: str, set_id: str):
     return StreamingResponse(
         buf, media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="set_{set_id}_artifacts.zip"'})
+
+
+# ---------------------------------------------------------------------------
+# 세트 상세 — 감사(audit)용 단일 응답
+# ---------------------------------------------------------------------------
+# 모달 하나로 "무엇이 맞고 무엇이 틀렸는지"를 끝까지 볼 수 있어야 한다:
+# 속성별 정답/추출/판정 + 계약서·저작물 leg 각각의 메타데이터 + 산출물 파일 목록.
+# 이걸 여러 엔드포인트로 쪼개면 UI 가 3번 왕복하고 상태가 어긋난다.
+
+_ATTR_ORDER = ["제목", "저자", "설명", "라이선스 유형", "키워드", "해상도",
+               "주요 색상", "개체 범주", "파일크기", "파일포맷", "파일 생성 날짜"]
+# 어느 leg 가 채우는 속성인지 — 모달에서 책임 소재를 보여주기 위함
+_ATTR_LEG = {"제목": "contract", "저자": "contract", "라이선스 유형": "contract"}
+
+
+def _load_gt(manifest_dir: Path) -> Dict[str, Dict]:
+    p = manifest_dir / "ground_truth.jsonl"
+    out: Dict[str, Dict] = {}
+    if not p.exists():
+        return out
+    with p.open(encoding="utf-8") as f:
+        for line in f:
+            try:
+                g = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            key = str(g.get("set_id") or g.get("id") or "")
+            if key:
+                out[key] = g
+    return out
+
+
+def _leg_metadata(rid: Optional[str]) -> Dict[str, Any]:
+    """leg 산출물에서 메타데이터와 파일 목록을 읽는다."""
+    if not rid:
+        return {}
+    d = RESULTS_ROOT / str(rid)
+    if not d.is_dir():
+        return {"request_id": rid, "missing": True}
+    meta, ocr_chars, entities = {}, None, None
+    jf = d / "llm_metadata.json"
+    if jf.exists():
+        try:
+            r = json.loads(jf.read_text(encoding="utf-8"))
+            meta = r.get("consolidated_metadata") or r.get("metadata") or {}
+            ocr_chars = len(r.get("ocr_text") or "")
+            entities = r.get("entity_count")
+        except (OSError, json.JSONDecodeError):
+            pass
+    files = []
+    for f in sorted(d.rglob("*")):
+        if f.is_file():
+            files.append({"path": str(f.relative_to(d)), "bytes": f.stat().st_size})
+    return {"request_id": rid,
+            "metadata": {k: v for k, v in meta.items() if v not in (None, "", [])},
+            "ocr_chars": ocr_chars, "entity_count": entities, "files": files}
+
+
+@router.get("/{job_id}/set/{set_id}/detail")
+async def set_detail(job_id: str, set_id: str):
+    """모달 1회 호출용 — 채점 상세 + leg별 메타데이터 + 산출물 목록."""
+    job = _get(job_id)
+    rec = _set_result(job, set_id)
+    gt = _load_gt(Path(job.work_dir / "sets")) or _load_gt(job.work_dir)
+    if not gt:
+        for cand in sorted(job.work_dir.rglob("ground_truth.jsonl")):
+            gt = _load_gt(cand.parent)
+            if gt:
+                break
+    g = gt.get(str(set_id), {})
+    gattr = g.get("attributes", {})
+
+    rows = []
+    for name in _ATTR_ORDER:
+        info = (rec.get("per_attr") or {}).get(name) or {}
+        ga = gattr.get(name) or {}
+        st = info.get("status")
+        rows.append({
+            "name": name,
+            "schema_field": ga.get("schema_field"),
+            "leg": _ATTR_LEG.get(name, "work"),
+            "status": st,
+            "match": info.get("match"),
+            "expected": ga.get("value"),
+            "extracted": info.get("got"),
+            "tier": ga.get("tier"),
+            "method": info.get("method"),
+            "recall": info.get("recall"),
+            "batch_level": info.get("batch_level"),
+            "note": info.get("reason") or ga.get("note"),
+        })
+
+    return {
+        "set_id": set_id, "job_id": job_id,
+        "media": rec.get("media"), "license_bucket": rec.get("license_bucket"),
+        "ok": rec.get("ok"), "error": rec.get("error"),
+        "accuracy": rec.get("accuracy"), "n_match": rec.get("n_match"),
+        "n_scored": rec.get("n_scored"),
+        "elapsed_sec": rec.get("elapsed_sec"), "stages": rec.get("stages"),
+        "classification": g.get("classification"),
+        "attributes": rows,
+        "legs": {"contract": _leg_metadata(rec.get("contract_request_id")),
+                 "work": _leg_metadata(rec.get("work_request_id"))},
+    }

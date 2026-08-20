@@ -243,7 +243,10 @@ class UniversalOCRProcessor:
             'category_dir': category_dir,
             'doc_dir': doc_dir,
             'images_dir': images_dir,
-            'text_file': doc_dir / f"{file_path.stem}.ocr",
+            # 원문 전사는 .txt 로 저장한다. '.ocr' 은 뷰어·에디터가 텍스트로
+            # 인식하지 못해 감사·확인이 번거로웠다. NER 은 .ocr/.txt/.md 를 모두
+            # 받으므로(ner_system.py:1095) 확장자 변경이 파이프라인을 깨지 않는다.
+            'text_file': doc_dir / f"{file_path.stem}.txt",
             'result_file': doc_dir / f"{file_path.stem}_ocr_result.json"
         }
     
