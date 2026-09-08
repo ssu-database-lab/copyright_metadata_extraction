@@ -229,6 +229,18 @@ class AlibabaCloudExtractor(CloudExtractor):
             "qwen3.5-122b-a10b": "Qwen3.5-122B-A10B (recommended, best value)",
             "qwen3.5-plus": "Qwen3.5-Plus (397B-A17B, flagship)",
             "qwen3.5-flash": "Qwen3.5-Flash (35B-A3B, cost-effective)",
+            # Qwen3.6 / 3.7 / 3.8 (current generation, 2026)
+            "qwen3.8-max": "Qwen3.8-Max (2.4T MoE, 1M ctx)",
+            "qwen3.8-max-0902": "Qwen3.8-Max-0902 (refreshed snapshot)",
+            "qwen3.8-flash": "Qwen3.8-Flash (~6B active MoE, 1M ctx)",
+            "qwen3.8-27b": "Qwen3.8-27B (dense, Apache 2.0)",
+            "qwen3.8-2.4t-a95b": "Qwen3.8-2.4T-A95B (text only \u2014 cannot see images)",
+            "qwen3.7-plus": "Qwen3.7-Plus",
+            "qwen3.7-max": "Qwen3.7-Max (text only)",
+            "qwen3.7-flash": "Qwen3.7-Flash",
+            "qwen3.6-plus": "Qwen3.6-Plus",
+            "qwen3.6-35b-a3b": "Qwen3.6-35B-A3B",
+            "qwen3.6-flash": "Qwen3.6-Flash",
             # Qwen3 (previous generation)
             "qwen3-max": "Qwen3-Max",
             "qwen3-next-80b-a3b-instruct": "Qwen3-Next-80B-A3B-Instruct",
@@ -246,6 +258,17 @@ class AlibabaCloudExtractor(CloudExtractor):
             "qwen3.5-122b-a10b": "qwen3.5-122b-a10b",
             "qwen3.5-plus": "qwen3.5-plus",
             "qwen3.5-flash": "qwen3.5-flash",
+            "qwen3.8-max": "qwen3.8-max",
+            "qwen3.8-max-0902": "qwen3.8-max-0902",
+            "qwen3.8-flash": "qwen3.8-flash",
+            "qwen3.8-27b": "qwen3.8-27b",
+            "qwen3.8-2.4t-a95b": "qwen3.8-2.4t-a95b",
+            "qwen3.7-plus": "qwen3.7-plus",
+            "qwen3.7-max": "qwen3.7-max",
+            "qwen3.7-flash": "qwen3.7-flash",
+            "qwen3.6-plus": "qwen3.6-plus",
+            "qwen3.6-35b-a3b": "qwen3.6-35b-a3b",
+            "qwen3.6-flash": "qwen3.6-flash",
             "qwen3-max": "qwen3-max",
             "qwen3-next-80b-a3b-instruct": "qwen3-next-80b-a3b-instruct",
             "qwen3-vl-235b-a22b-instruct": "qwen3-vl-235b-a22b-instruct",
@@ -256,10 +279,17 @@ class AlibabaCloudExtractor(CloudExtractor):
             "qwen-vl-plus": "qwen-vl-plus",
         }
         
-        # Validate model
+        # 모델 목록은 **참고용**이지 게이트가 아니다.
+        # 하드코딩 목록은 필연적으로 뒤처진다 — 실제로 이 목록이 qwen3.5 에서 멈춰 있어
+        # 3.6/3.7/3.8 계열을 추출기·중재자로 아예 선택할 수 없었고, 7월에 권고된
+        # qwen3.7-plus 중재자 파일럿이 실행되지 못한 원인이었다.
+        # 어떤 모델이 실재하는지는 DashScope API 가 판단하게 두고, 모르는 이름은
+        # 경고만 남기고 통과시킨다(오타는 첫 호출에서 API 오류로 드러난다).
         if model_id not in self.available_models:
-            available_models = ", ".join(self.available_models.keys())
-            raise ValueError(f"Unsupported model: {model_id}. Available models: {available_models}")
+            logger.warning(
+                f"'{model_id}' 은(는) 알려진 목록에 없습니다. 그대로 DashScope 에 전달합니다. "
+                f"이름이 틀렸다면 첫 호출에서 API 오류가 납니다."
+            )
         
         self.dashscope_model_id = self.model_mapping.get(model_id, model_id)
         

@@ -249,11 +249,13 @@ class PipelineOrchestrator:
             llm_with_ocr = llm_result.copy()
             llm_with_ocr["ocr_text"] = ocr_text
 
-            fallback = (
-                "alibaba-qwen3.5-plus"
-                if consolidation_model in ("alibaba-qwen3.5-122b-a10b", "alibaba-qwen3-next-80b-a3b-instruct")
-                else None
-            )
+            # 폴백 중재자. 환경변수로 바꿀 수 있게 한다 — 기본값 qwen3.5-plus 는
+            # 2026-09 측정에서 통합검증 프롬프트를 90초 제한 안에 끝내지 못해
+            # (실측 94.9초) 전 호출이 실패하고 있었다. CONSOLIDATION_TIMEOUT_SEC 을
+            # 함께 올리지 않으면 이 폴백은 동작하지 않는다.
+            fallback = os.getenv("CONSOLIDATION_FALLBACK_MODEL", "alibaba-qwen3.5-plus")
+            if fallback.lower() in ("", "none", "off"):
+                fallback = None
             agent = ConsolidationAgent(
                 model_name=consolidation_model,
                 output_dir=str(result_dir),
@@ -268,7 +270,15 @@ class PipelineOrchestrator:
             )
 
             if result.get("success", False):
-                logger.info("Consolidation complete")
+                if result.get("consolidation_degraded"):
+                    # LLM 중재 없이 규칙 기반으로 병합된 결과다. 예외가 아니라 정상 반환이므로
+                    # 여기서 명시하지 않으면 저장 결과만 보고는 구분할 수 없다.
+                    logger.error(
+                        "통합검증이 저하 모드로 완료됨 — LLM 중재 없음. "
+                        f"사유: {result.get('degraded_reason')}"
+                    )
+                else:
+                    logger.info("Consolidation complete")
                 return result, True, None
             else:
                 error = result.get("error", "Consolidation failed")

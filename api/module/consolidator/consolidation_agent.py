@@ -6,6 +6,7 @@ This module provides the main ConsolidationAgent class that uses
 Qwen3-Next-80B to intelligently compare and merge LLM and NER results.
 """
 
+import os
 import json
 import logging
 from typing import Dict, List, Any, Optional
@@ -225,13 +226,16 @@ class ConsolidationAgent:
                     logger.error(f"Fallback model ({self.fallback_model}) also failed: {fallback_error}")
                     # Both models failed, use basic fallback
                     return self._fallback_consolidate(
-                        llm_metadata, ner_entities, field_mappings
+                        llm_metadata, ner_entities, field_mappings,
+                        reason=f"주 모델({self.model_name}) 및 폴백({self.fallback_model}) 모두 실패: "
+                               f"{type(fallback_error).__name__}: {str(fallback_error)[:120]}"
                     )
             else:
                 # Hybrid mode disabled or no fallback model, use basic fallback
-                logger.warning("Hybrid mode disabled or no fallback model, using basic consolidation")
                 return self._fallback_consolidate(
-                    llm_metadata, ner_entities, field_mappings
+                    llm_metadata, ner_entities, field_mappings,
+                    reason=f"주 모델({self.model_name}) 실패, 폴백 미설정: "
+                           f"{type(e).__name__}: {str(e)[:120]}"
                 )
     
     def _call_model_for_consolidation(
@@ -302,7 +306,13 @@ class ConsolidationAgent:
                             temperature=0.1,   # Low temperature for deterministic JSON
                             top_p=0.8,
                             max_tokens=8192,
-                            timeout=90.0,
+                            # 기본값 240초는 실측에서 나왔다(2026-09, 30계약서 × 6중재자 × 2회):
+                            #   현행 qwen3.5-122b  중앙 68초 · p95 108초
+                            #   폴백 qwen3.5-plus  중앙 149초 · p95 180초
+                            # 이전 기본값 90초에서는 폴백이 **단 한 번도 성공한 적이 없고**
+                            # (전 호출 90초×4회 재시도=365초 후 무동작 반환), 현행 모델조차
+                            # 재시도로 겨우 통과했다. 240초는 폴백 p95 에 여유를 둔 값이다.
+                            timeout=float(os.getenv('CONSOLIDATION_TIMEOUT_SEC', '240')),
                             response_format={"type": "json_object"}  # Force valid JSON output
                         )
                         
@@ -670,13 +680,21 @@ JSON response:
             "summary": summary
         }
         
+        # LLM 중재가 실제로 일어났는지. 저하된 결과를 정상 결과처럼 저장하면
+        # 감사에서 구분할 방법이 없다.
+        degraded = bool(consolidated_result.get('degraded'))
         return {
             "success": True,
             "consolidated_metadata": consolidated_result.get('consolidated_metadata', {}),
             "validation_report": validation_report,
             "llm_metadata": llm_result.get('metadata', {}),
             "ner_entities": ner_result.get('extracted_entities', []),
-            "model_used": self.model_name,
+            # 중재가 없었으면 요청 모델명을 적지 않는다 — 그 모델은 아무것도 만들지 않았다
+            "model_used": ("(규칙 기반 폴백 — LLM 중재 없음)" if degraded
+                           else consolidated_result.get('model_used') or self.model_name),
+            "requested_model": self.model_name,
+            "consolidation_degraded": degraded,
+            "degraded_reason": consolidated_result.get('degraded_reason'),
             "status": consolidated_result.get('status', 'completed'),
             "llm_confidence": consolidated_result.get('llm_confidence', 0.0)
         }
@@ -685,14 +703,18 @@ JSON response:
         self,
         llm_metadata: Dict[str, Any],
         ner_entities: List[tuple],
-        field_mappings: Dict[str, List]
+        field_mappings: Dict[str, List],
+        reason: str = "unknown"
     ) -> Dict[str, Any]:
+        """LLM 중재가 실패했을 때의 규칙 기반 병합.
+
+        **이건 성공이 아니다.** 통합검증의 핵심(LLM 중재)이 일어나지 않았고
+        결과는 LLM 추출값을 거의 그대로 통과시킨 것에 가깝다. 호출자와 저장 결과가
+        그 사실을 알 수 있어야 한다 — 예전에는 overall_confidence 를 0.6 으로 채워
+        정상 결과와 구분되지 않았고, 그래서 폴백 중재자가 전 호출 실패 중인 것을
+        아무도 알아채지 못했다(2026-09 발견).
         """
-        Fallback consolidation when LLM call fails
-        
-        Performs basic merging without LLM assistance
-        """
-        logger.info("Using fallback consolidation (no LLM)")
+        logger.error(f"통합검증 LLM 중재 실패 → 규칙 기반 폴백으로 저하됨. 사유: {reason}")
         
         consolidated = llm_metadata.copy()
         decisions = []
@@ -764,9 +786,15 @@ JSON response:
                 "llm_only_fields": sum(1 for d in decisions if d.get('decision') == 'LLM_ONLY'),
                 "ner_only_fields": sum(1 for d in decisions if d.get('decision') == 'NER_ONLY'),
                 "missing_fields": sum(1 for d in decisions if d.get('decision') == 'MISSING'),
-                "overall_confidence": 0.6  # Lower confidence for fallback
+                # 0.6 은 '조금 낮은 정상값'처럼 보여서 필터를 통과했다. LLM 중재가
+                # 아예 없었으므로 통합 신뢰도는 0 이다.
+                "overall_confidence": 0.0,
+                "degraded": True,
+                "degraded_reason": reason
             },
-            "status": "fallback"
+            "status": "fallback",
+            "degraded": True,
+            "degraded_reason": reason
         }
     
     def _get_nested_value(self, metadata: Dict[str, Any], field_path: str) -> Optional[Any]:

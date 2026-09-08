@@ -127,13 +127,15 @@ Ground truth was established by **magnifying and reading the source image direct
 
 | Model | Anchors hit | Accuracy | Trap misreads | Signature column |
 |---|---|---|---|---|
-| **qwen3-vl-235b (current)** | 28/30 | **93.3%** | 이긴구→이진구, 복대동→북대동 | 6/10 |
-| **qwen3.8-flash** | 28/30 | **93.3%** | 중산로→증산로, 이한울→이한율 | 10/10 |
-| **qwen3.8-27b** | 28/30 | **93.3%** | 이긴구→이진구, 복대동→북대동 | 9/10 |
-| qwen3.8-max-0902 | 26/30 | 86.7% | all three of the above | 0/10 |
-| qwen3.8-max | 26/30 | 86.7% | all three of the above | 0/10 |
+| **qwen3.8-flash** | **29/30** | **96.7%** | 이한울→이한율 | 10/10 |
+| qwen3-vl-235b (current) | 27/30 | 90.0% | 이긴구→이진구, **증산로9길→중산로**, 복대동→북대동 | 6/10 |
+| qwen3.8-27b | 27/30 | 90.0% | 이긴구→이진구, **증산로9길→중산로**, 복대동→북대동 | 9/10 |
+| qwen3.8-max-0902 | 27/30 | 90.0% | 이긴구→이진구, 이한울→이한율 | 0/10 |
+| qwen3.8-max | 27/30 | 90.0% | 이긴구→이진구, 이한울→이한율 | 0/10 |
 
-**Three models tie exactly; only the cells they miss differ.** The Max variants are **worse** — the 0902 document-parsing improvement is not observable on this document.
+> ⚠️ **Corrected 2026-09-08.** The first edition reported a three-way tie at 93.3%. **One ground-truth anchor was inverted.** The source reads **`증산로9길`**, not `중산로9길` — against same-scan, same-typeface controls, 품질보`증` has no stem below the horizontal bar and 수`중`영상 does, and the disputed glyph has none. External check agrees: 은평구 has 증산로9길 and **no 중산로**. So `qwen3.8-flash` was right and the incumbent wrong, and the first edition scored it the other way round. Corrected, **flash leads alone at 96.7%** and the incumbent sits at 90.0% with three misreads. Detail: `docs/ocr_robustness_and_arbiter_20260908_EN.md`
+
+Even after the correction the Max variants show no advantage on this document — the 0902 document-parsing improvement is not observable here.
 
 In the consent column [동의 확인], all 10 rows of the original are signed (rows 3, 5, 6, 7 with illegible handwriting). The incumbent leaves 4 rows **blank**; flash fills all 10 **with the printed name** — that is inference, not reading. Neither is correct, which means **signature presence in a contract must not be trusted from OCR output**.
 
@@ -222,7 +224,7 @@ August reported that the incumbent dropped a character in `체결한다` — "a 
 
 | Stage | Current | Challengers | Verdict | Basis |
 |---|---|---|---|---|
-| ① OCR | qwen3-vl-235b | 3.8-flash / 27b / max-0902 | **keep** | anchors tie at 93.3%; Max variants worse |
+| ① OCR | qwen3-vl-235b | 3.8-flash / 27b / max-0902 | **reopened** | after the anchor correction flash 96.7% > incumbent 90.0% (2026-09-08). See `ocr_robustness_and_arbiter_20260908_EN.md` |
 | ② Extraction | qwen3.5-122b | 3.8-flash / 27b | **keep** | **T1 identical at 67/90**, 2.4× slower |
 | ③ NER | klue-roberta-large | — | **keep** | only local stage (privacy design) |
 | ④ Consolidation | qwen3.5-122b | — | **keep** | never tested — see §8-2 |

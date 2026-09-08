@@ -29,13 +29,26 @@ class AlibabaCloudOCRProvider:
         "qwen3.5-flash": "Qwen3.5-Flash (35B, natively multimodal)",
     }
     
-    # Model-level fallback order for OCR
+    # 비전 불가 — OCR 로 지정하면 조용히 실패한다(실측 확인, 2026-08/09)
+    TEXT_ONLY_MODELS = {
+        "qwen3.8-2.4t-a95b",   # HTTP 200 + "이미지를 확인할 수 없어 전사할 수 없습니다" (25자)
+        "qwen3.7-max", "qwen3.7-max-preview",
+        "qwen3.6-max-preview",  # 이미지 입력 시 HTTP 400
+    }
+
+    # 모델 단위 폴백. 기존 폴백 qwen3.5-flash 는 열화 입력에서 **한 번도 측정된 적이 없다**.
+    # 2026-09 확인시험(문서 2건·4쪽·10조건·3회, 720 호출) 실측 정확도:
+    #   qwen3-vl-235b(현행) 87.4% · qwen3.8-flash 86.4% · qwen3.8-27b 83.2%
+    #   qwen3-vl-flash 80.7% · qwen-vl-ocr 80.2%
+    # qwen3.8-flash 는 현행과 1.0%p 차이에 지연도 같은 급(11.4초 vs 12.7초)이라
+    # 폴백으로 가장 근거가 좋다.
     OCR_MODEL_FALLBACK = {
-        "qwen3-vl-235b-a22b-instruct": "qwen3.5-flash",
-        "qwen3-vl-30b-a3b-instruct": "qwen3.5-flash",
-        "qwen-vl-ocr": "qwen3.5-flash",
-        "qwen-vl-plus": "qwen3.5-flash",
-        "qwen3.5-plus": "qwen3.5-flash",
+        "qwen3-vl-235b-a22b-instruct": "qwen3.8-flash",
+        "qwen3-vl-30b-a3b-instruct": "qwen3.8-flash",
+        "qwen-vl-ocr": "qwen3.8-flash",
+        "qwen-vl-plus": "qwen3.8-flash",
+        "qwen3.5-plus": "qwen3.8-flash",
+        "qwen3.8-flash": "qwen3-vl-235b-a22b-instruct",   # 역방향(순환 방지: 1단계만)
     }
 
     def __init__(self, api_key: str, model: str = "qwen3-vl-235b-a22b-instruct", region: str = "singapore",
@@ -47,10 +60,19 @@ class AlibabaCloudOCRProvider:
         self.top_p = top_p
         self.top_k = top_k
         
-        # Validate model
+        # 목록은 참고용이며 게이트가 아니다(cloud_extractor.py 와 동일 방침).
+        # 다만 **비전 불가 모델만은 막는다.** 실측된 실패 사례가 있기 때문이다:
+        # qwen3.8-2.4t-a95b·qwen3.7-max 는 이미지 입력을 오류 없이 받고 HTTP 200 으로
+        # "이미지를 확인할 수 없습니다" 라는 유창한 한국어를 돌려준다. OCR 모델로 지정하면
+        # 모든 문서의 메타데이터가 조용히 비는데, 어디에서도 오류가 나지 않는다.
+        if model in self.TEXT_ONLY_MODELS:
+            raise ValueError(
+                f"'{model}' 은(는) 텍스트 전용 모델입니다. 이미지 입력을 오류 없이 받지만 "
+                f"실제로는 읽지 못하고 정상 응답처럼 보이는 실패를 냅니다. OCR 모델로 쓸 수 없습니다."
+            )
         if model not in self.AVAILABLE_MODELS:
-            available_models = ", ".join(self.AVAILABLE_MODELS.keys())
-            raise ValueError(f"Unsupported model: {model}. Available models: {available_models}")
+            logger.warning(f"OCR 모델 '{model}' 은(는) 알려진 목록에 없습니다. 그대로 사용합니다. "
+                           f"비전 지원 여부를 먼저 확인하세요(합성 이미지 1장으로 판독 확인).")
         
         # Map model names to DashScope model IDs
         self.model_mapping = {
