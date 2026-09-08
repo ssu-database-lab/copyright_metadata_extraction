@@ -20,7 +20,8 @@ param(
   [string]$In   = "C:\Users\user\AppData\Local\Temp\hwpx_convert\in",
   [string]$Out  = "C:\Users\user\AppData\Local\Temp\hwpx_convert\out",
   [string]$Exe  = "C:\Program Files (x86)\Hnc\Office 2024\HOffice130\Bin\Hwp.exe",
-  [switch]$SkipRegister
+  [switch]$SkipRegister,
+  [switch]$Unregister
 )
 
 $ErrorActionPreference = 'Stop'
@@ -37,6 +38,19 @@ if (-not (Test-Path $Exe)) { Write-Host "Hwp.exe not found: $Exe" -ForegroundCol
 # ---- COM 등록 (HKCU, 사용자 단위) -------------------------------------------
 # reg.exe 로 하면 경로에 공백과 따옴표가 섞여 인용이 깨진다("ERROR: Invalid syntax").
 # PowerShell 네이티브 cmdlet 은 인용을 직접 다루지 않으므로 그 문제가 없다.
+if ($Unregister) {
+  # HKCU 항목은 HKCR 병합에서 HKLM 보다 우선한다. 정식 등록(/regserver)을 하려면
+  # 먼저 이걸 지워야 손으로 쓴 불완전한 등록이 정식 등록을 가리지 않는다.
+  foreach ($k in @("HKCU:\Software\Classes\CLSID\$CLSID",
+                   "HKCU:\Software\Classes\HWPFrame.HwpObject",
+                   "HKCU:\Software\Classes\HWPFrame.HwpObject.2")) {
+    if (Test-Path $k) { Remove-Item -Recurse -Force $k; Write-Host "removed $k" }
+  }
+  Write-Host "Done. Now run, from an ADMIN PowerShell:"
+  Write-Host "  & `"$Exe`" /regserver"
+  exit 0
+}
+
 if (-not $SkipRegister) {
   $server = '"{0}" -Automation' -f $Exe
   # 순서가 중요하다. New-Item -Force 는 이미 있는 키를 다시 만들면서 하위 키를 날린다.
@@ -47,6 +61,8 @@ if (-not $SkipRegister) {
     "HKCU:\Software\Classes\CLSID\$CLSID\LocalServer32"            = $server
     "HKCU:\Software\Classes\CLSID\$CLSID\ProgID"                   = 'HWPFrame.HwpObject.2'
     "HKCU:\Software\Classes\CLSID\$CLSID\VersionIndependentProgID" = 'HWPFrame.HwpObject'
+    "HKCU:\Software\Classes\CLSID\$CLSID\Programmable"              = ''
+    "HKCU:\Software\Classes\CLSID\$CLSID\TypeLib"                   = '{7D2B6F3C-1D95-4E0C-BF5A-5EE564186FBC}'
     "HKCU:\Software\Classes\HWPFrame.HwpObject"                     = 'HwpObject Class'
     "HKCU:\Software\Classes\HWPFrame.HwpObject\CLSID"               = $CLSID
     "HKCU:\Software\Classes\HWPFrame.HwpObject\CurVer"              = 'HWPFrame.HwpObject.2'
@@ -81,7 +97,18 @@ try {
   $hwp = New-Object -ComObject HWPFrame.HwpObject
 } catch {
   Write-Host "Failed to create COM object: $($_.Exception.Message)" -ForegroundColor Red
-  Write-Host "Check: (Get-ItemProperty 'HKCU:\Software\Classes\CLSID\$CLSID\LocalServer32').'(default)'"
+  if ($_.Exception.Message -match '80080005') {
+    Write-Host ""
+    Write-Host "The class resolves but Hancom will not start as a COM server." -ForegroundColor Yellow
+    Write-Host "Hand-written HKCU keys are only a subset of what Hancom registers"
+    Write-Host "(Programmable / TypeLib / implemented Categories). Use the supported route:"
+    Write-Host ""
+    Write-Host "  1) powershell -File `"$PSCommandPath`" -Unregister"
+    Write-Host "  2) from an ADMIN PowerShell:  & `"$Exe`" /regserver"
+    Write-Host "  3) re-run this script with -SkipRegister"
+  } else {
+    Write-Host "Check: (Get-ItemProperty 'HKCU:\Software\Classes\CLSID\$CLSID\LocalServer32').'(default)'"
+  }
   exit 1
 }
 Write-Host "HWPFrame.HwpObject created OK"
