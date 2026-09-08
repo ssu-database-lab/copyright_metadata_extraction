@@ -38,8 +38,15 @@ BUCKET={"만료":"expired","기증":"donated","CCL":"ccl","KOGL":"kogl","만료-
 IMAGE_EXTS={"jpg","jpeg","png","gif","bmp","tiff","tif","webp","psd","heic"}
 VIDEO_EXTS={"mp4","avi","mov","mkv","webm","wmv","swf","mpg","mpeg","m4v","ts","flv","3gp","ogv"}
 DOC_EXTS={"pdf","hwp","docx","doc","pptx","xlsx"}; TEXT_EXTS={"txt","md","ocr"}
-UNDECODABLE={".swf",".psd",""}                     # 라우팅은 되나 실제 처리 실패
-UNPROCESSABLE={".zip",".pptx",".ppt",".xlsx",".xls",".hwpx"}  # .hwp 는 universal_ocr._process_hwp 로 처리됨
+# 확장자만 보고 "처리 불가"로 단정하지 않는다. .swf 9건과 무확장자 1건을 ffmpeg 로
+# 실제 디코딩해 본 결과 10건 모두 768x432 키프레임이 정상 추출됐다(swf=flv1+mp3,
+# 무확장자=Microsoft ASF wmv2). 따라서 실측으로 확인된 것만 배제한다.
+UNDECODABLE={".psd"}
+PROBE_EXTS={""}          # 확장자가 없으면 ffprobe 로 컨테이너를 알아낸다
+# .hwp 는 universal_ocr.supported_extensions 에 들어 있지만 실제 처리는 되지 않는다.
+# _process_hwp(universal_ocr.py:133)는 경고만 찍고 []를 반환하는 스텁이라 OCR 텍스트가
+# 비고, 빈-OCR 조기중단 가드에 걸린다. 목록에 이름이 있다는 것과 구현이 있다는 것은 다르다.
+UNPROCESSABLE={".zip",".pptx",".ppt",".xlsx",".xls",".hwpx",".hwp"}
 THUMBS={"local_preview"}                            # 330x230 플레이스홀더/축소본 — 저작물 아님
 SRC_RANK={"gongu_gt":0,"kogl_originals":1,"gongu_fs":2}
 ZIP_CAP={"image":1_500_000,"text":1_500_000,"video":3_000_000}
@@ -47,6 +54,18 @@ ZIP_CAP={"image":1_500_000,"text":1_500_000,"video":3_000_000}
 GLYPH_BAD={"13315744","13315759","13315736","13315725","13266571","13266660"}
 DL_FAILED={"143943","144247"}                       # KOGL 서버에서 원본 삭제됨 — 재시도 불가
 NULLISH={"-","-, -","소속없음","", "nan"}
+
+def probe_container(path):
+    """확장자가 없는 파일의 실제 컨테이너를 알아낸다. 실패하면 None."""
+    try:
+        r=subprocess.run(["ffprobe","-v","error","-show_entries","format=format_name",
+                          "-of","default=nw=1:nk=1",path],
+                         capture_output=True,text=True,timeout=60)
+        fmt=(r.stdout or "").strip().split(",")[0]
+        return {"asf":".wmv","matroska":".mkv","mov":".mp4","mpegts":".ts"}.get(fmt, f".{fmt}" if fmt else None)
+    except Exception:
+        return None
+
 
 def modality(ext):
     e=ext.lower().lstrip(".")
@@ -168,26 +187,41 @@ def build_manifest(idx, gt_meta, kogl_meta, out=OUT):
         best,alts,why=pick(wid,declared)
 
         ext=os.path.splitext(best["path"])[1].lower() if best else ""
+        probed=""
+        if best and ext in PROBE_EXTS:
+            # 확장자가 없으면 라우터가 unknown 으로 흘려보낸다. 실제 컨테이너를 읽어
+            # works/{id}.wmv 처럼 담아야 영상 경로를 탄다.
+            probed=probe_container(best["path"]) or ""
+            if probed: ext=probed
         actual=modality(ext) if best else ""
-        reasons=[]
-        if not pdf:            reasons.append("CONTRACT_PDF_MISSING")
-        elif pbytes==0:        reasons.append("CONTRACT_PDF_EMPTY")
-        if best is None:       reasons.append("WORK_"+why.upper())
-        else:
-            if ext in UNPROCESSABLE: reasons.append("WORK_EXT_UNPROCESSABLE")
-            if ext in UNDECODABLE:   reasons.append("WORK_EXT_UNDECODABLE")
-            if actual!=declared:     reasons.append("MEDIA_MISMATCH")
-        if wid in GLYPH_BAD:   reasons.append("TITLE_GLYPH_CORRUPT")
+        # 두 축을 분리한다.
+        #   blocking  = 파이프라인이 아예 못 돈다 (계약서/저작물 파일 자체 문제)
+        #   scoring   = 돌긴 도는데 특정 속성의 정답을 신뢰할 수 없다
+        blocking=[]; scoring=[]
+        if not pdf:            blocking.append("CONTRACT_PDF_MISSING")
+        elif pbytes==0:        blocking.append("CONTRACT_PDF_EMPTY")
+        if best is None:       blocking.append("WORK_"+why.upper())
+        elif ext in UNPROCESSABLE: blocking.append("WORK_EXT_UNPROCESSABLE")
+        elif ext in UNDECODABLE:   blocking.append("WORK_EXT_UNDECODABLE")
+        # 미디어 라벨이 어긋나도 라우터는 확장자로 분기하므로 처리 자체는 된다.
+        # (어문 저작물이 .jpg 악보 스캔인 경우 등 — 출처 카탈로그의 라벨 오류)
+        if best is not None and actual!=declared: scoring.append("MEDIA_RELABELED")
+        # 제목의 악센트 글리프가 PDF 폰트(한양신명조)에 없어 두부 상자로 찍혔다.
+        # 본문 나머지는 정상이므로 제목만 채점에서 빼면 된다.
+        if wid in GLYPH_BAD:   scoring.append("TITLE_GLYPH_CORRUPT")
+        reasons=blocking+scoring
 
         status = ("OK" if not reasons else
                   "BOTH_MISSING" if (pbytes==0 and best is None) else
                   "NO_WORK" if best is None else
-                  "NO_CONTRACT_PDF" if pbytes==0 else "OK_WITH_WARNING")
+                  "NO_CONTRACT_PDF" if pbytes==0 else
+                  "UNUSABLE_WORK" if blocking else "OK_WITH_WARNING")
         gm=gt_meta.get(wid,{}); km=kogl_meta.get(wid,{})
         author=str(r.get("저작자") or "").strip()
         rows.append({
           "set_id":wid, "status":status,
-          "eval_ready": status=="OK",
+          "eval_ready": not blocking,          # 파이프라인 실행 가능
+          "gt_title_scorable": wid not in GLYPH_BAD,
           "exclude_reason": ";".join(reasons),
           # --- 계약서 ---
           "contract_pdf": os.path.relpath(ppath,ROOT) if ppath else "",
@@ -197,7 +231,7 @@ def build_manifest(idx, gt_meta, kogl_meta, out=OUT):
           # --- 저작물 ---
           "work_path": best["path"] if best else "",
           "work_arcname": f"works/{wid}{ext}" if best else "",
-          "work_ext": ext, "work_bytes": best["size"] if best else 0,
+          "work_ext": ext, "work_ext_probed": bool(probed), "work_bytes": best["size"] if best else 0,
           "work_source": best["source"] if best else "",
           "work_candidate_count": len(idx.get(wid,[])),
           "work_alt_paths": "|".join(e["path"] for e in alts),
