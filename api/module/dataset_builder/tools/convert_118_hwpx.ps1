@@ -39,22 +39,41 @@ if (-not (Test-Path $Exe)) { Write-Host "Hwp.exe not found: $Exe" -ForegroundCol
 # PowerShell 네이티브 cmdlet 은 인용을 직접 다루지 않으므로 그 문제가 없다.
 if (-not $SkipRegister) {
   $server = '"{0}" -Automation' -f $Exe
-  $keys = @{
+  # 순서가 중요하다. New-Item -Force 는 이미 있는 키를 다시 만들면서 하위 키를 날린다.
+  # 해시테이블은 순서가 없어서 부모가 자식보다 늦게 처리되면 방금 쓴 LocalServer32 가
+  # 사라진다 — 실제로 그렇게 되어 "Class not registered" 가 났다. 부모부터 순서대로 쓴다.
+  $keys = [ordered]@{
     "HKCU:\Software\Classes\CLSID\$CLSID"                          = 'HwpObject Class'
     "HKCU:\Software\Classes\CLSID\$CLSID\LocalServer32"            = $server
     "HKCU:\Software\Classes\CLSID\$CLSID\ProgID"                   = 'HWPFrame.HwpObject.2'
     "HKCU:\Software\Classes\CLSID\$CLSID\VersionIndependentProgID" = 'HWPFrame.HwpObject'
-    "HKCU:\Software\Classes\HWPFrame.HwpObject"                    = 'HwpObject Class'
-    "HKCU:\Software\Classes\HWPFrame.HwpObject\CLSID"              = $CLSID
-    "HKCU:\Software\Classes\HWPFrame.HwpObject\CurVer"             = 'HWPFrame.HwpObject.2'
-    "HKCU:\Software\Classes\HWPFrame.HwpObject.2"                  = 'HwpObject Class'
-    "HKCU:\Software\Classes\HWPFrame.HwpObject.2\CLSID"            = $CLSID
+    "HKCU:\Software\Classes\HWPFrame.HwpObject"                     = 'HwpObject Class'
+    "HKCU:\Software\Classes\HWPFrame.HwpObject\CLSID"               = $CLSID
+    "HKCU:\Software\Classes\HWPFrame.HwpObject\CurVer"              = 'HWPFrame.HwpObject.2'
+    "HKCU:\Software\Classes\HWPFrame.HwpObject.2"                   = 'HwpObject Class'
+    "HKCU:\Software\Classes\HWPFrame.HwpObject.2\CLSID"             = $CLSID
   }
   foreach ($k in $keys.Keys) {
-    New-Item -Path $k -Force | Out-Null
+    if (-not (Test-Path $k)) { New-Item -Path $k -Force | Out-Null }
     Set-ItemProperty -Path $k -Name '(Default)' -Value $keys[$k]
   }
-  Write-Host "COM registered under HKCU. LocalServer32 = $server"
+
+  # 썼다고 믿지 말고 되읽는다. 앞서 조용히 날아간 적이 있다.
+  $missing = @()
+  foreach ($k in $keys.Keys) {
+    # 기본값은 쓸 때 '(Default)', 읽을 때 '(default)' 로 나온다. 대소문자를 가리지 않게 읽는다.
+    $item = Get-ItemProperty -Path $k -ErrorAction SilentlyContinue
+    $v = if ($item) { $item.'(default)' } else { $null }
+    if ($null -eq $v -and $item) { $v = $item.'(Default)' }
+    if ($null -eq $v -or $v -ne $keys[$k]) { $missing += $k }
+  }
+  if ($missing.Count) {
+    Write-Host "Registry write did not stick:" -ForegroundColor Red
+    $missing | ForEach-Object { Write-Host "  $_" }
+    exit 1
+  }
+  Write-Host "COM registered under HKCU, all $($keys.Count) keys verified."
+  Write-Host "  LocalServer32 = $server"
 }
 
 # ---- 객체 생성 확인. 실패하면 118번 헛돌지 않고 여기서 멈춘다 ----------------
