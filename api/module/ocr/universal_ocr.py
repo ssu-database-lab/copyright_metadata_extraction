@@ -9,7 +9,9 @@ import os
 import sys
 import json
 import base64
+import io
 import logging
+from contextlib import closing
 from pathlib import Path
 from typing import List, Dict, Optional, Union, Generator
 from datetime import datetime
@@ -29,6 +31,14 @@ try:
     PANDAS_AVAILABLE = True
 except ImportError:
     PANDAS_AVAILABLE = False
+
+try:
+    # pyhwp — HWP v5(OLE 복합문서)의 본문 텍스트를 직접 읽는다
+    from hwp5.xmlmodel import Hwp5File
+    from hwp5.hwp5txt import TextTransform
+    HWP_AVAILABLE = True
+except ImportError:
+    HWP_AVAILABLE = False
 
 # Configure logging first
 logger = logging.getLogger(__name__)
@@ -52,7 +62,11 @@ class OCRProvider(ABC):
 
 class FileProcessor:
     """Handles file conversion to images for OCR processing."""
-    
+
+    # 텍스트를 이미 품고 있는 형식 — 이미지로 굽지 않고 원문을 바로 읽는다.
+    # (.hwp 는 스캔 이미지가 아니라 텍스트 바이너리 문서다)
+    TEXT_NATIVE_EXTENSIONS = ['.hwp', '.txt', '.md']
+
     def __init__(self, output_dir: str):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -131,9 +145,101 @@ class FileProcessor:
         return []
     
     def _process_hwp(self, file_path: Path) -> List[str]:
-        """Convert HWP to images (placeholder)."""
-        logger.warning("HWP to image conversion not implemented yet")
+        """HWP 는 extract_text() 가 텍스트를 직접 뽑는다. 여기까지 왔다면 직접
+        추출이 실패한 것이므로, 확장자만 .hwp 인 다른 포맷인지 확인한다.
+        (공유마당 배포본 중 내용이 실제로는 PDF 인 .HWP 파일이 있었다.)"""
+        try:
+            with open(file_path, 'rb') as f:
+                magic = f.read(4)
+        except Exception as e:
+            logger.error(f"Error reading HWP {file_path}: {e}")
+            return []
+
+        if magic == b'%PDF':
+            logger.info(f"{file_path.name}: 확장자는 .hwp 이지만 내용은 PDF — PDF 경로로 처리")
+            return self._process_pdf(file_path)
+
+        logger.warning(f"HWP text extraction failed and container is not PDF: {file_path.name}")
         return []
+
+    # ------------------------------------------------------------------
+    # 텍스트 직접 추출 (이미지 래스터화 없이)
+    # ------------------------------------------------------------------
+
+    def extract_text(self, file_path: str) -> Optional[str]:
+        """이미지 변환 없이 파일에서 원문 텍스트를 바로 추출한다.
+
+        OCR 단계의 목적은 '문서 → 텍스트'다. .hwp/.txt 는 이미 텍스트를 담고
+        있으므로 래스터화 → OCR 을 태우면 원문을 한 번 열화시킬 뿐이고
+        API 비용도 든다. 추출 대상이 아니거나 실패하면 None 을 돌려주어
+        호출자가 기존 이미지 경로로 계속 가게 한다.
+        """
+        file_path = Path(file_path)
+        suffix = file_path.suffix.lower()
+
+        if suffix not in self.TEXT_NATIVE_EXTENSIONS:
+            return None
+        if not file_path.exists():
+            logger.error(f"File not found: {file_path}")
+            return None
+
+        if suffix == '.hwp':
+            return self._extract_hwp_text(file_path)
+        return self._read_plain_text(file_path)
+
+    def _extract_hwp_text(self, file_path: Path) -> Optional[str]:
+        """HWP v5 문서의 본문 텍스트를 추출한다 (pyhwp)."""
+        if not HWP_AVAILABLE:
+            logger.warning("pyhwp not available. HWP text extraction skipped.")
+            return None
+
+        try:
+            buffer = io.BytesIO()
+            with closing(Hwp5File(str(file_path))) as hwp5file:
+                TextTransform().transform_hwp5_to_text(hwp5file, buffer)
+            text = buffer.getvalue().decode('utf-8', errors='replace').strip()
+        except Exception as e:
+            # HWP v3(비 OLE)·암호화·손상 문서 — 예외를 올리지 않고 빈 손으로 돌아간다.
+            logger.warning(f"HWP text extraction failed for {file_path.name}: {e}")
+            return None
+
+        if not text:
+            logger.warning(f"HWP contains no extractable text: {file_path.name}")
+            return None
+
+        # pyhwp 는 표를 통째로 '<표>' 한 토큰으로 치환하고 셀 안의 글자는 버린다.
+        # 한국어 계약서는 대부분이 표라서, 이대로 통과시키면 '<표>' 만 늘어선
+        # 문자열이 성공으로 저장되고 빈-OCR 가드도 (비어있지 않으므로) 걸리지 않는다.
+        # 실질 내용이 없으면 None 을 돌려주어 이미지 → OCR 경로로 넘긴다.
+        table_chars = text.count('<표>') * 3
+        if len(text) - table_chars < 50:
+            logger.warning(
+                f"HWP text is mostly table placeholders "
+                f"({text.count('<표>')} x '<표>' / {len(text)}자): {file_path.name} — OCR 경로로 전환")
+            return None
+
+        logger.info(f"HWP text extracted: {len(text)} characters ({file_path.name})")
+        return text
+
+    def _read_plain_text(self, file_path: Path) -> Optional[str]:
+        """평문 텍스트 파일을 읽는다. 공유마당 어문저작물 .txt 는 대부분 CP949 다."""
+        for encoding in ('utf-8', 'cp949'):
+            try:
+                text = file_path.read_text(encoding=encoding).strip()
+            except UnicodeDecodeError:
+                continue
+            except Exception as e:
+                logger.error(f"Error reading text file {file_path}: {e}")
+                return None
+            if text:
+                logger.info(f"Text file read as {encoding}: {len(text)} characters ({file_path.name})")
+                return text
+            return None
+
+        # 어느 인코딩으로도 깨끗이 안 열리면 손실을 감수하고 읽는다.
+        logger.warning(f"Unknown encoding, reading with replacement: {file_path.name}")
+        text = file_path.read_text(encoding='utf-8', errors='replace').strip()
+        return text or None
 
 class UniversalOCRProcessor:
     """Universal OCR processor supporting multiple providers and file types.
@@ -308,6 +414,12 @@ class UniversalOCRProcessor:
         try:
             output_paths = self.create_structured_output_paths(str(file_path))
             temp_file_processor = FileProcessor(output_paths['images_dir'])
+
+            # HWP/TXT 처럼 원문 텍스트를 품은 파일은 OCR 공급자를 거치지 않는다.
+            direct_text = temp_file_processor.extract_text(str(file_path))
+            if direct_text:
+                return self._save_direct_text_result(file_path, direct_text, output_paths)
+
             image_paths = temp_file_processor.process_file(str(file_path))
             
             if not image_paths:
@@ -444,6 +556,45 @@ class UniversalOCRProcessor:
                 'result_file_path': None
             }
     
+    def _save_direct_text_result(self, file_path: Path, text: str,
+                                 output_paths: Dict[str, Path]) -> Dict:
+        """이미지 OCR 없이 뽑은 원문을 OCR 결과와 동일한 모양으로 저장·반환한다.
+
+        후속 단계는 full_text(pipeline.py:120)와 output_directory 안의 .txt
+        (pipeline.py:174, ner_system.py:1095)만 보므로 키만 맞추면 그대로 돈다.
+        """
+        with open(output_paths['text_file'], 'w', encoding='utf-8') as f:
+            f.write(text)
+
+        result_data = {
+            'file_name': file_path.name,
+            'file_path': str(file_path),
+            'total_pages': 1,
+            'total_text_length': len(text),
+            'pages': [{
+                'page_number': 1,
+                'image_path': '',          # 래스터화하지 않았다
+                'extracted_text': text,
+                'text_length': len(text),
+                'status': 'success',
+                'metadata': {'extraction_method': 'direct_text'}
+            }],
+            'full_text': text,
+            'ocr_provider': 'direct_text',   # OCR 공급자 호출 없음
+            'status': 'success',
+            'failed_pages': 0,
+            'successful_pages': 1,
+            'output_directory': str(output_paths['doc_dir']),
+            'text_file_path': str(output_paths['text_file']),
+            'result_file_path': str(output_paths['result_file'])
+        }
+
+        with open(output_paths['result_file'], 'w', encoding='utf-8') as f:
+            json.dump(result_data, f, ensure_ascii=False, indent=2)
+
+        logger.info(f"Direct text extraction complete for {file_path.name}: {len(text)} characters")
+        return result_data
+
     def process_directory(self, directory_path: str) -> Dict:
         """Process all files in a directory."""
         directory_path = Path(directory_path)
@@ -511,6 +662,14 @@ class UniversalOCRProcessor:
         try:
             output_paths = self.create_structured_output_paths(str(file_path))
             temp_file_processor = FileProcessor(output_paths['images_dir'])
+
+            # HWP/TXT 는 원문을 그대로 흘려보낸다 (OCR 공급자 호출 없음)
+            direct_text = temp_file_processor.extract_text(str(file_path))
+            if direct_text:
+                self._save_direct_text_result(file_path, direct_text, output_paths)
+                yield direct_text
+                return
+
             image_paths = temp_file_processor.process_file(str(file_path))
             
             if not image_paths:
@@ -552,6 +711,13 @@ class UniversalOCRProcessor:
         try:
             output_paths = self.create_structured_output_paths(str(file_path))
             temp_file_processor = FileProcessor(output_paths['images_dir'])
+
+            direct_text = temp_file_processor.extract_text(str(file_path))
+            if direct_text:
+                result = self._save_direct_text_result(file_path, direct_text, output_paths)
+                result['processing_mode'] = 'api_client'
+                return result
+
             image_paths = temp_file_processor.process_file(str(file_path))
             
             if not image_paths:

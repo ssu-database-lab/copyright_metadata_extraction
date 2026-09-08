@@ -150,6 +150,27 @@ _LICENSE_CANON = [
 ]
 
 
+_TRUE = {"v", "V", "■", "☑", "y", "yes", "true", "허락", "o", "O", "1"}
+_FALSE = {"□", "n", "no", "false", "미허락", "x", "X", "0"}
+
+
+def cmp_bool(gt, got) -> Tuple[bool, Dict]:
+    """계약서 제2조의 권리 체크박스. 표기가 v / ■ / □ 로 섞여 있다."""
+    def norm(v):
+        if isinstance(v, bool):
+            return v
+        if v is None:
+            return None
+        t = str(v).strip()
+        if t in _TRUE:
+            return True
+        if t in _FALSE:
+            return False
+        return None
+    g, o = norm(gt), norm(got)
+    return (g is not None and g == o), {"method": "bool", "gt": g, "got": o}
+
+
 def cmp_license(gt, got) -> Tuple[bool, Dict]:
     """라이선스 — 표기 변형은 흡수하되 **다른 라이선스는 반드시 구분**한다.
 
@@ -201,15 +222,34 @@ def cmp_content_recall(gt, got, threshold: float = 0.30) -> Tuple[bool, Dict]:
 # 속성 정의 — 계획서 11속성
 # ---------------------------------------------------------------------------
 class Attr:
-    def __init__(self, name: str, field: str, cmp: Callable, group: str,
+    """field 는 문자열 하나 또는 후보 튜플이다.
+
+    튜플인 경우 앞에서부터 값이 있는 첫 필드를 쓴다. 스키마를 TTA 표준 이름으로
+    옮기는 동안 신·구 이름이 공존하기 때문이다 (예: author 가 비어 있으면
+    예전 결과의 copyright_holder 로 떨어진다). 이름을 한 번에 갈아끼우면
+    기존 결과가 전부 오답 처리된다 — 실측으로 채점이 0.48 → 0.00 이 된다.
+    """
+
+    def __init__(self, name: str, field, cmp: Callable, group: str,
                  visual_only: bool = False):
         self.name, self.field, self.cmp = name, field, cmp
         self.group, self.visual_only = group, visual_only
 
+    def pick(self, extracted: Dict[str, Any]) -> Any:
+        e = extracted or {}
+        fields = self.field if isinstance(self.field, tuple) else (self.field,)
+        for f in fields:
+            v = e.get(f)
+            if v not in (None, "", [], {}):
+                return v
+        return e.get(fields[0])
+
 
 ATTRIBUTES: List[Attr] = [
     Attr("제목",          "work_title",        cmp_contains,       "텍스트"),
-    Attr("저자",          "copyright_holder",  cmp_contains,       "텍스트"),
+    # 계약서 제2조가 인쇄하는 것은 저작자다. copyright_holder(저작권자)는 계약서에
+    # 인쇄되지 않으며 저작자와 다른 값인 경우 0/57 로 전혀 맞지 않는다.
+    Attr("저자",          ("author", "copyright_holder"), cmp_contains, "텍스트"),
     Attr("설명",          "description",       cmp_content_recall, "텍스트"),
     Attr("라이선스 유형",   "kogl_type",         cmp_license,        "텍스트"),
     Attr("키워드",         "keyword",           cmp_set_recall,     "텍스트"),
@@ -217,10 +257,55 @@ ATTRIBUTES: List[Attr] = [
     Attr("주요 색상",      "dominant_colors",   cmp_set_recall,     "시각", visual_only=True),
     Attr("개체 범주",      "main_subjects",     cmp_set_recall,     "시각", visual_only=True),
     Attr("파일크기",       "file_size",         cmp_numeric,        "파일"),
-    Attr("파일포맷",       "digital_format",    cmp_norm_exact,     "파일"),
+    Attr("파일포맷",       ("file_format", "digital_format"), cmp_norm_exact, "파일"),
     Attr("파일 생성 날짜",  "file_created_date", cmp_date,           "파일"),
 ]
 ATTR_BY_NAME = {a.name: a for a in ATTRIBUTES}
+
+
+# ---------------------------------------------------------------------------
+# TTA 표준 채점 범위 — 계약서에서 실제로 읽어낼 수 있는 항목만
+#
+# 근거: 생성계약서 전수/표본 감사 결과.
+#   · 계약서 5,716건은 전부 같은 5쪽 "저작재산권 이용허락 계약서" 서식이다.
+#   · 권리자·저작자·종별·권리 체크박스·이용허락기간은 300/300 인쇄된다.
+#   · 파일명은 0/300, 라이선스(공공누리·CC BY·기증·만료)는 0/300 인쇄되지 않는다.
+#   · 저작권자명은 저작자·권리자와 다른 값일 때 0/57 로 전혀 인쇄되지 않는다
+#     (81% 일치는 세 값이 우연히 같은 경우일 뿐이다).
+# 명세서의 "실제 데이터 사용 여부" 열은 양방향으로 틀렸다 — file_name 은 O 인데
+# 인쇄되지 않고, R_4~R_7·이용허락기간은 X 인데 300/300 인쇄된다. 실측을 따른다.
+# ---------------------------------------------------------------------------
+TTA_ATTRIBUTES: List[Attr] = [
+    # --- 식별/유형 ---
+    Attr("저작물명",            "work_title",                     cmp_contains,   "식별"),
+    Attr("저작물 유형",          "work_type",                      cmp_norm_exact, "식별"),
+    # --- 권리주체 (4.1/4.3/4.4) ---
+    Attr("저작자",              ("author", "copyright_holder"),   cmp_contains,   "권리주체"),
+    Attr("저작재산권자",         ("economic_rights_holder", "copyright_holder"), cmp_contains, "권리주체"),
+    Attr("이용허락자",           ("licensor", "copyright_holder"), cmp_contains,   "권리주체"),
+    # --- 저작재산권 세부 권리 (7.1~7.7) — 계약서 제2조 체크박스 ---
+    Attr("복제권",              "reproduction_right",             cmp_bool,       "세부권리"),
+    Attr("공연권",              "public_performance_right",       cmp_bool,       "세부권리"),
+    Attr("공중송신권",           "public_transmission_right",      cmp_bool,       "세부권리"),
+    Attr("전시권",              "exhibition_right",               cmp_bool,       "세부권리"),
+    Attr("배포권",              "distribution_right",             cmp_bool,       "세부권리"),
+    Attr("대여권",              "rental_right",                   cmp_bool,       "세부권리"),
+    Attr("2차적저작물작성권",      "derivative_work_creation_right", cmp_bool,       "세부권리"),
+    # --- 유효기간 (8.2/8.3) ---
+    Attr("이용허락 시작일",       "license_start_date",             cmp_date,       "유효기간"),
+    Attr("이용허락 종료일",       "license_end_date",               cmp_date,       "유효기간"),
+]
+TTA_ATTR_BY_NAME = {a.name: a for a in TTA_ATTRIBUTES}
+
+# 계약서에 근거가 없어 채점에서 제외하는 항목과 그 사유.
+# 리포트에 "미채점"으로 찍어야 하며, 0점으로 집계하면 안 된다.
+TTA_EXCLUDED = {
+    "file_name":        "계약서에 인쇄되지 않음 (0/300)",
+    "copyright_holder": "저작자·권리자와 다를 때 인쇄되지 않음 (0/57)",
+    "public_release_type": "라이선스 표기가 계약서에 없음 (0/300) — 저작물/카탈로그 경로에서 채점",
+    "work_identifier":  "계약서 본문에 저작물 ID 없음 (0/5,714)",
+}
+
 
 
 def score_set(gt_attributes: Dict[str, Dict], extracted: Dict[str, Any],
@@ -249,7 +334,7 @@ def score_set(gt_attributes: Dict[str, Dict], extracted: Dict[str, Any],
         gt_entry = (gt_attributes or {}).get(a.name) or {}
         tier = gt_entry.get("tier")
         gt_val = gt_entry.get("value")
-        got_val = (extracted or {}).get(a.field)
+        got_val = a.pick(extracted)
 
         if tier == "N/A" or (a.visual_only and media == "text"):
             per[a.name] = {"status": "not_applicable", "tier": tier}

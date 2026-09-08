@@ -43,10 +43,11 @@ DOC_EXTS={"pdf","hwp","docx","doc","pptx","xlsx"}; TEXT_EXTS={"txt","md","ocr"}
 # 무확장자=Microsoft ASF wmv2). 따라서 실측으로 확인된 것만 배제한다.
 UNDECODABLE={".psd"}
 PROBE_EXTS={""}          # 확장자가 없으면 ffprobe 로 컨테이너를 알아낸다
-# .hwp 는 universal_ocr.supported_extensions 에 들어 있지만 실제 처리는 되지 않는다.
-# _process_hwp(universal_ocr.py:133)는 경고만 찍고 []를 반환하는 스텁이라 OCR 텍스트가
-# 비고, 빈-OCR 조기중단 가드에 걸린다. 목록에 이름이 있다는 것과 구현이 있다는 것은 다르다.
-UNPROCESSABLE={".zip",".pptx",".ppt",".xlsx",".xls",".hwpx",".hwp"}
+# .hwp 는 universal_ocr.extract_text() 가 pyhwp 로 본문을 직접 읽는다(래스터화 없음).
+# 실측: 저작물 .hwp 40건 중 39건이 157~33,431자로 추출되고, 나머지 1건은 확장자만
+# .HWP 인 PDF 라 _process_hwp 가 PDF 경로로 넘긴다. 표만 남는 문서는 추출기가
+# None 을 돌려 OCR 경로로 넘어가므로 여기서 미리 배제할 이유가 없다.
+UNPROCESSABLE={".zip",".pptx",".ppt",".xlsx",".xls",".hwpx"}
 THUMBS={"local_preview"}                            # 330x230 플레이스홀더/축소본 — 저작물 아님
 SRC_RANK={"gongu_gt":0,"kogl_originals":1,"gongu_fs":2}
 ZIP_CAP={"image":1_500_000,"text":1_500_000,"video":3_000_000}

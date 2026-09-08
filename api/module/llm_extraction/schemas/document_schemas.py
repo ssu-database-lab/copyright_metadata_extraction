@@ -1248,11 +1248,31 @@ class DocumentSchemas:
                 },
 
                 # ============================================
-                # 저작자 정보 (3 mandatory fields)
+                # 권리주체 정보 — TTA 표준 4.1~4.6
+                # 한 사람이 저작자이자 저작재산권자인 경우가 많지만 법적으로는 서로
+                # 다른 지위다. 계약서에서 저작자(제2조)와 권리자(전문)는 따로 인쇄되며
+                # 실측 5,834건 중 71%만 일치한다. 하나로 합치면 어느 지위를 맞혔는지
+                # 구분할 수 없어 정확도 수치의 의미가 사라진다.
                 # ============================================
+                "author": {
+                    "type": ["string", "array", "null"],
+                    "description": "저작자 (저작물을 창작한 자) — TTA 4.1"
+                },
                 "copyright_holder": {
                     "type": ["string", "array", "null"],
-                    "description": "저작권자 (저작권 보유자, 권리자, 양수기관 등)"
+                    "description": "저작권자 (저작권을 보유한 자 또는 기관) — TTA 4.2"
+                },
+                "economic_rights_holder": {
+                    "type": ["string", "array", "null"],
+                    "description": "저작재산권자 (저작재산권을 보유하거나 행사할 수 있는 자 또는 기관) — TTA 4.3"
+                },
+                "licensor": {
+                    "type": ["string", "array", "null"],
+                    "description": "이용허락자 (저작물의 이용을 허락할 수 있는 자 또는 기관) — TTA 4.4"
+                },
+                "rights_holder_identifier": {
+                    "type": ["string", "array", "null"],
+                    "description": "권리주체 식별자 (권리주체를 식별하기 위한 고유 식별자 또는 관리 코드) — TTA 4.6. 생년월일·주민등록번호는 식별자가 아니므로 넣지 말 것"
                 },
                 "co_author": {
                     "type": ["string", "array", "null"],
@@ -1286,6 +1306,43 @@ class DocumentSchemas:
                     "type": ["string", "null"],
                     "description": "상업적 이용허락 (상업적 이용 허용 여부 또는 조건)"
                 },
+                # ============================================
+                # 저작재산권 세부 권리 — TTA 표준 7.1~7.8
+                # 계약서 제2조의 체크박스가 그대로 대응된다(v/■ = 허락, □ = 미허락).
+                # economic_rights 는 자유 서술이라 개별 권리의 허락 여부를 채점할 수 없다.
+                # ============================================
+                "reproduction_right": {
+                    "type": ["boolean", "null"],
+                    "description": "복제권 허락 여부 — TTA 7.1"
+                },
+                "public_performance_right": {
+                    "type": ["boolean", "null"],
+                    "description": "공연권 허락 여부 — TTA 7.2"
+                },
+                "public_transmission_right": {
+                    "type": ["boolean", "null"],
+                    "description": "공중송신권 허락 여부 — TTA 7.3"
+                },
+                "exhibition_right": {
+                    "type": ["boolean", "null"],
+                    "description": "전시권 허락 여부 — TTA 7.4"
+                },
+                "distribution_right": {
+                    "type": ["boolean", "null"],
+                    "description": "배포권 허락 여부 — TTA 7.5"
+                },
+                "rental_right": {
+                    "type": ["boolean", "null"],
+                    "description": "대여권 허락 여부 — TTA 7.6"
+                },
+                "derivative_work_creation_right": {
+                    "type": ["boolean", "null"],
+                    "description": "2차적저작물작성권 허락 여부 — TTA 7.7"
+                },
+                "other_rights": {
+                    "type": ["string", "array", "null"],
+                    "description": "기타 권리 (위 항목 외 추가로 관리할 필요가 있는 권리) — TTA 7.8"
+                },
                 "economic_rights": {
                     "type": ["string", "array", "null"],
                     "description": "저작재산권 (복제권, 공연권, 공중송신권, 배포권, 대여권, 2차적저작물작성권 등)"
@@ -1293,6 +1350,16 @@ class DocumentSchemas:
                 "co_author_consent": {
                     "type": ["string", "null"],
                     "description": "공동저작자 동의 (공동저작자 동의 여부: 동의, 미동의)"
+                },
+                "license_start_date": {
+                    "type": ["string", "null"],
+                    "format": "date",
+                    "description": "이용허락 시작일 (YYYY-MM-DD) — TTA 8.2"
+                },
+                "license_end_date": {
+                    "type": ["string", "null"],
+                    "format": "date",
+                    "description": "이용허락 종료일 (YYYY-MM-DD) — TTA 8.3"
                 },
                 "valid_period": {
                     "type": ["string", "null"],
