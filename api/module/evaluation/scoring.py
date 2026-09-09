@@ -236,13 +236,21 @@ class Attr:
         self.group, self.visual_only = group, visual_only
 
     def pick(self, extracted: Dict[str, Any]) -> Any:
+        """후보를 앞에서부터 훑어 값이 있는 첫 결과를 쓴다.
+
+        후보는 필드명 문자열이거나 호출 가능한 추출자다. 스키마에 세분화된 필드를
+        추가해도 모델은 기존의 뭉뚱그린 필드를 계속 채우는 경우가 많다 — 실측으로
+        granted_rights 에는 권리 7종이 정확히 들어오는데 reproduction_right 등은
+        전부 null 이었다. 추출은 맞았는데 채점만 0점이 되는 상황을 막는다.
+        """
         e = extracted or {}
         fields = self.field if isinstance(self.field, tuple) else (self.field,)
         for f in fields:
-            v = e.get(f)
+            v = f(e) if callable(f) else e.get(f)
             if v not in (None, "", [], {}):
                 return v
-        return e.get(fields[0])
+        first = fields[0]
+        return first(e) if callable(first) else e.get(first)
 
 
 ATTRIBUTES: List[Attr] = [
@@ -275,6 +283,43 @@ ATTR_BY_NAME = {a.name: a for a in ATTRIBUTES}
 # 명세서의 "실제 데이터 사용 여부" 열은 양방향으로 틀렸다 — file_name 은 O 인데
 # 인쇄되지 않고, R_4~R_7·이용허락기간은 X 인데 300/300 인쇄된다. 실측을 따른다.
 # ---------------------------------------------------------------------------
+def _from_granted(korean: str):
+    """granted_rights 에서 권리 하나의 허락 여부를 꺼낸다.
+
+    스키마가 {"type": ["object","array","null"]} 로만 선언돼 있어 모델이 세 가지
+    모양으로 채운다 — 실측으로 6세트에서 전부 나왔다:
+      1) {"복제권": true, "공연권": false, ...}
+      2) [{"right": "복제권", "granted": true}, ...]
+      3) ["공연권", "전시권", "대여권"]        # 허락된 것만 나열 → 없으면 미허락
+    세 번째는 목록에 없다는 사실 자체가 False 라는 뜻이므로 그렇게 읽는다.
+    """
+    key = korean.replace(" ", "")
+
+    def norm(x):
+        return str(x).replace(" ", "")
+
+    def get(e):
+        g = e.get("granted_rights")
+        if isinstance(g, dict):
+            for k, v in g.items():
+                if norm(k) == key:
+                    return v
+            return None
+        if isinstance(g, list):
+            if all(isinstance(x, str) for x in g):        # 모양 3
+                return any(norm(x) == key for x in g)
+            for x in g:                                    # 모양 2
+                if isinstance(x, dict):
+                    name = x.get("right") or x.get("name") or x.get("권리")
+                    if name and norm(name) == key:
+                        v = x.get("granted")
+                        return x.get("허락") if v is None else v
+            return None
+        return None
+
+    return get
+
+
 TTA_ATTRIBUTES: List[Attr] = [
     # --- 식별/유형 ---
     Attr("저작물명",            "work_title",                     cmp_contains,   "식별"),
@@ -284,16 +329,16 @@ TTA_ATTRIBUTES: List[Attr] = [
     Attr("저작재산권자",         ("economic_rights_holder", "copyright_holder"), cmp_contains, "권리주체"),
     Attr("이용허락자",           ("licensor", "copyright_holder"), cmp_contains,   "권리주체"),
     # --- 저작재산권 세부 권리 (7.1~7.7) — 계약서 제2조 체크박스 ---
-    Attr("복제권",              "reproduction_right",             cmp_bool,       "세부권리"),
-    Attr("공연권",              "public_performance_right",       cmp_bool,       "세부권리"),
-    Attr("공중송신권",           "public_transmission_right",      cmp_bool,       "세부권리"),
-    Attr("전시권",              "exhibition_right",               cmp_bool,       "세부권리"),
-    Attr("배포권",              "distribution_right",             cmp_bool,       "세부권리"),
-    Attr("대여권",              "rental_right",                   cmp_bool,       "세부권리"),
-    Attr("2차적저작물작성권",      "derivative_work_creation_right", cmp_bool,       "세부권리"),
+    Attr("복제권",              ("reproduction_right", _from_granted("복제권")),             cmp_bool,       "세부권리"),
+    Attr("공연권",              ("public_performance_right", _from_granted("공연권")),       cmp_bool,       "세부권리"),
+    Attr("공중송신권",           ("public_transmission_right", _from_granted("공중송신권")),      cmp_bool,       "세부권리"),
+    Attr("전시권",              ("exhibition_right", _from_granted("전시권")),               cmp_bool,       "세부권리"),
+    Attr("배포권",              ("distribution_right", _from_granted("배포권")),             cmp_bool,       "세부권리"),
+    Attr("대여권",              ("rental_right", _from_granted("대여권")),                   cmp_bool,       "세부권리"),
+    Attr("2차적저작물작성권",      ("derivative_work_creation_right", _from_granted("2차적저작물작성권")), cmp_bool,       "세부권리"),
     # --- 유효기간 (8.2/8.3) ---
-    Attr("이용허락 시작일",       "license_start_date",             cmp_date,       "유효기간"),
-    Attr("이용허락 종료일",       "license_end_date",               cmp_date,       "유효기간"),
+    Attr("이용허락 시작일",       ("license_start_date", "effective_date"), cmp_date, "유효기간"),
+    Attr("이용허락 종료일",       ("license_end_date", "expiration_date"), cmp_date, "유효기간"),
 ]
 TTA_ATTR_BY_NAME = {a.name: a for a in TTA_ATTRIBUTES}
 
