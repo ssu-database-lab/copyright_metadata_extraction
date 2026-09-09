@@ -225,3 +225,6 @@ api/web/uploads/
 # (통화 녹취록: 실명 포함 사적 대화 / 사용계획서: 개인정보 포함)
 docs/Call recording*.txt
 docs/사용계획서_작성내용_*.md
+
+# API key exports — never commit
+*apiKey*.csv
