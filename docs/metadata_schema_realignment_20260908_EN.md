@@ -232,7 +232,7 @@ exactly 5 pages**. Estimated ₩6,900 to re-run the contract leg for the 118.
 | `dataset_builder/tools/convert_118_hwpx.ps1` | **new** — HWPX→PDF recovery |
 | `requirements.txt` | `pyhwp>=0.1b15` |
 
-## 6b. Wiring (2026-09-09) — the TTA path now actually runs
+## 7. Wiring (2026-09-09) — the TTA path now actually runs
 
 Both components were built but unreachable; that is closed.
 
@@ -262,7 +262,87 @@ Exclusions carry a reason and tier `제외`, so they report as **미채점**, ne
 Run the TTA evaluation with `RunConfig(scoring_set="tta")` and GT from
 `tta_ground_truth.build_records("dataset/contract_work_manifest.csv")`.
 
-## 7. Still open
+## 8. The three lists — 66 vs 11 vs 14
+
+These are easy to conflate. They are three different things.
+
+| list | count | what it is |
+|---|---:|---|
+| **TTA standard** | **66** | the full element list from `JSON 구조도` — 10 groups, 66 leaves. The extensive spec. |
+| **연구개발계획서 11속성** | **11** | **our own project deliverable's** metric. Predates this spec and is unrelated to it. Still runs, unchanged. |
+| **TTA scoring subset** | **14** | *not a separate list* — the subset of the 66 that a **contract** can answer. |
+
+Three numbers also apply to the 66 itself:
+
+- **66** — the standard's full element list
+- **50** — how many our pipeline populates today (19 exact + 19 renamed + 12 injected)
+- **14** — how many we **score** in the TTA evaluation
+
+### 8.1 The 11 (ours, not TTA)
+
+제목 · 저자 · 설명 · 라이선스 유형 · 키워드 · 해상도 · 주요 색상 · 개체 범주 · 파일크기 · 파일포맷 · 파일 생성 날짜
+
+**Six have no home in the 66 at all** — 설명, 키워드, 해상도, 주요 색상, 개체 범주, 파일크기. They are
+work-file and visual attributes. That is why the two sets cannot be merged into one metric.
+
+### 8.2 The 14 scored for TTA
+
+| # | element | TTA id | comparator |
+|---|---|---|---|
+| 1–2 | 저작물명, 저작물 유형 | 1.2, 3.1 | contains, exact |
+| 3–5 | 저작자, 저작재산권자, 이용허락자 | 4.1, 4.3, 4.4 | contains |
+| 6–12 | 복제권, 공연권, 공중송신권, 전시권, 배포권, 대여권, 2차적저작물작성권 | 7.1–7.7 | bool |
+| 13–14 | 이용허락 시작일, 이용허락 종료일 | 8.2, 8.3 | date |
+
+### 8.3 Why 14 and not 66 — and where the other 52 can come from
+
+Four are in the spec's contract scope but **measurably unscoreable from a contract**:
+`file_name` (printed 0/300), `copyright_holder` (0/57 when it differs from 저작자/권리자),
+`public_release_type` (0/300 mention 공공누리/CC BY/기증/만료), `work_identifier` (0/5,714).
+
+The remaining 52 are **not lost** — they simply have a different source. Measured against the KOGL
+144k export (`붙임1`, 143,946 rows) and the work files:
+
+| source | count | notes |
+|---|---:|---|
+| **Catalog** (KOGL 붙임1 / 공유마당 상세) | **18** | fill rates measured, below |
+| **Derivable from the license type** | **3** | 출처표시(6.4) · 변경 가능(6.6) · 동일조건(6.7) — encoded in 공공누리 유형 / CCL code, which is 100% filled |
+| **Work file** (technical or VLM) | **4** | 파일명, 파일 형식, 매체 유형, 원천 설명 |
+| **Pipeline** (our own run facts) | **13** | the whole 검증정보 group (10.1–10.8) plus 판단근거, 저작물 식별자, 수집 경로, 데이터베이스명 |
+| **No source anywhere** | **14** | 등록번호, 관리기관 식별자, 권리주체 식별자, 권리보유 여부, 판단일, 이용 제한사항, 기타 권리, 공개유형 적용일, 유효기간 검토상태, and the four 인격권 items (9.1–9.3, 9.5–9.6) |
+
+**Catalog fill rates** — a column existing is not the same as it being populated:
+
+| TTA element | KOGL column | filled |
+|---|---|---:|
+| 6.1 공개유형 · 2.3 원문 위치 · 3.1 저작물 유형 | 공공누리 유형 · 게시글URL · 분류 | **100%** |
+| 1.5 등록일 | 등록일시 | 94.6% |
+| 3.4 언어 · 4.2 저작권자 · 5.1–5.3 권리판단 · 6.3 최종 공개유형 · 6.5 상업적 이용 · **7.1–7.7 세부 권리** | (각 대응 열) | **51.2%** |
+| 6.2 이전 공개유형 · 3.6 공표일 · 8.1 저작권 만료일 | 기존 공개 · 공표일자 · 저작권 만료일 | 47.6–48.5% |
+| 4.5 공동저작자 · 3.5 창작일 · 8.4 계약 유효기간 · 9.4 초상권 | | 13.8–20.0% |
+| 2.1 제공기관 | 등록기관 | 5.7% |
+| 2.2 관리기관 · 3.3 파일 형식 | 저작권기관명 · 디지털화 형태 | **0%** (column present, never populated) |
+
+> The recurring **51.2% (73,760 rows)** is exactly half the corpus — the rights and 권리판단 block is
+> populated for one half and empty for the other. Worth confirming with 무하유 before any evaluation
+> relies on it: a 51.2% ceiling is a property of the source, not of our extraction.
+
+**So: could the other 52 be answered by the work's own contract or its file?** Partly, and it matters
+which:
+
+- **The contract cannot add more.** Our generated contracts are one 5-page template; everything it
+  prints is already in the 14. A *real* contract with 인격권 clauses or 이용 제한사항 could reach
+  several of group 9 and 6.8 — the generated set simply has no such text.
+- **The work file adds 4** — deterministic technical values plus a VLM description.
+- **The catalog is where the volume is: 18 directly + 3 derivable = 21**, including the seven 세부
+  권리 that the contract also carries, which makes them cross-checkable between two independent sources.
+- **13 are ours to emit**, not extract — the pipeline already knows them.
+- **14 have no source** in any material we hold today.
+
+Scoring more than 14 therefore means adding **catalog-sourced ground truth**, not squeezing more out
+of the contracts. That is a decision for 무하유/TTA, and the fill rates above bound what it can yield.
+
+## 9. Still open
 
 1. ~~Run `convert_118_hwpx.ps1`~~ **done** — 117 recovered, 5,657 → 5,774 (99.0%).
 2. `pip install -r requirements.txt` on the Oracle server (pyhwp).
