@@ -154,6 +154,14 @@ def build_manifest(idx, gt_meta, kogl_meta, out=OUT):
     SLASH_FIX={"6학년용.pdf":"144066","AR 산업 활성화를 위한 법정책적 과제.pdf":"64823"}
     for f in noid:
         if f in SLASH_FIX: pdf_by_id[SLASH_FIX[f]]=f
+        # 0바이트였던 계약서를 HWPX 에서 다시 렌더링한 건들. Hancom 2024 로 재생성했기 때문에
+    # 나머지 5,716건(Hwp 2020)과 판형이 다르다 — 가로 3쪽 vs 세로 5쪽. 본문 내용은 같고
+    # 채점 대상 항목도 모두 들어있지만, 정확도를 분석할 때 이 코호트를 구분할 수 있어야 한다.
+    rerendered=set()
+    _rr=f"{ROOT}/dataset/rerendered_contract_ids.txt"
+    if os.path.isfile(_rr):
+        rerendered={l.strip() for l in open(_rr, encoding="utf-8") if l.strip()}
+
     hwpx_by_id={}
     for n in subprocess.run(["unzip","-Z1",ZIP],capture_output=True,text=True).stdout.splitlines():
         if n.endswith(".hwpx"):
@@ -228,6 +236,7 @@ def build_manifest(idx, gt_meta, kogl_meta, out=OUT):
           "contract_pdf": os.path.relpath(ppath,ROOT) if ppath else "",
           "contract_pdf_bytes": pbytes,
           "contract_hwpx_in_zip": hwpx_by_id.get(wid,""),
+          "contract_rerendered": wid in rerendered,
           "document_type": "저작재산권 이용허락 계약서",
           # --- 저작물 ---
           "work_path": best["path"] if best else "",

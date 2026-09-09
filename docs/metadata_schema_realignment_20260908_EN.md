@@ -14,7 +14,7 @@
 | Flat extraction schema | 72 fields | **86 fields** |
 | TTA leaves covered | — | **50 / 66** |
 | TTA evaluation attributes | — | **14** |
-| Manifest sets runnable | 5,621 | **5,657** |
+| Manifest sets runnable | 5,621 | **5,774 (99.0%)** |
 
 The final output is **nested**; our extraction stays **flat**. The LLM keeps emitting a flat object
 and `tta_serializer.build()` folds it into the 10-group structure at the end. This was measured, not
@@ -205,7 +205,7 @@ short-circuit (`FileProcessor.extract_text()` → pyhwp) ahead of the image path
 Measured: **39/40 extract directly** (157–33,431 chars, median 2,879), the 40th routes through PDF.
 `.txt` works were broken the same way and are fixed as a side effect.
 
-### 5.2 `CONTRACT_PDF_EMPTY` (118) — **blocked on one manual step**
+### 5.2 `CONTRACT_PDF_EMPTY` (118) — **resolved 2026-09-09: 117 recovered**
 
 All 118 HWPX are intact (118 distinct filled contracts). What is missing is only the PDF rendering.
 
@@ -234,7 +234,7 @@ exactly 5 pages**. Estimated ₩6,900 to re-run the contract leg for the 118.
 
 ## 7. Still open
 
-1. Run `convert_118_hwpx.ps1` after the one-time COM registration → +117 sets (5,657 → 5,774).
+1. ~~Run `convert_118_hwpx.ps1`~~ **done** — 117 recovered, 5,657 → 5,774 (99.0%).
 2. `pip install -r requirements.txt` on the Oracle server (pyhwp).
 3. The 16 NEW leaves need a source decision — most are 권리판단/인격권 items absent from the contracts.
 4. `app.py:98 ALLOWED_EXTENSIONS` still rejects `.hwp`/`.txt` for **web uploads**. The batch runner
