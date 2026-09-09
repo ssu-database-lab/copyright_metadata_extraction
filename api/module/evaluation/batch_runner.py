@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from .manifest import ManifestEntry
-from .scoring import score_set
+from .scoring import ATTRIBUTES, TTA_ATTRIBUTES, score_set
 
 # 검증된 단가 (docs/API_비용산정서_20260730.md · 환율 $1=₩1,400)
 COST_OCR_PER_PAGE = 2.7
@@ -64,6 +64,9 @@ class RunConfig:
     # '파일 생성 시각'이라 서로 다른 양이다. 같은 값으로 채점하면 구조적 오답이 된다.
     # 시험기관과 정의가 합의되면 빈 튜플로 두어 채점에 포함시킨다.
     skip_tiers: tuple = ("D",)
+    # 채점 기준: "plan" = 연구개발계획서 11속성(기본), "tta" = TTA 표준 14속성.
+    # TTA 쪽은 계약서에 실제로 인쇄되는 항목만 담고 있어 정답 출처가 다르다.
+    scoring_set: str = "plan"
 
 
 def _pdf_page_count(path: str) -> int:
@@ -265,8 +268,9 @@ class BatchRunner:
         extracted = _final_metadata(wresp)
 
         # 4) 채점
+        attrs = TTA_ATTRIBUTES if self.cfg.scoring_set == "tta" else ATTRIBUTES
         scored = score_set(gt.get("attributes", {}), extracted, media=entry.media,
-                           skip_tiers=self.cfg.skip_tiers)
+                           skip_tiers=self.cfg.skip_tiers, attributes=attrs)
 
         out.update({
             "ok": True,

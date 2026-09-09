@@ -311,7 +311,8 @@ TTA_EXCLUDED = {
 def score_set(gt_attributes: Dict[str, Dict], extracted: Dict[str, Any],
               media: str = "image",
               overrides: Optional[Dict[str, Callable]] = None,
-              skip_tiers: tuple = ("D",)) -> Dict[str, Any]:
+              skip_tiers: tuple = ("D",),
+              attributes: Optional[List[Attr]] = None) -> Dict[str, Any]:
     """정답 레코드의 attributes 와 파이프라인 출력을 대조한다.
 
     채점에서 빠지는 경우 — 값을 지어내지 않고 사유를 남긴다:
@@ -323,14 +324,20 @@ def score_set(gt_attributes: Dict[str, Dict], extracted: Dict[str, Any],
     (창작년도 1895 등)이고 추출값은 파일 생성 시각이라, 같은 값으로 볼 근거가 없다.
     이를 채점하면 모든 세트에서 구조적으로 틀리게 되어 정확도가 왜곡된다.
 
+    `attributes` 로 채점 기준을 바꿀 수 있다. 기본값은 계획서 11속성(ATTRIBUTES),
+    TTA 표준 채점에는 TTA_ATTRIBUTES 를 넘긴다.
+
     Returns:
         {"per_attr": {...}, "n_scored": int, "n_match": int, "accuracy": float|None}
     """
     overrides = overrides or {}
+    # 기본은 연구개발계획서 11속성. TTA 채점은 TTA_ATTRIBUTES 를 넘겨서 쓴다 —
+    # 두 기준은 대상도 정답 출처도 달라서 한 리스트로 합칠 수 없다.
+    attrs = attributes if attributes is not None else ATTRIBUTES
     per: Dict[str, Any] = {}
     n_scored = n_match = 0
 
-    for a in ATTRIBUTES:
+    for a in attrs:
         gt_entry = (gt_attributes or {}).get(a.name) or {}
         tier = gt_entry.get("tier")
         gt_val = gt_entry.get("value")

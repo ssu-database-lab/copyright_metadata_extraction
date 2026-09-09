@@ -232,6 +232,36 @@ exactly 5 pages**. Estimated ₩6,900 to re-run the contract leg for the 118.
 | `dataset_builder/tools/convert_118_hwpx.ps1` | **new** — HWPX→PDF recovery |
 | `requirements.txt` | `pyhwp>=0.1b15` |
 
+## 6b. Wiring (2026-09-09) — the TTA path now actually runs
+
+Both components were built but unreachable; that is closed.
+
+| gap | fix |
+|---|---|
+| Serializer not imported anywhere | `PipelineOrchestrator.build_response` folds the flat result and emits **`tta_metadata`** (10 groups / 66 leaves) alongside the existing `metadata`. Additive — no downstream consumer breaks. Wrapped in try/except so a serialization fault cannot lose an extraction. |
+| `score_set` hardcoded `ATTRIBUTES` | now takes `attributes=`; `RunConfig.scoring_set` selects `"plan"` (default, the 11 계획서 attributes) or `"tta"` (the 14). |
+| TTA attributes had **no ground truth** | the existing `ground_truth.jsonl` is keyed by the 11 계획서 names, so all 14 TTA attributes scored `None`. New `evaluation/tta_ground_truth.py` builds TTA-shaped GT from the manifest. |
+
+The manifest gained the seven 제2조 rights checkboxes as booleans (`gt_reproduction_right` … 
+`gt_derivative_work_creation_right`); the source marks them with four glyphs (`■`/`v`/`V` checked, `□` unchecked).
+
+**Verified end-to-end on 5,774 eval-ready sets:** a perfect extraction scores **14/14 = 1.0**, a wrong
+one **0/14 = 0.0**, and legacy `score_set` calls still return the same 11 attributes.
+
+Ground-truth coverage:
+
+| attribute | scorable | excluded |
+|---|---:|---:|
+| 저작물 유형 · 복제권 · 공연권 · 공중송신권 · 전시권 · 배포권 · 대여권 · 2차적저작물작성권 · 이용허락 시작/종료일 | 5,774 | 0 |
+| 저작물명 | 5,768 | 6 (accented-glyph titles) |
+| 저작재산권자 · 이용허락자 | 5,651 | 123 |
+| 저작자 | 5,438 | 336 (`-` / `소속없음`) |
+
+Exclusions carry a reason and tier `제외`, so they report as **미채점**, never as zeros.
+
+Run the TTA evaluation with `RunConfig(scoring_set="tta")` and GT from
+`tta_ground_truth.build_records("dataset/contract_work_manifest.csv")`.
+
 ## 7. Still open
 
 1. ~~Run `convert_118_hwpx.ps1`~~ **done** — 117 recovered, 5,657 → 5,774 (99.0%).

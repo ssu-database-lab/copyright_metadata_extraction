@@ -68,6 +68,22 @@ def probe_container(path):
         return None
 
 
+# 계약서 제2조의 권리 체크박스 → TTA 7.1~7.7.
+# 표기가 네 가지로 섞여 있다: 체크 = ■ / v / V, 미체크 = □.
+RIGHTS={"R_1":"reproduction_right","R_2":"public_performance_right",
+        "R_3":"public_transmission_right","R_4":"exhibition_right",
+        "R_5":"distribution_right","R_6":"rental_right",
+        "R_7":"derivative_work_creation_right"}
+_CHECKED={"■","v","V","☑"}
+
+
+def checkbox(v):
+    t=str(v).strip()
+    if t in _CHECKED: return True
+    if t == "□":      return False
+    return None
+
+
 def modality(ext):
     e=ext.lower().lstrip(".")
     if e in IMAGE_EXTS: return "image"
@@ -256,6 +272,7 @@ def build_manifest(idx, gt_meta, kogl_meta, out=OUT):
           "gt_rights_holder": r.get("권리자"),
           "gt_licensee": r.get("이용자"),
           "gt_work_kind": JONGBYEOL.get(r["저작물형태"],""),
+          **{f"gt_{k}": checkbox(r.get(c)) for c, k in RIGHTS.items()},
           "gt_license_start": f"{r['이용허락기간_SY']:.0f}-{r['이용허락기간_SM']:02.0f}-{r['이용허락기간_SD']:02.0f}" if pd.notna(r.get("이용허락기간_SY")) else "",
           "gt_license_end":   f"{r['이용허락기간_EY']:.0f}-{r['이용허락기간_EM']:02.0f}-{r['이용허락기간_ED']:02.0f}" if pd.notna(r.get("이용허락기간_EY")) else "",
           "delivery_date":    f"{r['양도_SY']:.0f}-{r['양도_SM']:02.0f}-{r['양도_SD']:02.0f}" if pd.notna(r.get("양도_SY")) else "",

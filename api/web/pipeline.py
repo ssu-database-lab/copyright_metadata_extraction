@@ -441,7 +441,7 @@ class PipelineOrchestrator:
         """Assemble the final API response."""
         total_time = (datetime.now() - ctx["start_time"]).total_seconds()
 
-        return {
+        response = {
             "success": llm_result.get("success", False),
             "request_id": ctx["request_id"],
             "filename": ctx["filename"],
@@ -475,6 +475,22 @@ class PipelineOrchestrator:
             "consolidation_model_used": consolidation_result.get("model_used", consolidation_model) if consolidation_result else None,
             "consolidation_fallback_used": consolidation_result.get("fallback_used", False) if consolidation_result else False,
         }
+
+        # TTA 표준 중첩 구조(10그룹·66 하위요소)를 함께 낸다. 추출은 평면 그대로 두고
+        # 출력 직전에 한 번 접는다 — 추출 자체를 중첩시키면 통합·NER 매핑·채점이 모두
+        # 경로 기반으로 바뀌고, 이름 대응표 없이는 채점이 0.48 → 0.00 으로 무너진다.
+        # 기존 metadata/consolidated_metadata 는 그대로 두므로 하위 호환이 깨지지 않는다.
+        try:
+            from module.llm_extraction.schemas import tta_serializer
+            response["tta_metadata"] = tta_serializer.build(
+                response.get("consolidated_metadata") or response.get("metadata") or {},
+                response,
+            )
+        except Exception as e:                      # 직렬화 실패로 추출 결과를 잃지 않는다
+            logger.warning(f"TTA 직렬화 실패: {e}")
+            response["tta_metadata"] = None
+
+        return response
 
     @staticmethod
     def save_results(result_dir: Path, response: Dict,
