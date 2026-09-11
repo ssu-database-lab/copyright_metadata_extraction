@@ -6,7 +6,9 @@ Alibaba Cloud OCR Provider
 import os
 import base64
 import logging
+import random
 import re
+import time
 from pathlib import Path
 from typing import Dict, Generator
 from openai import OpenAI
@@ -50,6 +52,14 @@ class AlibabaCloudOCRProvider:
         "qwen3.5-plus": "qwen3.8-flash",
         "qwen3.8-flash": "qwen3-vl-235b-a22b-instruct",   # 역방향(순환 방지: 1단계만)
     }
+
+    # DashScope 의 429 는 **속도 제한**이지 과금 문제가 아니다(본문 문구가 quota 라 오해하기 쉽다).
+    # 실측(2026-09-09, qwen3-vl-235b): 동시 4·8 요청은 100% 성공, 동시 12 는 22% 성공.
+    # 즉 잠시 기다리면 회복되는 오류다. 예전에는 이걸 곧바로 실패로 처리해
+    # 모델 폴백(qwen3.8-flash) → 공급자 폴백(Mistral) 로 밀려났고, 그 세트의 남은 파일까지
+    # Mistral 로 처리됐다. 폴백으로 넘기기 전에 같은 모델로 먼저 되쏜다.
+    RATE_LIMIT_MAX_RETRIES = 4
+    RATE_LIMIT_BASE_DELAY_SEC = 2.0
 
     def __init__(self, api_key: str, model: str = "qwen3-vl-235b-a22b-instruct", region: str = "singapore",
                  temperature: float = 1.0, top_p: float = 0.8, top_k: int = None):
@@ -97,6 +107,26 @@ class AlibabaCloudOCRProvider:
         except ImportError:
             raise ImportError("openai package not found. Install with: pip install openai")
     
+    @staticmethod
+    def _is_rate_limit(e: Exception) -> bool:
+        """429(속도 제한) 여부. 본문에 quota 라고 적혀 있어도 과금 문제가 아니다."""
+        return 'RateLimitError' in type(e).__name__ or '429' in str(e)
+
+    def _create_with_retry(self, model_id: str, messages: list, generation_params: Dict):
+        """429 만 지수 백오프로 재시도한다. 그 밖의 오류는 그대로 올려 폴백에 맡긴다."""
+        for attempt in range(self.RATE_LIMIT_MAX_RETRIES + 1):
+            try:
+                return self.client.chat.completions.create(
+                    model=model_id, messages=messages, **generation_params)
+            except Exception as e:
+                if not self._is_rate_limit(e) or attempt == self.RATE_LIMIT_MAX_RETRIES:
+                    raise
+                delay = self.RATE_LIMIT_BASE_DELAY_SEC * (2 ** attempt) + random.uniform(0, 1)
+                logger.warning(
+                    f"DashScope 429 (속도 제한) — {model_id}, {delay:.1f}초 후 재시도 "
+                    f"({attempt + 1}/{self.RATE_LIMIT_MAX_RETRIES})")
+                time.sleep(delay)
+
     def process_image(self, image_path: str) -> Dict:
         """Process an image using Alibaba Cloud DashScope API, with model-level fallback."""
         result = self._process_image_with_model(image_path, self.dashscope_model_id)
@@ -154,12 +184,8 @@ class AlibabaCloudOCRProvider:
             
             # Note: top_k is not supported by the OpenAI-compatible DashScope endpoint
             
-            # Make API call using OpenAI-compatible client
-            response = self.client.chat.completions.create(
-                model=model_id,
-                messages=messages,
-                **generation_params
-            )
+            # Make API call using OpenAI-compatible client (429 는 재시도)
+            response = self._create_with_retry(model_id, messages, generation_params)
             
             extracted_text = response.choices[0].message.content
             
@@ -180,14 +206,26 @@ class AlibabaCloudOCRProvider:
             # Extract detailed error information
             error_str = str(e)
             error_details = error_str
+            rate_limited = False
             
             # Check for common Alibaba Cloud error codes and provide user-friendly messages
             if 'Arrearage' in error_str or 'arrearage' in error_str.lower():
                 error_details = "Alibaba Cloud account billing issue: Access denied due to outstanding payment. Please check your account billing status in the Alibaba Cloud console."
             elif 'InvalidApiKey' in error_str or 'invalid' in error_str.lower() and 'key' in error_str.lower():
                 error_details = "Invalid Alibaba Cloud API key. Please verify your DASHSCOPE_API_KEY or ALIBABA_API_KEY environment variable."
+            elif self._is_rate_limit(e):
+                # ⚠️ DashScope 의 429 본문은 "You exceeded your current quota, please check
+                # your plan and billing details" 라고 나오지만 **과금 문제가 아니라 속도 제한**이다.
+                # 이전 버전은 이 문구의 'quota' 만 보고 "quota exceeded"로 뭉뚱그려
+                # 원문을 버렸고, 그 때문에 과금 문제로 오진했다. 원문을 반드시 남긴다.
+                # 여기까지 왔다는 건 재시도 4회(약 30초)도 실패했다는 뜻이다.
+                rate_limited = True
+                error_details = (f"DashScope rate limit (HTTP 429) — 재시도 "
+                                 f"{self.RATE_LIMIT_MAX_RETRIES}회 후에도 실패. 동시 요청 수를 줄이세요 "
+                                 f"(qwen3-vl-235b 실측 안전선: 동시 8). 과금 문제가 아닙니다. "
+                                 f"원문: {error_str[:300]}")
             elif 'QuotaExceeded' in error_str or 'quota' in error_str.lower():
-                error_details = "Alibaba Cloud API quota exceeded. Please check your usage limits."
+                error_details = f"Alibaba Cloud API quota issue. 원문: {error_str[:300]}"
             elif 'code' in error_str.lower() and ('400' in error_str or '401' in error_str or '403' in error_str):
                 # Try to extract error details from string representation
                 try:
@@ -209,14 +247,18 @@ class AlibabaCloudOCRProvider:
                     pass
             
             logger.error(f"Alibaba Cloud OCR processing error: {error_details}")
+            metadata = {
+                'provider': 'alibaba_cloud',
+                'model': self.dashscope_model_id,
+                'error': error_details,
+                'confidence': 0.0
+            }
+            if rate_limited:
+                # 실패 원인이 속도 제한인지 진짜 오류인지 리포트에서 구분할 수 있게 남긴다.
+                metadata['rate_limited'] = True
             return {
                 'extracted_text': '',
-                'metadata': {
-                    'provider': 'alibaba_cloud',
-                    'model': self.dashscope_model_id,
-                    'error': error_details,
-                    'confidence': 0.0
-                }
+                'metadata': metadata
             }
     
     def process_image_streaming(self, image_path: str) -> Generator[str, None, None]:

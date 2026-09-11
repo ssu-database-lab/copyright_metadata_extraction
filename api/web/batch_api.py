@@ -288,7 +288,9 @@ async def create_batch(
         _JOBS[job_id] = job
 
     cfg_kwargs = {
-        "workers": max(1, min(16, workers)),
+        # 상한 8 — 실측(2026-09-09, qwen3-vl-235b): 동시 4·8 은 100% 성공,
+        # 동시 12 는 22% 성공(나머지는 429). 16 은 애초에 통과할 수 없는 값이었다.
+        "workers": max(1, min(8, workers)),
         "limit": limit or None,
         "max_cost_krw": max_cost_krw or None,
         "vlm_prefer": vlm_prefer,
