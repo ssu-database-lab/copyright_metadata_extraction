@@ -627,6 +627,14 @@
                     <div class="fld-hint">1–8. 실측상 동시 8 까지는 429 없이 통과, 12 부터 대량 실패.</div>
                 </div>
                 <div>
+                    <label class="fld-label" for="scoringSet">채점 기준</label>
+                    <select id="scoringSet">
+                        <option value="plan" selected>연구개발계획서 11속성</option>
+                        <option value="tta">TTA 표준 14속성</option>
+                    </select>
+                    <div class="fld-hint">ZIP 의 ground_truth.jsonl 이 같은 기준으로 만들어져 있어야 합니다.</div>
+                </div>
+                <div>
                     <label class="fld-label" for="limit">세트 수 제한 (limit)</label>
                     <input type="number" id="limit" value="0" min="0">
                     <div class="fld-hint">0 = 전체 실행. 시험 실행 시 20 등으로.</div>
@@ -1039,6 +1047,7 @@ $("btnCreate").addEventListener("click", () => {
     }
     fd.append("name", $("jobName").value.trim());
     fd.append("workers", String(Math.max(1, Math.min(8, parseInt($("workers").value || "4", 10)))));
+    fd.append("scoring_set", $("scoringSet").value);
     fd.append("limit", String(Math.max(0, parseInt($("limit").value || "0", 10))));
     fd.append("max_cost_krw", String(Math.max(0, parseFloat($("maxCost").value || "0"))));
     fd.append("vlm_prefer", $("vlmPrefer").value);

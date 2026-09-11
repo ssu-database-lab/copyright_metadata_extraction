@@ -197,6 +197,24 @@ def _run_job(job: BatchJob, manifest_path: Path, cfg_kwargs: Dict):
         gt = load_ground_truth(manifest_path.parent / "ground_truth.jsonl")
         job.validation = validate_manifest(entries)
         job.validation["ground_truth"] = len(gt)
+
+        # 채점 기준과 정답셋의 속성 이름이 어긋나면 전 항목이 skipped_no_gt 로 빠지고
+        # 결과는 0% 로 보인다 — 오류가 아니라 "다 틀렸다" 처럼 읽힌다. 먼저 잡아 알린다.
+        from module.evaluation.scoring import ATTRIBUTES, TTA_ATTRIBUTES
+        want = {a.name for a in (TTA_ATTRIBUTES if cfg_kwargs.get("scoring_set") == "tta"
+                                 else ATTRIBUTES)}
+        have = set()
+        for rec in list(gt.values())[:20]:
+            have |= set((rec or {}).get("attributes", {}))
+        overlap = len(want & have)
+        job.validation["scoring_set"] = cfg_kwargs.get("scoring_set", "plan")
+        job.validation["gt_attr_overlap"] = f"{overlap}/{len(want)}"
+        if have and overlap == 0:
+            msg = (f"정답셋이 '{cfg_kwargs.get('scoring_set')}' 기준과 맞지 않습니다 — "
+                   f"겹치는 속성 0개. 정답셋 속성: {sorted(have)[:5]}… "
+                   f"기대: {sorted(want)[:5]}…  이대로 돌리면 전 항목이 미채점으로 빠집니다.")
+            job.validation["warning"] = msg
+            logger.error(msg)
         job.total = len(entries)
         job.push({"type": "validated", **job.validation})
 
@@ -241,6 +259,10 @@ async def create_batch(
     ner_model: str = Form(default="klue-roberta-large"),
     consolidate: bool = Form(default=True),
     consolidation_model: str = Form(default="alibaba-qwen3.5-122b-a10b"),
+    # 채점 기준 — "plan"(연구개발계획서 11속성) 또는 "tta"(TTA 표준 14속성).
+    # 두 기준은 정답의 출처가 달라서, ZIP 의 ground_truth.jsonl 도 같은 기준으로
+    # 만들어져 있어야 한다. 어긋나면 전 항목이 skipped_no_gt 로 빠진다.
+    scoring_set: str = Form(default="plan"),
 ):
     """ZIP(manifest.jsonl + contracts/ + works/ + ground_truth.jsonl) 또는 서버 경로로 작업 생성."""
     if _ORCH is None:
@@ -300,6 +322,7 @@ async def create_batch(
         "ner_model": ner_model,
         "consolidate": consolidate,
         "consolidation_model": consolidation_model,
+        "scoring_set": scoring_set if scoring_set in ("plan", "tta") else "plan",
     }
     job.config = {k: v for k, v in cfg_kwargs.items()}
     threading.Thread(target=_run_job, args=(job, mpath, cfg_kwargs),
