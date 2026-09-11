@@ -128,6 +128,41 @@ _MEDIA_BY_FORMAT = {
 }
 
 
+# 모델은 세분화된 필드를 새로 만들어도 기존의 뭉뚱그린 필드를 계속 채운다.
+# 채점기(scoring.Attr)는 이미 대체 경로를 갖고 있는데 직렬화기가 없으면, 최종 산출
+# JSON 만 비어 보인다 — 실제로 추출은 됐는데 납품물에는 null 로 나간다.
+_RIGHT_KO = {
+    "reproduction_right": "복제권", "public_performance_right": "공연권",
+    "public_transmission_right": "공중송신권", "exhibition_right": "전시권",
+    "distribution_right": "배포권", "rental_right": "대여권",
+    "derivative_work_creation_right": "2차적저작물작성권",
+}
+
+
+def _right_from_granted(md: Dict[str, Any], field: str) -> Optional[bool]:
+    """granted_rights 에서 권리 하나를 꺼낸다. dict · [{right,granted}] · 허락목록 세 모양 모두."""
+    ko = _RIGHT_KO.get(field)
+    if not ko:
+        return None
+    g = md.get("granted_rights")
+    norm = lambda x: str(x).replace(" ", "")
+    if isinstance(g, dict):
+        for k, v in g.items():
+            if norm(k) == ko:
+                return v
+        return None
+    if isinstance(g, list):
+        if g and all(isinstance(x, str) for x in g):
+            return any(norm(x) == ko for x in g)
+        for x in g:
+            if isinstance(x, dict):
+                name = x.get("right") or x.get("name") or x.get("권리")
+                if name and norm(name) == ko:
+                    v = x.get("granted")
+                    return x.get("허락") if v is None else v
+    return None
+
+
 def _as_array(v: Any) -> Optional[List[Any]]:
     if v is None:
         return None
@@ -159,6 +194,12 @@ def build(metadata: Dict[str, Any],
         node: Dict[str, Any] = {}
         for leaf, src in leaves:
             val = metadata.get(src) if src else None
+            if val is None and leaf in _RIGHT_KO:
+                val = _right_from_granted(metadata, leaf)
+            if val is None and leaf == "license_start_date":
+                val = metadata.get("effective_date")
+            if val is None and leaf == "license_end_date":
+                val = metadata.get("expiration_date")
             node[leaf] = _as_array(val) if leaf in _ARRAY_KEYS else val
         out[group] = node
 
