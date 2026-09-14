@@ -81,8 +81,16 @@ def pick(per_media: int):
     return out
 
 
-def build(per_media: int, out_dir: Path, name: str) -> Path:
+def build(per_media: int, out_dir: Path, name: str,
+          pin: tuple = ()) -> Path:
     rows = pick(per_media)
+    # 특정 세트를 반드시 포함시킨다. 통합 손실이 관측됐던 세트를 고정해 두면
+    # 같은 입력에 대해 전후를 직접 비교할 수 있다.
+    if pin:
+        have = {r["set_id"] for r in rows}
+        for r in _rows():
+            if r["set_id"] in pin and r["set_id"] not in have:
+                rows.append(r); have.add(r["set_id"])
     if not rows:
         raise SystemExit("조건에 맞는 세트가 없습니다 — 매니페스트를 확인하세요.")
     stage = out_dir / f"_stage_{name}"
@@ -139,9 +147,11 @@ def main() -> int:
     ap.add_argument("--per-media", type=int, default=2)
     ap.add_argument("--out", default=str(ROOT / "test_zips"))
     ap.add_argument("--name", default=None)
+    ap.add_argument("--pin", default="", help="반드시 포함할 set_id 쉼표 구분")
     a = ap.parse_args()
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    build(a.per_media, out, a.name or f"v3_tta_{a.per_media * 3}")
+    pin = tuple(x.strip() for x in a.pin.split(",") if x.strip())
+    build(a.per_media, out, a.name or f"v3_tta_{a.per_media * 3}", pin=pin)
     return 0
 
 

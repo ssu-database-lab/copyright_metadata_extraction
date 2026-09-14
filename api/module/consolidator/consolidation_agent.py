@@ -21,6 +21,38 @@ from module.consolidator.schemas.consolidation_schemas import ConsolidationSchem
 
 logger = logging.getLogger(__name__)
 
+
+def _nonnull_count(d) -> int:
+    return sum(1 for v in (d or {}).values() if v not in (None, "", [], {}))
+
+
+def _consolidation_diagnostics(llm_result, consolidated_result) -> Dict[str, Any]:
+    """중재 전후를 나란히 남긴다 — 결과가 줄어든 경우 원인을 나중에 볼 수 있도록.
+
+    통합이 성공을 보고하면서 필드를 통째로 잃는 사례가 관측됐는데(최근 60건 중 9건,
+    대부분 저작물측 9필드 VLM 결과), 중재자 원문 응답을 저장하지 않아 왜 그런지
+    확인할 수 없었다. 응답을 버리지 말고 남긴다. 손실이 없을 때는 응답 전문을
+    보관하지 않는다 — 정상 건까지 쌓으면 결과 디렉터리가 불필요하게 커진다.
+    """
+    raw_md = (llm_result or {}).get("metadata") or {}
+    con_md = (consolidated_result or {}).get("consolidated_metadata") or {}
+    before, after = _nonnull_count(raw_md), _nonnull_count(con_md)
+    lost = [k for k, v in raw_md.items()
+            if v not in (None, "", [], {}) and con_md.get(k) in (None, "", [], {})]
+    diag = {
+        "consolidation_fields_before": before,
+        "consolidation_fields_after": after,
+        "consolidation_lost_fields": lost,
+    }
+    if lost:
+        logger.error(
+            f"통합에서 필드 손실: {before} → {after} (잃은 필드 {len(lost)}개: {lost[:8]}). "
+            "중재자 원문 응답을 consolidation_raw_response 에 남깁니다.")
+        diag["consolidation_raw_response"] = consolidated_result.get("raw_response")
+        diag["consolidation_prompt_chars"] = consolidated_result.get("prompt_chars")
+    return diag
+
+
 class ConsolidationAgent:
     """
     Main consolidation agent using Qwen3-Next-80B
@@ -485,7 +517,8 @@ class ConsolidationAgent:
                             "summary": summary,
                             "status": "completed",
                             "llm_confidence": llm_confidence,
-                            "raw_response": raw_response_text
+                            "raw_response": raw_response_text,
+                            "prompt_chars": len(prompt_text or "")
                         }
                         
                     except Exception as e:
@@ -538,7 +571,8 @@ class ConsolidationAgent:
                     "summary": summary,
                     "status": "completed",
                     "llm_confidence": llm_confidence,
-                    "raw_response": None
+                    "raw_response": None,   # 이 경로는 원문 텍스트를 보관하지 않는다
+                    "prompt_chars": len(prompt_text or "")
                 }
         except Exception as e:
             logger.error(f"Error calling model {model_name} for consolidation: {e}", exc_info=True)
@@ -717,7 +751,8 @@ JSON response:
             "consolidation_degraded": degraded,
             "degraded_reason": consolidated_result.get('degraded_reason'),
             "status": consolidated_result.get('status', 'completed'),
-            "llm_confidence": consolidated_result.get('llm_confidence', 0.0)
+            "llm_confidence": consolidated_result.get('llm_confidence', 0.0),
+            **_consolidation_diagnostics(llm_result, consolidated_result),
         }
     
     def _fallback_consolidate(
