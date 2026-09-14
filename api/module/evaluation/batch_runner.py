@@ -23,6 +23,7 @@ CLI 하네스와 웹 배치 API가 **이 클래스 하나**를 공유한다. 실
 from __future__ import annotations
 
 import json
+import logging
 import os
 import subprocess
 import threading
@@ -126,21 +127,54 @@ def _estimate_cost(resp: Dict[str, Any], media: str, is_contract: bool,
     return vlm + COST_CONSOLIDATION_IMG
 
 
+logger = logging.getLogger(__name__)
+
+
+def _nonnull(d: Dict[str, Any]) -> int:
+    return sum(1 for v in (d or {}).values() if v not in (None, "", [], {}))
+
+
+# 통합 결과가 원본 추출보다 이만큼 아래로 떨어지면 통합이 실패한 것으로 본다.
+# 중재자는 LLM 과 NER 을 합쳐 **보태는** 단계다. 줄이는 건 정상 동작이 아니다.
+_CONSOLIDATION_COLLAPSE_RATIO = 0.30
+
+
 def _final_metadata(resp: Dict[str, Any]) -> Dict[str, Any]:
-    """파이프라인 응답에서 최종 메타데이터를 꺼낸다(통합 결과 우선)."""
+    """최종 메타데이터를 고른다 — 통합 결과 우선, 단 무너진 경우는 제외.
+
+    중재자가 성공을 보고하면서 사실상 빈 결과를 돌려주는 경우가 있다. 실측:
+    계약서 한 건에서 LLM 이 44필드를 정확히 뽑았는데 통합 결과는 3필드였고
+    (consolidation_success=True, error=None, summary.total_fields=0),
+    통합본을 우선하는 규칙 때문에 멀쩡한 추출이 버려져 그 세트 점수가
+    92.9% → 0% 가 됐다. 서버 최근 40건 중 5건이 원본의 30% 미만만 남겼다.
+
+    그래서 '비어 있지 않으면 통합본' 이 아니라 '원본보다 크게 나빠지지 않았으면
+    통합본' 으로 바꾼다. 무너졌으면 원본 추출을 쓰고 그 사실을 남긴다.
+    """
     if not isinstance(resp, dict):
         return {}
-    for key in ("consolidated_metadata", "metadata"):
-        v = resp.get(key)
-        if isinstance(v, dict) and v:
-            return v
+
+    def pick(src: Dict[str, Any]) -> Dict[str, Any]:
+        con = src.get("consolidated_metadata")
+        raw = src.get("metadata")
+        con_n, raw_n = _nonnull(con), _nonnull(raw)
+        if isinstance(con, dict) and con_n:
+            if raw_n and con_n < raw_n * _CONSOLIDATION_COLLAPSE_RATIO:
+                logger.warning(
+                    f"통합 결과가 무너져 원본 추출을 사용합니다 "
+                    f"(통합 {con_n}필드 < 추출 {raw_n}필드): "
+                    f"request_id={src.get('request_id')}")
+                return raw
+            return con
+        if isinstance(raw, dict) and raw_n:
+            return raw
+        return {}
+
+    got = pick(resp)
+    if got:
+        return got
     res = resp.get("result")
-    if isinstance(res, dict):
-        for key in ("consolidated_metadata", "metadata"):
-            v = res.get(key)
-            if isinstance(v, dict) and v:
-                return v
-    return {}
+    return pick(res) if isinstance(res, dict) else {}
 
 
 class BatchRunner:
