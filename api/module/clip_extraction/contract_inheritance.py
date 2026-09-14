@@ -34,6 +34,12 @@ INHERITABLE_FIELDS = [
     # 한동안 드러나지 않았다.
     "copyright_holder", "co_author", "neighboring_rights_holder",
     "author", "economic_rights_holder", "licensor", "rights_holder_identifier",
+    # 저작물 유형 — TTA 3.1. 정답이 계약서의 종별이므로 계약서 값을 상속한다.
+    # ⚠ 이건 '분류를 잘하는가' 의 측정이 아니다. 계약서 종별은 미디어에서 기계적으로
+    #   파생된 값이라(이미지→사진저작물), Watteau 유화가 사진저작물로 적혀 있다.
+    #   모델이 미술저작물이라고 답한 건 오히려 맞았는데 오답 처리됐다.
+    #   저작물 자체의 분류 성능을 재려면 공유마당/KOGL 카탈로그의 분류를 정답으로 써야 한다.
+    "work_type",
     # 공개/이용 조건
     "disclosure_type", "commercial_use", "economic_rights", "kogl_type",
     "granted_rights", "portrait_rights", "third_party_rights", "co_author_consent",

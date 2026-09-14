@@ -482,17 +482,18 @@ class PipelineOrchestrator:
         # 기존 metadata/consolidated_metadata 는 그대로 두므로 하위 호환이 깨지지 않는다.
         try:
             from module.llm_extraction.schemas import tta_serializer
-            # 통합 결과가 원본보다 크게 빈약하면 통합이 실패한 것이다. 그걸 그대로 쓰면
-            # 납품 JSON 만 비어 나간다 — 실측으로 44필드 추출이 3필드 통합본에 밀려
-            # 버려진 적이 있다(통합은 success 를 보고했다).
+            # 중재자가 지워버린 필드는 원본 추출로 되살린 뒤 직렬화한다.
+            # 비율로 거르면 9→4 같은 손실(설명·키워드·유형이 통째로 사라짐)이 통과한다.
             _con = response.get("consolidated_metadata") or {}
             _raw = response.get("metadata") or {}
-            _nz = lambda d: sum(1 for v in d.values() if v not in (None, "", [], {}))
-            _cn, _rn = _nz(_con), _nz(_raw)
-            _src = _con if (_cn and not (_rn and _cn < _rn * 0.30)) else (_raw or _con)
-            if _cn and _rn and _cn < _rn * 0.30:
-                logger.warning(f"통합 결과가 무너져 원본 추출로 TTA JSON 을 만듭니다 "
-                               f"(통합 {_cn} < 추출 {_rn})")
+            _src = dict(_con) if _con else dict(_raw)
+            _lost = []
+            for _k, _v in _raw.items():
+                if _v not in (None, "", [], {}) and _src.get(_k) in (None, "", [], {}):
+                    _src[_k] = _v
+                    _lost.append(_k)
+            if _lost:
+                logger.warning(f"TTA JSON: 통합에서 사라진 필드를 원본으로 복원 {_lost}")
             response["tta_metadata"] = tta_serializer.build(_src, response)
         except Exception as e:                      # 직렬화 실패로 추출 결과를 잃지 않는다
             logger.warning(f"TTA 직렬화 실패: {e}")

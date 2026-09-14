@@ -33,6 +33,10 @@ MANIFEST = ROOT / "dataset" / "contract_work_manifest.csv"
 UNPROCESSABLE = {".zip", ".pptx", ".ppt", ".xlsx", ".xls", ".hwpx"}
 # 미디어별 상한 — 영상은 크고 어문은 페이지 수가 곧 시간이라 작은 것부터 고른다.
 CAPS = {"image": 2_000_000, "video": 15_000_000, "text": 600_000}
+# 하한도 둔다. 크기 오름차순으로 고르다 보니 70바이트짜리 .txt 가 뽑힌 적이 있는데,
+# 내용이 없으니 모델이 4필드(기술속성)밖에 못 내고 그게 오답으로 집계됐다.
+# 파이프라인 문제가 아니라 표본 문제다.
+FLOORS = {"image": 20_000, "video": 300_000, "text": 2_000}
 
 
 def _rows():
@@ -52,7 +56,7 @@ def pick(per_media: int):
         if m not in buckets or not wp or not os.path.isfile(wp):
             continue
         size = int(r.get("work_bytes") or 0)
-        if not (0 < size <= CAPS[m]):
+        if not (FLOORS[m] <= size <= CAPS[m]):
             continue
         if Path(wp).suffix.lower() in UNPROCESSABLE:
             continue
