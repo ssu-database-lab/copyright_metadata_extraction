@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from .manifest import ManifestEntry
-from .scoring import ATTRIBUTES, TTA_ATTRIBUTES, score_set
+from .scoring import attributes_for, score_set
 
 # 검증된 단가 (docs/API_비용산정서_20260730.md · 환율 $1=₩1,400)
 COST_OCR_PER_PAGE = 2.7
@@ -302,12 +302,16 @@ class BatchRunner:
         extracted = _final_metadata(wresp)
 
         # 4) 채점
-        attrs = TTA_ATTRIBUTES if self.cfg.scoring_set == "tta" else ATTRIBUTES
         scored = score_set(gt.get("attributes", {}), extracted, media=entry.media,
-                           skip_tiers=self.cfg.skip_tiers, attributes=attrs)
+                           skip_tiers=self.cfg.skip_tiers,
+                           attributes=attributes_for(self.cfg.scoring_set))
 
         out.update({
             "ok": True,
+            # 어떤 기준으로 채점했는지 결과 줄 자체에 남긴다 — 작업 설정은 서버
+            # 재시작 한 번에 사라지지만 results.jsonl 은 남는다. 리포트·모달이
+            # 여기서 기준을 읽으면 11속성으로 되돌아가는 일이 없다.
+            "scoring_set": self.cfg.scoring_set,
             "elapsed_sec": round(time.perf_counter() - t0, 2),
             "cost_krw": round(cost_box["v"], 2),
             "stages": stages,

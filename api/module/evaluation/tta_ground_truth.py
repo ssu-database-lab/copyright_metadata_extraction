@@ -39,6 +39,25 @@ def _A(value: Any, schema_field: str, source: str,
     return d
 
 
+def _bool(v: Any) -> Optional[bool]:
+    """CSV 의 참/거짓 표기를 하나로 읽는다.
+
+    체크박스 7종은 값이 None 이면 '제외'(미채점)로 빠진다. 표기가 'TRUE'/'1' 로만
+    바뀌어도 7속성이 통째로 미채점이 되어 분모가 14 → 7 로 줄고, 정확도는
+    **아무 경고 없이** 달라진다. 표기 변형을 여기서 흡수한다.
+    """
+    if isinstance(v, bool):
+        return v
+    if v is None:
+        return None
+    t = str(v).strip().lower()
+    if t in ("true", "1", "y", "yes", "o", "v"):
+        return True
+    if t in ("false", "0", "n", "no", "x"):
+        return False
+    return None
+
+
 def _clean(v: Any) -> Any:
     """빈 값·NaN 을 None 으로 통일한다."""
     if v is None:
@@ -62,16 +81,14 @@ def build(row: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         "이용허락 종료일": _A(_clean(g("gt_license_end")),   "license_end_date",   "계약서:제3조"),
     }
     for name, col in _RIGHTS:
-        v = g(col)
         # 체크박스는 False 도 정답이다 — None(파싱 실패)일 때만 미채점으로 둔다.
-        if isinstance(v, str):
-            v = {"True": True, "False": False}.get(v)
-        attrs[name] = (_A(bool(v), name_to_field(name), "계약서:제2조 권리 체크박스")
+        v = _bool(g(col))
+        attrs[name] = (_A(v, name_to_field(name), "계약서:제2조 권리 체크박스")
                        if v is not None else
                        _A(None, name_to_field(name), "—", "제외", "체크박스 판독 불가"))
 
     # 제목 글리프가 깨진 6건은 OCR 이 원복할 수 없다 — 정답에서 빼고 사유를 남긴다.
-    if row.get("gt_title_scorable") in (False, "False"):
+    if _bool(row.get("gt_title_scorable")) is False:
         attrs["저작물명"] = _A(None, "work_title", "—", "제외",
                             "PDF 폰트에 악센트 글리프 없음 — OCR 재현 불가")
     return attrs

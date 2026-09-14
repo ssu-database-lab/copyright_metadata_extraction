@@ -352,6 +352,36 @@ TTA_EXCLUDED = {
 }
 
 
+# ---------------------------------------------------------------------------
+# 채점 기준 조회 — 속성 목록을 **여기서만** 고른다.
+#
+# 기준이 둘(11/14)이 되는 순간, 목록을 각자 하드코딩한 곳마다 조용히 11속성으로
+# 되돌아간다(리포트·모달·UI). 이름이 아니라 이 함수를 거치게 해서 한 곳만 고치면
+# 전부 따라오게 한다.
+# ---------------------------------------------------------------------------
+SCORING_SETS: Dict[str, List[Attr]] = {"plan": ATTRIBUTES, "tta": TTA_ATTRIBUTES}
+
+
+def attributes_for(scoring_set: Optional[str]) -> List[Attr]:
+    """채점 기준 이름 → 속성 목록. 모르는 값은 기본(plan)으로 떨어진다."""
+    return SCORING_SETS.get((scoring_set or "plan").strip().lower(), ATTRIBUTES)
+
+
+def infer_scoring_set(attr_names) -> str:
+    """채점 결과에 찍힌 속성 이름으로 기준을 되짚는다.
+
+    설정이 사라지는 경로가 실제로 있다 — 서버 재시작 후 복구된 작업은 config 가
+    비어 있다(실측: 서버의 12개 작업 중 11개가 config={}). 그때 11속성으로
+    되돌아가면 TTA 결과가 '기록 없음' 11줄로 보인다. 결과 자체가 기준을 알고
+    있으므로 그걸 쓴다.
+    """
+    names = set(attr_names or ())
+    if not names:
+        return "plan"
+    hits = {k: len(names & {a.name for a in v}) for k, v in SCORING_SETS.items()}
+    best = max(hits, key=lambda k: hits[k])
+    return best if hits[best] else "plan"
+
 
 def score_set(gt_attributes: Dict[str, Dict], extracted: Dict[str, Any],
               media: str = "image",

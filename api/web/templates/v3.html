@@ -298,6 +298,9 @@
     .badge.error     { background: rgba(239,68,68,.10); color: var(--danger); }
     .badge.info      { background: rgba(99,102,241,.10); color: var(--accent); }
     .badge.muted     { background: rgba(100,116,139,.10); color: var(--text-muted); }
+    /* 채점 기준 — TTA 리포트를 계획서 리포트로 오인하지 않도록 색을 다르게 준다 */
+    .badge.scoring-tta  { background: rgba(245,158,11,.16); color:#b26a08; }
+    .badge.scoring-plan { background: rgba(99,102,241,.10); color: var(--accent); }
     .badge.running::before {
         content:''; display:inline-block; width:6px; height:6px; border-radius:50%;
         background: var(--info); margin-right:6px; vertical-align:1px;
@@ -337,6 +340,7 @@
     .attr-cell {
         width:19px; height:19px; border-radius:4px; font-size:11px; font-weight:700;
         display:inline-flex; align-items:center; justify-content:center; cursor:default;
+        flex:none;   /* 속성 수는 채점 기준마다 다르다 — 칸이 늘어도 찌그러지지 않게 */
     }
     .attr-cell.hit  { background: rgba(16,185,129,.14); color:#0f8a63; }
     .attr-cell.miss { background: rgba(239,68,68,.12); color: var(--danger); }
@@ -559,7 +563,7 @@
         <div class="main-header">
             <div>
                 <div class="main-title">새 배치 평가 작업</div>
-                <div class="main-subtitle">계약서+저작물 세트를 일괄 처리하고 11개 속성의 추출 정확도를 채점합니다 (목표 85%)</div>
+                <div class="main-subtitle">계약서+저작물 세트를 일괄 처리하고 선택한 채점 기준의 속성 추출 정확도를 채점합니다 (목표 85%)</div>
             </div>
         </div>
 
@@ -841,10 +845,11 @@
         </div>
 
         <div id="repBody" class="hidden">
+            <div id="staleNotice"></div>
             <div id="repNotice"></div>
             <div id="repAgg"></div>
             <div class="card">
-                <div class="card-title">세트별 결과</div>
+                <div class="card-title">세트별 결과 <span id="resJobTag" class="tiny mono muted" style="font-weight:400;"></span></div>
                 <div class="toolbar">
                     <input type="text" id="resFilter" placeholder="set_id 검색…">
                     <select id="resLimit">
@@ -864,7 +869,7 @@
                     <span><span class="attr-cell miss">✗</span>불일치</span>
                     <span><span class="attr-cell na">–</span>해당없음</span>
                     <span><span class="attr-cell nogt">·</span>정답없음</span>
-                    <span class="muted">속성 순서: 제목 · 저자 · 설명 · 라이선스 · 키워드 · 해상도 · 색상 · 개체 · 크기 · 포맷 · 생성일</span>
+                    <span class="muted" id="attrOrderHint"></span>
                 </div>
             </div>
         </div>
@@ -875,8 +880,9 @@
 "use strict";
 
 /* ===================== 상수 ===================== */
-const ATTRS = ["제목","저자","설명","라이선스 유형","키워드","해상도",
-               "주요 색상","개체 범주","파일크기","파일포맷","파일 생성 날짜"];
+// 채점 속성 목록은 여기에 두지 않는다 — 기준이 둘(계획서 11속성 / TTA 14속성)이라
+// 화면이 목록을 들고 있으면 기준을 바꾼 순간 조용히 어긋난다. attrNames() 참조.
+const SCORING_SET_KO = { plan: "연구개발계획서 11속성", tta: "TTA 표준 14속성" };
 const TARGET = 0.85;
 const LS_KEY = "v3_batch_attached_job";
 
@@ -961,6 +967,39 @@ const S = {
     results: [],
     tick: null,
 };
+
+/* ===================== 채점 기준 · 속성 목록 ===================== */
+// 속성 이름을 화면에 박아두면 채점 기준을 바꿀 때마다 표가 통째로 비어 버린다.
+// 서버가 실제로 채점한 결과의 키를 순서 그대로 쓴다 — report.json 의 per_attr 도,
+// results 각 행의 per_attr 도 채점 순서대로 들어온다.
+function scoringSetOf(j) {
+    const job = j || S.job;
+    if (!job) return null;
+    return (job.config && job.config.scoring_set)
+        || (job.validation && job.validation.scoring_set) || null;
+}
+function scoringSetLabel(j) {
+    const k = scoringSetOf(j);
+    return k ? (SCORING_SET_KO[k] || k) : null;
+}
+function attrNames() {
+    const per = (S.agg && S.agg.per_attr) || null;
+    if (per && Object.keys(per).length) return Object.keys(per);
+    const seen = [];
+    (S.results || []).forEach(r => Object.keys(r.per_attr || {}).forEach(nm => {
+        if (seen.indexOf(nm) < 0) seen.push(nm);
+    }));
+    return seen;
+}
+// 리포트를 열었을 때 어느 기준으로 채점한 것인지 한눈에 보이게 한다.
+// 기준이 기록되기 전에 돌린 작업(서버 재시작 복구분)은 "미기록"으로 구분한다.
+function scoringSetBadge(j) {
+    const k = scoringSetOf(j), lbl = scoringSetLabel(j);
+    if (lbl) return '<span class="badge scoring-' + esc(k) + '">채점 기준 · ' + esc(lbl) + "</span>";
+    const cnt = attrNames().length;
+    return '<span class="badge muted" title="채점 기준이 기록되기 전에 실행된 작업입니다">'
+         + "채점 기준 미기록" + (cnt ? " · 속성 " + cnt + "개" : "") + "</span>";
+}
 
 /* ===================== 패널 전환 ===================== */
 function showPanel(name) {
@@ -1171,7 +1210,11 @@ function fmtVal(v) {
     if (typeof v === "object") return esc(JSON.stringify(v));
     return esc(String(v));
 }
+// per_attr 의 gt/got 과 /detail 의 expected/extracted 는 같은 값의 다른 이름이다.
+// 어느 쪽으로 와도 표가 비지 않게 둘 다 받는다. false·0 은 유효한 값이므로 살린다.
+function pickVal(a, b) { return (a === undefined || a === null) ? b : a; }
 function verdictCell(a) {
+    if (!a.status) return '<span class="v-na">· 기록없음</span>';
     if (a.status === "scored")
         return a.match ? '<span class="v-ok">✓ 적중</span>' : '<span class="v-no">✗ 불일치</span>';
     if (a.status === "not_applicable") return '<span class="v-na">– 해당없음</span>';
@@ -1215,6 +1258,16 @@ function legBlock(title, cls, leg) {
         + classifyFiles(leg.files, leg.request_id)
         + '<div class="scrollbox" style="max-height:260px;"><table class="kv"><tbody>' + rows + "</tbody></table></div>";
 }
+// 서버 상세가 이 작업의 채점 기준을 모르면 속성 행이 통째로 빈다. 그때는 이미
+// 받아 둔 세트 결과(per_attr)로 채워서 최소한 정답/추출/판정은 보이게 한다.
+function rowsFromPerAttr(pa) {
+    return Object.keys(pa || {}).map(nm => {
+        const d = pa[nm] || {};
+        return { name: nm, status: d.status, match: d.match, expected: d.gt,
+                 extracted: d.got, tier: d.tier, method: d.method, recall: d.recall,
+                 batch_level: d.batch_level, note: d.reason, leg: null };
+    });
+}
 async function openSetModal(setId) {
     if (!S.jobId) return;
     const back = $("setModal"), body = $("smBody");
@@ -1234,29 +1287,52 @@ async function openSetModal(setId) {
     const acc = (d.accuracy === null || d.accuracy === undefined) ? "—" : pct(d.accuracy);
     $("smSub").textContent = (d.media || "") + " / " + (d.license_bucket || "") +
         " · " + (d.n_match || 0) + "/" + (d.n_scored || 0) + " = " + acc +
-        (d.elapsed_sec ? " · " + d.elapsed_sec + "s" : "");
+        (d.elapsed_sec ? " · " + d.elapsed_sec + "s" : "") +
+        (scoringSetLabel() ? " · " + scoringSetLabel() : "");
     let h = "";
     if (!d.ok) h += '<div class="notice warn">실패: ' + esc(String(d.error || "원인 미상")) + "</div>";
     h += '<div class="legend"><b class="v-ok">✓ 적중</b><b class="v-no">✗ 불일치</b>'
        + '<b class="v-na">– 해당없음</b><b class="v-na">· 정답없음 / 정의불일치</b></div>';
+    // 서버가 이 작업의 채점 기준과 다른 속성 이름을 돌려주면 행은 오는데 값이 전부 비어 있다.
+    // 조용히 빈 표를 보여주지 말고, 캐시된 채점 결과로 되살리고 사유를 밝힌다.
+    let attrRows = d.attributes || [];
+    const hasScoring = attrRows.some(x => x.status);
+    if (!hasScoring) {
+        const cached = (S.results || []).find(r => String(r.set_id) === String(setId));
+        const alt = rowsFromPerAttr(cached && cached.per_attr);
+        if (alt.length) {
+            attrRows = alt;
+            h += '<div class="notice info tiny">서버 상세에 이 작업의 채점 기준('
+               + esc(scoringSetLabel() || "미기록") + ') 속성이 없어 채점 결과로 표시합니다 —'
+               + ' 정답 출처(schema_field·산출 leg)는 비어 있을 수 있습니다.</div>';
+        } else if (attrRows.length) {
+            h += '<div class="notice warn tiny">서버가 돌려준 속성('
+               + esc(attrRows.slice(0, 3).map(x => x.name).join(", ")) + '…)이 이 작업의 채점 기준('
+               + esc(scoringSetLabel() || "미기록") + ')과 달라 값이 비어 있습니다.</div>';
+        }
+    }
     h += '<div class="scrollbox"><table><thead><tr><th>속성</th><th>기대값 (정답)</th>'
        + "<th>추출값</th><th>판정</th><th>산출 leg</th><th>비고</th></tr></thead><tbody>";
-    (d.attributes || []).forEach(a => {
-        const legCls = a.leg === "contract" ? "leg-contract" : "leg-work";
-        const legTxt = a.leg === "contract" ? "계약서" : "저작물";
+    attrRows.forEach(a => {
+        const legTxt = a.leg === "contract" ? "계약서" : (a.leg === "work" ? "저작물" : null);
+        const legCell = legTxt
+            ? "<span class='leg-pill " + (a.leg === "contract" ? "leg-contract" : "leg-work") + "'>" + legTxt + "</span>"
+            : "<span class='muted tiny'>—</span>";
         let note = a.note ? esc(a.note) : "";
         if (a.recall != null) note = (note ? note + " · " : "") + "recall " + a.recall;
         if (a.batch_level) note = (note ? note + " · " : "") + "컬렉션 공통 태그";
         if (a.tier) note = (note ? note + " · " : "") + "tier " + esc(a.tier);
-        h += "<tr><td class='k'>" + esc(a.name) + "</td><td>" + fmtVal(a.expected) + "</td><td>"
-           + fmtVal(a.extracted) + "</td><td>" + verdictCell(a) + "</td><td><span class='leg-pill "
-           + legCls + "'>" + legTxt + "</span></td><td class='tiny muted'>" + note + "</td></tr>";
+        h += "<tr><td class='k'>" + esc(a.name) + "</td><td>" + fmtVal(pickVal(a.expected, a.gt)) + "</td><td>"
+           + fmtVal(pickVal(a.extracted, a.got)) + "</td><td>" + verdictCell(a) + "</td><td>"
+           + legCell + "</td><td class='tiny muted'>" + note + "</td></tr>";
     });
+    if (!attrRows.length)
+        h += "<tr><td colspan='6' class='muted tiny'>채점 상세가 없습니다.</td></tr>";
     h += "</tbody></table></div>";
     if (d.classification)
         h += '<div class="tiny muted" style="margin-top:8px;">분류(장르): '
            + esc([d.classification.detail, d.classification.genre, d.classification.category].filter(Boolean).join(" · "))
-           + " <span class='muted'>(우리 11속성 아님 — 유형 분류 지표 영역)</span></div>";
+           + " <span class='muted'>(속성 정확도 채점 대상 아님 — 유형 분류 지표 영역)</span></div>";
     h += legBlock("계약서 leg", "leg-contract", (d.legs || {}).contract);
     h += legBlock("저작물 leg (멀티모달)", "leg-work", (d.legs || {}).work);
     h += '<div class="dlrow" style="margin-top:14px;"><a class="btn-cta" style="text-decoration:none;padding:8px 16px;" href="/api/batch/'
@@ -1281,6 +1357,7 @@ async function refreshJobs() {
     }
     S.jobs = (r.data && r.data.jobs) || [];
     renderJobs();
+    renderStaleNotice();
 }
 
 function jobAccuracy(j) {
@@ -1324,7 +1401,9 @@ function renderJobs() {
                "' data-job='" + esc(j.job_id) + "'>" +
             "<td>" + stateBadge(j.state) + "</td>" +
             "<td><div style='font-weight:600'>" + esc(j.name || j.job_id) + "</div>" +
-            "<div class='tiny mono muted'>" + esc(j.job_id) + "</div></td>" +
+            "<div class='tiny mono muted'>" + esc(j.job_id) + "</div>" +
+            (scoringSetLabel(j) ? "<div class='tiny muted'>채점 기준 " + esc(scoringSetLabel(j)) + "</div>" : "") +
+            "</td>" +
             "<td style='min-width:170px'><div class='rate-cell'><div class='rate-bar'><span style='width:" +
                (r * 100).toFixed(1) + "%'></span></div><div class='rate-num'>" + i + "/" + total + "</div></div></td>" +
             "<td class='num'>" + accHtml + "</td>" +
@@ -1506,12 +1585,20 @@ function renderValidation(v) {
         ["계약서 파일 누락", v.missing_contract_count || 0, (v.missing_contract_count || 0) > 0],
         ["계약서 없는 세트", v.work_only || 0, false],
         ["정답(ground truth)", v.ground_truth || 0, false],
+        // 채점 기준(11/14속성)과 정답셋의 속성 이름이 겹치는 정도.
+        // 여기가 어긋나면 그 속성은 분모에서 조용히 빠져 정확도가 실제보다 높게 나온다.
+        ["정답셋 속성 대조", v.gt_attr_overlap || "—", !!v.warning],
     ];
     const tiles = items.map(it =>
         '<div class="stat"><div class="stat-label">' + esc(it[0]) + "</div>" +
         '<div class="stat-value' + (it[2] ? " bad" : "") + '">' + it[1] + "</div></div>").join("");
+    // 서버가 남긴 경고(정답셋 기준 불일치 등)를 그대로 보여준다. 지금까지는 로그에만
+    // 남아서, 정답셋이 채점 기준과 어긋나도 화면에는 낮은 정확도만 뜨고 이유가 없었다.
+    const warn = v.warning
+        ? '<div class="notice warn" style="margin-top:14px;">⚠️ ' + esc(v.warning) + "</div>"
+        : "";
     $("valBody").innerHTML =
-        '<div class="stat-grid">' + tiles + "</div>" +
+        '<div class="stat-grid">' + tiles + "</div>" + warn +
         (problems
             ? '<div class="notice warn" style="margin-top:14px;">누락·중복 항목이 있습니다 — 해당 세트는 실패로 기록될 수 있습니다.</div>'
             : '<div class="notice ok" style="margin-top:14px;">매니페스트 점검 통과 — 누락·중복 없음.</div>');
@@ -1547,6 +1634,7 @@ async function attach(jobId) {
     renderMonitorHeader();
     renderMonitor();
     renderJobs();
+    renderStaleNotice();
 
     const st = S.job.state;
     if (st === "pending" || st === "running") {
@@ -1572,6 +1660,14 @@ async function loadStatus(jobId) {
         $("monEmpty").classList.remove("hidden");
         $("monEmpty").innerHTML = '<div class="notice err">' + msg + "</div>" +
             '<div class="btn-row" style="margin-top:14px;"><button class="btn" onclick="showPanel(\'jobs\')">작업 목록으로</button></div>';
+        // 리포트 패널도 같이 비운다 — 안 그러면 직전 작업의 집계·세트별 결과가 그대로 남아
+        // 새 작업의 결과인 것처럼 읽힌다.
+        S.agg = null; S.results = [];
+        $("staleNotice").innerHTML = "";
+        $("repNotice").innerHTML = ""; $("repAgg").innerHTML = "";
+        $("resWrap").innerHTML = ""; $("resCount").textContent = "";
+        $("repBody").classList.add("hidden");
+        $("repEmpty").classList.remove("hidden");
         S.jobId = null;
         closeStream();
         if (S.tick) { clearInterval(S.tick); S.tick = null; }
@@ -1611,7 +1707,8 @@ function renderMonitorHeader() {
     $("monSubtitle").innerHTML =
         '<span class="mono">' + esc(j.job_id) + "</span> · 생성 " + esc(tstr(j.created_at)) +
         (j.started_at ? " · 시작 " + esc(tstr(j.started_at)) : "") +
-        (j.finished_at ? " · 종료 " + esc(tstr(j.finished_at)) : "");
+        (j.finished_at ? " · 종료 " + esc(tstr(j.finished_at)) : "") +
+        " · " + scoringSetBadge(j);
     $("monStateBadge").innerHTML = stateBadge(j.state);
 
     const running = (j.state === "running" || j.state === "pending");
@@ -1739,8 +1836,11 @@ function renderMonitor() {
 async function loadReport(jobId) {
     if (!jobId) return;
     $("repSubtitle").innerHTML = '<span class="mono">' + esc(jobId) + "</span>" +
-        (S.job ? " · " + esc(S.job.name || "") + " · " + (STATE_KO[S.job.state] || S.job.state) : "");
+        (S.job ? " · " + esc(S.job.name || "") + " · " + (STATE_KO[S.job.state] || S.job.state) : "") +
+        " · " + scoringSetBadge();
     const r = await api("/api/batch/" + encodeURIComponent(jobId) + "/report?fmt=json");
+    // 그 사이 다른 작업으로 옮겨갔으면 옛 응답으로 화면을 덮지 않는다 (표가 뒤섞였다).
+    if (jobId !== S.jobId) return;
     if (!r.ok) {
         S.agg = null;
         const running = S.job && (S.job.state === "running" || S.job.state === "pending");
@@ -1799,9 +1899,10 @@ function renderReport(a) {
         '<div class="meter-scale"><span>0%</span><span>50%</span><span>100%</span></div></div>';
     html += "</div>";
 
-    // 속성별
+    // 속성별 — 목록·순서는 서버가 채점한 per_attr 그대로다 (기준이 바뀌어도 따라간다)
     const per = a.per_attr || {};
-    const attrRows = ATTRS.map(name => {
+    const names = Object.keys(per).length ? Object.keys(per) : attrNames();
+    const attrRows = names.map(name => {
         const d = per[name];
         if (!d) {
             return "<tr><td class='k'>" + esc(name) + "</td><td class='num muted'>—</td><td class='num muted'>—</td>" +
@@ -1814,10 +1915,13 @@ function renderReport(a) {
             "<td class='num'>" + (d.na || 0) + "</td>" +
             "<td class='num'>" + (d.no_gt || 0) + "</td></tr>";
     }).join("");
-    html += '<div class="card"><div class="card-title">속성별 정확도 <span class="badge info">11개 속성</span></div>' +
+    html += '<div class="card"><div class="card-title">속성별 정확도 ' + scoringSetBadge() +
+        ' <span class="badge info">' + names.length + '개 속성</span></div>' +
         '<div class="card-sub">해당없음 = 어문 저작물의 시각 속성 등 채점 대상 아님 · 정답없음 = 정답 데이터 미확보로 채점 제외</div>' +
-        '<div class="scrollbox"><table><thead><tr><th>속성</th><th>채점</th><th>적중</th><th>정확도</th>' +
-        "<th>해당없음</th><th>정답없음</th></tr></thead><tbody>" + attrRows + "</tbody></table></div></div>";
+        (names.length
+            ? '<div class="scrollbox"><table><thead><tr><th>속성</th><th>채점</th><th>적중</th><th>정확도</th>' +
+              "<th>해당없음</th><th>정답없음</th></tr></thead><tbody>" + attrRows + "</tbody></table></div>"
+            : '<div class="tiny muted">채점된 속성이 없습니다.</div>') + "</div>";
 
     // 권리유형별 / 미디어별
     const secTable = (title, obj, keyLabel) => {
@@ -1852,12 +1956,43 @@ function renderReport(a) {
     $("repAgg").innerHTML = html;
 }
 
+/* ===================== 어느 작업을 보고 있는가 ===================== */
+/* 이 페이지는 새로고침 후 **마지막으로 보던 작업**에 다시 붙는다(localStorage).
+   실행 중 작업을 잃지 않으려는 의도적 동작이지만, 새 배치를 CLI나 다른 탭에서
+   돌리면 목록만 갱신되고 화면은 이전 작업에 남는다 — 옛 정확도를 최신 결과로
+   오해하게 된다(실측: 사용자는 run5 를 열어 둔 채 run6 의 숫자를 기대했다).
+   자동으로 갈아타면 진행 중인 작업을 보던 화면이 튀므로, 갈아타지 않고 **명시**한다. */
+function renderStaleNotice() {
+    const el = $("staleNotice");
+    if (!el) return;
+    const newest = S.jobs[0];                    // 서버가 생성시각 역순으로 준다
+    if (!S.jobId || !newest || newest.job_id === S.jobId) { el.innerHTML = ""; return; }
+    el.innerHTML = '<div class="notice warn">지금 보고 있는 것은 <b>최신 실행이 아닙니다</b> — ' +
+        "<span class='mono'>" + esc(S.jobId) + "</span>" +
+        (S.job ? " (" + esc(S.job.name || "") + " · 생성 " + esc(tstr(S.job.created_at)) + ")" : "") +
+        " · 최신: <b>" + esc(newest.name || newest.job_id) + "</b> " +
+        "<span class='mono'>" + esc(newest.job_id) + "</span> (생성 " + esc(tstr(newest.created_at)) + ")" +
+        ' <button class="btn tiny" id="btnGoNewest" style="margin-left:10px;padding:4px 12px;font-size:12px;">최신 작업 보기</button></div>';
+}
+document.addEventListener("click", e => {
+    if (e.target && e.target.id === "btnGoNewest") {
+        const n = S.jobs[0];
+        if (n) { attach(n.job_id); showPanel("report"); }
+    }
+});
+
 /* ===================== 세트별 결과 ===================== */
 async function loadResults(jobId) {
     if (!jobId) return;
+    const tag = $("resJobTag");
+    if (tag) tag.innerHTML = "작업 " + esc(jobId) +
+        (S.job ? " · " + esc(S.job.name || "") + " · 생성 " + esc(tstr(S.job.created_at)) : "");
     const lim = $("resLimit").value;
     $("resWrap").innerHTML = '<div class="tiny muted" style="padding:14px 4px;"><span class="spin dark"></span> 결과 불러오는 중…</div>';
     const r = await api("/api/batch/" + encodeURIComponent(jobId) + "/results?limit=" + encodeURIComponent(lim));
+    // 작업을 갈아탄 뒤 늦게 도착한 응답이 새 작업의 표를 덮어써서, 리포트 수치와
+    // 세트별 결과가 서로 다른 실행을 가리키는 일이 있었다. 도착 시점에 다시 확인한다.
+    if (jobId !== S.jobId) return;
     if (!r.ok) {
         S.results = [];
         $("resCount").textContent = "";
@@ -1870,9 +2005,9 @@ async function loadResults(jobId) {
     renderResults();
 }
 
-function attrCellsHtml(perAttr) {
+function attrCellsHtml(perAttr, names) {
     const pa = perAttr || {};
-    return '<div class="attr-cells">' + ATTRS.map(name => {
+    return '<div class="attr-cells">' + (names || []).map(name => {
         const d = pa[name];
         let cls = "nogt", ch = "·", tip = name + ": 정답없음";
         if (!d) { cls = "nogt"; ch = "·"; tip = name + ": 기록없음"; }
@@ -1899,7 +2034,16 @@ function artifactCellHtml(r) {
 function renderResults() {
     const q = ($("resFilter").value || "").trim().toLowerCase();
     const rows = S.results.filter(r => !q || String(r.set_id || "").toLowerCase().indexOf(q) >= 0);
-    $("resCount").textContent = rows.length + " / " + S.results.length + "건 표시";
+    $("resCount").textContent = rows.length + " / " + S.results.length + "건 표시"
+        + (S.jobId ? " · 작업 " + S.jobId : "");
+    // 속성 칸의 개수·순서는 서버 채점 결과를 그대로 따른다. 표가 비어도 범례는 갱신해야
+    // 직전 작업의 속성 순서가 남지 않는다.
+    const names = attrNames();
+    const hint = $("attrOrderHint");
+    if (hint) hint.textContent = names.length
+        ? (scoringSetLabel() ? "채점 기준: " + scoringSetLabel() + " · " : "") +
+          "속성 순서: " + names.join(" · ")
+        : "";
     if (!rows.length) {
         $("resWrap").innerHTML = '<div class="tiny muted" style="padding:16px 4px;">' +
             (S.results.length ? "검색 조건에 맞는 세트가 없습니다." : "표시할 세트 결과가 없습니다.") + "</div>";
@@ -1921,14 +2065,14 @@ function renderResults() {
             "<td class='num tiny'>" + (okv ? (r.n_match || 0) + " / " + (r.n_scored || 0) : "—") + "</td>" +
             "<td class='num tiny'>" + (r.elapsed_sec !== undefined && r.elapsed_sec !== null ? r.elapsed_sec + "s" : "—") + "</td>" +
             "<td class='num tiny'>" + artifactCellHtml(r) + "</td>" +
-            "<td>" + (okv ? attrCellsHtml(r.per_attr)
+            "<td>" + (okv ? attrCellsHtml(r.per_attr, names)
                           : '<span class="tiny" style="color:var(--danger)">' + esc(String(r.error || "원인 미상").slice(0, 160)) + "</span>") +
             "</td></tr>";
     }).join("");
     $("resWrap").innerHTML =
         '<div class="scrollbox"><table><thead><tr>' +
         "<th>set_id</th><th>미디어</th><th>권리유형</th><th>정확도</th><th>적중/채점</th>" +
-        "<th>소요</th><th>산출물</th><th>속성별 (11)</th>" +
+        "<th>소요</th><th>산출물</th><th>속성별 (" + names.length + ")</th>" +
         "</tr></thead><tbody>" + body + "</tbody></table></div>";
 }
 

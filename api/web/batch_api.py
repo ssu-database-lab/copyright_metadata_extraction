@@ -77,13 +77,49 @@ def _recover_jobs():
         if not res.exists():
             continue
         job = BatchJob(d.name, d, name=d.name)
+        # 이름과 설정은 메모리에만 있었다. 채점 기준(plan/tta)을 잃으면 상세 모달이
+        # 엉뚱한 속성 목록으로 그려지므로, 생성 때 남겨 둔 job.json 을 먼저 읽는다.
+        try:
+            saved = json.loads((d / "job.json").read_text(encoding="utf-8"))
+            job.name = saved.get("name") or job.name
+            job.config = saved.get("config") or {}
+            job.validation = saved.get("validation") or None
+        except (OSError, json.JSONDecodeError):
+            pass
         try:
             job.created_at = d.stat().st_mtime
         except OSError:
             pass
-        n = sum(1 for _ in res.open(encoding="utf-8"))
+        # 결과 파일을 한 번 훑어 건수·실패·비용·채점 기준을 되살린다.
+        #   · 실패를 0 으로 고정하면 재시작 뒤 '실패 0' 이라는 틀린 숫자가 뜬다.
+        #   · job.json 이 없는 예전 작업(실측: 서버의 12건 중 11건)은 채점 기준을
+        #     되찾을 길이 없어 plan 으로 떨어지고, TTA 결과가 11속성 화면으로 그려진다.
+        #     결과 줄에 기준이 새겨져 있으므로 거기서 되짚어 채워 넣는다.
+        from module.evaluation.scoring import infer_scoring_set
+        per_set: Dict[str, Dict[str, Any]] = {}
+        attr_names: set = set()
+        basis = None
+        with res.open(encoding="utf-8") as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                # 재개로 같은 set_id 가 여러 줄이면 **마지막 줄**을 센다.
+                # 리포트(`load_results`)·상세(`_set_result`) 와 같은 규칙이어야 한다 —
+                # 여기만 '마지막 성공분'으로 두면 목록의 실패 건수가 리포트와 어긋난다.
+                per_set[str(r.get("set_id"))] = {"ok": bool(r.get("ok")),
+                                                 "cost": r.get("cost_krw") or 0.0}
+                basis = basis or r.get("scoring_set")
+                attr_names |= set(r.get("per_attr") or {})
+        n = len(per_set)
         job.total = n
-        job.progress = {"i": n, "total": n, "failed": 0, "cost_krw_total": 0.0}
+        job.progress = {"i": n, "total": n,
+                        "failed": sum(1 for v in per_set.values() if not v["ok"]),
+                        "cost_krw_total": round(sum(v["cost"] for v in per_set.values()), 1)}
+        if not job.config.get("scoring_set"):
+            job.config = {**job.config,
+                          "scoring_set": basis or infer_scoring_set(attr_names)}
         rep = d / "_eval_out" / "report.json"
         if rep.exists():
             try:
@@ -115,6 +151,21 @@ def _safe_extract(zf: zipfile.ZipFile, dest: Path) -> None:
         if not str(target).startswith(str(dest)):
             raise HTTPException(400, f"아카이브 경로가 대상 폴더를 벗어납니다: {name}")
     zf.extractall(dest)
+
+
+def _save_job_meta(job: "BatchJob") -> None:
+    """이름·설정·검증결과를 작업 폴더에 남긴다 — 재시작 후 _recover_jobs 가 읽는다.
+
+    채점 기준(plan/tta)과 정답셋 대조 결과가 메모리에만 있으면 배포 한 번에
+    사라지고, 되살아난 작업은 기본값(11속성)으로 그려진다.
+    """
+    try:
+        (job.work_dir / "job.json").write_text(
+            json.dumps({"name": job.name, "config": job.config,
+                        "validation": job.validation}, ensure_ascii=False),
+            encoding="utf-8")
+    except OSError:
+        pass
 
 
 def _find_manifest(root: Path) -> Optional[Path]:
@@ -179,7 +230,8 @@ class BatchJob:
             "job_id": self.job_id, "name": self.name, "state": self.state,
             "total": self.total, "progress": self.progress,
             "summary": self.summary, "validation": self.validation,
-            "config": self.config,
+            # 복구된 작업은 config 가 비어 있을 수 있다 — 채점 기준만은 결과에서 되짚는다
+            "config": self.config, "scoring_set": _scoring_set(self),
             "error": self.error, "created_at": self.created_at,
             "started_at": self.started_at, "finished_at": self.finished_at,
         }
@@ -200,12 +252,14 @@ def _run_job(job: BatchJob, manifest_path: Path, cfg_kwargs: Dict):
 
         # 채점 기준과 정답셋의 속성 이름이 어긋나면 전 항목이 skipped_no_gt 로 빠지고
         # 결과는 0% 로 보인다 — 오류가 아니라 "다 틀렸다" 처럼 읽힌다. 먼저 잡아 알린다.
-        from module.evaluation.scoring import ATTRIBUTES, TTA_ATTRIBUTES
-        want = {a.name for a in (TTA_ATTRIBUTES if cfg_kwargs.get("scoring_set") == "tta"
-                                 else ATTRIBUTES)}
+        from module.evaluation.scoring import attributes_for
+        # 기준 선택은 attributes_for 한 곳에서만 한다 — 여기서 또 고르면 기준이
+        # 늘어날 때 한쪽만 고쳐지고 경고가 엉뚱한 목록으로 나간다.
+        want = {a.name for a in attributes_for(cfg_kwargs.get("scoring_set"))}
         have = set()
         for rec in list(gt.values())[:20]:
-            have |= set((rec or {}).get("attributes", {}))
+            # attributes 가 null 인 줄에서 set(None) 로 죽으면 작업 전체가 실패한다
+            have |= set((rec or {}).get("attributes") or {})
         overlap = len(want & have)
         job.validation["scoring_set"] = cfg_kwargs.get("scoring_set", "plan")
         job.validation["gt_attr_overlap"] = f"{overlap}/{len(want)}"
@@ -215,7 +269,37 @@ def _run_job(job: BatchJob, manifest_path: Path, cfg_kwargs: Dict):
                    f"기대: {sorted(want)[:5]}…  이대로 돌리면 전 항목이 미채점으로 빠집니다.")
             job.validation["warning"] = msg
             logger.error(msg)
+        elif have and overlap < len(want):
+            # 부분 불일치가 더 위험하다 — 0개면 0% 로 눈에 띄지만, 몇 개만 빠지면
+            # 그 속성이 분모에서 조용히 사라져 **정확도가 실제보다 높게** 나온다.
+            missing = sorted(want - have)
+            msg = (f"정답셋에 없는 채점 속성 {len(missing)}개: {missing[:6]}… "
+                   f"이 속성은 미채점으로 빠지므로 정확도 분모가 {len(want)} → "
+                   f"{overlap} 로 줄어 실제보다 높게 보일 수 있습니다.")
+            job.validation["warning"] = msg
+            job.validation["missing_gt_attrs"] = missing
+            logger.warning(msg)
+
+        # 이름은 있는데 값이 비어 있는 속성(tier '제외' 등)은 전 세트에서 미채점으로
+        # 빠진다. 이름 대조만으로는 드러나지 않으므로 따로 센다 — 예컨대 권리 체크박스
+        # 7종이 통째로 비면 분모가 14 → 7 로 줄고, 경고 없이 정확도만 올라간다.
+        sample = [r for r in list(gt.values())[:20] if (r or {}).get("attributes")]
+        if sample:
+            blank = []
+            for name in sorted(want & have):
+                empty = sum(1 for r in sample
+                            if ((r["attributes"].get(name) or {}).get("value")
+                                in (None, "", [])))
+                if empty == len(sample):
+                    blank.append(name)
+            if blank:
+                job.validation["unscorable_attrs"] = blank
+                note = (f"정답 값이 비어 채점되지 않을 속성 {len(blank)}개: {blank[:6]}… "
+                        f"분모가 {len(want)} → {len(want) - len(blank)} 로 줄어듭니다.")
+                job.validation.setdefault("warning", note)
+                logger.warning(note)
         job.total = len(entries)
+        _save_job_meta(job)            # 채점 기준·검증결과를 디스크에 고정
         job.push({"type": "validated", **job.validation})
 
         cfg = RunConfig(**cfg_kwargs)
@@ -325,6 +409,8 @@ async def create_batch(
         "scoring_set": scoring_set if scoring_set in ("plan", "tta") else "plan",
     }
     job.config = {k: v for k, v in cfg_kwargs.items()}
+    # 실행 전에 먼저 남긴다 — 검증 전에 죽은 작업도 이름·채점 기준은 되살아나야 한다.
+    _save_job_meta(job)
     threading.Thread(target=_run_job, args=(job, mpath, cfg_kwargs),
                      daemon=True, name=f"batch-{job_id}").start()
     return {"job_id": job_id, "state": job.state, "manifest": str(mpath)}
@@ -403,31 +489,39 @@ async def job_report(job_id: str, fmt: str = "md"):
     if not path.exists():
         raise HTTPException(404, "리포트가 아직 생성되지 않았습니다")
     if fmt == "json":
-        return JSONResponse(json.loads(path.read_text(encoding="utf-8")))
+        agg = json.loads(path.read_text(encoding="utf-8"))
+        # 이 키들이 이미 들어 있는 리포트(신규)는 그대로 두고, 옛 리포트에만 채워 준다.
+        order, _, _ = _attr_spec(job)
+        return JSONResponse({"scoring_set": _scoring_set(job), "attr_order": order, **agg})
     return PlainTextResponse(path.read_text(encoding="utf-8"),
                              media_type="text/markdown; charset=utf-8")
 
 
 @router.get("/{job_id}/results")
 async def job_results(job_id: str, limit: int = 0):
-    """results.jsonl — limit>0 이면 앞에서 N건만(UI 표 미리보기용)."""
+    """results.jsonl — limit>0 이면 최근 N건만(UI 표 미리보기용).
+
+    **리포트와 같은 로더를 쓴다.** results.jsonl 은 재개 시 append 되므로 같은
+    set_id 가 여러 줄 남는다. 리포트는 `load_results` 로 마지막 판정만 집계하는데
+    이 표만 파일을 그대로 읽으면, 같은 작업인데 표에는 **이전 실행의 정확도**가
+    뜨고 리포트에는 새 값이 뜬다 — 어느 쪽이 맞는지 알 수 없게 된다.
+    앞에서 N건을 자르던 것도 고친다: 화면 문구는 "최근 N건"인데 실제로는 가장
+    오래된 N건을 보내고 있었다.
+    """
+    from module.evaluation.report import load_results
     job = _get(job_id)
     path = job.out_dir / "results.jsonl"
     if not path.exists():
         raise HTTPException(404, "결과가 아직 없습니다")
-    rows = []
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            if limit and len(rows) >= limit:
-                break
-            try:
-                r = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            r.pop("extracted", None)       # 표 미리보기에는 과하다
-            r.pop("traceback", None)
-            rows.append(r)
-    return {"job_id": job_id, "count": len(rows), "results": rows}
+    rows = load_results(path)
+    if limit and len(rows) > limit:
+        rows = rows[-limit:]
+    for r in rows:
+        r.pop("extracted", None)       # 표 미리보기에는 과하다
+        r.pop("traceback", None)
+    order, _, _ = _attr_spec(job)
+    return {"job_id": job_id, "count": len(rows), "scoring_set": _scoring_set(job),
+            "attr_order": order, "results": rows}
 
 
 # ---------------------------------------------------------------------------
@@ -522,10 +616,57 @@ async def set_download(job_id: str, set_id: str):
 # 속성별 정답/추출/판정 + 계약서·저작물 leg 각각의 메타데이터 + 산출물 파일 목록.
 # 이걸 여러 엔드포인트로 쪼개면 UI 가 3번 왕복하고 상태가 어긋난다.
 
-_ATTR_ORDER = ["제목", "저자", "설명", "라이선스 유형", "키워드", "해상도",
-               "주요 색상", "개체 범주", "파일크기", "파일포맷", "파일 생성 날짜"]
-# 어느 leg 가 채우는 속성인지 — 모달에서 책임 소재를 보여주기 위함
-_ATTR_LEG = {"제목": "contract", "저자": "contract", "라이선스 유형": "contract"}
+def _scoring_set(job: "BatchJob") -> str:
+    """이 작업이 어떤 채점 기준(plan/tta)으로 돌았는지.
+
+    설정이 우선이지만, 서버 재시작으로 복구된 작업은 설정이 메모리와 함께 사라진다
+    (실측: 서버의 옛 작업은 config={} 로 되살아난다). 그때는 결과에 찍힌 속성 이름으로
+    되짚는다 — 두 기준은 이름이 하나도 겹치지 않아 한 줄만 봐도 판별된다.
+    """
+    from module.evaluation.scoring import infer_scoring_set
+    s = (job.config or {}).get("scoring_set")
+    if s in ("plan", "tta"):
+        return s
+    path = job.out_dir / "results.jsonl"
+    try:
+        with path.open(encoding="utf-8") as f:
+            for line in f:
+                try:
+                    names = list((json.loads(line).get("per_attr") or {}))
+                except json.JSONDecodeError:
+                    continue
+                if names:                     # 실패 세트는 per_attr 이 비어 있다
+                    s = infer_scoring_set(names)
+                    job.config = {**(job.config or {}), "scoring_set": s}
+                    return s
+    except OSError:
+        pass
+    return "plan"
+
+
+def _attr_spec(job: "BatchJob"):
+    """작업의 채점 기준에 맞는 (속성 순서, leg 매핑).
+
+    11속성을 여기에 박아 두면 TTA 작업은 한 줄도 대조되지 않고 빈 행 11개가 나온다
+    (실측: 서버 작업 79ca00491f31 의 상세가 전부 null 이었다). 목록은 채점기에서
+    그대로 가져온다.
+
+    leg 는 '틀렸을 때 어느 단계를 봐야 하는가'다. 저작물 leg 의 값은 계약서 값으로
+    덮지 않으므로(work_type·description 등), 계약서 상속 목록에 있는 필드만
+    contract 로 본다 — 기존 11속성 매핑(제목·저자·라이선스)과 정확히 같은 결과가 나온다.
+    """
+    from module.clip_extraction.contract_inheritance import INHERITABLE_FIELDS
+    from module.evaluation.scoring import attributes_for
+    # work_title 은 상속 목록에 없지만 계약서 제목 매칭으로 상속된다(특례).
+    inherited = set(INHERITABLE_FIELDS) | {"work_title"}
+    order, leg, field = [], {}, {}
+    for a in attributes_for(_scoring_set(job)):
+        cands = a.field if isinstance(a.field, tuple) else (a.field,)
+        names = [f for f in cands if isinstance(f, str)]
+        order.append(a.name)
+        leg[a.name] = "contract" if any(f in inherited for f in names) else "work"
+        field[a.name] = names[0] if names else None
+    return order, leg, field
 
 
 def _load_gt(manifest_dir: Path) -> Dict[str, Dict]:
@@ -585,18 +726,24 @@ async def set_detail(job_id: str, set_id: str):
     g = gt.get(str(set_id), {})
     gattr = g.get("attributes", {})
 
+    order, leg, field = _attr_spec(job)
     rows = []
-    for name in _ATTR_ORDER:
+    for name in order:
         info = (rec.get("per_attr") or {}).get(name) or {}
         ga = gattr.get(name) or {}
         st = info.get("status")
+        # 정답은 정답셋이 1순위지만, ZIP 이 정리된 뒤에도 모달은 열려야 한다.
+        # 채점 기록(per_attr.gt)에 대조에 쓴 값이 그대로 남아 있으므로 그걸 쓴다.
+        expected = ga.get("value")
+        if expected is None and "gt" in info:
+            expected = info.get("gt")
         rows.append({
             "name": name,
-            "schema_field": ga.get("schema_field"),
-            "leg": _ATTR_LEG.get(name, "work"),
+            "schema_field": ga.get("schema_field") or field.get(name),
+            "leg": leg.get(name, "work"),
             "status": st,
             "match": info.get("match"),
-            "expected": ga.get("value"),
+            "expected": expected,
             "extracted": info.get("got"),
             "tier": ga.get("tier"),
             "method": info.get("method"),
@@ -607,6 +754,7 @@ async def set_detail(job_id: str, set_id: str):
 
     return {
         "set_id": set_id, "job_id": job_id,
+        "scoring_set": _scoring_set(job),
         "media": rec.get("media"), "license_bucket": rec.get("license_bucket"),
         "ok": rec.get("ok"), "error": rec.get("error"),
         "accuracy": rec.get("accuracy"), "n_match": rec.get("n_match"),

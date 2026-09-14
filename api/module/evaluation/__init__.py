@@ -11,13 +11,15 @@
 """
 
 from .manifest import ManifestEntry, load_manifest, validate_manifest
-from .scoring import ATTRIBUTES, score_set
+from .scoring import (ATTRIBUTES, TTA_ATTRIBUTES, attributes_for,
+                      infer_scoring_set, score_set)
 from .batch_runner import BatchRunner, RunConfig
 from .report import aggregate, render_markdown
 
 __all__ = [
     "ManifestEntry", "load_manifest", "validate_manifest",
-    "ATTRIBUTES", "score_set",
+    "ATTRIBUTES", "TTA_ATTRIBUTES", "attributes_for", "infer_scoring_set",
+    "score_set",
     "BatchRunner", "RunConfig",
     "aggregate", "render_markdown",
 ]

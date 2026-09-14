@@ -11,6 +11,9 @@
   python -m module.evaluation.cli --manifest eval_sets/manifest.jsonl \
       --workers 6 --max-cost 60000
 
+  # TTA 표준 14속성 기준 채점 (정답셋도 TTA 이름이어야 한다)
+  python -m module.evaluation.cli --manifest eval_sets/manifest.jsonl --scoring-set tta
+
   # 집계만 다시(이미 돌린 results.jsonl 재사용)
   python -m module.evaluation.cli --manifest eval_sets/manifest.jsonl --report-only
 """
@@ -75,6 +78,12 @@ def main() -> int:
     ap.add_argument("--no-consolidate", action="store_true",
                     help="통합검증 생략 — 비용 최대 40%% 절감, 단 필드별 판정·신뢰도가 사라진다")
     ap.add_argument("--consolidation-model", default="alibaba-qwen3.5-122b-a10b")
+    # 채점 기준 — plan(연구개발계획서 11속성) / tta(TTA 표준 14속성).
+    # 웹(/v3)에만 선택지가 있고 CLI 에는 없어서, TTA 정답셋을 CLI 로 돌리면
+    # 11속성으로 대조되어 전 항목이 미채점으로 빠진다(정확도 '—'). 같은 코어를
+    # 쓴다고 해 놓고 결과가 갈리는 지점이라 여기에도 둔다.
+    ap.add_argument("--scoring-set", default="plan", choices=["plan", "tta"],
+                    help="채점 기준 (기본 plan = 계획서 11속성)")
     args = ap.parse_args()
 
     mpath = Path(args.manifest)
@@ -90,6 +99,23 @@ def main() -> int:
     missing_gt = [e.set_id for e in entries if e.set_id not in gt]
     if missing_gt:
         print(f"  ⚠️ 정답 없는 세트 {len(missing_gt)}건 (예: {missing_gt[:5]})")
+
+    # 채점 기준과 정답셋 속성 이름이 어긋나면 전 항목이 미채점으로 빠지고 결과가
+    # 0%/'—' 로 보인다 — 오류가 아니라 "다 틀렸다"처럼 읽힌다. 돌리기 전에 잡는다.
+    from module.evaluation.scoring import attributes_for
+    want = {a.name for a in attributes_for(args.scoring_set)}
+    have = set()
+    for rec in list(gt.values())[:20]:
+        # attributes 가 null 인 줄이 섞이면 set(None) 로 죽는다 — 정답셋 점검이
+        # 실행을 막아서는 안 된다. 빈 dict 로 보고 넘어간다.
+        have |= set((rec or {}).get("attributes") or {})
+    overlap = len(want & have)
+    print(f"  채점 기준 {args.scoring_set} ({len(want)}속성) · 정답셋 대조 {overlap}/{len(want)}")
+    if have and overlap < len(want):
+        miss = sorted(want - have)
+        print(f"  ⚠️ 정답셋에 없는 채점 속성 {len(miss)}개: {miss[:6]} — "
+              f"미채점으로 빠져 정확도가 실제보다 높게 보일 수 있습니다"
+              + ("  (기준이 맞는지 --scoring-set 을 확인하세요)" if not overlap else ""))
     if not v["ok"]:
         print(f"  ⚠️ 누락 예시 — 저작물 {v['missing_work'][:3]} / 계약서 {v['missing_contract'][:3]}")
     if args.validate_only:
@@ -102,11 +128,12 @@ def main() -> int:
                         ocr_provider=args.ocr_provider, ocr_model=args.ocr_model,
                         ner_model=args.ner_model,
                         consolidate=not args.no_consolidate,
-                        consolidation_model=args.consolidation_model)
+                        consolidation_model=args.consolidation_model,
+                        scoring_set=args.scoring_set)
         print(f"  모델 구성 — OCR {cfg.ocr_provider}/{cfg.ocr_model or '(기본)'} · "
               f"추출 {cfg.model_name} · NER {cfg.ner_model} · "
               f"통합검증 {cfg.consolidation_model if cfg.consolidate else '생략'} · "
-              f"이미지VLM {cfg.vlm_prefer}")
+              f"이미지VLM {cfg.vlm_prefer} · 채점 {cfg.scoring_set}")
 
         def cb(ev):
             if ev["type"] == "progress" and (ev["i"] % 10 == 0 or not ev["ok"]):

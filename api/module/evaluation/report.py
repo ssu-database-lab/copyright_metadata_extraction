@@ -16,9 +16,9 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Sequence
 
-from .scoring import ATTRIBUTES
+from .scoring import ATTRIBUTES, infer_scoring_set
 
 
 def load_results(path: str | Path) -> List[Dict]:
@@ -35,16 +35,40 @@ def load_results(path: str | Path) -> List[Dict]:
                 out.append(json.loads(line))
             except json.JSONDecodeError:
                 continue
-    # 재개로 같은 set_id가 여러 번 있으면 마지막 성공분만 남긴다
+    # 재개·재실행으로 같은 set_id 가 여러 줄이면 **마지막 줄**만 남긴다.
+    # 줄 순서가 곧 처리 순서이므로 마지막 줄이 가장 최근 판정이다.
+    # 예전에는 '마지막 성공분'이라 뒤에 붙은 실패를 무시했는데, 그러면 다시 돌려
+    # 실패한 세트가 화면에는 예전 정확도로 계속 성공한 것처럼 남는다 —
+    # 리포트가 오래된 값을 보여주는 경로가 된다. 최신 판정을 그대로 쓴다.
     latest: Dict[str, Dict] = {}
     for r in out:
-        sid = str(r.get("set_id"))
-        if sid not in latest or r.get("ok"):
-            latest[sid] = r
+        latest[str(r.get("set_id"))] = r
     return list(latest.values())
 
 
-def aggregate(results: List[Dict]) -> Dict[str, Any]:
+def _attr_order(ok: List[Dict], attributes: Optional[Sequence] = None) -> List[str]:
+    """리포트에 찍을 속성 순서 — **결과에 들어 있는 것을 그대로 쓴다**.
+
+    채점기가 무슨 기준으로 돌았는지(계획서 11속성 / TTA 14속성)를 리포트가
+    다시 추측하면 기준이 늘 때마다 여기도 고쳐야 하고, 빠뜨리면 표가 통째로
+    빈다 — 실제로 TTA 작업에서 11속성만 훑어 0행이 나왔다.
+    `score_set` 은 속성마다 반드시 항목을 남기므로 per_attr 의 키 순서가 곧
+    채점 순서다. 그 순서를 그대로 이어붙인다(계획서 경로는 결과가 동일하다).
+    """
+    if attributes:
+        return [a if isinstance(a, str) else a.name for a in attributes]
+    order: List[str] = []
+    seen = set()
+    for r in ok:
+        for name in (r.get("per_attr") or {}):
+            if name not in seen:
+                seen.add(name)
+                order.append(name)
+    return order
+
+
+def aggregate(results: List[Dict], attributes: Optional[Sequence] = None) -> Dict[str, Any]:
+    """`attributes` 를 주면 그 순서로, 안 주면 결과에서 뽑은 순서로 집계한다."""
     ok = [r for r in results if r.get("ok")]
     failed = [r for r in results if not r.get("ok")]
 
@@ -80,8 +104,10 @@ def aggregate(results: List[Dict]) -> Dict[str, Any]:
             else:
                 a["no_gt"] += 1
 
+    order = _attr_order(ok, attributes)
     return {
         "n_sets": len(results), "n_ok": len(ok), "n_failed": len(failed),
+        "attr_order": order, "scoring_set": infer_scoring_set(order),
         "micro_accuracy": (tot_match / tot_scored) if tot_scored else None,
         "macro_accuracy": (sum(macro) / len(macro)) if macro else None,
         "total_scored": tot_scored, "total_match": tot_match,
@@ -107,14 +133,16 @@ def render_markdown(agg: Dict[str, Any], title: str = "속성정보 추출 평�
     L.append(f"- 채점 {agg['total_match']}/{agg['total_scored']} 속성")
     L.append(f"- 추정 비용 ₩{agg['cost_krw']:,.0f} · 세트당 평균 {agg['elapsed_mean_sec']}초")
     L.append("")
-    L.append("> 목표: **85%** (연구개발계획서 §2-4, 2단계)")
+    ref = ("TTA 표준 14속성 · 계약서 인쇄 항목만 채점" if agg.get("scoring_set") == "tta"
+           else "연구개발계획서 §2-4, 2단계")
+    L.append(f"> 목표: **85%** ({ref}) · 채점 속성 {len(agg.get('attr_order') or [])}개")
     L.append("")
 
     L += ["## 속성별", "",
           "| 속성 | 채점 | 적중 | 정확도 | 항목별 정확도 | 해당없음 | 정답없음 | 정의불일치 |",
           "|---|---|---|---|---|---|---|---|"]
-    for a in ATTRIBUTES:
-        d = agg["per_attr"].get(a.name)
+    for name in (agg.get("attr_order") or [a.name for a in ATTRIBUTES]):
+        d = agg["per_attr"].get(name)
         if not d:
             continue
         # 컬렉션 공통 태그를 뺀 '항목별' 정확도를 함께 보여준다 — 모델이 픽셀에서
@@ -122,7 +150,7 @@ def render_markdown(agg: Dict[str, Any], title: str = "속성정보 추출 평�
         item_n = d["scored"] - d.get("batch", 0)
         item_h = d["match"] - d.get("batch_match", 0)
         item = _pct(item_h, item_n) if item_n else "—"
-        L.append(f"| {a.name} | {d['scored']} | {d['match']} | "
+        L.append(f"| {name} | {d['scored']} | {d['match']} | "
                  f"{_pct(d['match'], d['scored'])} | {item} | {d['na']} | {d['no_gt']} | "
                  f"{d.get('tier_skip', 0)} |")
     L.append("")
