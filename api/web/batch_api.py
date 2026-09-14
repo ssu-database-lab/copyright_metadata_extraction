@@ -22,6 +22,7 @@ CLI로 돌리든 결과가 같다.
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import logging
 import shutil
@@ -74,7 +75,12 @@ def _recover_jobs():
         if not d.is_dir() or d.name in _JOBS:
             continue
         res = d / "_eval_out" / "results.jsonl"
-        if not res.exists():
+        # 결과가 없어도 job.json 이 있으면 되살린다. 검증 단계에서 죽은 작업
+        # (채점 기준과 정답셋이 어긋나 중단된 경우 등)이 재시작 한 번에 통째로
+        # 사라지면, 왜 죽었는지 적어 둔 validation.warning 까지 함께 없어진다.
+        # 운영자 입장에서는 '제출한 적이 없는 것'처럼 보여 원인을 못 찾는다.
+        has_meta = (d / "job.json").exists()
+        if not res.exists() and not has_meta:
             continue
         job = BatchJob(d.name, d, name=d.name)
         # 이름과 설정은 메모리에만 있었다. 채점 기준(plan/tta)을 잃으면 상세 모달이
@@ -99,7 +105,8 @@ def _recover_jobs():
         per_set: Dict[str, Dict[str, Any]] = {}
         attr_names: set = set()
         basis = None
-        with res.open(encoding="utf-8") as f:
+        # 결과 파일이 없는 작업(검증 단계에서 죽은 경우)도 되살리므로 여기서 지킨다.
+        with (res.open(encoding="utf-8") if res.exists() else io.StringIO("")) as f:
             for line in f:
                 try:
                     r = json.loads(line)
@@ -128,8 +135,17 @@ def _recover_jobs():
             except (OSError, json.JSONDecodeError):
                 pass
         # 실행 스레드는 없다. 리포트가 있으면 완료로, 없으면 중단된 것으로 표시한다.
-        job.state = "done" if rep.exists() else "cancelled"
-        job.error = None if rep.exists() else "서버 재시작으로 중단됨 (결과는 보존)"
+        if rep.exists():
+            job.state, job.error = "done", None
+        elif n:
+            job.state = "cancelled"
+            job.error = "서버 재시작으로 중단됨 (결과는 보존)"
+        else:
+            # 세트를 한 건도 처리하지 못한 작업 — 보통 검증에서 멈춘 것이다.
+            # validation.warning 에 사유가 남아 있으므로 그걸 그대로 보여준다.
+            job.state = "error"
+            job.error = ((job.validation or {}).get("warning")
+                         or "검증 단계에서 중단됨 (결과 없음)")
         with _JOBS_LOCK:
             _JOBS[d.name] = job
         recovered += 1

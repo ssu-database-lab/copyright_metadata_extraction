@@ -76,8 +76,12 @@ def aggregate(results: List[Dict], attributes: Optional[Sequence] = None) -> Dic
     tot_match = sum(r.get("n_match", 0) for r in ok)
     macro = [r["accuracy"] for r in ok if r.get("accuracy") is not None]
 
+    # excluded 는 '계약서에 근거가 없어 애초에 채점 대상이 아님'(tier 제외),
+    # no_gt 는 '채점 대상인데 정답을 확보하지 못함'. 둘 다 분모에서 빠지지만
+    # 읽는 사람에게는 전혀 다른 뜻이라 한 칸에 합치면 안 된다.
     per_attr = defaultdict(lambda: {"scored": 0, "match": 0, "na": 0, "no_gt": 0,
-                                    "tier_skip": 0, "batch": 0, "batch_match": 0})
+                                    "excluded": 0, "tier_skip": 0,
+                                    "batch": 0, "batch_match": 0})
     by_bucket = defaultdict(lambda: {"n": 0, "scored": 0, "match": 0})
     by_media = defaultdict(lambda: {"n": 0, "scored": 0, "match": 0})
 
@@ -101,6 +105,8 @@ def aggregate(results: List[Dict], attributes: Optional[Sequence] = None) -> Dic
                 a["na"] += 1
             elif st == "skipped_tier":
                 a["tier_skip"] += 1
+            elif st == "skipped_no_gt" and info.get("tier") == "제외":
+                a["excluded"] += 1
             else:
                 a["no_gt"] += 1
 
@@ -139,8 +145,8 @@ def render_markdown(agg: Dict[str, Any], title: str = "속성정보 추출 평�
     L.append("")
 
     L += ["## 속성별", "",
-          "| 속성 | 채점 | 적중 | 정확도 | 항목별 정확도 | 해당없음 | 정답없음 | 정의불일치 |",
-          "|---|---|---|---|---|---|---|---|"]
+          "| 속성 | 채점 | 적중 | 정확도 | 항목별 정확도 | 해당없음 | 계약서근거없음 | 정답미확보 | 정의불일치 |",
+          "|---|---|---|---|---|---|---|---|---|"]
     for name in (agg.get("attr_order") or [a.name for a in ATTRIBUTES]):
         d = agg["per_attr"].get(name)
         if not d:
@@ -150,9 +156,13 @@ def render_markdown(agg: Dict[str, Any], title: str = "속성정보 추출 평�
         item_n = d["scored"] - d.get("batch", 0)
         item_h = d["match"] - d.get("batch_match", 0)
         item = _pct(item_h, item_n) if item_n else "—"
+        # 계약서근거없음(tier 제외) 과 정답미확보 를 나눠 적는다 — 분모에서 빠지는 건
+        # 같지만, 전자는 '원래 잴 수 없는 항목', 후자는 '재려 했는데 정답이 없음' 이다.
+        # aggregate 의 elif 분기라 두 값은 서로 배타적이다(빼면 안 된다).
+        exc = d.get("excluded", 0)
         L.append(f"| {name} | {d['scored']} | {d['match']} | "
-                 f"{_pct(d['match'], d['scored'])} | {item} | {d['na']} | {d['no_gt']} | "
-                 f"{d.get('tier_skip', 0)} |")
+                 f"{_pct(d['match'], d['scored'])} | {item} | {d['na']} | {exc} | "
+                 f"{d['no_gt']} | {d.get('tier_skip', 0)} |")
     L.append("")
 
     for label, key in (("권리유형별", "by_bucket"), ("미디어별", "by_media")):
