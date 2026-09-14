@@ -64,6 +64,29 @@ INHERITABLE_FIELDS = [
     "personal_info", "consent_type", "consent_status", "consent_date",
 ]
 
+# 계약서가 법적 원본인 필드 — 저작물 분석값이 있어도 계약서 값이 이긴다.
+#
+# 일반 규칙은 "저작물 자체 분석 값 우선" 이고, 설명·색상·개체처럼 파일을 봐야 아는
+# 것에는 그 규칙이 맞다. 그러나 권리주체·권리·기간은 계약서가 원본이고 TTA 정답도
+# 계약서(제2조·제3조)에서 온다. 여기서는 저작물에서 주운 값이 계약서를 가리면 안 된다.
+#
+# 실측(19세트): 저작자가 8/14 에 그친 원인 중 4건이 이 경우였다. 어문 저작물 본문에
+# 등장한 사람 이름(이정림)을 저작자로 잡고, 계약서의 한국저작권위원회가 상속되지
+# 못했다. 원장에서 저작자·권리자·저작권자명 세 열이 모두 한국저작권위원회로 일치하므로
+# 계약서 값이 맞다.
+CONTRACT_AUTHORITATIVE_FIELDS = {
+    # 권리주체 (TTA 4.x)
+    "author", "copyright_holder", "economic_rights_holder", "licensor",
+    "rights_holder_identifier", "co_author",
+    # 저작재산권 세부 권리 (TTA 7.x)
+    "reproduction_right", "public_performance_right", "public_transmission_right",
+    "exhibition_right", "distribution_right", "rental_right",
+    "derivative_work_creation_right", "other_rights", "granted_rights", "economic_rights",
+    # 기간 (TTA 8.x)
+    "license_start_date", "license_end_date", "valid_period", "contract_duration",
+    "effective_date", "expiration_date",
+}
+
 # work_title 은 특별 취급: 매칭 성공 시에만 상속.
 _TITLE_FIELD = "work_title"
 
@@ -136,12 +159,12 @@ def inherit_contract_fields(
     Returns:
         merged: 병합된 저작물 메타데이터 (원본 dict 는 수정하지 않음)
         decisions: consolidator 형식의 provenance 항목 리스트 (상속 필드만)
-        summary: {"inherited": n, "skipped_existing": n, "title_match": str}
+        summary: {"inherited": n, "skipped_existing": n, "overwritten": n, "title_match": str}
     """
     merged = dict(work_metadata or {})
     contract = contract_metadata or {}
     decisions: List[Dict[str, Any]] = []
-    inherited = skipped = 0
+    inherited = skipped = overwritten = 0
 
     def _empty(v: Any) -> bool:
         return v is None or v == "" or v == [] or v == {}
@@ -163,8 +186,19 @@ def inherit_contract_fields(
         cval = contract.get(field)
         if _empty(cval):
             continue
-        if not _empty(merged.get(field)):
-            skipped += 1  # 저작물 자체 분석 값 우선 — 계약서 값은 덮지 않음
+        wval = merged.get(field)
+        if not _empty(wval):
+            if field not in CONTRACT_AUTHORITATIVE_FIELDS:
+                skipped += 1  # 저작물 자체 분석 값 우선 — 계약서 값은 덮지 않음
+                continue
+            if _norm(wval) == _norm(cval):
+                skipped += 1  # 같은 값이면 덮을 이유가 없다
+                continue
+            merged[field] = cval
+            overwritten += 1
+            _add_decision(field, cval, "CONTRACT_INHERITED",
+                          f"계약서가 원본인 항목 — 저작물 분석값({str(wval)[:40]})을 계약서 값으로 대체",
+                          _INHERITED_CONF)
             continue
         merged[field] = cval
         inherited += 1
@@ -193,5 +227,6 @@ def inherit_contract_fields(
                           f"계약서에 저작물 {len(cands)}건 — 파일명/설명으로 특정 불가 (후보: {', '.join(cands[:5])})",
                           _AMBIGUOUS_CONF)
 
-    summary = {"inherited": inherited, "skipped_existing": skipped, "title_match": title_match}
+    summary = {"inherited": inherited, "skipped_existing": skipped,
+               "overwritten": overwritten, "title_match": title_match}
     return merged, decisions, summary
