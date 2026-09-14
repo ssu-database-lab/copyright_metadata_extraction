@@ -443,17 +443,29 @@ class ConsolidationAgent:
                                 
                                 raise ValueError(error_msg)
                         
-                        # Extract decisions from consolidated metadata
-                        # Handle both nested and flat structures
+                        # 중재자 응답에서 결과를 꺼낸다. 감싼 형태와 평평한 형태를 모두 받는다.
+                        #
+                        # 원래 코드는 평평한 형태를 처리하려 했지만 그 else 가지가
+                        # 실행될 수 없었다 — if 에서 이미 dict 인지 보고, else 안에서
+                        # 다시 isinstance(dict) 를 확인했기 때문이다. dict 가 아니면
+                        # else 로 오지만 그 안의 조건도 전부 거짓이 된다. 결국 모델이
+                        # {"work_title": ...} 처럼 평평하게 답하면 .get('consolidated_metadata')
+                        # 가 {} 를 돌려주고, 추출 결과가 통째로 사라진 채
+                        # status="completed" 로 저장됐다.
+                        decisions, summary, final_metadata = [], {}, {}
                         if isinstance(consolidated_metadata, dict):
-                            decisions = consolidated_metadata.get('decisions', [])
-                            summary = consolidated_metadata.get('summary', {})
-                            final_metadata = consolidated_metadata.get('consolidated_metadata', {})
-                        else:
-                            # If response is flat, try to extract from root
-                            decisions = consolidated_metadata.get('decisions', []) if isinstance(consolidated_metadata, dict) else []
-                            summary = consolidated_metadata.get('summary', {}) if isinstance(consolidated_metadata, dict) else {}
-                            final_metadata = consolidated_metadata if isinstance(consolidated_metadata, dict) else {}
+                            decisions = consolidated_metadata.get('decisions', []) or []
+                            summary = consolidated_metadata.get('summary', {}) or {}
+                            final_metadata = consolidated_metadata.get('consolidated_metadata') or {}
+                            if not final_metadata:
+                                # 감싸는 키가 없다 = 평평한 형태. 제어용 키를 뺀 나머지가 결과다.
+                                flat = {k: v for k, v in consolidated_metadata.items()
+                                        if k not in ('decisions', 'summary', 'consolidated_metadata')}
+                                if flat:
+                                    logger.warning(
+                                        "중재자가 consolidated_metadata 래퍼 없이 응답했습니다 — "
+                                        f"루트의 {len(flat)}개 필드를 결과로 사용합니다.")
+                                    final_metadata = flat
                         
                         logger.info(f"Consolidation complete: {len(decisions)} decisions made")
                         
@@ -481,8 +493,13 @@ class ConsolidationAgent:
                         raise  # Re-raise to trigger fallback
             else:
                 # Not a cloud extractor, use standard extract_metadata
+                # 프롬프트를 자르지 않는다. 예전에는 [:2000] 으로 잘랐는데, 실제
+                # 통합검증 프롬프트는 저작물 9필드에서 2,074자·계약서 44필드에서 8,383자다.
+                # 잘린 자리에 정확히 "Required JSON output format" 블록과 마지막
+                # "JSON response:" 지시가 들어 있어서, 모델은 출력 형식을 모른 채 답하고
+                # 그 결과 consolidated_metadata 래퍼가 없는 응답이 나왔다.
                 result = extractor.extract_metadata(
-                    text=prompt_text[:2000],  # Truncate if too long
+                    text=prompt_text,
                     schema=schema,
                     document_type=f"{document_type}_consolidation"
                 )
@@ -492,15 +509,19 @@ class ConsolidationAgent:
                 else:
                     consolidated_metadata = result
                 
-                # Extract decisions from consolidated metadata
+                # 위와 같은 규칙 — 래퍼가 없으면 루트를 결과로 본다.
+                decisions, summary, final_metadata = [], {}, {}
                 if isinstance(consolidated_metadata, dict):
-                    decisions = consolidated_metadata.get('decisions', [])
-                    summary = consolidated_metadata.get('summary', {})
-                    final_metadata = consolidated_metadata.get('consolidated_metadata', {})
-                else:
-                    decisions = []
-                    summary = {}
-                    final_metadata = {}
+                    decisions = consolidated_metadata.get('decisions', []) or []
+                    summary = consolidated_metadata.get('summary', {}) or {}
+                    final_metadata = consolidated_metadata.get('consolidated_metadata') or {}
+                    if not final_metadata:
+                        flat = {k: v for k, v in consolidated_metadata.items()
+                                if k not in ('decisions', 'summary', 'consolidated_metadata')}
+                        if flat:
+                            logger.warning("중재자 응답에 래퍼가 없어 루트 "
+                                           f"{len(flat)}개 필드를 결과로 사용합니다.")
+                            final_metadata = flat
                 
                 # Calculate confidence
                 if summary and 'overall_confidence' in summary:
