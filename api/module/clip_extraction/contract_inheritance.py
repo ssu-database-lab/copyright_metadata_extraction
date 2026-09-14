@@ -75,6 +75,10 @@ INHERITABLE_FIELDS = [
 # 못했다. 원장에서 저작자·권리자·저작권자명 세 열이 모두 한국저작권위원회로 일치하므로
 # 계약서 값이 맞다.
 CONTRACT_AUTHORITATIVE_FIELDS = {
+    # 저작물의 종별 — 계약서 제2조 '종별' 체크박스가 TTA 정답의 출처다.
+    # 사진을 보고 미술저작물인지 사진저작물인지 가리는 건 눈으로는 갈리지만
+    # (19건 중 3건이 그렇게 어긋났다) 계약서에는 당사자가 체크해 둔 답이 있다.
+    "work_type",
     # 권리주체 (TTA 4.x)
     "author", "copyright_holder", "economic_rights_holder", "licensor",
     "rights_holder_identifier", "co_author",

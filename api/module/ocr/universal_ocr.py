@@ -231,7 +231,7 @@ class FileProcessor:
             page_texts: List[str] = []
             image_pages = 0
             for page in doc:
-                page_texts.append(page.get_text().strip())
+                page_texts.append(self._pdf_page_text(page))
                 if self._page_is_image_dominant(page):
                     image_pages += 1
         except Exception as e:
@@ -280,6 +280,92 @@ class FileProcessor:
             f"PDF text layer extracted: {len(text)} characters, {n_pages} pages "
             f"({file_path.name}) — OCR 공급자 호출 없음")
         return text
+
+    @staticmethod
+    def _pdf_page_text(page) -> str:
+        """페이지 텍스트를 읽되, 줄바꿈이 '자동 줄내림'이면 도로 이어붙인다.
+
+        PDF 본문층은 화면에 보이는 줄 그대로 끊겨 있다. 계약서 서식은 권리
+        목록이 늘 같은 자리에서 넘어가서 '전시권' 이 19건 중 10건에서
+        '□전 / 시권' 으로 갈라졌다 — 사람 눈에는 한 단어지만 문자열로는 아니다.
+
+        줄 순서는 fitz 가 준 블록 순서를 그대로 따른다. 2단으로 짠 계약서가
+        섞여 있어서 (왼단 x≈40, 오른단 x≈461) y 좌표로 다시 정렬하면 두 단이
+        번갈아 끼어들어 제4조 한복판에 제7조가 들어앉는다.
+
+        이어지는 줄인지는 폭으로 가른다. 오른쪽 끝까지 꽉 채운 줄 다음 줄은
+        이어지는 줄이고, 중간에서 끝난 줄은 거기서 문단이 끝난 것이다. '오른쪽
+        끝'은 같은 단에서만 재야 하므로, 가로로 겹치는 줄들 중 가장 오른쪽을
+        그 줄의 단 경계로 본다. 한글끼리는 그대로 붙이고(전+시권), 로마자
+        끼리는 줄내림이 삼킨 공백을 되돌려 준다.
+        """
+        try:
+            data = page.get_text("dict")
+        except Exception:
+            return page.get_text().strip()
+
+        lines = []
+        for block in data.get("blocks", []):
+            for line in block.get("lines") or []:
+                text = "".join(sp.get("text", "") for sp in line.get("spans", []))
+                if text.strip():
+                    lines.append((line["bbox"], text))
+        if not lines:
+            return page.get_text().strip()
+
+        tolerance = max(2.0, 0.01 * page.rect.width)
+        heights = sorted(b[3] - b[1] for b, _ in lines)
+        line_height = heights[len(heights) // 2] or 1.0
+
+        # 각 줄이 속한 단의 오른쪽 끝 — 가로로 겹치는 줄들 중 가장 먼 x1.
+        column_right = []
+        for bbox, _ in lines:
+            edge = bbox[2]
+            for other, _ in lines:
+                overlap = min(bbox[2], other[2]) - max(bbox[0], other[0])
+                if overlap > 0.5 * min(bbox[2] - bbox[0], other[2] - other[0]):
+                    edge = max(edge, other[2])
+            column_right.append(edge)
+
+        out = [lines[0][1]]
+        for i in range(1, len(lines)):
+            (px0, py0, px1, _) = lines[i - 1][0]
+            (cx0, cy0, _, _), text = lines[i]
+            filled = px1 >= column_right[i - 1] - tolerance
+            # 바로 다음 줄인가 — 한 줄 높이만큼만 내려왔으면 이어지는 줄이다.
+            # 단이 바뀌면 y 가 위로 되돌아가므로 여기서 걸러진다.
+            adjacent = 0 < (cy0 - py0) <= 2.0 * line_height
+            # 계약서 서식은 이어지는 줄을 라벨 아래로 들여쓰므로 왼쪽 여백은
+            # 묻지 않는다. 다만 앞 줄의 오른쪽 끝을 넘어서 시작하면 다른 단이다.
+            same_column = cx0 < px1
+            # 다음 줄이 새 항목으로 시작하면 이어붙이지 않는다. 제목이 우연히
+            # 오른쪽 끝을 꽉 채우면 바로 아래 '저작자 : …' 를 삼켜서 저작물명과
+            # 저작자를 한꺼번에 망가뜨린다 (긴 제목 계약서에서 실제로 났다).
+            starts_new_field = FileProcessor._NEW_FIELD_RE.match(text)
+            if (filled and adjacent and same_column
+                    and not starts_new_field and out[-1] and text):
+                prev_ch, next_ch = out[-1].rstrip()[-1:], text.lstrip()[:1]
+                joiner = "" if (FileProcessor._is_cjk(prev_ch)
+                                and FileProcessor._is_cjk(next_ch)) else " "
+                out[-1] = out[-1].rstrip() + joiner + text.lstrip()
+            else:
+                out.append(text)
+
+        text = "\n".join(t for t in out if t.strip()).strip()
+        return text if text else page.get_text().strip()
+
+    # '라벨 : 값' · '제N조 (…)' · '(1)' 처럼 새 항목을 여는 줄
+    _NEW_FIELD_RE = re.compile(r'\s*(?:제\s*\d+\s*조\b|\(\s*\d+\s*\)|[^\s:,]{1,12}\s*:\s)')
+
+    @staticmethod
+    def _is_cjk(ch: str) -> bool:
+        if not ch:
+            return False
+        o = ord(ch)
+        return (0xAC00 <= o <= 0xD7A3      # 한글 음절
+                or 0x1100 <= o <= 0x11FF   # 한글 자모
+                or 0x3130 <= o <= 0x318F
+                or 0x4E00 <= o <= 0x9FFF)  # 한자
 
     def _page_is_image_dominant(self, page) -> bool:
         """페이지를 거의 다 덮는 그림이 있으면 스캔한 장으로 본다."""
