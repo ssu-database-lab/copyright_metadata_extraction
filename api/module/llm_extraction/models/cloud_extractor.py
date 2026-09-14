@@ -7,6 +7,8 @@ and inference services for metadata extraction.
 
 import os
 import json
+import random
+import time
 import logging
 import requests
 from typing import Dict, Any, Optional
@@ -214,6 +216,42 @@ class OpenAIExtractor(CloudExtractor):
 
 class AlibabaCloudExtractor(CloudExtractor):
     """Alibaba Cloud DashScope API extractor using OpenAI-compatible interface."""
+
+    # 되돌릴 수 있는 오류는 폴백으로 넘기기 전에 같은 모델로 다시 쏜다.
+    #
+    #  · 429                    : 속도 제한. 본문에 quota 라고 적혀 있어도 과금 문제가 아니다.
+    #  · DataInspectionFailed   : 입력 검열기의 오탐. 2026-09-11 에 저작재산권 이용허락
+    #    계약서 한 건(한국정책방송원 1960년대 보도사진, KOGL 공개자료)이 이 오류로 거부됐는데,
+    #    같은 바이트를 그대로 13회 재전송했을 때 거부는 0회였다(운영과 동일한 18,360자
+    #    프롬프트·86필드 스키마로 10회 + 단순 프롬프트 3회). 재현되지 않으므로 정책 판단이
+    #    아니라 분류기 흔들림으로 본다. DashScope request_id 3883bf08-b546-9037-a844-1e68126b9d1c.
+    #
+    # 재전송하는 내용은 **원문 그대로**다. 검열을 피하려고 본문을 고치면 추출 대상 자체가
+    # 바뀌어 버리고, 그건 오류 처리가 아니라 우회다.
+    RETRY_MAX_ATTEMPTS = 4
+    RETRY_BASE_DELAY_SEC = 2.0
+
+    @staticmethod
+    def _is_retryable(e: Exception) -> bool:
+        msg = str(e)
+        return ("RateLimitError" in type(e).__name__ or "429" in msg
+                or "DataInspectionFailed" in msg or "data_inspection_failed" in msg)
+
+    def _create_with_retry(self, messages: list, generation_params: Dict[str, Any]):
+        """되돌릴 수 있는 오류만 지수 백오프로 재시도한다. 그 밖은 그대로 올린다."""
+        for attempt in range(self.RETRY_MAX_ATTEMPTS + 1):
+            try:
+                return self.client.chat.completions.create(
+                    model=self.dashscope_model_id, messages=messages, **generation_params)
+            except Exception as e:
+                if not self._is_retryable(e) or attempt == self.RETRY_MAX_ATTEMPTS:
+                    raise
+                kind = ("입력 검열 오탐" if "DataInspection" in str(e) else "속도 제한(429)")
+                delay = self.RETRY_BASE_DELAY_SEC * (2 ** attempt) + random.uniform(0, 1)
+                logger.warning(
+                    f"DashScope {kind} — {self.dashscope_model_id}, {delay:.1f}초 후 재시도 "
+                    f"({attempt + 1}/{self.RETRY_MAX_ATTEMPTS})")
+                time.sleep(delay)
     
     def __init__(self, api_key: str, model_id: str = "qwen-plus", region: str = "singapore", 
                  temperature: float = 1.0, top_p: float = 0.8, top_k: int = None):
@@ -332,12 +370,8 @@ class AlibabaCloudExtractor(CloudExtractor):
             generation_params["top_k"] = self.top_k
         
         try:
-            response = self.client.chat.completions.create(
-                model=self.dashscope_model_id,
-                messages=messages,
-                **generation_params
-            )
-            
+            response = self._create_with_retry(messages, generation_params)
+
             extracted_text = response.choices[0].message.content
             
             # Parse JSON response
