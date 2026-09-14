@@ -6,6 +6,7 @@ Supports multiple OCR providers: Google Cloud Vision, Mistral, Naver Clova OCR, 
 """
 
 import os
+import re
 import sys
 import json
 import base64
@@ -70,6 +71,8 @@ class FileProcessor:
     def __init__(self, output_dir: str):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        # 직접 추출이 실제로 몇 쪽을 읽었는지 — 호출자가 결과에 실어 보낸다.
+        self.last_page_count = 1
     
     def process_file(self, file_path: str) -> List[str]:
         """Convert file to images and return image paths."""
@@ -177,15 +180,120 @@ class FileProcessor:
         file_path = Path(file_path)
         suffix = file_path.suffix.lower()
 
-        if suffix not in self.TEXT_NATIVE_EXTENSIONS:
+        if suffix not in self.TEXT_NATIVE_EXTENSIONS and suffix != '.pdf':
             return None
         if not file_path.exists():
             logger.error(f"File not found: {file_path}")
             return None
 
+        if suffix == '.pdf':
+            return self._extract_pdf_text(file_path)
         if suffix == '.hwp':
             return self._extract_hwp_text(file_path)
         return self._read_plain_text(file_path)
+
+    # PDF 본문층 판정 임계값 ------------------------------------------------
+    PDF_MIN_CHARS_PER_PAGE = 60      # 문서 전체 평균
+    PDF_PAGE_TEXT_FLOOR = 40         # 이 페이지에 '글이 있다' 고 볼 최소 글자수
+    PDF_MIN_TEXT_PAGE_RATIO = 0.6    # 표지 한 장이 그림이어도 통과하도록
+    PDF_MAX_GARBAGE_RATIO = 0.02     # (cid:NN) · U+FFFD 허용 비율
+    PDF_MIN_WORD_CHAR_RATIO = 0.30   # 한글·영문·숫자가 차지해야 할 최소 비율
+    PDF_IMAGE_PAGE_COVERAGE = 0.80   # 페이지의 이 비율을 덮는 그림 = 스캔본
+
+    def _extract_pdf_text(self, file_path: Path) -> Optional[str]:
+        """전자적으로 생성된(born-digital) PDF 의 본문층을 그대로 읽는다.
+
+        PDF 는 .hwp/.txt 와 달리 '텍스트를 품은 형식'이 아니라 둘 다 담을 수
+        있는 그릇이다. 워드에서 내보낸 계약서는 정확한 본문층을 가지고 있고,
+        이걸 이미지로 구워 VLM 에게 다시 받아치게 하면 원문을 열화시킨다.
+        (19건 평가에서 신재흥→신재홍, 아이티앤→아이티엔, 매타도어→메타도어 —
+        14개 오답 중 5개가 이 한 글자 오독이었다.)
+
+        반대로 스캔본은 본문층이 없거나, 있어도 남이 돌린 낡은 OCR 결과다.
+        그래서 확장자가 아니라 내용으로 판정한다. 하나라도 걸리면 None 을
+        돌려주어 기존 래스터화 → OCR 경로로 보낸다.
+        """
+        if os.getenv('OCR_PDF_TEXT_LAYER', '1').lower() in ('0', 'false', 'no'):
+            return None
+
+        try:
+            doc = fitz.open(str(file_path))
+        except Exception as e:
+            logger.warning(f"PDF open failed, falling back to OCR: {file_path.name}: {e}")
+            return None
+
+        try:
+            n_pages = doc.page_count
+            if n_pages == 0:
+                return None
+
+            self.last_page_count = n_pages
+            page_texts: List[str] = []
+            image_pages = 0
+            for page in doc:
+                page_texts.append(page.get_text().strip())
+                if self._page_is_image_dominant(page):
+                    image_pages += 1
+        except Exception as e:
+            logger.warning(f"PDF text read failed, falling back to OCR: {file_path.name}: {e}")
+            return None
+        finally:
+            doc.close()
+
+        # 스캔본 판정 — 페이지 절반 이상이 전면 그림이면 본문층을 믿지 않는다.
+        if image_pages * 2 >= n_pages:
+            logger.info(
+                f"{file_path.name}: {image_pages}/{n_pages} 페이지가 전면 이미지 — "
+                f"스캔본으로 보고 OCR 경로로 처리")
+            return None
+
+        text = "\n\n".join(t for t in page_texts if t).strip()
+        if not text:
+            return None
+
+        pages_with_text = sum(1 for t in page_texts if len(t) >= self.PDF_PAGE_TEXT_FLOOR)
+        if pages_with_text < n_pages * self.PDF_MIN_TEXT_PAGE_RATIO:
+            logger.info(
+                f"{file_path.name}: 본문층이 {pages_with_text}/{n_pages} 페이지에만 있음 — OCR 경로로 처리")
+            return None
+
+        if len(text) / n_pages < self.PDF_MIN_CHARS_PER_PAGE:
+            logger.info(
+                f"{file_path.name}: 본문층이 너무 얇음 ({len(text)}자 / {n_pages}쪽) — OCR 경로로 처리")
+            return None
+
+        # 글꼴에 ToUnicode 가 없으면 fitz 는 (cid:NN) 이나 U+FFFD 를 돌려준다.
+        garbage = len(re.findall(r'\(cid:\d+\)', text)) * 7 + text.count('\ufffd')
+        if garbage / len(text) > self.PDF_MAX_GARBAGE_RATIO:
+            logger.info(
+                f"{file_path.name}: 본문층 인코딩이 깨져 있음 (깨진 비율 {garbage / len(text):.1%}) — OCR 경로로 처리")
+            return None
+
+        word_chars = sum(1 for c in text if c.isalnum())
+        if word_chars / len(text) < self.PDF_MIN_WORD_CHAR_RATIO:
+            logger.info(
+                f"{file_path.name}: 본문층에 글자다운 글자가 적음 "
+                f"({word_chars / len(text):.1%}) — OCR 경로로 처리")
+            return None
+
+        logger.info(
+            f"PDF text layer extracted: {len(text)} characters, {n_pages} pages "
+            f"({file_path.name}) — OCR 공급자 호출 없음")
+        return text
+
+    def _page_is_image_dominant(self, page) -> bool:
+        """페이지를 거의 다 덮는 그림이 있으면 스캔한 장으로 본다."""
+        try:
+            page_area = abs(page.rect.width * page.rect.height)
+            if page_area <= 0:
+                return False
+            for img in page.get_images(full=True):
+                for rect in page.get_image_rects(img[0]):
+                    if abs(rect.width * rect.height) / page_area >= self.PDF_IMAGE_PAGE_COVERAGE:
+                        return True
+        except Exception:
+            return False
+        return False
 
     def _extract_hwp_text(self, file_path: Path) -> Optional[str]:
         """HWP v5 문서의 본문 텍스트를 추출한다 (pyhwp)."""
@@ -418,7 +526,9 @@ class UniversalOCRProcessor:
             # HWP/TXT 처럼 원문 텍스트를 품은 파일은 OCR 공급자를 거치지 않는다.
             direct_text = temp_file_processor.extract_text(str(file_path))
             if direct_text:
-                return self._save_direct_text_result(file_path, direct_text, output_paths)
+                return self._save_direct_text_result(
+                    file_path, direct_text, output_paths,
+                    temp_file_processor.last_page_count)
 
             image_paths = temp_file_processor.process_file(str(file_path))
             
@@ -557,7 +667,8 @@ class UniversalOCRProcessor:
             }
     
     def _save_direct_text_result(self, file_path: Path, text: str,
-                                 output_paths: Dict[str, Path]) -> Dict:
+                                 output_paths: Dict[str, Path],
+                                 page_count: int = 1) -> Dict:
         """이미지 OCR 없이 뽑은 원문을 OCR 결과와 동일한 모양으로 저장·반환한다.
 
         후속 단계는 full_text(pipeline.py:120)와 output_directory 안의 .txt
@@ -569,7 +680,7 @@ class UniversalOCRProcessor:
         result_data = {
             'file_name': file_path.name,
             'file_path': str(file_path),
-            'total_pages': 1,
+            'total_pages': max(1, page_count),
             'total_text_length': len(text),
             'pages': [{
                 'page_number': 1,
@@ -666,7 +777,9 @@ class UniversalOCRProcessor:
             # HWP/TXT 는 원문을 그대로 흘려보낸다 (OCR 공급자 호출 없음)
             direct_text = temp_file_processor.extract_text(str(file_path))
             if direct_text:
-                self._save_direct_text_result(file_path, direct_text, output_paths)
+                self._save_direct_text_result(
+                    file_path, direct_text, output_paths,
+                    temp_file_processor.last_page_count)
                 yield direct_text
                 return
 
@@ -714,7 +827,9 @@ class UniversalOCRProcessor:
 
             direct_text = temp_file_processor.extract_text(str(file_path))
             if direct_text:
-                result = self._save_direct_text_result(file_path, direct_text, output_paths)
+                result = self._save_direct_text_result(
+                    file_path, direct_text, output_paths,
+                    temp_file_processor.last_page_count)
                 result['processing_mode'] = 'api_client'
                 return result
 
