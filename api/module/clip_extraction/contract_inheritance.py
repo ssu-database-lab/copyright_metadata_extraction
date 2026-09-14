@@ -28,14 +28,26 @@ from typing import Any, Dict, List, Optional, Tuple
 # 계약서에서 저작물 레코드로 상속 가능한 권리/계약 필드 (unified schema 부분집합).
 # 시각/식별 필드(description, keyword, digital_format, language 등)는 제외.
 INHERITABLE_FIELDS = [
-    # 권리 주체
+    # 권리 주체 — TTA 4.1~4.6. author/economic_rights_holder/licensor 는 스키마에
+    # 추가(2026-09-08)해 놓고 이 목록에 넣지 않아, 계약서가 채워도 저작물 레코드까지
+    # 오지 못했다. copyright_holder 로 떨어지는 대체 경로 때문에 점수는 나와서
+    # 한동안 드러나지 않았다.
     "copyright_holder", "co_author", "neighboring_rights_holder",
+    "author", "economic_rights_holder", "licensor", "rights_holder_identifier",
     # 공개/이용 조건
     "disclosure_type", "commercial_use", "economic_rights", "kogl_type",
     "granted_rights", "portrait_rights", "third_party_rights", "co_author_consent",
     "copyrightability", "unprotected_work", "work_for_hire",
+    # 저작재산권 세부 권리 — TTA 7.1~7.8.
+    # granted_rights 만 상속되던 탓에, 모델이 개별 필드 쪽을 채운 호출에서는 권리 7종이
+    # 통째로 사라졌다. 같은 ZIP 을 네 번 돌렸을 때 세트 점수가 92.9%~0% 로 흔들린
+    # 주된 이유다(모델이 어느 모양으로 채우는지가 호출마다 달랐다).
+    "reproduction_right", "public_performance_right", "public_transmission_right",
+    "exhibition_right", "distribution_right", "rental_right",
+    "derivative_work_creation_right", "other_rights",
     # 기간/일자
     "valid_period", "contract_duration", "signature_date",
+    "license_start_date", "license_end_date",
     "effective_date", "expiration_date", "created_date", "production_date",
     # 계약 정보
     "contract_type", "payment_amount", "payment_currency",
