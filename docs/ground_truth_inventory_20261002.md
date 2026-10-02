@@ -1,6 +1,7 @@
 # Ground-truth files — inventory (2026-10-02)
 
-There is **no single ground-truth file**. GT is split by **source** (공유마당 vs KOGL), and for
+There is **no single source ground-truth file** — but there is a merged index of all of
+them (section 0). GT is split by **source** (공유마당 vs KOGL), and for
 공유마당 also by **media × license bucket**. It is also split into two layers that answer different
 questions:
 
@@ -8,6 +9,29 @@ questions:
   resolution, … — the 11 attributes of the 연구개발계획서).
 - **Contract-side GT** — what is printed in the contract (parties, the 7 rights, licence dates,
   title, work type — the TTA 14 attributes).
+
+---
+
+## 0. Merged index — one row per work, both sites
+
+| File | What it is |
+|---|---|
+| `dataset\gt_merged_index.xlsx` | sheets **index** (data) · **summary** (counts, all `COUNTIFS` formulas over *index*) · **columns** (data dictionary) · **README** |
+| `dataset\gt_merged_index.csv` | the same table, UTF-8 with BOM, long texts never truncated |
+
+6,393 rows × 106 columns: 공유마당 4,834 + 공공누리(KOGL) 1,500 + 59 KOGL works that have a contract
+but no downloaded file (`has_work_gt = FALSE`).
+
+- **Tracing the source:** the first column, `source`, is `공유마당` or `공공누리(KOGL)`.
+  `merged_key` (`gongu:<id>` / `kogl:<id>`), `detail_url` and `gt_record_file` lead back to the
+  site page and the GT record.
+- **Column groups:** identity (grey), `work_*` work-side GT with tiers (blue), `video_*`
+  measurements (green), `contract_*` = every column of the contract manifest including the
+  TTA-14 `gt_*` answers (orange).
+- **Built from the files below; never edit it by hand.** Rebuild with
+  `python -m api.module.dataset_builder.build_gt_index`. The workbook is set to recalculate on
+  open, because openpyxl cannot store formula results. A pandas/previewer read of the
+  *summary* sheet therefore shows empty cells, while Excel shows the numbers.
 
 ---
 
@@ -22,7 +46,7 @@ questions:
 
 | Media | expired | donated | ccl | kogl | Total |
 |---|---|---|---|---|---|
-| image | 503 | 503 | 503 | 500 | 2,012 |
+| image | 503 | 503 | 503 | 500 | 2,009 |
 | video | 499 | 498 | 1,003 | — | 2,000 |
 | text | 503 | 49 | 273 | — | 825 |
 
@@ -147,6 +171,9 @@ python -m api.module.dataset_builder.build_kogl_ground_truth
 
 # contract-side manifest (run from api/)
 python -m module.dataset_builder.build_contract_work_manifest
+
+# merged index of everything above (CSV + Excel)
+python -m api.module.dataset_builder.build_gt_index
 
 # stage an eval set from either source
 python -m api.module.dataset_builder.build_eval_manifest --source {gongu|kogl} --out <dir>
