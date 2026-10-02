@@ -7,13 +7,14 @@
                   제목·저자·라이선스·키워드 100% · 설명 73% · 해상도 Tier-A 64%
                   ※ 계약서는 없다 — 생성해서 붙여야 한다
 
-  --source kogl   KOGL 원문 메타데이터(143,946건) + kogl_originals 1,500건
-                  정답: 붙임1 엑셀
-                  제목·저자·라이선스·키워드 확보 · **설명 정답 없음**(kogl_gold 79건뿐)
-                  해상도도 엑셀에 없어 파일 실측(Tier B, 순환 주의)
+  --source kogl   kogl_originals 1,500건
+                  정답: 구축된 E:/kogl_originals/ground_truth.jsonl (build_kogl_ground_truth.py)
+                  제목·저자·라이선스·키워드 100% · 설명 17%(상세페이지 저작물 설명 253건)
+                  해상도는 KOGL 미게시라 파일 실측(Tier B, 순환 주의)
+                  키워드는 70%가 컬렉션 공통 태그(batch_level) — 내용 키워드로 보기 어렵다
 
 즉 계약서를 새로 만든다면 **공유마당 메타데이터로 만드는 편이 정답이 훨씬 좋다.**
-KOGL 쪽으로 가면 11속성 중 설명·해상도가 채점 불가/약체가 된다.
+KOGL 쪽으로 가면 11속성 중 설명·해상도가 약체가 된다.
 
 산출물:
   <out>/manifest.jsonl      세트 목록
@@ -94,93 +95,29 @@ def _from_gongu(per_bucket: Optional[int], seed: int) -> List[Dict]:
 
 
 def _from_kogl(per_bucket: Optional[int], seed: int) -> List[Dict]:
-    """붙임1 엑셀 + originals_index 로 정답을 조립한다."""
-    import pandas as pd
+    """구축된 KOGL 정답셋(E:/kogl_originals/ground_truth.jsonl)을 그대로 정답으로 쓴다.
 
-    idx_path = Path("/mnt/e/kogl_originals/originals_index.xlsx")
-    if not idx_path.exists():
-        raise SystemExit(f"originals_index 를 찾을 수 없습니다: {idx_path}")
-    oi = pd.read_excel(idx_path)
-    oi = oi[oi["status"].astype(str).str.lower() == "downloaded"]
-
-    meta = pd.read_excel(_API_ROOT.parent / "docs" / "붙임1_원문저작물 메타데이터.xlsx")
-    meta = meta.set_index("원문인덱스", drop=False)
-
-    # 설명 정답(있으면) — recommendIdx 기준이라 매칭률이 낮다
-    gold: Dict[str, str] = {}
-    gpath = _API_ROOT.parent / "dataset" / "kogl_gold" / "kogl_gold.xlsx"
-    if gpath.exists():
-        gd = pd.read_excel(gpath)
-        for _, r in gd.iterrows():
-            if str(r.get("status")) == "ok" and r.get("gold_desc"):
-                gold[str(r.get("recommendIdx"))] = str(r["gold_desc"])
-
+    예전에는 여기서 붙임1 + originals_index 로 매번 조립했고 저장된 정답 파일이 없었다.
+    조립은 build_kogl_ground_truth.py 로 옮겼다 — 설명(상세페이지 저작물 설명)·키워드(주제어
+    '#' 단위 파싱)·해시태그·영상 실측값이 거기서 채워진다.
+    """
+    p = Path("/mnt/e/kogl_originals/ground_truth.jsonl")
+    if not p.exists():
+        raise SystemExit(f"KOGL 정답셋이 없습니다: {p}\n"
+                         "  python -m api.module.dataset_builder.build_kogl_ground_truth 를 먼저 실행하세요")
+    rows: List[Dict] = []
+    with p.open(encoding="utf-8") as f:
+        for line in f:
+            try:
+                g = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if g.get("file_exists") and \
+                    Path(g.get("file", "")).suffix.lower() not in UNPROCESSABLE:
+                rows.append(g)
     rng = random.Random(seed)
-    rows = oi.to_dict("records")
     rng.shuffle(rows)
-    if per_bucket:
-        rows = rows[: per_bucket * len(BUCKETS)]
-
-    def A(v, field, source, tier, note=None):
-        d = {"value": v, "schema_field": field, "source": source, "tier": tier}
-        if note:
-            d["note"] = note
-        return d
-
-    out: List[Dict] = []
-    for r in rows:
-        oid = r.get("원문인덱스")
-        if oid not in meta.index:
-            continue
-        m = meta.loc[oid]
-        if hasattr(m, "iloc") and getattr(m, "ndim", 1) > 1:
-            m = m.iloc[0]
-        saved = Path("/mnt/e/kogl_originals") / str(r.get("분류") or "이미지") / str(r.get("saved_file"))
-        if not saved.is_file():
-            continue
-        media = {"이미지": "image", "영상": "video", "어문": "text"}.get(str(r.get("분류")), "image")
-        kw = str(m.get("주제어") or m.get("해시태그") or "").replace("#", " ").split()
-        desc = gold.get(str(oid))
-        visual_na = media == "text"
-        out.append({
-            "id": str(oid), "media": media, "license_bucket": "kogl",
-            "file": str(saved), "file_exists": True,
-            "attributes": {
-                "제목": A(str(m.get("제목") or "") or None, "work_title", "kogl:제목", "A"),
-                "저자": A(str(m.get("저작권자명") or m.get("원본소유자") or "") or None,
-                         "copyright_holder", "kogl:저작권자명", "A"),
-                "설명": A(desc, "description", "kogl_gold:gold_desc" if desc else "—",
-                         "A" if desc else "제외",
-                         None if desc else "붙임1에 설명 열이 없음 — kogl_gold 79건만 보유"),
-                "라이선스 유형": A(f"제{m.get('공공누리 유형')}유형" if m.get("공공누리 유형") else None,
-                               "kogl_type", "kogl:공공누리 유형", "A"),
-                "키워드": A(kw or None, "keyword", "kogl:주제어/해시태그", "A"),
-                # KOGL 은 해상도를 어디에도 게시하지 않는다(붙임1·상세페이지 모두 — 상세페이지의
-                # '720p' 문구는 재생 플레이어 기준). 이미지는 PIL, 영상은 ffprobe 실측값이다.
-                "해상도": A(f"{int(r['width'])}x{int(r['height'])}"
-                          if (pd.notna(r.get("width")) and pd.notna(r.get("height")) and not visual_na)
-                          else None,
-                          "resolution", f"originals_index:{r.get('dims_source') or '실측'}",
-                          "N/A" if visual_na else "B",
-                          None if visual_na else "KOGL 미게시 — 파일 실측. 추출기와 같은 경로(순환 주의)"),
-                "주요 색상": A(None, "dominant_colors", "—", "N/A" if visual_na else "C",
-                            "외부 정답 없음"),
-                "개체 범주": A(None, "main_subjects", "—", "N/A" if visual_na else "C",
-                            "외부 정답 없음"),
-                "파일크기": A(saved.stat().st_size, "file_size", "파일:os.stat", "B"),
-                "파일포맷": A(saved.suffix.lstrip(".").upper() or None, "digital_format",
-                           "파일:확장자", "B"),
-                "파일 생성 날짜": A(None, "file_created_date", "—", "D",
-                               "붙임1 제작일자가 '조선' 등 비날짜 — 정답 불가"),
-            },
-        })
-        if media == "video" and pd.notna(r.get("fps")):
-            out[-1]["extra_reference"] = {
-                "실측_fps": r.get("fps"),
-                "실측_재생시간_sec": r.get("duration_sec"),
-                "실측_출처": "ffprobe",
-            }
-    return out
+    return rows[: per_bucket * len(BUCKETS)] if per_bucket else rows
 
 
 def main() -> int:
