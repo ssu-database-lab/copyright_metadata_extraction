@@ -155,10 +155,14 @@ def _from_kogl(per_bucket: Optional[int], seed: int) -> List[Dict]:
                 "라이선스 유형": A(f"제{m.get('공공누리 유형')}유형" if m.get("공공누리 유형") else None,
                                "kogl_type", "kogl:공공누리 유형", "A"),
                 "키워드": A(kw or None, "keyword", "kogl:주제어/해시태그", "A"),
+                # KOGL 은 해상도를 어디에도 게시하지 않는다(붙임1·상세페이지 모두 — 상세페이지의
+                # '720p' 문구는 재생 플레이어 기준). 이미지는 PIL, 영상은 ffprobe 실측값이다.
                 "해상도": A(f"{int(r['width'])}x{int(r['height'])}"
-                          if (r.get("width") and r.get("height") and not visual_na) else None,
-                          "resolution", "originals_index 실측", "N/A" if visual_na else "B",
-                          None if visual_na else "엑셀에 해상도 열이 없어 파일 실측 — 추출기와 같은 경로(순환 주의)"),
+                          if (pd.notna(r.get("width")) and pd.notna(r.get("height")) and not visual_na)
+                          else None,
+                          "resolution", f"originals_index:{r.get('dims_source') or '실측'}",
+                          "N/A" if visual_na else "B",
+                          None if visual_na else "KOGL 미게시 — 파일 실측. 추출기와 같은 경로(순환 주의)"),
                 "주요 색상": A(None, "dominant_colors", "—", "N/A" if visual_na else "C",
                             "외부 정답 없음"),
                 "개체 범주": A(None, "main_subjects", "—", "N/A" if visual_na else "C",
@@ -170,6 +174,12 @@ def _from_kogl(per_bucket: Optional[int], seed: int) -> List[Dict]:
                                "붙임1 제작일자가 '조선' 등 비날짜 — 정답 불가"),
             },
         })
+        if media == "video" and pd.notna(r.get("fps")):
+            out[-1]["extra_reference"] = {
+                "실측_fps": r.get("fps"),
+                "실측_재생시간_sec": r.get("duration_sec"),
+                "실측_출처": "ffprobe",
+            }
     return out
 
 

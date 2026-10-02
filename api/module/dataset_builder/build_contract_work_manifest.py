@@ -288,6 +288,12 @@ def build_manifest(idx, gt_meta, kogl_meta, out=OUT):
 
     df=pd.DataFrame(rows)
 
+    # ---------- 영상 기술 정답 (가로·세로·fps·재생시간) ----------
+    # KOGL·공유마당 모두 영상 해상도를 사실상 게시하지 않아 ffprobe 실측값을 붙인다(tier B).
+    # 측정은 measure_video_technical.py 가 하고 여기서는 캐시만 읽는다 — 캐시에 없으면 빈 칸.
+    from .measure_video_technical import add_video_technical
+    df=add_video_technical(df)
+
     # ---------- 내용 중복 (같은 크기 그룹만 해시 — 320GB 전수 해시는 불가) ----------
     grp=defaultdict(list)
     for i,rr in df[df.work_path!=""].iterrows(): grp[rr.work_bytes].append(i)

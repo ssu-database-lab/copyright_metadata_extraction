@@ -57,6 +57,19 @@ _UCI = re.compile(r"\s*UCI\s*(로고|코드).*$", re.S)
 _BIDI = dict.fromkeys(range(0x202A, 0x202F), None)
 
 
+_MEASURED = None
+
+
+def measured(path: str) -> dict | None:
+    """measure_video_technical.py 가 남긴 ffprobe 실측값. 측정을 새로 하지 않는다."""
+    global _MEASURED
+    if _MEASURED is None:
+        from .measure_video_technical import load_measurements
+        _MEASURED = load_measurements()
+    m = _MEASURED.get(path)
+    return m if (m and m.get("status") == "ok") else None
+
+
 def norm(s) -> str:
     """유니코드 정규화 + 양방향 제어문자 제거 + 공백 정리."""
     if s is None:
@@ -128,12 +141,24 @@ def build_record(rec: dict, detail: dict | None, media: str, bucket: str) -> dic
 
     # --- 해상도: 사이트 게시값이 최우선(외부 정답 = 순환 없음) ------------------
     site_res = norm_resolution(fields.get("이미지저작물 해상도") or fields.get("영상저작물 화질"))
+    meas = measured(path) if (media == "video" and exists) else None
+    meas_res = f"{meas['width']}x{meas['height']}" if meas else None
     if media == "text":
         res_a = attr(None, "resolution", "—", "N/A",
                      "어문 저작물 — 시각적 속성 비해당(사이트에도 해상도 필드 없음)")
-    elif site_res:
+    elif site_res and (not meas_res or site_res == meas_res):
         res_a = attr(site_res, "resolution", "gongu:상세페이지 게시값", "A",
-                     "사이트 게시값 — 우리 추출기와 독립")
+                     "사이트 게시값 — 우리 추출기와 독립"
+                     + (" (ffprobe 실측과 일치 확인)" if meas_res else ""))
+    elif meas_res:
+        # 사이트 게시값은 저작물 단위다. 한 저작물에 swf 미리보기 + mp4 원본처럼 파일이
+        # 여럿이면 게시값이 다른 파일을 가리킬 수 있다(기증 4건: 게시 720x480, 첫 파일
+        # swf 640x360). 이 정답의 file 로 채점하므로 그 파일의 실측값을 쓴다.
+        res_a = attr(meas_res, "resolution", "파일:ffprobe 실측", "B",
+                     (f"사이트 게시값 {site_res} 은 같은 저작물의 다른 파일 기준 — 이 파일 실측값으로 대체"
+                      if site_res else
+                      "사이트 미게시 — ffprobe 실측. 추출기도 같은 파일을 ffprobe 로 읽으므로 "
+                      "정확도가 아니라 값 보존 검증(순환 주의)"))
     else:
         res_a = attr(None, "resolution", "—", "B",
                      "사이트 미게시 — 파일 실측으로 대체 필요(순환 주의)")
@@ -198,7 +223,13 @@ def build_record(rec: dict, detail: dict | None, media: str, bucket: str) -> dic
             extra["화면비율"] = ar
     dur = norm(fields.get("음원저작물 재생시간") or fields.get("영상저작물 재생시간"))
     if dur:
-        extra["재생시간"] = dur
+        extra["재생시간"] = dur          # 사이트 게시값 — 초 단위 버림(실측 대비 96%가 0~1초 짧음)
+    if meas:
+        extra["실측_fps"] = meas.get("fps")
+        extra["실측_재생시간_sec"] = meas.get("duration_sec")
+        extra["실측_출처"] = "ffprobe"
+        if site_res and site_res != meas_res:
+            extra["사이트_해상도"] = site_res
     if extra:
         out["extra_reference"] = extra
     return out
