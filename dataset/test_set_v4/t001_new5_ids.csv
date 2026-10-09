@@ -1,0 +1,6 @@
+﻿test,cell,sub_source,work_id,media,license_bucket,source,title,work_file,has_contract,contract_pdf,work_설명_tier,work_해시태그_tier,work_해상도_tier
+T-001,text/donated,공유마당,13387752,text,donated,공유마당,운수 자판기,/mnt/e/gongu_dataset/text/donated/13387752_1_운수 자판기.txt,True,dataset/new_contracts/00002_13387752 운수 자판기 (1).pdf,제외,,N/A
+T-001,text/donated,공유마당,13333800,text,donated,공유마당,F!RE 가사,/mnt/e/gongu_dataset/text/donated/13333800_1_F!RE 가사.hwp,True,dataset/new_contracts/00003_13333800 F!RE 가사.pdf,제외,,N/A
+T-001,text/donated,공유마당,13333561,text,donated,공유마당,국제기업협력센터를 중심으로 한 비지니스 허브 도시 구축 전략,/mnt/e/gongu_dataset/text/donated/13333561_1_C-2014-030004-5 국제기업협력센터를 중심으로 한 비지니스 허브 도시 구축 전략.hwp,True,dataset/new_contracts/00004_13333561 국제기업협력센터를 중심으로 한 비지니스 허브 도시 구축 전략.pdf,제외,,N/A
+T-001,text/donated,공유마당,13304492,text,donated,공유마당,빛의 세상으로(희망가) 가사,/mnt/e/gongu_dataset/text/donated/13304492_1_빛의 세상으로(희망가) 가사.pdf,True,dataset/new_contracts/00006_13304492 빛의 세상으로(희망가) 가사.pdf,A,,N/A
+T-001,text/donated,공유마당,13333560,text,donated,공유마당,국제기업협력센터를 중심으로 한 비지니스 허브 도시 구축 전략,/mnt/e/gongu_dataset/text/donated/13333560_1_C-2022-039702-3 국제기업협력센터를 중심으로 한 비지니스 허브 도시 구축 전략.hwp,True,dataset/new_contracts/00005_13333560 국제기업협력센터를 중심으로 한 비지니스 허브 도시 구축 전략.pdf,제외,,N/A

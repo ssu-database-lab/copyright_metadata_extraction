@@ -228,3 +228,13 @@ docs/사용계획서_작성내용_*.md
 
 # API key exports — never commit
 *apiKey*.csv
+
+# other project secrets kept locally — never commit
+jiran.env
+*.env
+!.env.example
+
+# generated description/hashtag drafts: frames are derived media, drafts are reviewed before use
+dataset/gold_descriptions/*/frames/
+dataset/gold_descriptions/*/run.log
+.pytest_cache/

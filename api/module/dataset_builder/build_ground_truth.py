@@ -70,6 +70,17 @@ def measured(path: str) -> dict | None:
     return m if (m and m.get("status") == "ok") else None
 
 
+def image_size(path: str) -> str | None:
+    """이미지 파일의 저장 픽셀 크기(PIL, EXIF 회전 미적용) → 'WxH'. 이미지가 아니면(pptx 등) None."""
+    try:
+        from PIL import Image
+        Image.MAX_IMAGE_PIXELS = None
+        with Image.open(path) as im:
+            return f"{im.size[0]}x{im.size[1]}"
+    except Exception:
+        return None
+
+
 def norm(s) -> str:
     """유니코드 정규화 + 양방향 제어문자 제거 + 공백 정리."""
     if s is None:
@@ -160,8 +171,14 @@ def build_record(rec: dict, detail: dict | None, media: str, bucket: str) -> dic
                       "사이트 미게시 — ffprobe 실측. 추출기도 같은 파일을 ffprobe 로 읽으므로 "
                       "정확도가 아니라 값 보존 검증(순환 주의)"))
     else:
-        res_a = attr(None, "resolution", "—", "B",
-                     "사이트 미게시 — 파일 실측으로 대체 필요(순환 주의)")
+        # 사이트에 해상도 미게시(CCL 183·기증 13·만료 1건) → 이미지 파일을 PIL 로 실측해 tier B 로 채운다 (v4 M1 검증 지적, 2026-10-09)
+        pil_res = image_size(path) if (media == "image" and exists) else None
+        if pil_res:
+            res_a = attr(pil_res, "resolution", "파일:PIL 실측", "B",
+                         "사이트 미게시 — PIL 실측. 추출기도 같은 파일을 읽으므로 값 보존 검증(순환 주의)")
+        else:
+            res_a = attr(None, "resolution", "—", "B",
+                         "사이트 미게시 — 파일 실측으로 대체 필요(순환 주의)")
 
     # --- 파일 생성 날짜: 계획서 항목명과 사이트 필드의 의미가 다르다 -------------
     created = norm_unknown(fields.get("창작년도")) or norm_unknown(fields.get("공표년도"))
