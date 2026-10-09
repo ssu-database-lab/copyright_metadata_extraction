@@ -255,7 +255,7 @@ class BatchJob:
 
 def _run_job(job: BatchJob, manifest_path: Path, cfg_kwargs: Dict):
     """백그라운드 스레드 본체."""
-    from module.evaluation.batch_runner import BatchRunner, RunConfig
+    from module.evaluation.batch_runner import EVAL23, BatchRunner, RunConfig
     from module.evaluation.manifest import (load_ground_truth, load_manifest,
                                             validate_manifest)
     try:
@@ -263,22 +263,40 @@ def _run_job(job: BatchJob, manifest_path: Path, cfg_kwargs: Dict):
         job.started_at = time.time()
         entries = load_manifest(manifest_path)
         gt = load_ground_truth(manifest_path.parent / "ground_truth.jsonl")
-        job.validation = validate_manifest(entries)
+        scoring_set = cfg_kwargs.get("scoring_set") or "plan"
+        eval23 = scoring_set == EVAL23
+        job.validation = validate_manifest(entries, test=cfg_kwargs.get("test"))
         job.validation["ground_truth"] = len(gt)
+        job.validation["scoring_set"] = scoring_set
+
+        # 검증에 실패하면 시작하지 않는다(M2 B4). 예전에는 validation 만 저장하고 그대로 돌아서
+        # 계약서 leg 요금을 쓴 뒤 저작물 open("") 에서 죽고, 재개마다 같은 세트가 다시 과금됐다.
+        if not job.validation.get("ok"):
+            msg = ("매니페스트 검증 실패 — 실행하지 않습니다: "
+                   + " / ".join(job.validation.get("problems") or ["(사유 없음)"]))
+            job.validation["warning"] = msg
+            job.total = len(entries)
+            _save_job_meta(job)
+            job.push({"type": "validated", **job.validation})
+            logger.error(f"배치 작업 {job.job_id} 거부: {msg}")
+            job.state = "error"
+            job.error = msg[:400]
+            job.push({"type": "error", "error": job.error})
+            return
 
         # 채점 기준과 정답셋의 속성 이름이 어긋나면 전 항목이 skipped_no_gt 로 빠지고
         # 결과는 0% 로 보인다 — 오류가 아니라 "다 틀렸다" 처럼 읽힌다. 먼저 잡아 알린다.
+        # (eval23 은 여기서 채점하지 않는다 — gold23.jsonl 은 M1 평가기가 끝에 대조한다.)
         from module.evaluation.scoring import attributes_for
         # 기준 선택은 attributes_for 한 곳에서만 한다 — 여기서 또 고르면 기준이
         # 늘어날 때 한쪽만 고쳐지고 경고가 엉뚱한 목록으로 나간다.
-        want = {a.name for a in attributes_for(cfg_kwargs.get("scoring_set"))}
+        want = set() if eval23 else {a.name for a in attributes_for(scoring_set)}
         have = set()
-        for rec in list(gt.values())[:20]:
+        for rec in ([] if eval23 else list(gt.values())[:20]):
             # attributes 가 null 인 줄에서 set(None) 로 죽으면 작업 전체가 실패한다
             have |= set((rec or {}).get("attributes") or {})
         overlap = len(want & have)
-        job.validation["scoring_set"] = cfg_kwargs.get("scoring_set", "plan")
-        job.validation["gt_attr_overlap"] = f"{overlap}/{len(want)}"
+        job.validation["gt_attr_overlap"] = "-" if eval23 else f"{overlap}/{len(want)}"
         if have and overlap == 0:
             msg = (f"정답셋이 '{cfg_kwargs.get('scoring_set')}' 기준과 맞지 않습니다 — "
                    f"겹치는 속성 0개. 정답셋 속성: {sorted(have)[:5]}… "
@@ -326,12 +344,19 @@ def _run_job(job: BatchJob, manifest_path: Path, cfg_kwargs: Dict):
         summary = runner.run(entries, gt)
         job.summary = summary
 
-        from module.evaluation.report import aggregate, load_results, render_markdown
-        agg = aggregate(load_results(job.out_dir / "results.jsonl"))
-        (job.out_dir / "report.md").write_text(render_markdown(agg), encoding="utf-8")
-        (job.out_dir / "report.json").write_text(
-            json.dumps(agg, ensure_ascii=False, indent=1), encoding="utf-8")
-        job.summary["aggregate"] = agg
+        if eval23:
+            # v4: 채점은 M1 평가기 — gold 가 있으면 test_metrics.json·report.md, 없으면 예측 요약 report.md.
+            # report.json 은 finalize 가 쓴다(복구·/report?fmt=json 이 읽는다).
+            fin = runner.finalize_eval23()
+            job.summary["eval23"] = fin
+            job.summary["aggregate"] = {"scoring_set": EVAL23, **fin}
+        else:
+            from module.evaluation.report import aggregate, load_results, render_markdown
+            agg = aggregate(load_results(job.out_dir / "results.jsonl"))
+            (job.out_dir / "report.md").write_text(render_markdown(agg), encoding="utf-8")
+            (job.out_dir / "report.json").write_text(
+                json.dumps(agg, ensure_ascii=False, indent=1), encoding="utf-8")
+            job.summary["aggregate"] = agg
         job.state = "cancelled" if summary.get("cancelled") else "done"
     except Exception as e:
         logger.error(f"배치 작업 실패 {job.job_id}: {e}", exc_info=True)
@@ -348,7 +373,7 @@ async def create_batch(
     archive: UploadFile = File(default=None),
     manifest_path: str = Form(default=None),
     name: str = Form(default=""),
-    workers: int = Form(default=4),
+    workers: int = Form(default=0),          # 0 = 자동 (v3 4 · v4/eval23 8)
     limit: int = Form(default=0),
     max_cost_krw: float = Form(default=0),
     vlm_prefer: str = Form(default="gemma"),
@@ -363,12 +388,29 @@ async def create_batch(
     # 두 기준은 정답의 출처가 달라서, ZIP 의 ground_truth.jsonl 도 같은 기준으로
     # 만들어져 있어야 한다. 어긋나면 전 항목이 skipped_no_gt 로 빠진다.
     scoring_set: str = Form(default="plan"),
+    # v4(eval23, M2 B2~B5) — test 를 주면 채점 기준이 eval23 이 된다. 예측은 _eval_out/test_predictions/ 에
+    # 기록되고, gold_path(gold23.jsonl, 서버 경로)가 있으면 끝에 M1 평가기가 test_metrics.json·report.md 를 쓴다.
+    test: str = Form(default=""),
+    gold_path: str = Form(default=""),
+    consolidate_work: bool = Form(default=False),
+    tau: float = Form(default=0.65),
 ):
     """ZIP(manifest.jsonl + contracts/ + works/ + ground_truth.jsonl) 또는 서버 경로로 작업 생성."""
     if _ORCH is None:
         raise HTTPException(503, "배치 API가 초기화되지 않았습니다")
     if not archive and not manifest_path:
         raise HTTPException(400, "archive(ZIP) 또는 manifest_path 중 하나가 필요합니다")
+    test = (test or "").strip() or None
+    if test and test not in ("T-001", "T-002"):
+        raise HTTPException(400, f"test 는 T-001 또는 T-002 이어야 합니다: {test}")
+    if scoring_set not in ("plan", "tta", "eval23"):
+        scoring_set = "plan"
+    if test:
+        scoring_set = "eval23"
+    gold_path = (gold_path or "").strip() or None
+    if gold_path and not Path(gold_path).is_file():
+        raise HTTPException(400, f"gold 파일을 찾을 수 없습니다: {gold_path}")
+    eval23 = scoring_set == "eval23"
 
     job_id = uuid.uuid4().hex[:12]
     work_dir = BATCH_ROOT / job_id
@@ -412,7 +454,7 @@ async def create_batch(
     cfg_kwargs = {
         # 상한 8 — 실측(2026-09-09, qwen3-vl-235b): 동시 4·8 은 100% 성공,
         # 동시 12 는 22% 성공(나머지는 429). 16 은 애초에 통과할 수 없는 값이었다.
-        "workers": max(1, min(8, workers)),
+        "workers": max(1, min(8, workers or (8 if eval23 else 4))),
         "limit": limit or None,
         "max_cost_krw": max_cost_krw or None,
         "vlm_prefer": vlm_prefer,
@@ -422,7 +464,12 @@ async def create_batch(
         "ner_model": ner_model,
         "consolidate": consolidate,
         "consolidation_model": consolidation_model,
-        "scoring_set": scoring_set if scoring_set in ("plan", "tta") else "plan",
+        "scoring_set": scoring_set,
+        # v4 전용 — v3 작업에서는 쓰이지 않는다(RunConfig 기본값과 같다)
+        "test": test,
+        "consolidate_work": bool(consolidate_work),
+        "gold": gold_path,
+        "tau": tau,
     }
     job.config = {k: v for k, v in cfg_kwargs.items()}
     # 실행 전에 먼저 남긴다 — 검증 전에 죽은 작업도 이름·채점 기준은 되살아나야 한다.
@@ -641,16 +688,22 @@ def _scoring_set(job: "BatchJob") -> str:
     """
     from module.evaluation.scoring import infer_scoring_set
     s = (job.config or {}).get("scoring_set")
-    if s in ("plan", "tta"):
+    if s in ("plan", "tta", "eval23"):
         return s
     path = job.out_dir / "results.jsonl"
     try:
         with path.open(encoding="utf-8") as f:
             for line in f:
                 try:
-                    names = list((json.loads(line).get("per_attr") or {}))
+                    row = json.loads(line)
                 except json.JSONDecodeError:
                     continue
+                # 결과 줄에 기준이 새겨져 있으면 그대로 믿는다 (eval23 은 per_attr 이 없다)
+                if row.get("scoring_set") in ("plan", "tta", "eval23"):
+                    s = row["scoring_set"]
+                    job.config = {**(job.config or {}), "scoring_set": s}
+                    return s
+                names = list((row.get("per_attr") or {}))
                 if names:                     # 실패 세트는 per_attr 이 비어 있다
                     s = infer_scoring_set(names)
                     job.config = {**(job.config or {}), "scoring_set": s}
@@ -673,6 +726,12 @@ def _attr_spec(job: "BatchJob"):
     """
     from module.clip_extraction.contract_inheritance import INHERITABLE_FIELDS
     from module.evaluation.scoring import attributes_for
+    if _scoring_set(job) == "eval23":
+        # v4 23키 — 1~16 은 계약서(T-001), 17~23 은 저작물(T-002) leg 에서 나온다 (M1 §1).
+        from module.evaluation.v4.keys23 import KEY_NAMES, T001_KEYS
+        return (list(KEY_NAMES),
+                {k: ("contract" if k in T001_KEYS else "work") for k in KEY_NAMES},
+                {k: k for k in KEY_NAMES})
     # work_title 은 상속 목록에 없지만 계약서 제목 매칭으로 상속된다(특례).
     inherited = set(INHERITABLE_FIELDS) | {"work_title"}
     order, leg, field = [], {}, {}
@@ -760,7 +819,8 @@ async def set_detail(job_id: str, set_id: str):
             "status": st,
             "match": info.get("match"),
             "expected": expected,
-            "extracted": info.get("got"),
+            # eval23 은 per_attr 이 없다 — 기록된 23키 값(extracted)을 그대로 보여준다
+            "extracted": info.get("got") if info else (rec.get("extracted") or {}).get(field.get(name) or name),
             "tier": ga.get("tier"),
             "method": info.get("method"),
             "recall": info.get("recall"),

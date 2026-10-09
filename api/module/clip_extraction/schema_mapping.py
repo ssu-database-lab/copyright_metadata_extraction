@@ -17,19 +17,22 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 from typing import Any, Dict, List, Optional
 
 # ---------------------------------------------------------------------------
 # VLM 출력 키(prompts.py USER_PROMPT) → 통합 스키마 키 매핑
 # ---------------------------------------------------------------------------
 # VLM이 내보내는 키:
-#   description, work_type, work_type_reason, keywords, main_subjects,
+#   description, work_type, work_type_reason, keywords, hashtags, main_subjects,
 #   dominant_colors, text_in_image, scene_type, estimated_quality
 #
 # 실제 스키마에 직접 1:1로 대응되는 것만 매핑한다:
 #   description  -> description   (스키마: 설명/콘텐츠 설명)
 #   work_type    -> work_type     (스키마: 유형/저작물 유형)
 #   keywords     -> keyword       (스키마: 주제어 — string|array 허용)
+#   hashtags     -> hashtags      (스키마: 해시태그 — '#태그' 문자열 목록; v4 T-002 키 18, M2b 수정 3.
+#                                  eval23 직렬화기가 hashtags_source='model' 로 읽는다. 없으면 keywords 대체 유지)
 #
 # 스키마에 자리가 없어 의도적으로 _file_meta로만 보존하는 키:
 #   work_type_reason, text_in_image, scene_type, estimated_quality
@@ -42,9 +45,36 @@ _VLM_DIRECT_MAP: Dict[str, str] = {
     "description": "description",
     "work_type": "work_type",
     "keywords": "keyword",
+    "hashtags": "hashtags",
     "main_subjects": "main_subjects",
     "dominant_colors": "dominant_colors",
 }
+
+# 해시태그 구분자 — 모델이 목록 대신 "#바다 #해변, 항구" 같은 문자열을 낼 때 쪼갠다
+_HASHTAG_SPLIT = re.compile(r"[\s,|;、]+")
+
+
+def _normalize_hashtags(value: Any) -> List[str]:
+    """VLM 의 hashtags(목록 또는 문자열) → '#' 가 붙은 문자열 목록.
+
+    항목 안의 공백·쉼표도 구분자로 본다(해시태그는 띄어쓰기가 없어야 하므로 공백은 태그 경계다), 앞의 '#' 는 떼고
+    다시 하나만 붙이며, 빈 항목·중복은 버린다. 해석할 것이 없으면 [] (스키마 초기값과 같다 → eval23 은 keywords 로 대체).
+    """
+    if value in (None, "", [], {}):
+        return []
+    items = list(value) if isinstance(value, (list, tuple)) else [value]
+    out: List[str] = []
+    for it in items:
+        if it in (None, "", [], {}):
+            continue
+        for piece in _HASHTAG_SPLIT.split(str(it)):
+            tag = piece.strip().lstrip("#").strip()
+            if not tag:
+                continue
+            tag = "#" + tag
+            if tag not in out:
+                out.append(tag)
+    return out
 
 
 def _empty_unified_schema() -> Dict[str, Any]:
@@ -129,6 +159,13 @@ def map_vlm_to_unified(
         if value is None or value == "" or value == []:
             continue
         unified[schema_key] = value
+
+    # --- 1b) hashtags 정규화: '#' 보장·공백/중복 제거 (M2b 수정 3) --------------
+    #     평가기(eval23/M1 norm_tag)는 '#' 를 떼고 대조하므로 모양만 맞춘다. 비어 있으면 스키마 초기값([])
+    #     그대로 두어 eval23 이 keywords 로 대체한다(hashtags_source='keywords').
+    if "hashtags" in vlm_output:
+        tags = _normalize_hashtags(vlm_output.get("hashtags"))
+        unified["hashtags"] = tags if tags else []
 
     # --- 2) keyword 보강: keywords가 비었으면 main_subjects를 fallback ------
     #     (둘 다 스키마 keyword 필드는 string|array를 허용)

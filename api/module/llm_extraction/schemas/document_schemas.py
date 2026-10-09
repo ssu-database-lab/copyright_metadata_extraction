@@ -1232,6 +1232,11 @@ class DocumentSchemas:
                     "type": ["string", "array", "null"],
                     "description": "주제어 (키워드 또는 태그 목록)"
                 },
+                "hashtags": {
+                    "type": ["array", "null"],
+                    "items": {"type": "string"},
+                    "description": "해시태그 ('#태그' 형식 목록, 띄어쓰기 없음). VLM에서 자동 산출 — 문서에서 추론하지 말 것"
+                },
                 "language": {
                     "type": ["string", "null"],
                     "description": "언어 (콘텐츠 언어: 한국어, 영어 등)"

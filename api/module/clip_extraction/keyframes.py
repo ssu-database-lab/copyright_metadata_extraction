@@ -9,9 +9,12 @@
 5개 영상 전부가 앞 19~75% 구간만 관측된 원인이 그것이었다(비교보고서 §5).
 전체 후보를 놓고 서로 가장 먼 프레임을 고르면 시간축에 고르게 퍼진다.
 
-길이별 목표 프레임 수(계획서 §3-3): <10s 3 · 10~60s 5 · 1~5m 8 · 5~15m 12 · 15m+ 16.
+길이별 목표 프레임 수(계획서 §3-3, schedule="v3"): <10s 3 · 10~60s 5 · 1~5m 8 · 5~15m 12 · 15m+ 16.
 연구 근거상 Qwen3-VL 계열은 8프레임 부근이 최적이고 16 이상은 이득이 없다.
 우리 과업은 VQA가 아니라 메타데이터 추출이므로 벤치마크보다 적은 프레임으로 충분하다.
+
+v4 시험용 표(schedule="v4", 설명 파일럿 README §5c): 단일 샷 영상은 4~8장이면 다 보이지만
+장면이 여럿인 긴 영상은 16~32장까지 계속 더 잡힌다 → 5~15m 16 · 15m+ 24. 웹앱은 v3 그대로다.
 """
 
 from __future__ import annotations
@@ -34,17 +37,22 @@ _LOW_CONTRAST_RANGE = 20  # YMAX-YMIN 이 이보다 작으면 페이드/단색
 _MIN_BYTES = 2000        # ffmpeg 이 만든 껍데기 JPEG 걸러내기
 
 
-def target_frame_count(duration_s: float) -> int:
-    """길이별 목표 프레임 수 (계획서 §3-3)."""
-    if duration_s < 10:
-        return 3
-    if duration_s < 60:
-        return 5
-    if duration_s < 300:
-        return 8
-    if duration_s < 900:
-        return 12
-    return 16
+# (상한 초, 프레임 수) — 마지막 항목의 상한은 inf. v3 = 계획서 §3-3(웹앱 기본), v4 = README §5c.
+FRAME_SCHEDULES: Dict[str, Tuple[Tuple[float, int], ...]] = {
+    "v3": ((10, 3), (60, 5), (300, 8), (900, 12), (math.inf, 16)),
+    "v4": ((10, 3), (60, 5), (300, 8), (900, 16), (math.inf, 24)),
+}
+
+
+def target_frame_count(duration_s: float, schedule: str = "v3") -> int:
+    """길이별 목표 프레임 수. schedule: "v3"(계획서 §3-3, 기본) | "v4"(README §5c — 긴 영상에 16/24)."""
+    table = FRAME_SCHEDULES.get(schedule)
+    if table is None:
+        raise ValueError(f"알 수 없는 프레임 표 schedule={schedule!r} (가능: {sorted(FRAME_SCHEDULES)})")
+    for limit, n in table:
+        if duration_s < limit:
+            return n
+    return table[-1][1]
 
 
 def probe_duration(video_path: str) -> float:
@@ -233,23 +241,30 @@ def _extract_sequential(video_path: str, out: Path, target: int,
 
 def extract_keyframes(video_path: str, out_dir: str,
                       target: Optional[int] = None,
-                      oversample: float = 1.75) -> Dict:
+                      oversample: float = 1.75,
+                      schedule: str = "v3") -> Dict:
     """영상에서 대표 키프레임을 뽑아 out_dir 에 저장한다.
+
+    target 을 주지 않으면 schedule("v3" 기본 | "v4") 표로 길이별 장수를 정한다.
 
     Returns:
         {"frames": [{"path","t"}...], "duration": float, "target": int,
-         "sampled": int, "kept": int, "error": str|None}
+         "sampled": int, "kept": int, "error": str|None, "schedule": str}
     """
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    if schedule not in FRAME_SCHEDULES:
+        raise ValueError(f"알 수 없는 프레임 표 schedule={schedule!r} (가능: {sorted(FRAME_SCHEDULES)})")
     duration = probe_duration(video_path)
     if duration <= 0:
         # SWF(flv1) 처럼 컨테이너가 duration 을 노출하지 않는 경우가 있다.
         # 보유 데이터에 125건 존재하므로 통째로 버릴 수 없다 — 시크 대신 순차
         # 디코딩으로 대표 프레임을 뽑는다(파일이 작아 비용이 크지 않다).
-        return _extract_sequential(video_path, out, target or 5)
+        res = _extract_sequential(video_path, out, target or 5)
+        res["schedule"] = schedule
+        return res
 
-    tgt = target or target_frame_count(duration)
+    tgt = target or target_frame_count(duration, schedule)
     n_over = max(tgt + 2, int(round(tgt * oversample)))
     # 앵커는 **전체 구간**에 균등 배치한다. 여기서 앞쪽에 몰면 뒤를 영영 못 본다.
     anchors = [duration * (i + 0.5) / n_over for i in range(n_over)]
@@ -274,7 +289,9 @@ def extract_keyframes(video_path: str, out_dir: str,
         if len(cands) < max(2, (tgt + 1) // 2):
             logger.info("시크 수확 부족(%d/%d) → 순차 디코딩 전환: %s",
                         len(cands), tgt, os.path.basename(str(video_path)))
-            return _extract_sequential(video_path, out, tgt, duration)
+            res = _extract_sequential(video_path, out, tgt, duration)
+            res["schedule"] = schedule
+            return res
 
         # 사전 중복제거는 하지 않는다. farthest-point 가 이미 '서로 가장 먼' 것을
         # 고르므로 근접 중복은 자연히 배제되고, 사전 제거는 오히려 시간축 끝단
@@ -287,6 +304,7 @@ def extract_keyframes(video_path: str, out_dir: str,
             shutil.copy2(src, dst)
             frames.append({"path": str(dst), "t": round(t, 1)})
         return {"frames": frames, "duration": round(duration, 1), "target": tgt,
-                "sampled": len(cands), "kept": len(frames), "error": None}
+                "sampled": len(cands), "kept": len(frames), "error": None,
+                "schedule": schedule}
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

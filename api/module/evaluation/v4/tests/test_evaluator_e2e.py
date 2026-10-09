@@ -487,3 +487,72 @@ def test_gold_test_mismatch_and_bad_pred_path(tmp_path: Path):
         evaluate("T-001", gold, tmp_path / "nope.txt", tmp_path / "o2")
     with pytest.raises(ValueError):
         evaluate("T-003", gold, predf, tmp_path / "o3")
+
+
+# =================================================================== --only-predicted (M2b 수정 4)
+def test_only_predicted_restricts_gold_to_predicted_sets(tmp_path: Path):
+    """gold 5세트 · 예측 2세트: 기본(M1)은 누락 3세트가 전부 FN, --only-predicted 면 그 2세트만 채점(n_scored 2, 누락 0)."""
+    import logging
+    from api.module.evaluation.v4 import evaluator as ev_core
+
+    gold = write_jsonl(tmp_path / "gold.jsonl", T001_GOLD[:5])                                   # C1~C5
+    preds = [{"set_id": sid, **pred(**{k: v["value"] for k, v in rec["keys"].items() if v["state"] == "value"})}
+             for sid, rec in (("C1", T001_GOLD[0]), ("C5", T001_GOLD[4]))]
+    predf = write_jsonl(tmp_path / "pred.jsonl", preds)
+
+    base = evaluate("T-001", gold, predf, tmp_path / "base", n_boot=10)                           # 기본 = M1 그대로
+    assert base["n_sets"] == 5 and base["n_gold_dropped"] == 0 and base["settings"]["only_predicted"] is False
+    assert base["warnings"]["missing_predictions"] == ["C2", "C3", "C4"]
+    wt = base["keys"]["work_title"]
+    assert (wt["n_scored"], wt["tp"], wt["fp"], wt["fn"]) == (5, 2, 0, 3)
+
+    caught: list[str] = []
+
+    class _Catch(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            caught.append(record.getMessage())
+
+    h = _Catch()
+    old = ev_core.logger.level
+    ev_core.logger.addHandler(h)
+    ev_core.logger.setLevel(logging.INFO)
+    try:
+        m = evaluate("T-001", gold, predf, tmp_path / "only", n_boot=10, only_predicted=True)
+    finally:
+        ev_core.logger.removeHandler(h)
+        ev_core.logger.setLevel(old)
+    assert m["n_sets"] == 2 and m["n_predictions"] == 2 and m["n_gold_dropped"] == 3
+    assert m["warnings"]["missing_predictions"] == [] and m["settings"]["only_predicted"] is True
+    for key in T001_KEYS:
+        if key == "other_rights":
+            continue
+        st = m["keys"][key]
+        assert (st["n_scored"], st["tp"], st["fp"], st["fn"]) == (2, 2, 0, 0), (key, st)
+    assert m["macro_f1"] == pytest.approx(1.0) and m["micro_f1"] == pytest.approx(1.0) and m["passed"] is True
+    assert set(m["cells"]) == {"image/ccl", "text/donated"} and m["cells"]["image/ccl"]["n_sets"] == 1   # 셀도 남은 세트만
+    assert any("gold 5세트 중 3세트 제외, 2세트 대조" in msg for msg in caught)
+    assert "gold 제외 3개 (--only-predicted" in (tmp_path / "only" / "report.md").read_text(encoding="utf-8")
+    per_set = {json.loads(l)["set_id"] for l in (tmp_path / "only" / "per_set.jsonl").read_text(encoding="utf-8").splitlines()}
+    assert per_set == {"C1", "C5"}
+    # 제한은 gold 쪽에만 — gold 없는 예측은 여전히 경고로 남는다
+    predf2 = write_jsonl(tmp_path / "pred2.jsonl", preds + [{"set_id": "ZZ", **pred(work_title="z")}])
+    m2 = evaluate("T-001", gold, predf2, tmp_path / "only2", n_boot=10, only_predicted=True)
+    assert m2["n_sets"] == 2 and m2["warnings"]["predictions_without_gold"] == ["ZZ"] and m2["n_gold_dropped"] == 3
+
+
+def test_cli_only_predicted_flag(tmp_path: Path, capsys):
+    gold = write_jsonl(tmp_path / "gold.jsonl", T001_GOLD[:5])
+    predf = write_jsonl(tmp_path / "pred.jsonl", [{"set_id": "C1", **pred(**{k: v["value"] for k, v in T001_GOLD[0]["keys"].items()
+                                                                              if v["state"] == "value"})}])
+    out = tmp_path / "cli_only"
+    rc = main(["--test", "T-001", "--gold", str(gold), "--pred", str(predf), "--out", str(out), "--n-boot", "10", "--only-predicted"])
+    assert rc == 0
+    captured = capsys.readouterr().out
+    assert "[T-001] 세트 1 · 예측 누락 0 · gold 제외 4 (--only-predicted)" in captured and "Macro-F1 100.00%" in captured
+    m = json.loads((out / "test_metrics.json").read_text(encoding="utf-8"))
+    assert m["n_sets"] == 1 and m["n_gold_dropped"] == 4 and m["settings"]["only_predicted"] is True
+    # 플래그 없이는 예전 출력 그대로 (gold 제외 문구 없음)
+    rc = main(["--test", "T-001", "--gold", str(gold), "--pred", str(predf), "--out", str(tmp_path / "cli_all"), "--n-boot", "10"])
+    assert rc == 0
+    captured = capsys.readouterr().out
+    assert "[T-001] 세트 5 · 예측 누락 4" in captured and "gold 제외" not in captured

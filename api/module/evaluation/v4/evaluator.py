@@ -462,7 +462,9 @@ def render_report(m: dict[str, Any], cells: bool = False) -> str:
     L.append("")
     L.append(f"- 판정 규칙: `{SPEC}` · 채점 키: {keys[0]}~{keys[-1]} ({len(keys)}개)")
     L.append(f"- gold: `{m['inputs']['gold']}` · 예측: `{m['inputs']['pred']}`")
-    L.append(f"- 평가 세트 {m['n_sets']}개 · 예측 {m['n_predictions']}개 · 예측 누락 {len(m['warnings']['missing_predictions'])}개")
+    L.append(f"- 평가 세트 {m['n_sets']}개 · 예측 {m['n_predictions']}개 · 예측 누락 {len(m['warnings']['missing_predictions'])}개"
+             + (f" · gold 제외 {m.get('n_gold_dropped', 0)}개 (--only-predicted: 예측 없는 세트는 채점하지 않음)"
+                if s.get("only_predicted") else ""))
     if s.get("embed"):
         e = s["embed"]
         L.append(f"- 설명 판정: 임베딩 `{e['model_id']}` (revision {e['revision'] or '미기록'}), "
@@ -554,8 +556,14 @@ def evaluate(
     judge: Optional[Judge] = None,
     n_boot: int = N_BOOT,
     seed: int = BOOT_SEED,
+    only_predicted: bool = False,
 ) -> dict[str, Any]:
-    """§7 — 예측을 gold 와 대조해 test_metrics.json · report.md · per_set.jsonl 을 쓰고 지표 dict 를 돌려준다."""
+    """§7 — 예측을 gold 와 대조해 test_metrics.json · report.md · per_set.jsonl 을 쓰고 지표 dict 를 돌려준다.
+
+    only_predicted (기본 False = M1 동작 그대로: 예측 누락 세트는 gold 값이 있는 키마다 FN):
+        True 면 gold 를 **예측이 있는 set_id** 로 제한한다 — 개발·파일럿 런(예측 20세트)을 4,000세트 gold 에 대조하면
+        나머지 3,980세트가 전부 FN 이 되어 지표가 0 에 붙는다. 제외한 gold 세트 수는 로그와 metrics["n_gold_dropped"] 에 남긴다.
+    """
     if test not in TEST_TITLES:
         raise ValueError(f"test 는 T-001 또는 T-002 이어야 합니다: {test}")
     warnings = Warnings()
@@ -567,6 +575,13 @@ def evaluate(
         else:
             gold_records.append(r)
     preds = load_predictions(pred_path, warnings)
+    n_gold_dropped = 0
+    if only_predicted:
+        n_gold_all = len(gold_records)
+        gold_records = [r for r in gold_records if str(r["set_id"]) in preds]
+        n_gold_dropped = n_gold_all - len(gold_records)
+        logger.info("%s --only-predicted: 예측이 있는 세트만 채점 — gold %d세트 중 %d세트 제외, %d세트 대조",
+                    test, n_gold_all, n_gold_dropped, len(gold_records))
     if judge is None and "description" in scored_keys(test):
         judge = _make_judge(tau, content_check, embed_cache, embed_revision, embed_model, device)
     logger.info("%s 채점 시작: gold %d세트, 예측 %d개", test, len(gold_records), len(preds))
@@ -592,7 +607,9 @@ def evaluate(
         "inputs": {"gold": str(gold_path), "pred": str(pred_path)},
         "n_sets": len(gold_records),
         "n_predictions": len(preds),
-        "settings": {"tau": tau, "content_check": content_check, "embed": _judge_info(judge)},
+        "n_gold_dropped": n_gold_dropped,     # --only-predicted 로 제외한 gold 세트 수 (기본 0)
+        "settings": {"tau": tau, "content_check": content_check, "only_predicted": only_predicted,
+                     "embed": _judge_info(judge)},
         "warnings": warnings.as_dict(),
         "warning_counts": warnings.counts(),
         **agg,

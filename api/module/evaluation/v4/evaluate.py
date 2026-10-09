@@ -2,7 +2,7 @@
 
   python -m api.module.evaluation.v4.evaluate --test T-002 \\
       --gold dataset/test_set_v4/gold23_t002.jsonl --pred test_predictions/ --out results/v4_t002 \\
-      [--tau 0.65] [--content-check on|off] [--cells] [--embed-cache cache.jsonl] [--embed-revision <sha>]
+      [--tau 0.65] [--content-check on|off] [--cells] [--embed-cache cache.jsonl] [--embed-revision <sha>] [--only-predicted]
 
 함수로 쓰려면: from api.module.evaluation.v4.evaluate import evaluate
 로그: `api` 패키지가 import 시 root 로거를 WARNING 으로 잡아 두어 logging.basicConfig 는 무시된다 → 이 패키지
@@ -75,6 +75,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--embed-model", default=DEFAULT_MODEL_ID, help=f"임베딩 모델 id (기본 {DEFAULT_MODEL_ID})")
     p.add_argument("--device", default=None, help="cpu | cuda (기본 자동)")
     p.add_argument("--n-boot", type=int, default=1000, help="부트스트랩 재표본 수 (기본 1000)")
+    p.add_argument("--only-predicted", action="store_true",
+                   help="gold 를 예측이 있는 set_id 로 제한 (개발·파일럿 런 — 4,000세트 gold 를 전부 FN 으로 세지 않음; 제외 건수를 로그에 남김). 기본 off")
     p.add_argument("-v", "--verbose", action="store_true", help="DEBUG 로그")
     return p
 
@@ -87,8 +89,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         tau=args.tau, content_check=args.content_check, cells=args.cells,
         embed_cache=args.embed_cache, embed_revision=args.embed_revision,
         embed_model=args.embed_model, device=args.device, n_boot=args.n_boot,
+        only_predicted=args.only_predicted,
     )
-    print(f"[{args.test}] 세트 {m['n_sets']} · 예측 누락 {len(m['warnings']['missing_predictions'])}")
+    print(f"[{args.test}] 세트 {m['n_sets']} · 예측 누락 {len(m['warnings']['missing_predictions'])}"
+          + (f" · gold 제외 {m['n_gold_dropped']} (--only-predicted)" if args.only_predicted else ""))
     print(f"  Macro-F1 {_pct(m['macro_f1'])}  (CI {_ci_str(m['macro'].get('ci95_f1'))})  Micro-F1 {_pct(m['micro_f1'])}")
     print(f"  합격 기준 {100 * PASS_MARK:.0f}% → {'합격' if m['passed'] else '불합격'}")
     print(f"  출력: {m['outputs']['metrics']} · {m['outputs']['report']} · {m['outputs']['per_set']}")

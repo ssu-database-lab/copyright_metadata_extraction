@@ -19,6 +19,8 @@ SYSTEM_PROMPT = (
 )
 
 # work_type candidate set mirrors labels.WORK_TYPE_LABELS (schema-aligned)
+# "hashtags" 줄(M2b 수정 3): v4 T-002 키 18 — VLM 이 직접 '#태그' 목록을 내게 한다(이미지·영상 공통).
+# 없으면 eval23 직렬화기가 keywords 로 대체하지만 그러면 hashtags_source='keywords' 로 남는다.
 USER_PROMPT = """이 이미지를 분석하여 아래 JSON 스키마에 맞게 공유저작물 메타데이터를 추출하세요.
 
 {
@@ -26,6 +28,7 @@ USER_PROMPT = """이 이미지를 분석하여 아래 JSON 스키마에 맞게 �
   "work_type": "아래 목록 중 '매체(medium)' 기준으로 하나만 선택",
   "work_type_reason": "그 매체로 판단한 근거 한 문장",
   "keywords": ["핵심 키워드 5~7개"],
+  "hashtags": ["해시태그 5~10개 — '#태그' 형식, 화면에 보이는 피사체·장소·행위·매체 특성을 나타내는 명사만, 띄어쓰기 없이, 인명·라이선스·출처 단어는 제외"],
   "main_subjects": ["이미지에 보이는 주요 객체/피사체 목록"],
   "dominant_colors": ["주요 색상 2~3개 (한국어)"],
   "text_in_image": "이미지 안에 보이는 글자(있으면 그대로, 없으면 null)",
@@ -139,6 +142,7 @@ _VIDEO_USER_TEMPLATE = """다음 {n}장은 하나의 영상에서 시간순으�
   "work_type": "영상저작물",
   "work_type_reason": "그 매체로 판단한 근거 한 문장",
   "keywords": ["핵심 키워드 5~7개"],
+  "hashtags": ["해시태그 5~10개 — '#태그' 형식, 화면에 보이는 피사체·장소·행위·매체 특성을 나타내는 명사만, 띄어쓰기 없이, 인명·라이선스·출처 단어는 제외"],
   "main_subjects": ["영상에 등장하는 주요 객체/인물/피사체 목록"],
   "dominant_colors": ["주요 색상 2~3개 (한국어)"],
   "text_in_image": "화면에 보이는 글자·자막(있으면 그대로, 없으면 null)",
@@ -157,3 +161,33 @@ def video_user_prompt(frame_times) -> str:
     """프레임 시점 목록을 넣은 영상용 사용자 프롬프트."""
     times = ", ".join(f"{float(t):.0f}초" for t in frame_times) if frame_times else "미상"
     return _VIDEO_USER_TEMPLATE.format(n=len(frame_times or []), times=times)
+
+
+# ── 계약서 문맥(선택) — v4 T-002 옵션 B ──────────────────────────────────────
+# 계약서를 규칙으로 읽어 얻은 저작물명·종별을 VLM 에게 '참고'로 준다 (M2 spec A4,
+# contract_context.parse 가 만든 값). 저작물명은 그 자체가 채점 키(1번)라서 설명·키워드가
+# 제목을 베껴 쓰면 안 된다 — 그래서 같은 줄에 "화면 내용 기준" 을 못 박는다.
+# 문맥이 비어 있으면 프롬프트는 글자 하나 바뀌지 않는다 (웹앱 기본 동작 유지).
+_CONTEXT_LINE = "참고(계약서): {items} — 설명·키워드는 화면 내용 기준으로 작성"
+
+
+def _clean_context_value(value):
+    """None/공백 → None, 그 외 → 공백을 한 칸으로 접은 문자열."""
+    if value is None:
+        return None
+    text = " ".join(str(value).split())
+    return text or None
+
+
+def user_prompt_with_context(base: str, title=None, work_type=None) -> str:
+    """base 프롬프트 끝에 계약서 참고 줄을 붙인다. title/work_type 둘 다 없으면 base 그대로."""
+    items = []
+    title = _clean_context_value(title)
+    work_type = _clean_context_value(work_type)
+    if title:
+        items.append(f"저작물명 '{title}'")
+    if work_type:
+        items.append(f"종별 '{work_type}'")
+    if not items:
+        return base
+    return base.rstrip() + "\n\n" + _CONTEXT_LINE.format(items=", ".join(items))

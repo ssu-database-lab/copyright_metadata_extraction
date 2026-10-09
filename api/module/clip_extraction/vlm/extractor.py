@@ -89,6 +89,19 @@ SYSTEM_PROMPT = _prompts_mod.SYSTEM_PROMPT
 USER_PROMPT = _prompts_mod.USER_PROMPT
 
 
+def _prompt_with_context(base: str, context) -> str:
+    """계약서 문맥 {"title", "work_type"} 이 있으면 base 끝에 참고 줄을 붙인다 (M2 spec A4).
+
+    context 가 None/빈 dict 이면 base 그대로 — 웹앱 등 기존 호출자의 프롬프트는 바뀌지 않는다.
+    """
+    if not context:
+        return base
+    if not isinstance(context, dict):
+        raise TypeError("context 는 {'title': ..., 'work_type': ...} 형태의 dict 여야 합니다")
+    return _prompts_mod.user_prompt_with_context(
+        base, title=context.get("title"), work_type=context.get("work_type"))
+
+
 _MANAGED_KEYS = ("OPENROUTER_API_KEY", "DASHSCOPE_API_KEY", "OPENROUTER_VLM_MODEL",
                  "OPENROUTER_BASE_URL", "DASHSCOPE_BASE_URL", "GEMMA_URL")
 
@@ -272,19 +285,24 @@ class VLMExtractor:
     # -- backend selection --------------------------------------------------
 
     def _probe_chain(self):
-        """Ping backends in order; return the first reachable one + its index."""
+        """Ping backends in order; return the first reachable one + its index.
+
+        첫 번째로 응답한 백엔드에서 **멈춘다**. 뒤쪽 백엔드는 실제 호출이 실패할 때 extract()/extract_video()
+        가 그때 폴백하므로 미리 두드릴 이유가 없다. 예전에는 체인 전체를 두드려서, 자체 서버(GEMMA_URL)가
+        SYN 단계에서 멎어 있으면 다리마다 클라이언트 타임아웃만큼 기다렸다(실측: 이미지 leg 272.85s 중 ~250s).
+        `_probe_log` 에는 두드린 백엔드만 남는다.
+        """
         self._probe_log = []
         selected = None
         selected_idx: int | None = None
         for idx, backend in enumerate(self.backends):
             ok, detail = backend.ping()
             self._probe_log.append(_ProbeResult(backend.model_label, ok, detail))
-            if ok and selected is None:
+            if ok:
                 selected, selected_idx = backend, idx
                 logger.info("VLM backend selected: %s (%s)", backend.model_label, detail)
-            elif not ok:
-                logger.warning("VLM backend unreachable: %s — %s",
-                               backend.model_label, detail)
+                break
+            logger.warning("VLM backend unreachable: %s — %s", backend.model_label, detail)
         return selected, selected_idx
 
     def active_backend(self):
@@ -330,14 +348,18 @@ class VLMExtractor:
 
     # -- extraction ---------------------------------------------------------
 
-    def extract(self, image_path: str | Path):
+    def extract(self, image_path: str | Path, context: dict | None = None):
         """
         Extract attributes from one image using the active backend. If the call
         errors (exception or VLMResult.ok is False), advance to the next backend
         in the chain and retry. The returned VLMResult carries a `backend_used`
         field. If every backend fails, returns a VLMResult with ok=False.
+
+        context: 계약서 참고 문맥 {"title", "work_type"} — 프롬프트 끝에 참고 줄로 붙는다 (A4).
+                 None 이면 프롬프트는 기존과 동일하다.
         """
         image_path = Path(image_path)
+        user_prompt = _prompt_with_context(USER_PROMPT, context)
         # Ensure a backend is selected (sets the start index) before we begin.
         if self._active is None:
             self.active_backend()
@@ -348,7 +370,7 @@ class VLMExtractor:
             backend = self.backends[idx]
             try:
                 result = backend.extract(
-                    image_path, SYSTEM_PROMPT, USER_PROMPT,
+                    image_path, SYSTEM_PROMPT, user_prompt,
                     max_tokens=self.max_tokens, temperature=self.temperature,
                 )
             except Exception as e:  # noqa: BLE001 — defensive: client shouldn't raise
@@ -357,6 +379,7 @@ class VLMExtractor:
 
             if result is not None and result.ok:
                 _attach_backend(result, backend.model_label)
+                _attach_context(result, context)
                 if idx != start:
                     logger.info("fallback succeeded on %s for %s",
                                 backend.model_label, image_path.name)
@@ -387,11 +410,12 @@ class VLMExtractor:
         return fail
 
     def extract_video(self, frame_paths: list, frame_times: list | None = None,
-                      label: str = "video"):
+                      label: str = "video", context: dict | None = None):
         """키프레임 여러 장을 한 번의 호출로 보내 영상 속성을 추출한다.
 
         extract() 와 동일한 폴백 체인 규칙을 따른다 — 실패하면 다음 백엔드로
         넘어가고, 성공한 백엔드를 승격시켜 이후 호출이 거기서 시작하게 한다.
+        context 는 extract() 와 같다 (계약서 참고 문맥, 없으면 프롬프트 불변).
         """
         from .prompts import VIDEO_SYSTEM_PROMPT, video_user_prompt
 
@@ -401,7 +425,7 @@ class VLMExtractor:
             _attach_backend(fail, "none")
             return fail
 
-        user_prompt = video_user_prompt(frame_times or [])
+        user_prompt = _prompt_with_context(video_user_prompt(frame_times or []), context)
         if self._active is None:
             self.active_backend()
         start = self._active_index or 0
@@ -421,6 +445,7 @@ class VLMExtractor:
 
             if result is not None and result.ok:
                 _attach_backend(result, backend.model_label)
+                _attach_context(result, context)
                 if idx != start:
                     logger.info("video fallback succeeded on %s for %s",
                                 backend.model_label, label)
@@ -454,6 +479,11 @@ def _attach_backend(result, backend_label: str) -> None:
     untouched while exposing `backend_used` to callers.
     """
     setattr(result, "backend_used", backend_label)
+
+
+def _attach_context(result, context) -> None:
+    """어떤 계약서 문맥이 프롬프트에 들어갔는지 결과에 남긴다 (`prompt_context`, 없으면 None)."""
+    setattr(result, "prompt_context", dict(context) if context else None)
 
 
 # -- CLI smoke test ---------------------------------------------------------

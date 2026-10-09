@@ -18,8 +18,19 @@ Usage (SSE streaming — call stages individually)::
     con_result, success, error = pipeline.run_consolidation(...)
     response = pipeline.build_response(ctx, ...)
     pipeline.save_results(ctx["result_dir"], response, con_result, success)
+
+v4 시험평가(docs/v4/M2_runner_spec.md §1.A) 가 더한 run() 키워드 — 기본값은 모두 오늘의 동작::
+
+    run(..., consolidate_work=True,   # False: 이미지/영상 경로에서 중재자(통합검증) 생략 (A3)
+             contract_context=None,   # {"title","work_type"}: VLM 프롬프트에 계약서 참고 줄 (A4)
+             frame_schedule="v3",     # "v4": 긴 영상 키프레임 16/24 (A6)
+             media=None,              # "image": .pptx 를 1쪽 렌더링 → 이미지 경로 (A7)
+             test=None)               # "T-001"/"T-002": response["test_prediction"] 의 널 처리 (A2)
+    응답에 더해진 키: file_name(원본 이름), file_hash(SHA-256), file_size_bytes, licensee_party,
+    test_prediction(23키), contract_context, contract_context_rules, ocr_provider_used, ocr_pages.
 """
 
+import hashlib
 import json
 import logging
 import os
@@ -90,9 +101,16 @@ class PipelineOrchestrator:
         file_size_mb = len(file_bytes) / (1024 * 1024)
         logger.info(f"Pipeline setup: {sanitized} ({file_size_mb:.2f}MB)")
 
+        # 원본 파일명과 SHA-256 은 정제(safe_filename) **전에** 여기서 잡아 둔다 (v4 키 2·23, A1).
+        # 저장용 이름은 공백이 '_' 로 바뀌고 쉼표 등이 빠지므로 파일명 채점에 그대로 쓰면 틀린다.
+        # 해시는 바이트가 손에 있는 지금 한 번만 계산한다 — 큰 영상을 다시 읽지 않는다.
+        original_filename = unicodedata.normalize("NFC", os.path.basename(filename or "")) or sanitized
         return {
             "request_id": request_id,
             "filename": sanitized,
+            "original_filename": original_filename,
+            "sha256": hashlib.sha256(file_bytes).hexdigest(),
+            "file_size": len(file_bytes),
             "upload_path": upload_path,
             "result_dir": result_dir,
             "file_size_mb": file_size_mb,
@@ -293,19 +311,31 @@ class PipelineOrchestrator:
     # Multimodal: modality routing + VLM (image) extraction
     # ------------------------------------------------------------------
 
-    def run_router(self, ctx: Dict) -> Dict[str, Any]:
-        """Detect modality (image/video/audio/document/text) + extractor plan."""
+    def run_router(self, ctx: Dict, media_hint: Optional[str] = None) -> Dict[str, Any]:
+        """Detect modality (image/video/audio/document/text) + extractor plan.
+
+        media_hint: 호출자(배치 매니페스트의 media)가 아는 매체. "image" 이면 .pptx 를 이미지
+        경로로 보내고 plan["render"]="pptx_slide1" 을 돌려준다 (A7). None 이면 확장자만 본다.
+        """
         from module.clip_extraction.router import route
-        plan = route(str(ctx["upload_path"]))
-        logger.info(f"Router: {ctx['filename']} → modality={plan['modality']}")
+        plan = route(str(ctx["upload_path"]), media_hint=media_hint)
+        extra = f" (render={plan['render']})" if plan.get("render") else ""
+        logger.info(f"Router: {ctx['filename']} → modality={plan['modality']}{extra}")
         return plan
 
-    def run_vlm(self, ctx: Dict, prefer: str = "gemma") -> Dict[str, Any]:
+    def run_vlm(self, ctx: Dict, prefer: str = "gemma",
+                context: Optional[Dict[str, Any]] = None,
+                render: Optional[str] = None) -> Dict[str, Any]:
         """Extract visual metadata from an image work via the Gemma(primary)→
         Qwen(backup) VLM fallback chain, mapped to the unified schema.
 
         Returns an llm_result-shaped dict so it slots straight into
         run_consolidation() and build_response() with no arbiter changes.
+
+        context: 계약서 참고 문맥 {"title", "work_type"} — 프롬프트 끝에 참고 줄로 붙는다 (A4).
+        render : "pptx_slide1" 이면 1쪽 슬라이드를 PNG 로 렌더링해 그 그림을 VLM 에 넣는다 (A7).
+                 파일포맷·크기·해시 같은 기술 메타데이터는 **원본 .pptx** 에서 계산하고 해상도는 비운다.
+                 렌더링이 불가능한 환경이면 success=False 와 명확한 error 로 돌려준다 — 예외가 아니다.
         """
         import time
         from module.clip_extraction.vlm.extractor import VLMExtractor
@@ -313,14 +343,32 @@ class PipelineOrchestrator:
 
         t0 = time.perf_counter()
         try:
+            image_path = ctx["upload_path"]
+            render_info = None
+            if render == "pptx_slide1" or str(image_path).lower().endswith(".pptx"):
+                from module.clip_extraction.pptx_render import PptxRenderError, render_first_slide
+                png = ctx["result_dir"] / "pptx_slide1.png"
+                try:
+                    render_first_slide(image_path, png)
+                except PptxRenderError as e:
+                    logger.error(f"PPTX 1쪽 렌더링 실패 — VLM 생략: {e}")
+                    return {"success": False, "metadata": {}, "confidence": 0.0,
+                            "model_used": "none", "error": f"PPTX 1쪽 렌더링 불가: {e}",
+                            "extraction_time": round(time.perf_counter() - t0, 2),
+                            "_render": {"method": "pptx_slide1", "ok": False}}
+                image_path = png
+                render_info = {"method": "pptx_slide1", "ok": True, "png": str(png)}
+
             extractor = VLMExtractor(prefer=prefer, max_tokens=2048)
-            res = extractor.extract(ctx["upload_path"])
+            res = extractor.extract(image_path, context=context)
             backend = getattr(res, "backend_used", "?")
             if not res.ok or not res.parse_ok or not res.parsed:
                 return {"success": False, "metadata": {}, "confidence": 0.0,
                         "model_used": backend,
                         "error": res.error or "VLM ran but JSON parse failed",
-                        "extraction_time": round(time.perf_counter() - t0, 2)}
+                        "extraction_time": round(time.perf_counter() - t0, 2),
+                        "_render": render_info}
+            # 기술 메타데이터·SHA256 은 항상 **원본** 파일에서 — 렌더링한 PNG 가 아니다.
             unified = map_vlm_to_unified(res.parsed, str(ctx["upload_path"]))
             file_meta = unified.pop("_file_meta", {})
             logger.info(f"VLM extraction complete via {backend}: "
@@ -333,6 +381,8 @@ class PipelineOrchestrator:
                 "extraction_time": round(time.perf_counter() - t0, 2),
                 "_file_meta": file_meta,
                 "_vlm_raw": res.parsed,
+                "_render": render_info,
+                "_prompt_context": dict(context) if context else None,
             }
         except Exception as e:
             logger.error(f"VLM extraction error: {e}", exc_info=True)
@@ -340,11 +390,16 @@ class PipelineOrchestrator:
                     "model_used": "none", "error": str(e),
                     "extraction_time": round(time.perf_counter() - t0, 2)}
 
-    def run_video(self, ctx: Dict, prefer: str = "omni") -> Dict[str, Any]:
+    def run_video(self, ctx: Dict, prefer: str = "omni",
+                  context: Optional[Dict[str, Any]] = None,
+                  frame_schedule: str = "v3") -> Dict[str, Any]:
         """영상 저작물 → 키프레임 추출 → 다중 프레임 VLM 1회 호출 → 통합 스키마.
 
         run_vlm(이미지)과 같은 llm_result 모양을 돌려주므로 통합검증·응답조립
         경로를 그대로 재사용한다. 새로 필요한 것은 키프레임 추출뿐이다.
+
+        context       : 계약서 참고 문맥 (run_vlm 과 같다, A4)
+        frame_schedule: 키프레임 수 표 "v3"(기본) | "v4"(긴 영상 16/24, A6)
         """
         import time
         from module.clip_extraction.keyframes import extract_keyframes
@@ -354,7 +409,7 @@ class PipelineOrchestrator:
         t0 = time.perf_counter()
         try:
             frame_dir = ctx["result_dir"] / "keyframes"
-            kf = extract_keyframes(str(ctx["upload_path"]), str(frame_dir))
+            kf = extract_keyframes(str(ctx["upload_path"]), str(frame_dir), schedule=frame_schedule)
             if not kf.get("frames"):
                 return {"success": False, "metadata": {}, "confidence": 0.0,
                         "model_used": "none",
@@ -365,7 +420,7 @@ class PipelineOrchestrator:
             paths = [f["path"] for f in kf["frames"]]
             times = [f["t"] for f in kf["frames"]]
             extractor = VLMExtractor(prefer=prefer, max_tokens=2048)
-            res = extractor.extract_video(paths, times, label=ctx["filename"])
+            res = extractor.extract_video(paths, times, label=ctx["filename"], context=context)
             backend = getattr(res, "backend_used", "?")
             if not res.ok or not res.parse_ok or not res.parsed:
                 return {"success": False, "metadata": {}, "confidence": 0.0,
@@ -385,6 +440,7 @@ class PipelineOrchestrator:
                 "_file_meta": file_meta, "_vlm_raw": res.parsed,
                 "_keyframes": {k: v for k, v in kf.items() if k != "frames"},
                 "_frame_times": times,
+                "_prompt_context": dict(context) if context else None,
             }
         except Exception as e:
             logger.error(f"Video extraction error: {e}", exc_info=True)
@@ -437,8 +493,21 @@ class PipelineOrchestrator:
         consolidate: bool, consolidation_model: str,
         consolidation_result: Optional[Dict],
         consolidation_success: bool, consolidation_error: Optional[str],
+        ocr_result: Optional[Dict] = None,
+        licensee_party: Optional[str] = None,
+        test: Optional[str] = None,
+        contract_context: Optional[Dict[str, Any]] = None,
+        contract_context_rules: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Assemble the final API response."""
+        """Assemble the final API response.
+
+        v4 선택 인자(모두 기본 None — 기존 호출자는 그대로):
+          ocr_result            OCR 단계 결과 dict → ocr_provider_used('direct_text' 등)·ocr_pages
+          licensee_party        이용자 당사자 이름. None 이고 ocr_text 가 있으면 party_rules 로 본문에서 찾는다 (A5)
+          test                  "T-001"/"T-002" → test_prediction 의 시험별 널 처리 (A2)
+          contract_context      VLM 에 넣은 계약서 문맥 {"title","work_type"} — 출처 기록용 (A4)
+          contract_context_rules 계약서 PDF 를 규칙으로 읽은 결과 — 모델 값과 대조용 (§12.7(a))
+        """
         total_time = (datetime.now() - ctx["start_time"]).total_seconds()
 
         response = {
@@ -446,6 +515,10 @@ class PipelineOrchestrator:
             "request_id": ctx["request_id"],
             "filename": ctx["filename"],
             "file_size_mb": round(ctx["file_size_mb"], 2),
+            # v4 A1: 원본 파일명·SHA-256·바이트 크기 — setup 이 정제 전에 잡아 둔 값 (키 2·20·23)
+            "file_name": ctx.get("original_filename", ctx["filename"]),
+            "file_hash": ctx.get("sha256"),
+            "file_size_bytes": ctx.get("file_size"),
             "model_used": llm_result.get("model_used", model_name),
             "document_type": document_type,
             "metadata": llm_result.get("metadata", {}),
@@ -454,6 +527,9 @@ class PipelineOrchestrator:
             "ocr_text": ocr_text,
             "ocr_provider": ocr_provider,
             "ocr_model": ocr_model,
+            # 실제로 쓰인 공급자 — PDF 본문층을 읽었으면 'direct_text' (비용 추정이 쪽당 OCR 을 더하지 않게, B4)
+            "ocr_provider_used": (ocr_result or {}).get("ocr_provider") or ocr_provider,
+            "ocr_pages": (ocr_result or {}).get("total_pages"),
             "error": llm_result.get("error"),
             # None-safe: image/video (VLM) works have no NER model
             "ner_model": (self.available_ner_models.get(ner_model, {}).get("display_name")
@@ -474,32 +550,80 @@ class PipelineOrchestrator:
             "consolidation_confidence": consolidation_result.get("validation_report", {}).get("confidence_score", 0.0) if consolidation_result else None,
             "consolidation_model_used": consolidation_result.get("model_used", consolidation_model) if consolidation_result else None,
             "consolidation_fallback_used": consolidation_result.get("fallback_used", False) if consolidation_result else False,
+            # v4 출처 기록
+            "test": test,
+            "contract_context": contract_context,
+            "contract_context_rules": contract_context_rules,
         }
+
+        # v4 A5: 이용자 당사자(키 5) — 모델 값이 아니라 본문 규칙으로. 새 서식은 '저작권자' 를 인쇄하지
+        # 않고 원장의 권리자(한국저작권위원회)가 이용자 당사자로 인쇄된다. 본문이 없으면(이미지·영상) None.
+        if licensee_party is None and ocr_text:
+            try:
+                from module.llm_extraction.party_rules import find_licensee
+                found = find_licensee(ocr_text)
+                licensee_party = found.get("name")
+                response["licensee_party_detail"] = {
+                    k: found.get(k) for k in ("source", "signature", "preamble", "agree")}
+            except Exception as e:                  # 규칙 실패가 응답을 깨면 안 된다
+                logger.warning(f"이용자 당사자 규칙 추출 실패: {e}")
+        response["licensee_party"] = licensee_party
+        if licensee_party:
+            for _key in ("metadata", "consolidated_metadata"):
+                _meta = response.get(_key)
+                if isinstance(_meta, dict):
+                    _meta["licensee_party"] = licensee_party
 
         # TTA 표준 중첩 구조(10그룹·66 하위요소)를 함께 낸다. 추출은 평면 그대로 두고
         # 출력 직전에 한 번 접는다 — 추출 자체를 중첩시키면 통합·NER 매핑·채점이 모두
         # 경로 기반으로 바뀌고, 이름 대응표 없이는 채점이 0.48 → 0.00 으로 무너진다.
         # 기존 metadata/consolidated_metadata 는 그대로 두므로 하위 호환이 깨지지 않는다.
+        _src = self._final_source(response)
         try:
             from module.llm_extraction.schemas import tta_serializer
-            # 중재자가 지워버린 필드는 원본 추출로 되살린 뒤 직렬화한다.
-            # 비율로 거르면 9→4 같은 손실(설명·키워드·유형이 통째로 사라짐)이 통과한다.
-            _con = response.get("consolidated_metadata") or {}
-            _raw = response.get("metadata") or {}
-            _src = dict(_con) if _con else dict(_raw)
-            _lost = []
-            for _k, _v in _raw.items():
-                if _v not in (None, "", [], {}) and _src.get(_k) in (None, "", [], {}):
-                    _src[_k] = _v
-                    _lost.append(_k)
-            if _lost:
-                logger.warning(f"TTA JSON: 통합에서 사라진 필드를 원본으로 복원 {_lost}")
             response["tta_metadata"] = tta_serializer.build(_src, response)
         except Exception as e:                      # 직렬화 실패로 추출 결과를 잃지 않는다
             logger.warning(f"TTA 직렬화 실패: {e}")
             response["tta_metadata"] = None
 
+        # v4 A2: 시험평가용 23키 예측 (keys23 순서). 같은 _src 에서 한 번 더 접는다.
+        self._attach_test_prediction(response, _src)
+
         return response
+
+    @staticmethod
+    def _final_source(response: Dict[str, Any], warn: bool = True) -> Dict[str, Any]:
+        """직렬화 원본 — 통합 결과를 쓰되, 중재자가 지워버린 필드는 원본 추출로 되살린다.
+
+        비율로 거르면 9→4 같은 손실(설명·키워드·유형이 통째로 사라짐)이 통과한다.
+        """
+        con = response.get("consolidated_metadata") or {}
+        raw = response.get("metadata") or {}
+        src = dict(con) if con else dict(raw)
+        lost = []
+        for k, v in raw.items():
+            if v not in (None, "", [], {}) and src.get(k) in (None, "", [], {}):
+                src[k] = v
+                lost.append(k)
+        if lost and warn:
+            logger.warning(f"직렬화: 통합에서 사라진 필드를 원본으로 복원 {lost}")
+        return src
+
+    def _attach_test_prediction(self, response: Dict[str, Any],
+                                src: Optional[Dict[str, Any]] = None) -> None:
+        """response["test_prediction"] = eval23 23키 레코드. 실패해도 응답은 깨지지 않는다.
+
+        run() 의 각 분기는 파일 기술속성 보충·계약서 상속·중재자 생략 뒤에 이걸 다시 불러
+        최종 metadata 를 반영한다 (멱등).
+        """
+        try:
+            from module.llm_extraction.schemas import eval23_serializer
+            if src is None:
+                src = self._final_source(response, warn=False)
+            response["test_prediction"] = eval23_serializer.build(src, response, response.get("test"))
+        except Exception as e:
+            logger.warning(f"eval23 직렬화 실패: {e}")
+            response["test_prediction"] = None
 
     @staticmethod
     def save_results(result_dir: Path, response: Dict,
@@ -525,16 +649,26 @@ class PipelineOrchestrator:
         ner_model = kwargs.get("ner_model", "klue-roberta-large")
         consolidate = kwargs.get("consolidate", True)
         consolidation_model = kwargs.get("consolidation_model", "alibaba-qwen3.5-122b-a10b")
+        # --- v4 시험평가 키워드 (기본값 = 오늘의 동작; docs/v4/M2_runner_spec.md §1.A) ---
+        consolidate_work = kwargs.get("consolidate_work", True)    # A3: False → 저작물 경로에서 중재자 생략
+        contract_context = kwargs.get("contract_context") or None   # A4: {"title","work_type"} → VLM 참고 줄
+        frame_schedule = kwargs.get("frame_schedule", "v3")         # A6: 키프레임 수 표
+        media_hint = kwargs.get("media")                             # A7: "image" → .pptx 를 이미지로
+        test = kwargs.get("test")                                    # A2: "T-001"/"T-002"/None
+        if test not in (None, "T-001", "T-002"):
+            raise ValueError(f"test 는 'T-001'/'T-002'/None 이어야 합니다: {test!r}")
 
         ctx = self.setup(file_bytes, filename)
 
         # --- Modality routing: image → VLM (Gemma→Qwen); document/text → existing path ---
-        modality = self.run_router(ctx)["modality"]
+        plan = self.run_router(ctx, media_hint=media_hint)
+        modality = plan["modality"]
 
         if modality == "image":
-            vlm_result = self.run_vlm(ctx, prefer=kwargs.get("vlm_prefer", "gemma"))
+            vlm_result = self.run_vlm(ctx, prefer=kwargs.get("vlm_prefer", "gemma"),
+                                      context=contract_context, render=plan.get("render"))
             vlm_ok = vlm_result.get("success", False)
-            do_con = consolidate and vlm_ok
+            do_con = consolidate and consolidate_work and vlm_ok
             if do_con:
                 con_result, con_success, con_error = self.run_consolidation(
                     vlm_result,
@@ -551,22 +685,29 @@ class PipelineOrchestrator:
                 consolidate=do_con, consolidation_model=consolidation_model,
                 consolidation_result=con_result, consolidation_success=con_success,
                 consolidation_error=con_error,
+                test=test, contract_context=contract_context,
             )
             response["modality"] = "image"
             response["vlm_backend"] = vlm_result.get("model_used")
             response["vlm_raw"] = vlm_result.get("_vlm_raw")
+            response["render"] = vlm_result.get("_render")
+            response["consolidate_work"] = consolidate_work
+            if vlm_ok and not consolidate_work:
+                self._skip_work_consolidation(response)
             # 계약서→저작물 권리정보 상속 (HF Space 연동: contract_metadata 동봉 시)
             if kwargs.get("contract_metadata"):
                 self.apply_contract_inheritance(response, kwargs["contract_metadata"])
+            self._attach_test_prediction(response)
             self.save_results(ctx["result_dir"], response, con_result, con_success)
             return response
 
         if modality == "video":
             # 키프레임 → 다중 프레임 VLM 1회 호출. 이미지 경로와 동일한 모양을
             # 돌려주므로 통합검증·응답조립은 그대로 재사용된다.
-            vid_result = self.run_video(ctx, prefer=kwargs.get("video_prefer", "omni"))
+            vid_result = self.run_video(ctx, prefer=kwargs.get("video_prefer", "omni"),
+                                        context=contract_context, frame_schedule=frame_schedule)
             vid_ok = vid_result.get("success", False)
-            do_con = consolidate and vid_ok
+            do_con = consolidate and consolidate_work and vid_ok
             if do_con:
                 con_result, con_success, con_error = self.run_consolidation(
                     vid_result,
@@ -584,10 +725,16 @@ class PipelineOrchestrator:
                 consolidate=do_con, consolidation_model=consolidation_model,
                 consolidation_result=con_result, consolidation_success=con_success,
                 consolidation_error=con_error,
+                test=test, contract_context=contract_context,
             )
             response["modality"] = modality
             response["keyframes"] = vid_result.get("_keyframes")
+            response["frame_schedule"] = frame_schedule
+            response["consolidate_work"] = consolidate_work
+            if vid_ok and not consolidate_work:
+                self._skip_work_consolidation(response)
             self._backfill_file_attributes(ctx, response)
+            self._attach_test_prediction(response)
             self.save_results(ctx["result_dir"], response, con_result, con_success)
             return response
 
@@ -658,6 +805,9 @@ class PipelineOrchestrator:
             consolidate=consolidate, consolidation_model=consolidation_model,
             consolidation_result=con_result,
             consolidation_success=con_success, consolidation_error=con_error,
+            ocr_result=ocr_result, test=test, contract_context=contract_context,
+            # 계약서 PDF 면 제호·종별을 규칙으로도 읽어 둔다 — 모델 값과의 대조용(§12.7(a)), 예측값은 아니다
+            contract_context_rules=self._contract_rules(ctx),
         )
 
         # 문서 경로에도 파일 기술속성을 채운다. 이미지 경로는 map_vlm_to_unified 가
@@ -665,6 +815,7 @@ class PipelineOrchestrator:
         # 구조적으로 오답이 된다(어문 저작물 825건 해당). 값은 파일에서 결정적으로 나오므로
         # 계약서든 저작물이든 채워 두는 편이 일관된다.
         self._backfill_file_attributes(ctx, response)
+        self._attach_test_prediction(response)
 
         self.save_results(ctx["result_dir"], response, con_result, con_success)
         return response
@@ -672,6 +823,36 @@ class PipelineOrchestrator:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _skip_work_consolidation(response: Dict) -> None:
+        """consolidate_work=False (A3): VLM 매핑 결과(+파일 기술속성)를 그대로 최종값으로 쓴다.
+
+        저작물 경로의 중재자는 NER 입력이 비어 있어 중재할 것이 없는데도 저작물 레그 비용의 97%
+        (₩35.4/₩35.6) 와 ~55초를 쓰고, 필드를 지운 적도 있다(9→4). consolidated_metadata 에
+        원본을 그대로 복사해 두면 '통합 결과 우선' 으로 읽는 호출자(_final_metadata)도 같은 값을 본다.
+        """
+        response["consolidated_metadata"] = dict(response.get("metadata") or {})
+        response["work_consolidation"] = {
+            "applied": False,
+            "reason": "consolidate_work=False — VLM 결과와 파일 기술속성을 직접 사용 (v4 A3)",
+        }
+
+    @staticmethod
+    def _contract_rules(ctx: Dict) -> Optional[Dict[str, Any]]:
+        """PDF 면 제호·종별을 규칙으로 읽는다 (contract_context.parse). 실패/비PDF → None."""
+        if not str(ctx["upload_path"]).lower().endswith(".pdf"):
+            return None
+        try:
+            from module.clip_extraction.contract_context import parse
+            out = parse(ctx["upload_path"])
+            if isinstance(out, dict):
+                # 진단용 'pdf' 는 저장용 정제 이름('…_운수_자판기_1.pdf')이 아니라 원본 파일명으로 — 응답의 file_name 과 같게
+                out["pdf"] = ctx.get("original_filename") or out.get("pdf")
+            return out
+        except Exception as e:
+            logger.warning(f"계약서 규칙 파싱 실패: {e}")
+            return None
 
     @staticmethod
     def _backfill_file_attributes(ctx: Dict, response: Dict) -> None:

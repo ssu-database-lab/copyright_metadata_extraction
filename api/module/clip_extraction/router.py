@@ -17,7 +17,7 @@ Modality router for the Year 2 multimodal pipeline.
 from __future__ import annotations
 
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 # ---------------------------------------------------------------------------
 # 확장자 → modality 매핑 (점(.) 제외, 소문자 기준)
@@ -33,6 +33,12 @@ _VIDEO_EXTS = {"mp4", "avi", "mov", "mkv", "webm",
                "wmv", "swf", "mpg", "mpeg", "m4v", "ts", "flv", "3gp", "ogv"}
 _DOCUMENT_EXTS = {"pdf", "hwp", "docx", "doc", "pptx", "xlsx"}
 _TEXT_EXTS = {"txt", "md", "ocr"}
+
+# 호출자가 media="image" 라고 알려준 경우에만 이미지 경로로 돌리는 '문서' 확장자 → 렌더 방법.
+# 공유마당의 PPT 템플릿 저작물(예: 13385261)은 사이트가 이미지로 분류하지만 파일은 .pptx 다.
+# 확장자만 보면 문서 → OCR 경로로 가서 VLM 이 그림을 보지 못한다. 1쪽 슬라이드를 렌더링해
+# VLM 에 넣도록 render 힌트를 함께 돌려준다 (M2 spec A7). 힌트가 없으면 예전처럼 문서다.
+_RENDER_AS_IMAGE: Dict[str, str] = {"pptx": "pptx_slide1"}
 
 # modality → 추출기 체인 (dispatch 계획)
 _EXTRACTOR_PLAN: Dict[str, List[str]] = {
@@ -81,9 +87,12 @@ def detect_modality(file_path: str) -> str:
     return "unknown"
 
 
-def route(file_path: str) -> Dict[str, object]:
+def route(file_path: str, media_hint: Optional[str] = None) -> Dict[str, object]:
     """
     입력 파일에 대한 dispatch 계획을 돌려준다.
+
+    media_hint: 호출자(배치 매니페스트의 media 열)가 아는 매체. "image" 이면 .pptx 를
+                이미지 modality 로 보내고 render="pptx_slide1" 을 함께 돌려준다. 그 외에는 무시.
 
     예시 반환:
         {
@@ -92,17 +101,30 @@ def route(file_path: str) -> Dict[str, object]:
             "rationale": "...",
             "file_path": "...",
             "extension": "jpg",
+            "media_hint": None,
+            "render": None,          # 'pptx_slide1' 이면 run_vlm 이 1쪽을 렌더링해 VLM 에 넣는다
         }
     """
     modality = detect_modality(file_path)
-    return {
+    ext = _extension(file_path)
+    plan: Dict[str, object] = {
         "modality": modality,
         # 리스트는 호출자가 변형해도 모듈 상수가 오염되지 않게 복사해서 반환
         "extractors": list(_EXTRACTOR_PLAN[modality]),
         "rationale": _RATIONALE[modality],
         "file_path": str(file_path),
-        "extension": _extension(file_path),
+        "extension": ext,
+        "media_hint": media_hint,
+        "render": None,
     }
+    if media_hint == "image" and ext in _RENDER_AS_IMAGE:
+        plan.update({
+            "modality": "image",
+            "extractors": ["vlm"],
+            "render": _RENDER_AS_IMAGE[ext],
+            "rationale": "PPT 템플릿 저작물(매니페스트 media=image) — 1쪽 슬라이드를 렌더링해 VLM으로 속성 추출",
+        })
+    return plan
 
 
 if __name__ == "__main__":
