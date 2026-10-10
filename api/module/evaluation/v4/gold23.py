@@ -575,7 +575,42 @@ def index_field(irow: Mapping[str, str], col: str) -> tuple[str, Optional[str]]:
     return clean_text(irow[col]), None
 
 
-def keywords_cell(irow: Mapping[str, str]) -> dict[str, Any]:
+# 컬렉션 태그 판정 — build_ground_truth(공유마당)와 같은 기준: 같은 태그 목록을 5건 이상이 공유하면 저작물 내용이 아니라
+# 기관·컬렉션 분류 태그다 (예: KOGL '수중문화재, 해양유물', '현충원, 참배행사', '4k, 제주영상, …').
+# 공유마당은 build_ground_truth 가 work_키워드_batch_level 로 이미 표시하므로 여기서는 KOGL 목록에만 적용한다
+# (docs/v4/tags_investigation_20261010.md §2 원인 3, 결정 2026-10-10).
+COLLECTION_MIN_WORKS = 5
+COLLECTION_COLUMNS = ("work_키워드", "work_해시태그")
+
+
+def _list_key(tags: Iterable[str]) -> frozenset:
+    return frozenset(k for k in (tag_key(t) for t in tags) if k)
+
+
+def collection_list_counts(index: Mapping[str, Mapping[str, str]]) -> Counter:
+    """(source, 열, 정규화 태그 집합) → 그 목록을 그대로 가진 저작물 수 (인덱스 전체 기준)."""
+    counts: Counter = Counter()
+    for irow in index.values():
+        src = irow.get("source", "")
+        for col in COLLECTION_COLUMNS:
+            key = _list_key(split_tags(irow.get(col, "")))
+            if key:
+                counts[(src, col, key)] += 1
+    return counts
+
+
+def is_kogl_collection_list(irow: Mapping[str, str], col: str, tags: Sequence[str], counts: Optional[Mapping]) -> bool:
+    """KOGL 저작물의 태그 목록이 5건 이상과 똑같으면 컬렉션 태그다. counts 가 없으면 판정하지 않는다 (기존 동작)."""
+    src = irow.get("source", "")
+    if not counts or not src.startswith(KOGL_SOURCE_PREFIX):
+        return False
+    key = _list_key(tags)
+    return bool(key) and counts.get((src, col, key), 0) >= COLLECTION_MIN_WORKS
+
+
+def keywords_cell(irow: Mapping[str, str], counts: Optional[Mapping] = None) -> dict[str, Any]:
+    if is_kogl_collection_list(irow, "work_키워드", split_tags(irow.get("work_키워드", "")), counts):
+        return na_cell(f"KOGL 컬렉션 태그 — 같은 목록 {COLLECTION_MIN_WORKS}건 이상 (키워드 Gold 로 쓰지 않음)", "collection")
     content, _ = index_field(irow, "work_키워드_내용태그")  # 열이 없으면 work_키워드 로 내려간다
     if content:
         return make_cell(split_tags(content), STATE_VALUE, "index:work_키워드_내용태그",
@@ -593,11 +628,13 @@ def keywords_cell(irow: Mapping[str, str]) -> dict[str, Any]:
     return na_cell("사이트 키워드 미수집")
 
 
-def hashtags_cell(row: SetRow, irow: Mapping[str, str], pick: GeneratedPick) -> dict[str, Any]:
+def hashtags_cell(row: SetRow, irow: Mapping[str, str], pick: GeneratedPick, counts: Optional[Mapping] = None) -> dict[str, Any]:
     site_source = row.source or irow.get("source", "")
     raw, missing = index_field(irow, "work_해시태그")
     tier = irow.get("work_해시태그_tier", "")
-    if not missing and site_source.startswith(KOGL_SOURCE_PREFIX):
+    collection = (not missing) and is_kogl_collection_list(irow, "work_해시태그", split_tags(raw), counts)
+    # 컬렉션 태그 목록이면 사이트 해시태그를 쓰지 않고 아래 생성 Gold 로 내려간다 (장세영 2026-10-08: KOGL 도 생성 해시태그를 Gold 로)
+    if not missing and not collection and site_source.startswith(KOGL_SOURCE_PREFIX):
         tags = split_tags(raw)
         if tags:
             return make_cell(tags, STATE_VALUE, "index:work_해시태그 (KOGL 원본)", tier, "site")
@@ -668,7 +705,7 @@ def work_file_name_cell(work_file: str) -> dict[str, Any]:
 
 
 def work_keys(row: SetRow, irow: Optional[Mapping[str, str]], pick: GeneratedPick, site_kind: str,
-              hasher: Optional[HashCache]) -> dict[str, dict[str, Any]]:
+              hasher: Optional[HashCache], counts: Optional[Mapping] = None) -> dict[str, dict[str, Any]]:
     """키 17–23 (+ T-002 file_name) 을 인덱스 행·생성 Gold 에서 만든다."""
     if irow is None:
         out = {k: na_cell("인덱스에 work_id 없음") for k in T002_KEYS}
@@ -677,8 +714,8 @@ def work_keys(row: SetRow, irow: Optional[Mapping[str, str]], pick: GeneratedPic
     work_file = row.work_file or irow.get("work_file", "")
     return {
         "file_name": work_file_name_cell(work_file),
-        "keywords": keywords_cell(irow),
-        "hashtags": hashtags_cell(row, irow, pick),
+        "keywords": keywords_cell(irow, counts),
+        "hashtags": hashtags_cell(row, irow, pick, counts),
         "file_format": file_format_cell(irow),
         "file_size": file_size_cell(irow),
         "resolution": resolution_cell(row, irow),
@@ -700,7 +737,7 @@ def resolve_meta(row: SetRow, irow: Optional[Mapping[str, str]], lrow: Optional[
 
 def build_record(test: str, row: SetRow, irow: Optional[Mapping[str, str]], lrow: Optional[Mapping[str, str]],
                  pick: GeneratedPick, site_kind: str, hasher: Optional[HashCache],
-                 file_name_from: str = "auto") -> dict[str, Any]:
+                 file_name_from: str = "auto", counts: Optional[Mapping] = None) -> dict[str, Any]:
     """세트 한 건의 §2 레코드. 23키 모두 KEYS 순서로 들어간다."""
     media, bucket, source = resolve_meta(row, irow, lrow)
     if test == "T-001":
@@ -709,7 +746,7 @@ def build_record(test: str, row: SetRow, irow: Optional[Mapping[str, str]], lrow
         keys.update({k: na_cell("T-002 전용 키 — T-001 비채점") for k in T002_KEYS})
     else:
         keys = {k: na_cell("T-001 전용 키 — T-002 비채점") for k in T001_KEYS}
-        keys.update(work_keys(SetRow(row.work_id, media, bucket, source, row.work_file, row.title), irow, pick, site_kind, hasher))
+        keys.update(work_keys(SetRow(row.work_id, media, bucket, source, row.work_file, row.title), irow, pick, site_kind, hasher, counts))
     return {"set_id": row.work_id, "test": test, "media": media, "bucket": bucket, "source": source,
             "keys": {k: keys[k] for k in KEY_NAMES}}
 
@@ -730,6 +767,7 @@ def build_gold(test: str, ids_path: Path, index_path: Path, ledger_path: Optiona
     ledger = load_ledger(Path(ledger_path), ledger_sheet) if test == "T-001" and ledger_path else {}
     drafts, verified = _load_generated(test, drafts_path, verified_path, generated_mode)
     kinds = classify_site_kinds(index) if test == "T-002" else {}
+    counts = collection_list_counts(index) if test == "T-002" else None
     hasher = HashCache(Path(hash_cache_path)) if (hash_flag and test == "T-002") else None
     if test == "T-001" and not ledger:
         log.warning("T-001 인데 원장이 없다 — 키 1–16 전부 na")
@@ -740,7 +778,7 @@ def build_gold(test: str, ids_path: Path, index_path: Path, ledger_path: Optiona
             log.warning("인덱스에 없는 work_id: %s", row.work_id)
         pick = select_generated(row.work_id, generated_mode, drafts, verified) if test == "T-002" else GeneratedPick(None, "T-001")
         records.append(build_record(test, row, irow, ledger.get(row.work_id), pick, kinds.get(row.work_id, "none"), hasher,
-                                    file_name_from))
+                                    file_name_from, counts))
     if test == "T-001":
         _log_file_name_disagreements(rows, ledger)
     _log_summary(test, records, ledger, rows)

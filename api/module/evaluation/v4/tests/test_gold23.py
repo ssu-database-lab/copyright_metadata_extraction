@@ -434,3 +434,41 @@ def test_load_ledger_reports_unknown_columns(data: dict[str, Path], caplog: pyte
     assert set(ledger) == {"90000009", "90000010", "13387752"}   # '00002_13387752 운수 자판기 (1)' 도 읽힌다
     assert ledger["13387752"]["제목"] == "운수 자판기"
     assert any("모르는 열" in m and "NEW_COL" in m for m in caplog.messages)
+
+
+# ---------------------------------------------------------------- KOGL 컬렉션 태그 규칙 (2026-10-10)
+def _kogl_index(n_same: int):
+    from api.module.evaluation.v4 import gold23 as G
+    idx = {f"k{i}": {"source": "공공누리(KOGL)", "work_키워드": "수중문화재, 해양유물", "work_해시태그": "수중문화재, 해양유물"} for i in range(n_same)}
+    idx["solo"] = {"source": "공공누리(KOGL)", "work_키워드": "청자, 모란무늬", "work_해시태그": "청자, 모란무늬"}
+    idx["g1"] = {"source": "공유마당", "work_키워드": "수중문화재, 해양유물", "work_해시태그": ""}
+    return G, idx
+
+
+def test_kogl_collection_keywords_become_na_only_at_threshold():
+    G, idx = _kogl_index(5)
+    counts = G.collection_list_counts(idx)
+    assert G.keywords_cell(idx["k0"], counts)["state"] == "na"
+    assert G.keywords_cell(idx["k0"], counts)["kind"] == "collection"
+    assert G.keywords_cell(idx["solo"], counts)["state"] == "value"
+    assert G.keywords_cell(idx["k0"])["state"] == "value"                 # counts 없음 → 기존 동작
+    G4, idx4 = _kogl_index(4)
+    assert G4.keywords_cell(idx4["k0"], G4.collection_list_counts(idx4))["state"] == "value"   # 4건은 컬렉션 아님
+
+
+def test_kogl_collection_hashtags_fall_back_to_generated():
+    G, idx = _kogl_index(6)
+    counts = G.collection_list_counts(idx)
+    gen = G.GeneratedPick(G.Generated("설명", ("#청자", "#도자기"), "draft", "drafts.jsonl"), "")
+    row = G.SetRow("k0", "image", "kogl", "공공누리(KOGL)")
+    cell = G.hashtags_cell(row, idx["k0"], gen, counts)
+    assert cell["kind"] == "generated" and cell["value"] == ["#청자", "#도자기"]
+    solo = G.hashtags_cell(G.SetRow("solo", "image", "kogl", "공공누리(KOGL)"), idx["solo"], gen, counts)
+    assert solo["kind"] == "site"
+    assert G.hashtags_cell(row, idx["k0"], gen)["kind"] == "site"       # counts 없음 → 기존 동작
+
+
+def test_collection_rule_ignores_gongu():
+    G, idx = _kogl_index(6)
+    counts = G.collection_list_counts(idx)
+    assert not G.is_kogl_collection_list(idx["g1"], "work_키워드", ["수중문화재", "해양유물"], counts)

@@ -651,8 +651,9 @@
                 <div>
                     <label class="fld-label" for="vlmPrefer">이미지 VLM 우선 백엔드</label>
                     <select id="vlmPrefer">
-                        <option value="gemma">gemma (OpenRouter 우선)</option>
-                        <option value="qwen">qwen (Alibaba)</option>
+                        <option value="auto" selected>auto — Qwen3.8-Omni-Flash → Qwen3.7-Plus → Gemma 4 (기본)</option>
+                        <option value="gemma">gemma — Gemma 4 우선 (Google 무료 → OpenRouter)</option>
+                        <option value="qwen">qwen — Qwen3.7-Plus 우선</option>
                     </select>
                     <div class="fld-hint">실패 시 체인 폴백은 서버가 처리.</div>
                 </div>
@@ -676,7 +677,7 @@
                     <div>
                         <label class="fld-label" for="ocrModel">① OCR 모델</label>
                         <input type="text" id="ocrModel" placeholder="비우면 제공자 기본값">
-                        <div class="fld-hint">alibaba 기본 = qwen3-vl-235b-a22b-instruct</div>
+                        <div class="fld-hint">alibaba 기본 = qwen3.7-plus (생각 끔)</div>
                     </div>
                     <div>
                         <label class="fld-label" for="modelName">② LLM 메타데이터 추출</label>

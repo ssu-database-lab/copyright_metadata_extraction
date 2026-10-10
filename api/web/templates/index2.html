@@ -1812,9 +1812,9 @@
                 <div id="alibabaSubModel" style="margin-top:16px;">
                     <div class="setting-label">Alibaba 모델</div>
                     <div class="pill-group" id="alibabaModelGroup">
-                        <button class="pill" data-value="qwen-vl-plus">Qwen3-VL-Plus</button>
-                        <button class="pill" data-value="qwen3-vl-30b-a3b-instruct">Qwen3-VL-30B</button>
-                        <button class="pill selected" data-value="qwen3-vl-235b-a22b-instruct">Qwen3-VL-235B (권장)</button>
+                        <button class="pill selected" data-value="qwen3.7-plus">Qwen3.7-Plus (권장)</button>
+                        <button class="pill" data-value="qwen3.8-max">Qwen3.8-Max</button>
+                        <button class="pill" data-value="qwen3.8-flash">Qwen3.8-Flash</button>
                     </div>
                 </div>
             </div>
@@ -1877,13 +1877,14 @@
                         멀티모달 모델 (이미지)
                     </div>
                     <div class="pill-group" id="vlmModelGroup">
-                        <button class="pill selected" data-value="gemma">
-                            Gemma 4 31B
+                        <button class="pill selected" data-value="auto">
+                            Qwen3.8-Omni-Flash
                             <span class="pill-recommended">기본</span>
                         </button>
-                        <button class="pill" data-value="qwen">Qwen3-VL-235B</button>
+                        <button class="pill" data-value="gemma">Gemma 4 31B</button>
+                        <button class="pill" data-value="qwen">Qwen3.7-Plus</button>
                     </div>
-                    <div class="toggle-desc" style="margin-top:8px;">이미지 저작물은 VLM이 시각 메타데이터(설명·유형·키워드)를 추출합니다. Gemma는 API(OpenRouter) 우선·자체 서버 폴백, 실패 시 Qwen 자동 전환.</div>
+                    <div class="toggle-desc" style="margin-top:8px;">이미지 저작물은 VLM이 시각 메타데이터(설명·유형·키워드)를 추출합니다. 기본은 Qwen3.8-Omni-Flash, 실패 시 Qwen3.7-Plus → Gemma 4(Google) 순으로 자동 전환.</div>
                 </div>
 
                 <!-- Document Type -->
@@ -2404,10 +2405,10 @@
 
         // Gather parameters
         const ocrProvider = getSelectedPill('ocrProviderGroup') || 'alibaba';
-        const alibabaModel = getSelectedPill('alibabaModelGroup') || 'qwen3-vl-235b-a22b-instruct';
+        const alibabaModel = getSelectedPill('alibabaModelGroup') || 'qwen3.7-plus';
         const llmModel = getSelectedPill('llmModelGroup') || 'alibaba-qwen3.5-122b-a10b';
         const nerModel = getSelectedPill('nerModelGroup') || 'klue-roberta-large';
-        const vlmPrefer = getSelectedPill('vlmModelGroup') || 'gemma';
+        const vlmPrefer = getSelectedPill('vlmModelGroup') || 'auto';
         const documentType = document.getElementById('documentTypeSelect').value;
         const consolidate = document.getElementById('consolidateToggle').checked;
 

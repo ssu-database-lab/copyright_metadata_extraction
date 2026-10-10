@@ -323,7 +323,7 @@ class PipelineOrchestrator:
         logger.info(f"Router: {ctx['filename']} → modality={plan['modality']}{extra}")
         return plan
 
-    def run_vlm(self, ctx: Dict, prefer: str = "gemma",
+    def run_vlm(self, ctx: Dict, prefer: str = "auto",
                 context: Optional[Dict[str, Any]] = None,
                 render: Optional[str] = None) -> Dict[str, Any]:
         """Extract visual metadata from an image work via the Gemma(primary)→
@@ -359,7 +359,7 @@ class PipelineOrchestrator:
                 image_path = png
                 render_info = {"method": "pptx_slide1", "ok": True, "png": str(png)}
 
-            extractor = VLMExtractor(prefer=prefer, max_tokens=2048)
+            extractor = VLMExtractor(prefer=prefer, max_tokens=4096)   # omni-flash 출력이 2048 을 넘는 경우 8% (2026-10-11 실측)
             res = extractor.extract(image_path, context=context)
             backend = getattr(res, "backend_used", "?")
             if not res.ok or not res.parse_ok or not res.parsed:
@@ -419,7 +419,7 @@ class PipelineOrchestrator:
 
             paths = [f["path"] for f in kf["frames"]]
             times = [f["t"] for f in kf["frames"]]
-            extractor = VLMExtractor(prefer=prefer, max_tokens=2048)
+            extractor = VLMExtractor(prefer=prefer, max_tokens=4096)   # omni-flash 출력이 2048 을 넘는 경우 8% (2026-10-11 실측)
             res = extractor.extract_video(paths, times, label=ctx["filename"], context=context)
             backend = getattr(res, "backend_used", "?")
             if not res.ok or not res.parse_ok or not res.parsed:
@@ -665,7 +665,7 @@ class PipelineOrchestrator:
         modality = plan["modality"]
 
         if modality == "image":
-            vlm_result = self.run_vlm(ctx, prefer=kwargs.get("vlm_prefer", "gemma"),
+            vlm_result = self.run_vlm(ctx, prefer=kwargs.get("vlm_prefer", "auto"),
                                       context=contract_context, render=plan.get("render"))
             vlm_ok = vlm_result.get("success", False)
             do_con = consolidate and consolidate_work and vlm_ok

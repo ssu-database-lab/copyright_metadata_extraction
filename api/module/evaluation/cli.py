@@ -87,15 +87,15 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--no-resume", action="store_true")
     ap.add_argument("--validate-only", action="store_true")
     ap.add_argument("--report-only", action="store_true")
-    ap.add_argument("--vlm-prefer", default="gemma", choices=["gemma", "qwen"],
-                    help="이미지 VLM 우선순위 (기본 gemma → qwen 폴백)")
+    ap.add_argument("--vlm-prefer", default="auto", choices=["auto", "gemma", "qwen"],
+                    help="이미지 VLM 체인 (기본 auto: qwen3.8-omni-flash → qwen3.7-plus → Gemma 4(Google))")
     # 단계별 모델 — 기본값은 /api/llm-extract 단일처리와 동일하다.
     ap.add_argument("--model-name", default="alibaba-qwen3.5-122b-a10b",
                     help="LLM 메타데이터 추출 모델")
     ap.add_argument("--ocr-provider", default="alibaba",
                     choices=["alibaba", "mistral", "google", "naver"])
     ap.add_argument("--ocr-model", default=None,
-                    help="미지정 시 provider 기본값 (alibaba → qwen3-vl-235b-a22b-instruct)")
+                    help="미지정 시 provider 기본값 (alibaba → qwen3.7-plus, 생각 끔)")
     ap.add_argument("--ner-model", default="klue-roberta-large")
     ap.add_argument("--no-consolidate", action="store_true",
                     help="통합검증 생략 — 비용 최대 40%% 절감, 단 필드별 판정·신뢰도가 사라진다")
@@ -121,6 +121,8 @@ def build_parser() -> argparse.ArgumentParser:
     v4.add_argument("--embed-cache", default=None, help="임베딩 캐시 jsonl (평가기로 전달)")
     v4.add_argument("--embed-revision", default=None, help="KURE-v1 HF revision 고정 (평가기로 전달, 산출물에 기록)")
     v4.add_argument("--n-boot", type=int, default=None, help="부트스트랩 반복 수 (평가기로 전달, 기본 1000)")
+    v4.add_argument("--title-fallback", action="store_true",
+                    help="T-002: 계약서가 없는 세트에 매니페스트 제목을 문맥으로 준다 (본 시험 흉내 — 개발·파일럿용)")
     v4.add_argument("--only-predicted", action="store_true",
                     help="평가기 gold 를 예측이 있는 set_id 로 제한 (개발·파일럿 런 — 4,000세트 전부를 FN 으로 세지 않음). 기본 off")
     return ap
@@ -211,7 +213,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                     frame_schedule=args.frame_schedule, gold=args.gold, tau=args.tau,
                     content_check=(args.content_check == "on"), embed_cache=args.embed_cache,
                     embed_revision=args.embed_revision, n_boot=args.n_boot,
-                    only_predicted=args.only_predicted)
+                    only_predicted=args.only_predicted, title_fallback=args.title_fallback)
 
     def cb(ev):
         if ev["type"] == "progress" and (ev["i"] % 10 == 0 or not ev["ok"] or eval23):

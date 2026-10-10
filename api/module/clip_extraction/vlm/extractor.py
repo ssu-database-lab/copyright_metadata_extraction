@@ -56,7 +56,7 @@ SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 DASHSCOPE_BASE = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
 DEFAULT_GEMMA_URL = "http://127.0.0.1:8001/v1"
 GEMMA_MODEL = "google/gemma-4-31B-it"
-QWEN_MODEL = "qwen3-vl-235b-a22b-instruct"
+QWEN_MODEL = "qwen3.7-plus"   # 2026-10-11: qwen3-vl-235b 퇴역(Alibaba 2026-10-10) → qwen3.7-plus, 생각 끔
 
 
 # -- lightweight sibling imports (avoid the api.module NER stack) -----------
@@ -103,7 +103,7 @@ def _prompt_with_context(base: str, context) -> str:
 
 
 _MANAGED_KEYS = ("OPENROUTER_API_KEY", "DASHSCOPE_API_KEY", "OPENROUTER_VLM_MODEL",
-                 "OPENROUTER_BASE_URL", "DASHSCOPE_BASE_URL", "GEMMA_URL")
+                 "OPENROUTER_BASE_URL", "DASHSCOPE_BASE_URL", "GEMMA_URL", "GEMINI_API_KEY")
 
 
 def _ensure_env_loaded() -> None:
@@ -183,11 +183,12 @@ def make_qwen_backend():
     """Qwen3-VL on DashScope (cloud). api_key from env DASHSCOPE_API_KEY."""
     _ensure_env_loaded()
     return VLMClient(
-        model_label="Qwen3-VL-235B (DashScope)",
+        model_label="Qwen3.7-Plus (DashScope)",
         base_url=os.getenv("DASHSCOPE_BASE_URL", DASHSCOPE_BASE),
         model=QWEN_MODEL,
         api_key=os.getenv("DASHSCOPE_API_KEY", ""),
         image_first=False,  # matches existing OCR pipeline ordering
+        extra_body={"enable_thinking": False},
     )
 
 
@@ -199,6 +200,23 @@ def make_gemma_backend(gemma_url: str | None = None):
         model=GEMMA_MODEL,
         api_key="not-needed",
         image_first=True,  # Gemma prefers image-first
+        # 연구실 서버가 닿지 않으면 연결 단계에서 바로 넘긴다 — 예전에는 요청당 약 4분(257초 실측)을 기다렸다
+        connect_timeout=float(os.getenv("GEMMA_CONNECT_TIMEOUT_SEC", "10")),
+        max_retries=0,
+    )
+
+
+def make_google_gemma_backend():
+    """Gemma 4 31B on Google AI Studio (Gemini API, OpenAI-compatible) — 무료(유료 등급 없음), 분당 30회(실측 2026-10-11).
+    키: GEMINI_API_KEY. 추론 블록(<thought>)은 client._extract_json 이 지운다. 무료 등급 약관상 입력이 제품 개선·사람 검토에
+    쓰일 수 있으므로 계약서·개인정보에는 쓰지 않는다 (저작물 이미지 전용). 기본 체인에는 아직 넣지 않는다."""
+    _ensure_env_loaded()
+    return VLMClient(
+        model_label="Gemma 4 31B (Google AI Studio)",
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        model=os.getenv("GOOGLE_GEMMA_MODEL", "gemma-4-31b-it"),
+        api_key=os.getenv("GEMINI_API_KEY", ""),
+        image_first=True,
     )
 
 
@@ -210,10 +228,27 @@ def make_omni_backend():
     근거: docs/영상모델_비교보고서_20260803.md
     """
     _ensure_env_loaded()
+    # 2026-10-11: 기본을 qwen3.8-omni-flash 로 — 파일럿 영상 100건 Macro 80.9% vs 3.5-omni-plus 78.6%
+    # (+2.33점, 95% CI [+0.73, +3.99]), 단가 입력 $0.15 / 출력 $0.47 (3.5-omni-plus 는 $1.4 / $8.3). docs/v4/vision_backends_20261011.md
+    omni_model = os.getenv("OMNI_MODEL", "qwen3.8-omni-flash")
     return VLMClient(
-        model_label="Qwen3.5-Omni-Plus (DashScope)",
+        # 라벨은 실제 모델을 따른다 — 예전에는 고정 문자열이라 OMNI_MODEL 을 바꿔도 결과에 3.5-Omni-Plus 로 기록됐다
+        model_label="Qwen3.5-Omni-Plus (DashScope)" if omni_model == "qwen3.5-omni-plus" else f"{omni_model} (DashScope)",
         base_url=os.getenv("DASHSCOPE_BASE_URL", DASHSCOPE_BASE),
-        model=os.getenv("OMNI_MODEL", "qwen3.5-omni-plus"),
+        model=omni_model,
+        api_key=os.getenv("DASHSCOPE_API_KEY", ""),
+        image_first=False,
+    )
+
+
+def make_omni_backup_backend():
+    """영상 트랙 2순위 — qwen3.5-omni-plus (2026-10-10 까지의 1순위). OMNI_BACKUP_MODEL 로 바꿀 수 있다."""
+    _ensure_env_loaded()
+    model = os.getenv("OMNI_BACKUP_MODEL", "qwen3.5-omni-plus")
+    return VLMClient(
+        model_label="Qwen3.5-Omni-Plus (DashScope)" if model == "qwen3.5-omni-plus" else f"{model} (DashScope)",
+        base_url=os.getenv("DASHSCOPE_BASE_URL", DASHSCOPE_BASE),
+        model=model,
         api_key=os.getenv("DASHSCOPE_API_KEY", ""),
         image_first=False,
     )
@@ -238,13 +273,19 @@ def default_backends(prefer: str = "gemma", gemma_url: str | None = None) -> lis
     qwen = make_qwen_backend()
     if prefer == "omni":
         # 영상 트랙 기본 체인 — 비교시험 순위 그대로(92.3% → 80.8% → 76.9%)
-        return [make_omni_backend(), qwen, openrouter, gemma_local]
+        # 영상: qwen3.8-omni-flash → qwen3.5-omni-plus(이전 1순위, 백업) → qwen3.7-plus → Gemma
+        return [make_omni_backend(), make_omni_backup_backend(), qwen, openrouter, gemma_local]
+    google_gemma = make_google_gemma_backend()
+    if prefer == "auto":
+        # 이미지 기본 체인 (2026-10-11 결정): qwen3.8-omni-flash → qwen3.7-plus → Gemma 4(Google, 무료) → Gemma(OpenRouter) → Gemma(연구실)
+        # 파일럿 이미지 100건: omni-flash 100/100·설명 통과 0.916·19초·₩1.34, qwen3.7-plus 98/100·0.863, Gemma(Google) 97/100·0.874·92초
+        return [make_omni_backend(), qwen, google_gemma, openrouter, gemma_local]
     if prefer == "qwen":
-        return [qwen, openrouter, gemma_local]
+        return [qwen, google_gemma, openrouter, gemma_local]
     if prefer == "gemma-local":
-        return [gemma_local, openrouter, qwen]
-    # "gemma" | "openrouter" | anything else → API-first Gemma chain
-    return [openrouter, gemma_local, qwen]
+        return [gemma_local, google_gemma, openrouter, qwen]
+    # "gemma" | "openrouter" → Gemma 우선: Google(무료) → OpenRouter → 연구실 → qwen3.7-plus
+    return [google_gemma, openrouter, gemma_local, qwen]
 
 
 @dataclass
@@ -265,7 +306,7 @@ class VLMExtractor:
     def __init__(
         self,
         backends: list | None = None,
-        prefer: str = "gemma",
+        prefer: str = "auto",
         gemma_url: str | None = None,
         max_tokens: int = 1024,
         temperature: float = 0.0,
@@ -377,7 +418,7 @@ class VLMExtractor:
                 last_error = f"{type(e).__name__}: {e}"
                 result = None
 
-            if result is not None and result.ok:
+            if result is not None and result.ok and result.parse_ok:   # JSON 을 못 읽은 응답도 실패로 보고 다음 백엔드로
                 _attach_backend(result, backend.model_label)
                 _attach_context(result, context)
                 if idx != start:
@@ -388,7 +429,7 @@ class VLMExtractor:
                 return result
 
             # This backend failed — log and try the next.
-            err = result.error if result is not None else last_error
+            err = (result.error or ("JSON 해석 실패" if result.ok and not result.parse_ok else None)) if result is not None else last_error
             last_error = err or "unknown error"
             if idx + 1 < len(self.backends):
                 nxt = self.backends[idx + 1]
@@ -443,7 +484,7 @@ class VLMExtractor:
                 last_error = f"{type(e).__name__}: {e}"
                 result = None
 
-            if result is not None and result.ok:
+            if result is not None and result.ok and result.parse_ok:   # JSON 을 못 읽은 응답도 실패로 보고 다음 백엔드로
                 _attach_backend(result, backend.model_label)
                 _attach_context(result, context)
                 if idx != start:
@@ -452,7 +493,7 @@ class VLMExtractor:
                     self._active, self._active_index = backend, idx
                 return result
 
-            err = result.error if result is not None else last_error
+            err = (result.error or ("JSON 해석 실패" if result.ok and not result.parse_ok else None)) if result is not None else last_error
             last_error = err or "unknown error"
             if idx + 1 < len(self.backends):
                 logger.warning("video: %s failed (%s) → %s", backend.model_label,

@@ -376,7 +376,7 @@ async def create_batch(
     workers: int = Form(default=0),          # 0 = 자동 (v3 4 · v4/eval23 8)
     limit: int = Form(default=0),
     max_cost_krw: float = Form(default=0),
-    vlm_prefer: str = Form(default="gemma"),
+    vlm_prefer: str = Form(default="auto"),
     # 단계별 모델 — 미지정 시 /api/llm-extract 단일처리와 동일한 기본값
     model_name: str = Form(default="alibaba-qwen3.5-122b-a10b"),
     ocr_provider: str = Form(default="alibaba"),

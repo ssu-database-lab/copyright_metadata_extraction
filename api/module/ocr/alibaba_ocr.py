@@ -10,7 +10,7 @@ import random
 import re
 import time
 from pathlib import Path
-from typing import Dict, Generator
+from typing import Optional, Dict, Generator
 from openai import OpenAI
 import module.env_loader  # noqa: F401 — loads .env on import
 
@@ -20,17 +20,38 @@ logger = logging.getLogger(__name__)
 class AlibabaCloudOCRProvider:
     """Alibaba Cloud DashScope OCR provider."""
     
+    # 2026-10-11 재시험(docs/v4/ocr_model_retest_20261011.md — 9월과 같은 40장·앵커·3회):
+    #   qwen3.7-plus(생각 끔) 91.7% · 함정 36 · 12.6초  ← 주 모델
+    #   qwen3.8-max-0902 89.3% (9월) · qwen3.7-flash(생각 끔) 87.9% · qwen3-vl-235b(퇴역) 87.4% · 함정 87
+    #   qwen3.8-flash 86.5% · qwen3-vl-plus 86.5%
+    # qwen3-vl-235b-a22b-instruct 는 2026-10-10 Alibaba 공지대로 퇴역했다(계정에서 404 "Model not exist").
+    DEFAULT_MODEL = "qwen3.7-plus"
+    FALLBACK_MODEL = "qwen3.8-max"
+
     AVAILABLE_MODELS = {
-        # Qwen3-VL (dedicated vision-language)
+        "qwen3.7-plus": "Qwen3.7-Plus (권장 · 생각 끔)",
+        "qwen3.8-max": "Qwen3.8-Max (폴백 · 생각 끔)",
+        "qwen3.8-flash": "Qwen3.8-Flash",
+        "qwen3.7-flash": "Qwen3.7-Flash (생각 끔)",
+        "qwen3-vl-plus": "Qwen3-VL-Plus",
         "qwen-vl-ocr": "Qwen-VL-OCR (Dedicated OCR)",
-        "qwen-vl-plus": "Qwen3-VL-Plus",
-        "qwen3-vl-30b-a3b-instruct": "Qwen3-VL-30B-A3B",
-        "qwen3-vl-235b-a22b-instruct": "Qwen3-VL-235B-A22B",
-        # Qwen3.5 (natively multimodal — can do OCR)
         "qwen3.5-plus": "Qwen3.5-Plus (397B, natively multimodal)",
         "qwen3.5-flash": "Qwen3.5-Flash (35B, natively multimodal)",
     }
-    
+
+    # 퇴역 모델(Alibaba 공지 2026-07-08, 2026-10-10 서비스 종료) — 옛 이름이 들어오면(웹 UI 캐시, 외부 클라이언트의
+    # ocr_model 값 등) 실패시키지 않고 주 모델로 바꾸고 경고한다.
+    RETIRED_MODELS = {
+        "qwen3-vl-235b-a22b-instruct": DEFAULT_MODEL, "qwen3-vl-235b-a22b-thinking": DEFAULT_MODEL,
+        "qwen3-vl-30b-a3b-instruct": DEFAULT_MODEL, "qwen3-vl-30b-a3b-thinking": DEFAULT_MODEL,
+        "qwen3-vl-32b-instruct": DEFAULT_MODEL, "qwen3-vl-8b-instruct": DEFAULT_MODEL,
+        "qwen3-vl-flash": DEFAULT_MODEL, "qwen-vl-plus": DEFAULT_MODEL, "qwen-vl-max": DEFAULT_MODEL,
+    }
+
+    # 생각(thinking) 모드를 끄고 부르는 모델. qwen3.7 계열은 기본이 생각 켬인데, OCR 에서는 켜면
+    # 2배 느리고 출력 토큰이 3배이며 정확도도 낮다(90.0% vs 91.7%). max_tokens 2048 에서는 생각 토큰이 잘림 위험도 만든다.
+    THINKING_OFF_MODELS = {"qwen3.7-plus", "qwen3.7-flash", "qwen3.8-max", "qwen3.8-max-0902", "qwen3.6-plus"}
+
     # 비전 불가 — OCR 로 지정하면 조용히 실패한다(실측 확인, 2026-08/09)
     TEXT_ONLY_MODELS = {
         "qwen3.8-2.4t-a95b",   # HTTP 200 + "이미지를 확인할 수 없어 전사할 수 없습니다" (25자)
@@ -38,19 +59,15 @@ class AlibabaCloudOCRProvider:
         "qwen3.6-max-preview",  # 이미지 입력 시 HTTP 400
     }
 
-    # 모델 단위 폴백. 기존 폴백 qwen3.5-flash 는 열화 입력에서 **한 번도 측정된 적이 없다**.
-    # 2026-09 확인시험(문서 2건·4쪽·10조건·3회, 720 호출) 실측 정확도:
-    #   qwen3-vl-235b(현행) 87.4% · qwen3.8-flash 86.4% · qwen3.8-27b 83.2%
-    #   qwen3-vl-flash 80.7% · qwen-vl-ocr 80.2%
-    # qwen3.8-flash 는 현행과 1.0%p 차이에 지연도 같은 급(11.4초 vs 12.7초)이라
-    # 폴백으로 가장 근거가 좋다.
+    # 모델 단위 폴백 (1단계만 — 순환 방지)
     OCR_MODEL_FALLBACK = {
-        "qwen3-vl-235b-a22b-instruct": "qwen3.8-flash",
-        "qwen3-vl-30b-a3b-instruct": "qwen3.8-flash",
-        "qwen-vl-ocr": "qwen3.8-flash",
-        "qwen-vl-plus": "qwen3.8-flash",
-        "qwen3.5-plus": "qwen3.8-flash",
-        "qwen3.8-flash": "qwen3-vl-235b-a22b-instruct",   # 역방향(순환 방지: 1단계만)
+        DEFAULT_MODEL: FALLBACK_MODEL,
+        FALLBACK_MODEL: DEFAULT_MODEL,
+        "qwen3.8-flash": DEFAULT_MODEL,
+        "qwen3.7-flash": DEFAULT_MODEL,
+        "qwen3-vl-plus": DEFAULT_MODEL,
+        "qwen-vl-ocr": DEFAULT_MODEL,
+        "qwen3.5-plus": DEFAULT_MODEL,
     }
 
     # DashScope 의 429 는 **속도 제한**이지 과금 문제가 아니다(본문 문구가 quota 라 오해하기 쉽다).
@@ -61,9 +78,14 @@ class AlibabaCloudOCRProvider:
     RATE_LIMIT_MAX_RETRIES = 4
     RATE_LIMIT_BASE_DELAY_SEC = 2.0
 
-    def __init__(self, api_key: str, model: str = "qwen3-vl-235b-a22b-instruct", region: str = "singapore",
+    def __init__(self, api_key: str, model: Optional[str] = None, region: str = "singapore",
                  temperature: float = 1.0, top_p: float = 0.8, top_k: int = None):
         self.api_key = api_key
+        model = model or self.DEFAULT_MODEL
+        if model in self.RETIRED_MODELS:
+            logger.warning(f"OCR 모델 '{model}' 은(는) 퇴역했습니다(Alibaba, 2026-10-10 서비스 종료) — "
+                           f"'{self.RETIRED_MODELS[model]}' 로 바꿔 처리합니다.")
+            model = self.RETIRED_MODELS[model]
         self.model = model
         self.region = region
         self.temperature = temperature
@@ -85,14 +107,7 @@ class AlibabaCloudOCRProvider:
                            f"비전 지원 여부를 먼저 확인하세요(합성 이미지 1장으로 판독 확인).")
         
         # Map model names to DashScope model IDs
-        self.model_mapping = {
-            "qwen-vl-ocr": "qwen-vl-ocr",
-            "qwen-vl-plus": "qwen-vl-plus",
-            "qwen3-vl-30b-a3b-instruct": "qwen3-vl-30b-a3b-instruct",
-            "qwen3-vl-235b-a22b-instruct": "qwen3-vl-235b-a22b-instruct",
-            "qwen3.5-plus": "qwen3.5-plus",
-            "qwen3.5-flash": "qwen3.5-flash",
-        }
+        self.model_mapping = {"qwen-vl-ocr": "qwen-vl-ocr"}   # 그 밖의 이름은 DashScope 모델 ID 그대로
         
         self.dashscope_model_id = self.model_mapping.get(model, model)
         
@@ -112,8 +127,14 @@ class AlibabaCloudOCRProvider:
         """429(속도 제한) 여부. 본문에 quota 라고 적혀 있어도 과금 문제가 아니다."""
         return 'RateLimitError' in type(e).__name__ or '429' in str(e)
 
+    @classmethod
+    def thinking_params(cls, model_id: str) -> Dict:
+        """생각 모드를 꺼야 하는 모델이면 extra_body 를 돌려준다 (그 밖에는 빈 dict — 요청을 바꾸지 않는다)."""
+        return {"extra_body": {"enable_thinking": False}} if model_id in cls.THINKING_OFF_MODELS else {}
+
     def _create_with_retry(self, model_id: str, messages: list, generation_params: Dict):
         """429 만 지수 백오프로 재시도한다. 그 밖의 오류는 그대로 올려 폴백에 맡긴다."""
+        generation_params = {**generation_params, **self.thinking_params(model_id)}
         for attempt in range(self.RATE_LIMIT_MAX_RETRIES + 1):
             try:
                 return self.client.chat.completions.create(
@@ -306,7 +327,7 @@ class AlibabaCloudOCRProvider:
             completion = self.client.chat.completions.create(
                 model=self.dashscope_model_id,
                 messages=messages,
-                **generation_params
+                **generation_params, **self.thinking_params(self.dashscope_model_id)
             )
             
             full_content = ""
@@ -371,7 +392,7 @@ class AlibabaCloudOCRProvider:
             completion = self.client.chat.completions.create(
                 model=self.dashscope_model_id,
                 messages=messages,
-                **generation_params
+                **generation_params, **self.thinking_params(self.dashscope_model_id)
             )
             
             extracted_text = completion.choices[0].message.content

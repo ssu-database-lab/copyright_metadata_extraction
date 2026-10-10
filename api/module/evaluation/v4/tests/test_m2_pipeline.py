@@ -382,8 +382,9 @@ def test_user_prompt_with_context():
     assert P.user_prompt_with_context(P.USER_PROMPT, title=" ", work_type=None) == P.USER_PROMPT
     out = P.user_prompt_with_context(P.USER_PROMPT, title="운수  자판기", work_type="어문")
     assert out.startswith(P.USER_PROMPT.rstrip())
-    assert out.endswith("참고(계약서): 저작물명 '운수 자판기', 종별 '어문' — 설명·키워드는 화면 내용 기준으로 작성")
-    assert P.user_prompt_with_context("x", work_type="사진").endswith("참고(계약서): 종별 '사진' — 설명·키워드는 화면 내용 기준으로 작성")
+    assert out.endswith(P._CONTEXT_LINE.format(items="저작물명 '운수 자판기', 종별 '어문'"))
+    assert P.user_prompt_with_context("x", work_type="사진").endswith(P._CONTEXT_LINE.format(items="종별 '사진'"))
+    assert "저작물명이 알려 주는 주제어" in P._CONTEXT_LINE and "수어" in P._CONTEXT_LINE        # 2026-10-10: 제목 주제어 허용
 
 
 class _FakeBackend:
@@ -423,7 +424,8 @@ def test_extractor_passes_context_into_prompts():
     assert r.prompt_context == ctx and r.backend_used == "fake"
     r = ex.extract_video(["f1.jpg", "f2.jpg"], [0.5, 3.0], label="v.mp4", context=ctx)
     p = fake.calls[-1]["user_prompt"]
-    assert p.startswith("다음 2장은") and p.endswith("참고(계약서): 저작물명 '운수 자판기', 종별 '어문' — 설명·키워드는 화면 내용 기준으로 작성")
+    from api.module.clip_extraction.vlm import prompts as _P
+    assert p.startswith("다음 2장은") and p.endswith(_P._CONTEXT_LINE.format(items="저작물명 '운수 자판기', 종별 '어문'"))
     r = ex.extract_video(["f1.jpg"], [0.5])
     assert "참고(계약서)" not in fake.calls[-1]["user_prompt"] and r.prompt_context is None
     with pytest.raises(TypeError):
@@ -796,18 +798,19 @@ def test_vlm_prompts_request_hashtags_and_keep_other_lines():
         assert isinstance(block["hashtags"], list) and len(block["hashtags"]) == 1
         spec = block["hashtags"][0]
         assert "5~10" in spec and "'#태그'" in spec and "띄어쓰기 없이" in spec
-        for word in ("피사체", "장소", "행위", "매체", "명사", "인명", "라이선스", "출처"):
+        for word in ("대상", "장소", "행위", "매체", "명사", "인명", "라이선스", "출처", "저작물명의 주제어"):
             assert word in spec, word
         lines = text.splitlines()
         i = next(idx for idx, l in enumerate(lines) if l.startswith('  "keywords"'))
         assert lines[i + 1].startswith('  "hashtags"')                           # keywords 줄 바로 다음
-        assert lines[i] == '  "keywords": ["핵심 키워드 5~7개"],'                  # 이웃 줄은 글자 하나 안 바뀌었다
+        assert lines[i].startswith('  "keywords": ["키워드 5~7개 — 저작물명에 주제어')    # 2026-10-10: 지침 정렬 키워드 규칙
+        assert "키워드·해시태그 작성 예시" in text and text.rstrip().endswith("JSON 객체 하나만 출력하세요.")
     # 나머지 줄은 그대로: 규칙 문단·마무리 문장·영상용 머리말·계약서 문맥 줄
     assert "★ 매우 중요: work_type은 '무엇을 찍었는가(피사체)'가 아니라" in P.USER_PROMPT
     assert P.USER_PROMPT.endswith("JSON 객체 하나만 출력하세요.")
     assert P.video_user_prompt([1.0]).startswith("다음 1장은 하나의 영상에서 시간순으로 추출한 대표 프레임입니다(각 시점: 1초).")
     assert "★ 고유명사(인물명·작품명)는 확실하지 않으면" in P.video_user_prompt([1.0])
-    assert P.user_prompt_with_context(P.USER_PROMPT, title="t").endswith("참고(계약서): 저작물명 't' — 설명·키워드는 화면 내용 기준으로 작성")
+    assert P.user_prompt_with_context(P.USER_PROMPT, title="t").endswith(P._CONTEXT_LINE.format(items="저작물명 't'"))
     assert P.USER_PROMPT.count('"hashtags"') == 1 and P._VIDEO_USER_TEMPLATE.count('"hashtags"') == 1
 
 
@@ -858,3 +861,71 @@ def test_run_image_vlm_hashtags_reach_test_prediction(tmp_path, light_llm_extrac
     pred = resp["test_prediction"]
     assert pred["hashtags"] == ["#바다", "#배", "#항구"] and pred["_meta"]["hashtags_source"] == "model"
     assert pred["keywords"] == ["바다", "배"] and pred["description"] == "항구에 정박한 배"
+
+
+# ---------------------------------------------------------------- OCR 모델 교체 (2026-10-11): qwen3-vl-235b 퇴역 → qwen3.7-plus 생각 끔
+def test_ocr_default_retired_mapping_thinking_and_fallback():
+    import sys
+    sys.path.insert(0, "api")
+    from module.ocr.alibaba_ocr import AlibabaCloudOCRProvider as A
+    assert A(api_key="x").model == "qwen3.7-plus"
+    for old in ("qwen3-vl-235b-a22b-instruct", "qwen3-vl-30b-a3b-instruct", "qwen-vl-plus", "qwen-vl-max"):
+        assert A(api_key="x", model=old).model == "qwen3.7-plus"          # 퇴역 이름은 실패 대신 주 모델로
+    assert A.thinking_params("qwen3.7-plus") == {"extra_body": {"enable_thinking": False}}
+    assert A.thinking_params(A.FALLBACK_MODEL) == {"extra_body": {"enable_thinking": False}}
+    assert A.thinking_params("qwen3.8-flash") == {}                       # 측정된 설정 그대로 (플래그 없음)
+    assert A.OCR_MODEL_FALLBACK["qwen3.7-plus"] == A.FALLBACK_MODEL and A.OCR_MODEL_FALLBACK[A.FALLBACK_MODEL] == "qwen3.7-plus"
+    for m in A.OCR_MODEL_FALLBACK.values():
+        assert m not in A.RETIRED_MODELS and m not in A.TEXT_ONLY_MODELS
+
+
+def test_vlm_qwen_backend_uses_qwen37_with_thinking_off():
+    from api.module.clip_extraction.vlm import extractor as X
+    b = X.make_qwen_backend()
+    assert b.model == "qwen3.7-plus" and b.extra_body == {"enable_thinking": False}
+
+
+# ---------------------------------------------------------------- 2026-10-11: 영상 체인 · JSON 실패 폴백 · 추론 블록 · 연구실 Gemma 연결 제한
+def test_video_chain_starts_with_qwen38_omni_flash_then_omni_plus():
+    from api.module.clip_extraction.vlm import extractor as X
+    chain = X.default_backends(prefer="omni")
+    assert [b.model for b in chain[:3]] == ["qwen3.8-omni-flash", "qwen3.5-omni-plus", "qwen3.7-plus"]
+
+
+def test_unparseable_answer_falls_back_to_next_backend():
+    from api.module.clip_extraction.vlm import extractor as X
+    from api.module.clip_extraction.vlm.client import VLMResult
+
+    class B:
+        def __init__(self, label, parse_ok):
+            self.model_label, self.parse_ok, self.calls = label, parse_ok, 0
+        def ping(self):
+            return True, "ok"
+        def extract_frames(self, *a, **k):
+            self.calls += 1
+            return VLMResult(model_label=self.model_label, image="v", ok=True, latency_s=0.1, raw_text="x",
+                             parsed={"description": "d"} if self.parse_ok else None, parse_ok=self.parse_ok)
+    first, second = B("first", False), B("second", True)
+    ex = X.VLMExtractor(backends=[first, second])
+    r = ex.extract_video(["f1.jpg"], [0.5])
+    assert r.ok and r.parse_ok and first.calls == 1 and second.calls == 1 and r.backend_used == "second"
+
+
+def test_thought_block_is_stripped_before_json():
+    from api.module.clip_extraction.vlm.client import _extract_json
+    txt = '<thought>draft {"description": "wrong"}</thought>```json\n{"description": "right"}\n```'
+    assert _extract_json(txt) == {"description": "right"}
+
+
+def test_lab_gemma_backend_has_short_connect_timeout_and_no_retry():
+    from api.module.clip_extraction.vlm import extractor as X
+    b = X.make_gemma_backend()
+    assert b.client.max_retries == 0
+    assert getattr(b.client.timeout, "connect", None) == 10.0
+
+
+def test_image_chain_auto_order():
+    from api.module.clip_extraction.vlm import extractor as X
+    chain = X.default_backends(prefer="auto")
+    assert [b.model for b in chain[:3]] == ["qwen3.8-omni-flash", "qwen3.7-plus", "gemma-4-31b-it"]
+    assert X.VLMExtractor.__init__.__defaults__[1] == "auto"     # prefer 기본값

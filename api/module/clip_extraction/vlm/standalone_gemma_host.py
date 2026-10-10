@@ -53,7 +53,7 @@ from pathlib import Path
 GEMMA_DEFAULT_URL = "http://127.0.0.1:8001/v1"
 GEMMA_MODEL = "google/gemma-4-31B-it"
 DASHSCOPE_BASE = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
-QWEN_MODEL = "qwen3-vl-235b-a22b-instruct"
+QWEN_MODEL = "qwen3.7-plus"   # 2026-10-11: qwen3-vl-235b 퇴역
 MAX_LONG_EDGE = 1536  # px — downscale cap (keeps files under provider limits)
 SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
@@ -137,6 +137,7 @@ def call_model(client, model: str, image_url: str, max_tokens: int) -> dict:
     try:
         resp = client.chat.completions.create(
             model=model, messages=messages, max_tokens=max_tokens, temperature=0.0,
+            **({"extra_body": {"enable_thinking": False}} if str(model).startswith(("qwen3.7", "qwen3.8-max")) else {}),
         )
         dt = round(time.perf_counter() - t0, 2)
         text = resp.choices[0].message.content or ""
@@ -226,7 +227,7 @@ def main() -> int:
             print("--with-qwen set but DASHSCOPE_API_KEY is empty. Skipping Qwen.")
         else:
             qwen = OpenAI(base_url=DASHSCOPE_BASE, api_key=key, timeout=300, max_retries=1)
-            backends.append(("Qwen3-VL-235B (DashScope)", qwen, QWEN_MODEL))
+            backends.append(("Qwen3.7-Plus (DashScope)", qwen, QWEN_MODEL))
 
     # Reachability check
     print("Backends:")

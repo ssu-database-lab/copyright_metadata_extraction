@@ -132,7 +132,7 @@ class RunConfig:
     ner_model: str = "klue-roberta-large"
     consolidate: bool = True
     consolidation_model: str = "alibaba-qwen3.5-122b-a10b"
-    vlm_prefer: str = "gemma"
+    vlm_prefer: str = "auto"
     contract_document_type: str = "저작재산권 이용허락 계약서"
     work_document_type: str = "기타문서"
     # tier D(파일 생성 날짜)는 기본 제외 — 정답은 '저작물 창작 시점'이고 추출값은
@@ -152,6 +152,7 @@ class RunConfig:
     embed_cache: Optional[str] = None     # 임베딩 캐시 jsonl(M1 §5) — 재평가 때 모델을 다시 올리지 않는다
     embed_revision: Optional[str] = None  # KURE-v1 의 HF revision 고정(M1 §5) — 산출물 settings.embed 에 기록된다
     n_boot: Optional[int] = None          # 부트스트랩 반복 수(M1 §7) — None 이면 평가기 기본값(1,000)
+    title_fallback: bool = False          # T-002 계약서가 없는 세트에 매니페스트 제목(extra.title)을 문맥으로 준다 — 모든 저작물에 계약서가 있는 본 시험을 흉내 내는 개발·파일럿용. 기본 off
     only_predicted: bool = False          # gold 를 예측이 있는 set_id 로 제한(M2b 수정 4) — 개발·파일럿 런이 4,000세트 전부를 FN 으로 세지 않도록. 기본 off = M1 동작
 
 
@@ -707,6 +708,11 @@ class BatchRunner:
                         self.log.warning("[%s] 계약서 %s 규칙 파싱이 제목·종별을 하나도 읽지 못했습니다 — "
                                          "저작물 leg 를 계약서 문맥 없이 실행합니다",
                                          entry.set_id, os.path.basename(entry.contract))
+                elif self.cfg.title_fallback and (entry.extra or {}).get("title", "").strip():
+                    # 계약서 없음 — 매니페스트 제목을 문맥으로 쓴다 (--title-fallback; 본 시험에서는 모든 저작물에 계약서가 있다)
+                    context = {"title": entry.extra["title"].strip(), "work_type": None, "source": "manifest_title"}
+                    legs["context"] = {"ok": True, "elapsed_sec": 0.0, "source": "manifest_title",
+                                       "title": context["title"], "work_type": None}
                 with open(entry.work, "rb") as f:
                     wbytes = f.read()
                 t1 = time.perf_counter()

@@ -280,7 +280,7 @@ async def process_document(file_path: Path, output_dir: Path, model_name: str, o
                 model = 'mistral-ocr-latest'
             elif ocr_engine == 'alibaba':
                 provider = 'alibaba'
-                model = 'qwen3-vl-235b-a22b-instruct'
+                model = 'qwen3.7-plus'   # 2026-10-11: qwen3-vl-235b 퇴역
             else:
                 result['error'] = f'지원하지 않는 OCR 엔진: {ocr_engine}'
                 return result
@@ -867,7 +867,7 @@ async def llm_extract_metadata(
     ner_model: str = Form(default="klue-roberta-large"),
     consolidate: bool = Form(default=True),
     consolidation_model: str = Form(default="alibaba-qwen3.5-122b-a10b"),
-    vlm_prefer: str = Form(default="gemma"),  # 멀티모달(이미지) VLM 우선: gemma(기본)→qwen 폴백
+    vlm_prefer: str = Form(default="auto"),  # 이미지 VLM 체인: auto(기본: qwen3.8-omni-flash→qwen3.7-plus→Gemma) | gemma | qwen
     contract_metadata: str = Form(default=None),  # 계약서→저작물 상속용: 계약서 분석 결과 JSON (이미지 처리 시)
     stream: bool = Form(default=False)
 ):

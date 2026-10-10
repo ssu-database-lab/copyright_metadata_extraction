@@ -422,7 +422,7 @@ def test_runner_eval23_t002_work_leg_kwargs_and_context(tmp_path: Path, work_fil
     assert c["consolidate_work"] is False and c["frame_schedule"] == "v4" and c["media"] == "image"
     assert c["test"] == "T-002"
     assert c["contract_context"] == {"title": "인도네시아 (309)", "work_type": "사진"}
-    assert c["vlm_prefer"] == "gemma"
+    assert c["vlm_prefer"] == "auto"            # 2026-10-11: 이미지 기본 체인 auto (qwen3.8-omni-flash 우선)
     assert summary["cost_krw"] == pytest.approx(BR.COST_VLM_IMAGE)      # 중재자 생략 → VLM 요금만
 
     rec = json.loads((out / "test_predictions" / "13178069.json").read_text(encoding="utf-8"))
@@ -432,7 +432,7 @@ def test_runner_eval23_t002_work_leg_kwargs_and_context(tmp_path: Path, work_fil
     m = rec["_meta"]
     assert m["contract_context"] == {"title": "인도네시아 (309)", "work_type": "사진", "source": "rules"}
     assert m["prompt"] == {"contract_context_used": True, "frame_schedule": "v4", "consolidate_work": False}
-    assert m["models"]["consolidation"] is None and m["models"]["vlm_prefer"] == "gemma"
+    assert m["models"]["consolidation"] is None and m["models"]["vlm_prefer"] == "auto"
     assert m["pipeline_meta"] == {"model_copyright_holder": ["모델값"]}
     assert m["legs"]["work"]["modality"] == "image" and m["request_ids"] == {"work": "rid-1"}
     assert m["file_sha256"] == hashlib.sha256(work_file.read_bytes()).hexdigest()
@@ -902,3 +902,22 @@ def test_cli_only_predicted_end_to_end_report_only(tmp_path: Path, capsys):
     assert metrics["settings"]["only_predicted"] is True
     assert json.loads((out / "report.json").read_text(encoding="utf-8"))["only_predicted"] is True
     assert "gold 제외 3개 (--only-predicted" in (out / "report.md").read_text(encoding="utf-8")
+
+
+
+def test_title_fallback_gives_context_only_without_contract(tmp_path: Path, work_file: Path):
+    """--title-fallback: 계약서 없는 T-002 세트에만 매니페스트 제목을 문맥으로 준다; 기본 off 면 문맥 없음."""
+    entry = ManifestEntry(set_id="s", work=str(work_file), contract=None, media="image", test="T-002",
+                          extra={"title": " 목포 헬리캠 06 "})
+    orch = FakeOrch(pred_fn=_t002_pred)
+    runner = BatchRunner(orch, RunConfig(workers=1, scoring_set="eval23", test="T-002"), tmp_path / "off")
+    runner.run([entry], {})
+    assert orch.calls[0]["contract_context"] is None                      # 기본 off
+    runner.close_log()
+    orch2 = FakeOrch(pred_fn=_t002_pred)
+    runner2 = BatchRunner(orch2, RunConfig(workers=1, scoring_set="eval23", test="T-002", title_fallback=True), tmp_path / "on")
+    runner2.run([entry], {})
+    assert orch2.calls[0]["contract_context"]["title"] == "목포 헬리캠 06"
+    rec = json.loads((tmp_path / "on" / "test_predictions" / "s.json").read_text(encoding="utf-8"))
+    assert rec["_meta"]["prompt"]["contract_context_used"] is True
+    runner2.close_log()

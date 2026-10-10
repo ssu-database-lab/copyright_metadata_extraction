@@ -494,7 +494,7 @@ class UniversalOCRProcessor:
                 raise ValueError("DASHSCOPE_API_KEY or ALIBABA_API_KEY environment variable not set")
 
             region = os.getenv('ALIBABA_REGION', 'singapore')
-            alibaba_model = model or os.getenv('ALIBABA_MODEL', 'qwen3-vl-235b-a22b-instruct')
+            alibaba_model = model or os.getenv('ALIBABA_MODEL', 'qwen3.7-plus')   # 2026-10-11: qwen3-vl-235b 퇴역 → qwen3.7-plus(생각 끔)
 
             temperature = float(os.getenv('ALIBABA_TEMPERATURE', '1.0'))
             top_p = float(os.getenv('ALIBABA_TOP_P', '0.8'))

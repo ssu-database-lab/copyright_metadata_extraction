@@ -76,7 +76,12 @@ def _encode_image(image_path: Path) -> str:
     return f"data:image/jpeg;base64,{data}"
 
 
+_THOUGHT_BLOCK = re.compile(r"<thought>.*?</thought>", re.S)
+
+
 def _extract_json(text: str) -> dict[str, Any] | None:
+    # Google AI Studio 의 Gemma 4 는 추론을 <thought>…</thought> 로 본문에 먼저 쓴다(끌 수 없음) — 그 안의 중괄호를 JSON 으로 잡지 않게 먼저 지운다.
+    text = _THOUGHT_BLOCK.sub("", text or "")
     """
     Best-effort parse of a JSON object from model output. Handles bare JSON,
     ```json fenced blocks, and leading/trailing prose.
@@ -108,13 +113,20 @@ class VLMClient:
         api_key: str,
         timeout: float = 300.0,
         image_first: bool = True,
+        extra_body: dict | None = None,
+        connect_timeout: float | None = None,
+        max_retries: int = 1,
     ):
         from openai import OpenAI
+        self.extra_body = extra_body   # 예: {"enable_thinking": False} — qwen3.7 계열은 기본이 생각 켬
         self.model_label = model_label
         self.model = model
         self.image_first = image_first
+        if connect_timeout is not None:
+            import httpx   # 연결 단계만 짧게 — 닿지 않는 서버(SYN 무응답)에서 300초를 기다리지 않게
+            timeout = httpx.Timeout(timeout, connect=connect_timeout)
         self.client = OpenAI(base_url=base_url, api_key=api_key or "not-needed",
-                             timeout=timeout, max_retries=1)
+                             timeout=timeout, max_retries=max_retries)
 
     def ping(self) -> tuple[bool, str]:
         """Cheap reachability check — lists models. Returns (ok, detail).
@@ -154,6 +166,7 @@ class VLMClient:
         t0 = time.perf_counter()
         try:
             resp = self.client.chat.completions.create(
+                **({'extra_body': self.extra_body} if self.extra_body else {}),
                 model=self.model,
                 messages=messages,
                 max_tokens=max_tokens,
@@ -217,6 +230,7 @@ class VLMClient:
         t0 = time.perf_counter()
         try:
             resp = self.client.chat.completions.create(
+                **({'extra_body': self.extra_body} if self.extra_body else {}),
                 model=self.model,
                 messages=messages,
                 max_tokens=max_tokens,
