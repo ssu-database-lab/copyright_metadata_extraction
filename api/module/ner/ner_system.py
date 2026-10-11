@@ -228,7 +228,11 @@ def load_model_and_tokenizer(model_path: Path, verbose: bool = True):
         
         num_labels = len(id2label)
         logger.info(f"NER BERT-CRF 뼈대 — 기반 모델 {model_name} ({name_source}) · 라벨 {num_labels}개 · 가중치 {model_pt_path.name}")
-        model = BertCrfForNER(model_name=model_name, num_labels=num_labels)
+        encoder_config = None
+        if config_path.exists():                 # 폴더 config.json 으로 뼈대만 — 사전학습 가중치 파일을 읽지 않는다
+            from transformers import AutoConfig
+            encoder_config = AutoConfig.from_pretrained(str(model_path))
+        model = BertCrfForNER(model_name=model_name, num_labels=num_labels, encoder_config=encoder_config)
         
         # 훈련된 가중치 로드
         model.load_state_dict(torch.load(model_pt_path, map_location='cpu'))

@@ -195,8 +195,9 @@ def test_loader_builds_crf_from_model_folder(tmp_path, monkeypatch):
     seen = {}
 
     class FakeCrf(torch.nn.Module):
-        def __init__(self, model_name, num_labels):
-            super().__init__(); seen.update(model_name=model_name, num_labels=num_labels)
+        def __init__(self, model_name, num_labels, encoder_config=None):
+            super().__init__(); seen.update(model_name=model_name, num_labels=num_labels,
+                                            from_config=getattr(encoder_config, "model_type", None))
         def load_state_dict(self, sd, *a, **k):
             seen["loaded"] = True
     fake = types.ModuleType("module.ner.ner_train"); fake.BertCrfForNER = FakeCrf
@@ -204,7 +205,7 @@ def test_loader_builds_crf_from_model_folder(tmp_path, monkeypatch):
     monkeypatch.setattr(ns.AutoTokenizer, "from_pretrained", staticmethod(lambda *a, **k: object()))
     monkeypatch.setattr(ns.torch, "load", lambda *a, **k: {})
     ns.load_model_and_tokenizer(d, verbose=False)
-    assert seen == {"model_name": str(d), "num_labels": 2, "loaded": True}
+    assert seen == {"model_name": str(d), "num_labels": 2, "from_config": "roberta", "loaded": True}
 
 
 def test_dedup_prefers_model_and_is_order_stable():

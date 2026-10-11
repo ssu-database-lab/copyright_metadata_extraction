@@ -195,13 +195,18 @@ class BertCrfForNER(nn.Module):
     """
     
     def __init__(self, model_name: str, num_labels: int, dropout: float = 0.1, 
-                 use_lstm: bool = True, lstm_hidden_dim: int = 256, lstm_layers: int = 3):
+                 use_lstm: bool = True, lstm_hidden_dim: int = 256, lstm_layers: int = 3,
+                 encoder_config=None):
         super().__init__()
         self.num_labels = num_labels
         self.use_lstm = use_lstm
         
-        # BERT Encoder
-        self.bert = AutoModel.from_pretrained(model_name)
+        # BERT Encoder — 학습 때는 사전학습 가중치에서, 추론 적재 때는 config 로 뼈대만 만든다
+        # (가중치는 곧바로 model.pt 로 덮어쓰므로 사전학습 가중치 파일이 없어도 된다)
+        if encoder_config is not None:
+            self.bert = AutoModel.from_config(encoder_config)
+        else:
+            self.bert = AutoModel.from_pretrained(model_name)
         self.config = self.bert.config  # HuggingFace Trainer 호환성
         hidden_size = self.bert.config.hidden_size
         
