@@ -815,7 +815,7 @@
                         <input type="radio" name="processing_mode" value="universal" checked>
                         <div>
                             <div class="model-name">Universal OCR</div>
-                            <div class="model-desc">통합 OCR 처리 (Google, Mistral, Alibaba Cloud)</div>
+                            <div class="model-desc">통합 OCR 처리 (Alibaba Cloud, Mistral, Naver)</div>
                             </div>
                     </label>
                 </div> -->
@@ -825,14 +825,14 @@
                     <div class="model-selection">
                         <h3>Universal OCR 설정</h3>
                         <div class="model-options">
-                            <label class="model-option selected">
-                                <input type="radio" name="universal_provider" value="google" checked>
+                            <label class="model-option" style="opacity:.45;cursor:not-allowed" title="개인 계정 과금 방지로 꺼 두었습니다">
+                                <input type="radio" name="universal_provider" value="google" disabled>
                                 <div>
                                     <div class="model-name">
                                         <img class="model-icon" src="https://www.simpleocr.com/wp-content/uploads/2022/04/google_vision_cloud_ocr_api.jpg" alt="Google Cloud Vision">
                                         Google Cloud Vision
                                     </div>
-                                    <div class="model-desc">텍스트 분석률 좋음</div>
+                                    <div class="model-desc">사용 안 함 — 개인 계정 과금 방지</div>
                         </div>
                     </label>
                             <label class="model-option">
@@ -855,8 +855,8 @@
                                     <div class="model-desc">표 분석에 강함</div>
                                 </div>
                             </label>
-                            <label class="model-option">
-                                <input type="radio" name="universal_provider" value="alibaba">
+                            <label class="model-option selected">
+                                <input type="radio" name="universal_provider" value="alibaba" checked>
                                 <div>
                                     <img class="model-icon" src="https://www.nexusgroup.com/wp-content/uploads/2020/03/alibaba-cloud-logo.png" alt="Alibaba Cloud Qwen3-VL">
                                     <div class="model-name">Alibaba Cloud Qwen3-VL</div>

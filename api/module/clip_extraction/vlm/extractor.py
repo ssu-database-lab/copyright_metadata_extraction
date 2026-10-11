@@ -41,6 +41,7 @@ import importlib.util
 import logging
 import os
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -337,13 +338,18 @@ class VLMExtractor:
         selected = None
         selected_idx: int | None = None
         for idx, backend in enumerate(self.backends):
+            t0 = time.perf_counter()
             ok, detail = backend.ping()
+            sec = time.perf_counter() - t0
             self._probe_log.append(_ProbeResult(backend.model_label, ok, detail))
             if ok:
                 selected, selected_idx = backend, idx
-                logger.info("VLM backend selected: %s (%s)", backend.model_label, detail)
+                logger.info("VLM 백엔드 확인 — %s 응답함 (%s, %.1f초) → 이 백엔드로 시작", backend.model_label,
+                            str(detail)[:120], sec)
                 break
-            logger.warning("VLM backend unreachable: %s — %s", backend.model_label, detail)
+            nxt = self.backends[idx + 1].model_label if idx + 1 < len(self.backends) else None
+            logger.warning("VLM 백엔드 응답 없음 — %s: %s (%.1f초)%s", backend.model_label, str(detail)[:300], sec,
+                           f" → 다음 {nxt}" if nxt else " — 남은 백엔드 없음")
         return selected, selected_idx
 
     def active_backend(self):
@@ -361,8 +367,7 @@ class VLMExtractor:
             )
         # Note any backends ahead of the selected one that were skipped.
         for p in self._probe_log[:idx]:
-            logger.info("falling back: primary %s unreachable → using %s",
-                        p.label, selected.model_label)
+            logger.debug("VLM 폴백 — 앞 순위 %s 응답 없음 → %s 사용", p.label, selected.model_label)
         self._active, self._active_index = selected, idx
         return selected
 
@@ -422,8 +427,8 @@ class VLMExtractor:
                 _attach_backend(result, backend.model_label)
                 _attach_context(result, context)
                 if idx != start:
-                    logger.info("fallback succeeded on %s for %s",
-                                backend.model_label, image_path.name)
+                    logger.info("VLM 폴백 성공 — %s (%s, %.1f초)",
+                                backend.model_label, image_path.name, getattr(result, "latency_s", 0.0) or 0.0)
                     # Promote the working backend so later calls start here.
                     self._active, self._active_index = backend, idx
                 return result
@@ -431,13 +436,14 @@ class VLMExtractor:
             # This backend failed — log and try the next.
             err = (result.error or ("JSON 해석 실패" if result.ok and not result.parse_ok else None)) if result is not None else last_error
             last_error = err or "unknown error"
+            lat = f", {result.latency_s}초" if result is not None and result.latency_s else ""
             if idx + 1 < len(self.backends):
                 nxt = self.backends[idx + 1]
-                logger.warning("primary %s failed (%s) → falling back to %s",
-                               backend.model_label, last_error, nxt.model_label)
+                logger.warning("VLM 추출 실패 — %s: %s%s → 폴백 %s",
+                               backend.model_label, str(last_error)[:300], lat, nxt.model_label)
             else:
-                logger.error("backend %s failed (%s); no more fallbacks",
-                             backend.model_label, last_error)
+                logger.error("VLM 추출 실패 — %s: %s%s · 남은 백엔드 없음",
+                             backend.model_label, str(last_error)[:300], lat)
 
         # Every backend in the chain failed.
         fail = VLMResult(
@@ -488,19 +494,20 @@ class VLMExtractor:
                 _attach_backend(result, backend.model_label)
                 _attach_context(result, context)
                 if idx != start:
-                    logger.info("video fallback succeeded on %s for %s",
-                                backend.model_label, label)
+                    logger.info("VLM 영상 폴백 성공 — %s (%s, %.1f초)",
+                                backend.model_label, label, getattr(result, "latency_s", 0.0) or 0.0)
                     self._active, self._active_index = backend, idx
                 return result
 
             err = (result.error or ("JSON 해석 실패" if result.ok and not result.parse_ok else None)) if result is not None else last_error
             last_error = err or "unknown error"
+            lat = f", {result.latency_s}초" if result is not None and result.latency_s else ""
             if idx + 1 < len(self.backends):
-                logger.warning("video: %s failed (%s) → %s", backend.model_label,
-                               last_error, self.backends[idx + 1].model_label)
+                logger.warning("VLM 영상 추출 실패 — %s: %s%s → 폴백 %s", backend.model_label,
+                               str(last_error)[:300], lat, self.backends[idx + 1].model_label)
             else:
-                logger.error("video: %s failed (%s); no more fallbacks",
-                             backend.model_label, last_error)
+                logger.error("VLM 영상 추출 실패 — %s: %s%s · 남은 백엔드 없음",
+                             backend.model_label, str(last_error)[:300], lat)
 
         fail = VLMResult(model_label="none", image=label, ok=False, latency_s=0.0,
                          error=f"all {len(self.backends)} backend(s) failed; last: {last_error}")

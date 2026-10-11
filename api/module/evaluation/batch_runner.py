@@ -46,6 +46,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from .. import log_context as LC
 from .manifest import ManifestEntry, effective_test
 from .scoring import attributes_for, score_set
 from .v4.keys23 import KEY_NAMES, T001_KEYS, T002_KEYS, empty_prediction
@@ -116,8 +117,8 @@ COST_OCR_PER_PAGE = 2.7
 COST_LLM_EXTRACT = 10.2
 COST_CONSOLIDATION_DOC = 34.6
 COST_CONSOLIDATION_IMG = 35.4
-COST_VLM_IMAGE = 0.2
-COST_VLM_VIDEO = 2.01      # qwen3.5-omni-plus 실측
+COST_VLM_IMAGE = 1.34     # qwen3.8-omni-flash 실측 (파일럿 이미지 100건, 2026-10-11)
+COST_VLM_VIDEO = 1.77     # qwen3.8-omni-flash 실측 (파일럿 영상, 2026-10-10/11)
 
 
 @dataclass
@@ -406,7 +407,8 @@ class BatchRunner:
         lg.setLevel(logging.INFO)
         fh = logging.FileHandler(self.log_path, encoding="utf-8")
         fh.setLevel(logging.INFO)
-        fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        # 한 줄 형식 `HH:MM:SS LEVEL [set_id] [구성요소] 메시지` — 메시지 앞의 '[set_id] ' 는 세트 칸으로 옮기고, 비밀값은 가린다
+        fh.setFormatter(LC.ConsoleLineFormatter())
         lg.addHandler(fh)
         self._log_handler = fh
         cfg = self.cfg
@@ -417,6 +419,15 @@ class BatchRunner:
                 cfg.consolidation_model if cfg.consolidate else "생략",
                 "켬" if cfg.consolidate_work else "생략", cfg.vlm_prefer, cfg.frame_schedule, self.out_dir)
         return lg
+
+    def write_log_record(self, record: logging.LogRecord) -> None:
+        """다른 로거(파이프라인·모델 모듈)의 기록을 이 실행의 test.log 에 같은 형식으로 적는다 (시험 콘솔이 부른다).
+
+        FileHandler.handle 로 넘겨 핸들러 잠금을 같이 쓴다 — 실행기 자신의 줄과 섞여도 줄이 깨지지 않는다.
+        """
+        h = self._log_handler
+        if h is not None:
+            h.handle(record)
 
     def close_log(self) -> None:
         """FileHandler 를 떼고 닫는다 — 작업이 끝난 뒤에도 핸들이 열려 있으면 파일이 늘어나고 핸들러가 누적된다."""
@@ -697,17 +708,23 @@ class BatchRunner:
                                        "source": (context or {}).get("source"),
                                        "title": (context or {}).get("title"),
                                        "work_type": (context or {}).get("work_type")}
+                    if context is not None and _context_payload(context) is not None:
+                        self.log.info("[%s] 계약서 문맥 — 제목 %s · 종별 %s (규칙 파싱, %.2f초) — 저작물 leg 프롬프트에 참고 줄로 넣습니다",
+                                      entry.set_id, repr(context.get("title")) if context.get("title") else "없음",
+                                      context.get("work_type") or "없음", legs["context"]["elapsed_sec"],
+                                      extra={"component": "문맥"})
                     # 계약서가 있는데 문맥을 못 얻었으면 세트마다 경고로 드러낸다 — 예전의 지연 import 경쟁(workers>1)은
                     # 바로 이 자리에서 None 을 조용히 넘겨 저작물 leg 가 문맥 없이 돌았다.
                     if context is None:
                         reason = "문맥 파서 미적재" if parse_contract_context is None else "규칙 파싱 실패"
                         self.log.warning("[%s] 계약서 %s 가 있지만 문맥(제목·종별)을 얻지 못했습니다(%s) — "
                                          "저작물 leg 를 계약서 문맥 없이 실행합니다",
-                                         entry.set_id, os.path.basename(entry.contract), reason)
+                                         entry.set_id, os.path.basename(entry.contract), reason,
+                                         extra={"component": "문맥"})
                     elif _context_payload(context) is None:
                         self.log.warning("[%s] 계약서 %s 규칙 파싱이 제목·종별을 하나도 읽지 못했습니다 — "
                                          "저작물 leg 를 계약서 문맥 없이 실행합니다",
-                                         entry.set_id, os.path.basename(entry.contract))
+                                         entry.set_id, os.path.basename(entry.contract), extra={"component": "문맥"})
                 elif self.cfg.title_fallback and (entry.extra or {}).get("title", "").strip():
                     # 계약서 없음 — 매니페스트 제목을 문맥으로 쓴다 (--title-fallback; 본 시험에서는 모든 저작물에 계약서가 있다)
                     context = {"title": entry.extra["title"].strip(), "work_type": None, "source": "manifest_title"}
@@ -804,7 +821,9 @@ class BatchRunner:
             cost_box = {"v": 0.0}
             try:
                 gt = ground_truth.get(entry.set_id, {})
-                res = self._run_one(entry, gt, cost_box)
+                # 이 세트 처리 중에 남는 로그(파이프라인·모델 모듈 포함)를 세트에 묶는다 — 시험 콘솔이 실행 로그를 세트별로 가른다
+                with LC.bind_set(entry.set_id):
+                    res = self._run_one(entry, gt, cost_box)
             except Exception as e:
                 res = {"set_id": entry.set_id, "ok": False,
                        "error": f"{type(e).__name__}: {e}"[:300],
@@ -841,7 +860,8 @@ class BatchRunner:
 
         try:
             with ThreadPoolExecutor(max_workers=self.cfg.workers) as ex:
-                futures = [ex.submit(work, e) for e in todo]
+                # 문맥(실행 묶음)을 작업 스레드로 복사해 넘긴다 — 세트마다 새 사본
+                futures = [LC.submit(ex, work, e) for e in todo]
                 for _ in as_completed(futures):
                     pass
         finally:

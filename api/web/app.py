@@ -48,6 +48,7 @@ from api import pdf_to_image, ner_predict
 
 # 새로운 OCR 모듈 import
 from module.ocr import UniversalOCRProcessor
+from module.google_gate import google_vision_enabled
 
 # LLM extraction 모듈 import
 from module.llm_extraction import LLMExtractionProcessor
@@ -110,7 +111,7 @@ def check_ocr_availability() -> Dict[str, bool]:
     try:
         # Google 확인 - Google Cloud credentials JSON 파일
         google_creds_path = api_dir / "google_credentials.json"
-        if google_creds_path.exists():
+        if google_creds_path.exists() and google_vision_enabled():   # 개인 계정 — 기본 꺼짐
             available['google'] = True
         
         # Mistral 확인 - 환경 변수에서 API 키
@@ -142,7 +143,7 @@ AVAILABLE_OCR_ENGINES = {
     'google': {
         'name': 'Google Cloud Vision API',
         'available': OCR_AVAILABILITY['google'],
-        'setup_guide': 'Google Cloud credentials JSON 파일을 설정하세요'
+        'setup_guide': '개인 계정 과금 방지로 꺼 두었습니다 — GOOGLE_VISION_ENABLED=1 일 때만 사용'
     },
     'mistral': {
         'name': 'Mistral OCR API',
@@ -207,6 +208,12 @@ from web.batch_api import router as batch_router, init_batch_api  # noqa: E402
 init_batch_api(pipeline_orchestrator, RESULTS_DIR.parent / "batch_jobs", RESULTS_DIR)
 app.include_router(batch_router)
 
+# 시험 콘솔 — 로그인이 필요한 /console 화면과 /api/test/* (실행마다 오케스트레이터를 따로 만든다, 저장: web/test_runs/)
+from web.console_api import router as console_router, init_console_api  # noqa: E402
+
+init_console_api(templates=templates)
+app.include_router(console_router)
+
 def allowed_file(filename: str) -> bool:
     """허용된 파일 형식인지 확인"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -217,7 +224,7 @@ def secure_filename(filename: str) -> str:
     filename = str(filename).strip().replace(' ', '_')
     return re.sub(r'(?u)[^-\w.]', '', filename)
 
-async def process_document(file_path: Path, output_dir: Path, model_name: str, ocr_engine: str = 'google') -> Dict[str, Any]:
+async def process_document(file_path: Path, output_dir: Path, model_name: str, ocr_engine: str = 'alibaba') -> Dict[str, Any]:
     """
     문서 처리 파이프라인
     
@@ -559,7 +566,7 @@ async def index_v3(request: Request):
 async def upload_file(
     file: UploadFile = File(...),
     model: str = Form("klue-roberta-large"),
-    ocr_engine: str = Form("google")
+    ocr_engine: str = Form("alibaba")
 ):
     """파일 업로드 및 처리"""
     try:
@@ -717,7 +724,7 @@ async def health_check():
 @app.post("/api/ocr-universal")
 async def process_universal_ocr(
     file: UploadFile = File(...),
-    provider: str = Form("google"),
+    provider: str = Form("alibaba"),
     model: str = Form(None),
     stream: bool = Form(False)
 ):

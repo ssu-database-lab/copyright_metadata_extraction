@@ -156,12 +156,12 @@ class AlibabaCloudOCRProvider:
         if result.get('metadata', {}).get('error') and self.model in self.OCR_MODEL_FALLBACK:
             fallback_model = self.OCR_MODEL_FALLBACK[self.model]
             primary_error = result['metadata']['error']
-            logger.warning(f"OCR model '{self.model}' failed: {primary_error}. Trying fallback: {fallback_model}")
+            logger.warning(f"OCR 모델 '{self.model}' 실패: {str(primary_error)[:300]} → 폴백 모델 '{fallback_model}' 시도")
             result = self._process_image_with_model(image_path, fallback_model)
             if not result.get('metadata', {}).get('error'):
                 result['metadata']['fallback_used'] = True
                 result['metadata']['original_model'] = self.model
-                logger.info(f"OCR fallback to '{fallback_model}' succeeded")
+                logger.info(f"OCR 모델 폴백 성공 — '{fallback_model}' ({Path(image_path).name})")
 
         return result
 
@@ -206,12 +206,19 @@ class AlibabaCloudOCRProvider:
             # Note: top_k is not supported by the OpenAI-compatible DashScope endpoint
             
             # Make API call using OpenAI-compatible client (429 는 재시도)
+            t0 = time.perf_counter()
             response = self._create_with_retry(model_id, messages, generation_params)
             
             extracted_text = response.choices[0].message.content
             
             # Clean markdown formatting
             extracted_text = self._clean_markdown_formatting(extracted_text)
+            usage = getattr(response, "usage", None)
+            tok = (f" · 토큰 입력 {usage.prompt_tokens:,} / 출력 {usage.completion_tokens:,}"
+                   if usage is not None and isinstance(getattr(usage, "prompt_tokens", None), int)
+                   and isinstance(getattr(usage, "completion_tokens", None), int) else "")
+            logger.info(f"OCR 쪽 완료 — 모델 {model_id} · {Path(image_path).name} · {len(extracted_text or ''):,}자 · "
+                        f"{time.perf_counter() - t0:.1f}초{tok}")
             
             return {
                 'extracted_text': extracted_text,
@@ -267,7 +274,7 @@ class AlibabaCloudOCRProvider:
                 except:
                     pass
             
-            logger.error(f"Alibaba Cloud OCR processing error: {error_details}")
+            logger.error(f"Alibaba OCR 오류 — 모델 {model_id} · {Path(image_path).name}: {str(error_details)[:400]}")
             metadata = {
                 'provider': 'alibaba_cloud',
                 'model': self.dashscope_model_id,

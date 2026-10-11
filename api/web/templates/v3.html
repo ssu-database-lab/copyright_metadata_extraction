@@ -669,10 +669,10 @@
                         <select id="ocrProvider">
                             <option value="alibaba">alibaba (기본)</option>
                             <option value="mistral">mistral</option>
-                            <option value="google">google</option>
+                            <option value="google" disabled>google (꺼짐 — 과금 방지)</option>
                             <option value="naver">naver</option>
                         </select>
-                        <div class="fld-hint">실패 시 alibaba→mistral→google→naver 폴백.</div>
+                        <div class="fld-hint">실패 시 alibaba→mistral→naver 폴백 (Google 은 꺼짐).</div>
                     </div>
                     <div>
                         <label class="fld-label" for="ocrModel">① OCR 모델</label>

@@ -377,7 +377,8 @@ def test_runner_eval23_t001_contract_only_end_to_end(tmp_path: Path):
     # test.log — 한국어 세트별 시작·종료·타이밍, 핸들러는 finalize 뒤에 닫힌다
     log = (out / "test.log").read_text(encoding="utf-8")
     assert "실행기 준비" in log and "배치 시작 — 대상 5세트" in log and "배치 종료 — 성공 5 · 실패 0" in log
-    assert "[13387752] 시작 — test=T-001" in log and "[13387752] 종료 — OK" in log and "contract " in log
+    # 줄 형식: HH:MM:SS LEVEL [set_id] [구성요소] 메시지 (M3 콘솔 로그 보강)
+    assert "[13387752] [시스템] 시작 — test=T-001" in log and "[13387752] [시스템] 종료 — OK" in log and "contract " in log
     assert runner._log_handler is not None                              # eval23 은 finalize 가 닫는다
 
     # finalize → M1 평가기: 예측 = gold 값이므로 Macro-F1 100%
@@ -509,7 +510,7 @@ def test_runner_eval23_failures_are_recorded_and_retryable(tmp_path: Path, work_
     runner2.run(entries[1:], {})
     rows = [json.loads(l) for l in (out / "results.jsonl").read_text(encoding="utf-8").splitlines()]
     assert rows[-1]["set_id"] == "nopred" and rows[-1]["ok"] is False and "test_prediction" in rows[-1]["error"]
-    assert "[nopred] 종료 — FAIL" in (out / "test.log").read_text(encoding="utf-8")
+    assert "[nopred] [시스템] 종료 — FAIL" in (out / "test.log").read_text(encoding="utf-8")
     runner2.close_log()
     # 3) 예외(파일 없음)도 레코드로 남는다
     runner3 = BatchRunner(FakeOrch(), RunConfig(workers=1, scoring_set="eval23"), out)
@@ -537,7 +538,7 @@ def test_runner_v3_pair_still_scores_and_contract_only_refused(tmp_path: Path, w
     assert rows["c1"]["ok"] is False and "T-001" in rows["c1"]["error"] and rows["c1"]["cost_krw"] == 0.0
     assert not (tmp_path / "v3" / "test_predictions").exists()           # v3 는 23키 레코드를 쓰지 않는다
     assert runner._log_handler is None                                   # v3 는 run() 끝에 로그를 닫는다
-    assert "[p1] 종료 — OK" in (tmp_path / "v3" / "test.log").read_text(encoding="utf-8")
+    assert "[p1] [시스템] 종료 — OK" in (tmp_path / "v3" / "test.log").read_text(encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -814,7 +815,7 @@ def test_runner_t002_warns_per_set_when_contract_yields_no_context(tmp_path: Pat
     runner.close_log()
     log = (tmp_path / "nw" / "test.log").read_text(encoding="utf-8")
     for e in entries:
-        assert (f"WARNING [{e.set_id}] 계약서 {NEW_CONTRACT.name} 가 있지만 문맥(제목·종별)을 얻지 못했습니다(문맥 파서 미적재)"
+        assert (f"WARNING [{e.set_id}] [문맥] 계약서 {NEW_CONTRACT.name} 가 있지만 문맥(제목·종별)을 얻지 못했습니다(문맥 파서 미적재)"
                 " — 저작물 leg 를 계약서 문맥 없이 실행합니다") in log
     # (b) 파서는 있지만 파싱이 예외를 낸다
     def boom(path):
@@ -825,14 +826,14 @@ def test_runner_t002_warns_per_set_when_contract_yields_no_context(tmp_path: Pat
     runner.run(entries[:1], {})
     runner.close_log()
     log = (tmp_path / "pf" / "test.log").read_text(encoding="utf-8")
-    assert "계약서 문맥 파싱 실패" in log and "WARNING [w0] 계약서" in log and "(규칙 파싱 실패)" in log
+    assert "계약서 문맥 파싱 실패" in log and "WARNING [w0] [문맥] 계약서" in log and "(규칙 파싱 실패)" in log
     # (c) 파싱은 됐지만 제목·종별이 비었다
     monkeypatch.setattr(BR, "parse_contract_context", lambda path: {"title": None, "work_type": None, "source": "rules"})
     runner = BatchRunner(FakeOrch(pred_fn=_t002_pred), RunConfig(workers=1, scoring_set="eval23"), tmp_path / "ep")
     runner.run(entries[:1], {})
     runner.close_log()
     log = (tmp_path / "ep" / "test.log").read_text(encoding="utf-8")
-    assert "WARNING [w0] 계약서" in log and "제목·종별을 하나도 읽지 못했습니다" in log
+    assert "WARNING [w0] [문맥] 계약서" in log and "제목·종별을 하나도 읽지 못했습니다" in log
     # (d) 계약서가 없는 T-002 세트·문맥을 얻은 세트에는 경고가 없다
     monkeypatch.setattr(BR, "parse_contract_context", _rule_ctx)
     runner = BatchRunner(FakeOrch(pred_fn=_t002_pred), RunConfig(workers=1, scoring_set="eval23"), tmp_path / "nc")

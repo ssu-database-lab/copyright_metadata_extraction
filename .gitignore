@@ -219,6 +219,7 @@ node_modules/
 
 # 배치 평가 런타임 산출물 (업로드된 세트·결과물 — 용량 크고 재현 가능)
 api/web/batch_jobs/
+api/web/test_runs/
 api/web/uploads/
 
 # 비공개 자료 — 공개 저장소에 올리지 않는다

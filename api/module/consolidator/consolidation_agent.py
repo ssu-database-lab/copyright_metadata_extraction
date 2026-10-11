@@ -92,9 +92,7 @@ class ConsolidationAgent:
         if not self.llm_processor.initialize_model(model_name):
             raise RuntimeError(f"Failed to initialize model: {model_name}")
         
-        logger.info(f"ConsolidationAgent initialized with model: {model_name}")
-        if enable_hybrid and fallback_model:
-            logger.info(f"Hybrid mode enabled - fallback model: {fallback_model}")
+        logger.debug(f"중재자 준비 — 모델 {model_name}" + (f" · 폴백 {fallback_model}" if enable_hybrid and fallback_model else ""))
     
     def consolidate(
         self,
@@ -118,18 +116,18 @@ class ConsolidationAgent:
             Dictionary with consolidated metadata and validation report
         """
         try:
-            logger.info("Starting consolidation process")
+            logger.debug("통합 검증 시작")
             
             # Extract data
             llm_metadata = llm_result.get('metadata', {})
             ner_entities = ner_result.get('extracted_entities', [])
             
             if not llm_metadata and not ner_entities:
-                logger.warning("Both LLM and NER results are empty")
+                logger.warning("통합 검증 — LLM·NER 결과가 모두 비어 있어 빈 결과를 냅니다")
                 return self._create_empty_result()
             
             # Step 1: Field mapping (no LLM needed)
-            logger.info("Step 1: Mapping NER entities to LLM fields")
+            logger.debug("1단계: NER 엔티티 → LLM 필드 대응")
             field_mappings = self.field_mapper.map_entities_to_fields(
                 ner_entities=ner_entities,
                 llm_metadata=llm_metadata,
@@ -138,14 +136,15 @@ class ConsolidationAgent:
             )
             
             # Step 2: Validation (no LLM needed)
-            logger.info("Step 2: Validating formats and logic")
+            logger.debug("2단계: 형식·논리 검증")
             validation_errors = self.validator.validate_logic(
                 metadata=llm_metadata,
                 document_type=document_type
             )
             
             # Step 3: LLM-based consolidation (with hybrid fallback)
-            logger.info("Step 3: LLM consolidation (hybrid mode enabled)")
+            logger.debug(f"3단계: LLM 중재 (NER 엔티티 {len(ner_entities)}개 · 대응 필드 {len(field_mappings or {})}개 · "
+                         f"검증 오류 {len(validation_errors or [])}건)")
             consolidated_result = self._llm_consolidate(
                 llm_metadata=llm_metadata,
                 ner_entities=ner_entities,
@@ -155,7 +154,7 @@ class ConsolidationAgent:
             )
             
             # Step 4: Post-process and generate evidence
-            logger.info("Step 4: Generating evidence and reasoning")
+            logger.debug("4단계: 근거·판정 이유 정리")
             final_result = self._post_process(
                 consolidated_result=consolidated_result,
                 llm_result=llm_result,
@@ -171,11 +170,11 @@ class ConsolidationAgent:
                 if consolidated_result.get('primary_model_failed'):
                     final_result['primary_model_error'] = consolidated_result.get('primary_model_error')
             
-            logger.info("Consolidation completed successfully")
+            logger.debug("통합 검증 끝")
             return final_result
             
         except Exception as e:
-            logger.error(f"Error during consolidation: {e}", exc_info=True)
+            logger.error(f"통합 검증 오류 — {type(e).__name__}: {e}", exc_info=True)
             return self._create_error_result(str(e))
     
     def _llm_consolidate(
@@ -204,7 +203,7 @@ class ConsolidationAgent:
         schema = ConsolidationSchemas.get_consolidation_schema()
         
         # Try primary model first
-        logger.info(f"Attempting consolidation with primary model: {self.model_name}")
+        logger.debug(f"주 중재자 호출 — {self.model_name} · 프롬프트 {len(prompt_text or ''):,}자")
         try:
             result = self._call_model_for_consolidation(
                 model_name=self.model_name,
@@ -217,17 +216,19 @@ class ConsolidationAgent:
             if result and result.get('consolidated_metadata') is not None:
                 result['model_used'] = self.model_name
                 result['fallback_used'] = False
-                logger.info(f"✅ Successfully consolidated with {self.model_name}")
+                logger.debug(f"주 중재자 성공 — {self.model_name}")
                 return result
             else:
                 raise ValueError("Failed to parse JSON from primary model response")
                 
         except (ValueError, json.JSONDecodeError, Exception) as e:
-            logger.warning(f"Primary model ({self.model_name}) failed: {e}")
+            logger.warning(f"주 중재자 실패 — {self.model_name}: {type(e).__name__}: {str(e)[:300]}"
+                           + (f" → 폴백 {self.fallback_model}" if self.enable_hybrid and self.fallback_model
+                              else " → 규칙 기반 병합(저하)"))
             
             # Try fallback model if hybrid mode is enabled
             if self.enable_hybrid and self.fallback_model:
-                logger.info(f"🔄 Falling back to {self.fallback_model} for better JSON quality")
+                logger.info(f"폴백 중재자로 다시 시도 — {self.fallback_model}")
                 try:
                     # Initialize fallback model
                     fallback_processor = LLMExtractionProcessor(
@@ -249,13 +250,14 @@ class ConsolidationAgent:
                         result['fallback_used'] = True
                         result['primary_model_failed'] = True
                         result['primary_model_error'] = str(e)
-                        logger.info(f"✅ Successfully consolidated with fallback model: {self.fallback_model}")
+                        logger.info(f"폴백 중재자 성공 — {self.fallback_model}")
                         return result
                     else:
                         raise ValueError("Failed to parse JSON from fallback model response")
                         
                 except Exception as fallback_error:
-                    logger.error(f"Fallback model ({self.fallback_model}) also failed: {fallback_error}")
+                    logger.error(f"폴백 중재자도 실패 — {self.fallback_model}: {type(fallback_error).__name__}: "
+                                 f"{str(fallback_error)[:300]} → 규칙 기반 병합(저하)")
                     # Both models failed, use basic fallback
                     return self._fallback_consolidate(
                         llm_metadata, ner_entities, field_mappings,
@@ -332,6 +334,7 @@ class ConsolidationAgent:
                 # For Alibaba Cloud, call the API
                 if hasattr(cloud_extractor, 'client'):
                     try:
+                        _t_call = datetime.now()
                         response = cloud_extractor.client.chat.completions.create(
                             model=cloud_extractor.dashscope_model_id,
                             messages=messages,
@@ -353,8 +356,15 @@ class ConsolidationAgent:
                         
                         # Check if response was truncated
                         finish_reason = response.choices[0].finish_reason if hasattr(response.choices[0], 'finish_reason') else None
+                        _usage = getattr(response, "usage", None)
+                        _tok = (f" · 토큰 입력 {_usage.prompt_tokens:,} / 출력 {_usage.completion_tokens:,}"
+                                if _usage is not None and isinstance(getattr(_usage, "prompt_tokens", None), int)
+                                and isinstance(getattr(_usage, "completion_tokens", None), int) else "")
+                        logger.info(f"중재자 응답 — 모델 {cloud_extractor.dashscope_model_id} · "
+                                    f"{(datetime.now() - _t_call).total_seconds():.1f}초{_tok} · 종료 사유 {finish_reason} · "
+                                    f"프롬프트 {len(prompt_text or ''):,}자")
                         if finish_reason == 'length':
-                            logger.warning(f"Response was truncated (finish_reason: {finish_reason}). Consider increasing max_tokens.")
+                            logger.warning(f"중재자 응답이 길이 제한(max_tokens)에서 잘렸습니다 (finish_reason: {finish_reason}) — JSON 이 불완전할 수 있습니다")
                             # Try to extract what we have, but note it may be incomplete
                         
                         # Parse JSON response with improved error handling
@@ -366,10 +376,10 @@ class ConsolidationAgent:
                         # Strategy 1: Try direct JSON parse
                         try:
                             consolidated_metadata = json.loads(cleaned_text)
-                            logger.info("Successfully parsed JSON directly")
+                            logger.debug("중재자 JSON 해석 성공")
                         except json.JSONDecodeError as json_err:
                             json_parse_errors.append(f"Direct parse failed: {json_err}")
-                            logger.warning(f"JSON parse error, trying alternative methods: {json_err}")
+                            logger.warning(f"중재자 JSON 해석 실패 — 다른 방법으로 복구를 시도합니다: {json_err}")
                             
                             # Strategy 2: Try to extract JSON from markdown code blocks
                             import re
@@ -379,7 +389,7 @@ class ConsolidationAgent:
                             if json_block_match:
                                 try:
                                     consolidated_metadata = json.loads(json_block_match.group(1))
-                                    logger.info("Successfully parsed JSON from code block")
+                                    logger.info("중재자 JSON 복구 — 코드 블록에서 읽음")
                                 except json.JSONDecodeError as e:
                                     json_parse_errors.append(f"Code block parse failed: {e}")
                             
@@ -421,7 +431,7 @@ class ConsolidationAgent:
                                         json_str = cleaned_text[start_idx:end_idx]
                                         try:
                                             consolidated_metadata = json.loads(json_str)
-                                            logger.info("Successfully parsed JSON using brace matching")
+                                            logger.info("중재자 JSON 복구 — 중괄호 짝 맞추기로 읽음")
                                         except json.JSONDecodeError as e:
                                             json_parse_errors.append(f"Brace matching parse failed: {e}")
                             
@@ -441,7 +451,7 @@ class ConsolidationAgent:
                                             potential_json += '}' * (potential_json.count('{') - potential_json.count('}'))
                                         
                                         consolidated_metadata = json.loads(potential_json)
-                                        logger.info("Successfully parsed JSON after repair attempt")
+                                        logger.info("중재자 JSON 복구 — 수리 후 읽음")
                                     except json.JSONDecodeError as e:
                                         json_parse_errors.append(f"Repair attempt failed: {e}")
                             
@@ -452,7 +462,7 @@ class ConsolidationAgent:
                                 if json_match:
                                     try:
                                         consolidated_metadata = json.loads(json_match.group())
-                                        logger.info("Successfully parsed JSON using regex extraction")
+                                        logger.info("중재자 JSON 복구 — 정규식 추출로 읽음")
                                     except json.JSONDecodeError as e:
                                         json_parse_errors.append(f"Regex extraction failed: {e}")
                             
@@ -471,7 +481,7 @@ class ConsolidationAgent:
                                         f.write(f"Raw Response:\n{raw_response_text}\n\n")
                                         f.write(f"Cleaned Text:\n{cleaned_text}\n\n")
                                         f.write(f"Parse Errors:\n{chr(10).join(json_parse_errors)}")
-                                    logger.error(f"Saved debug response to: {debug_file}")
+                                    logger.error(f"중재자 JSON 을 읽지 못해 원문 응답을 저장했습니다: {debug_file.name}")
                                 
                                 raise ValueError(error_msg)
                         
@@ -499,7 +509,7 @@ class ConsolidationAgent:
                                         f"루트의 {len(flat)}개 필드를 결과로 사용합니다.")
                                     final_metadata = flat
                         
-                        logger.info(f"Consolidation complete: {len(decisions)} decisions made")
+                        logger.debug(f"중재자 판정 {len(decisions)}건")
                         
                         # Calculate confidence from decisions if summary doesn't have it
                         if summary and 'overall_confidence' in summary:
@@ -522,7 +532,7 @@ class ConsolidationAgent:
                         }
                         
                     except Exception as e:
-                        logger.error(f"Cloud API call failed for {model_name}: {e}")
+                        logger.warning(f"중재자 API 호출 실패 — {model_name}: {type(e).__name__}: {str(e)[:300]}")
                         raise  # Re-raise to trigger fallback
             else:
                 # Not a cloud extractor, use standard extract_metadata
@@ -575,7 +585,7 @@ class ConsolidationAgent:
                     "prompt_chars": len(prompt_text or "")
                 }
         except Exception as e:
-            logger.error(f"Error calling model {model_name} for consolidation: {e}", exc_info=True)
+            logger.debug(f"중재자 호출 오류 상세 — {model_name}: {e}", exc_info=True)
             raise  # Re-raise to allow fallback handling
     
     def _create_consolidation_prompt(

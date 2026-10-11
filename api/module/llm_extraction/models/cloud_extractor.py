@@ -239,10 +239,14 @@ class AlibabaCloudExtractor(CloudExtractor):
 
     def _create_with_retry(self, messages: list, generation_params: Dict[str, Any]):
         """되돌릴 수 있는 오류만 지수 백오프로 재시도한다. 그 밖은 그대로 올린다."""
+        return self._create_with_retry_n(messages, generation_params)[0]
+
+    def _create_with_retry_n(self, messages: list, generation_params: Dict[str, Any]):
+        """_create_with_retry 와 같고 (응답, 재시도 횟수) 를 돌려준다 — 실행 로그에 재시도 수를 남기려고."""
         for attempt in range(self.RETRY_MAX_ATTEMPTS + 1):
             try:
                 return self.client.chat.completions.create(
-                    model=self.dashscope_model_id, messages=messages, **generation_params)
+                    model=self.dashscope_model_id, messages=messages, **generation_params), attempt
             except Exception as e:
                 if not self._is_retryable(e) or attempt == self.RETRY_MAX_ATTEMPTS:
                     raise
@@ -370,9 +374,19 @@ class AlibabaCloudExtractor(CloudExtractor):
             generation_params["top_k"] = self.top_k
         
         try:
-            response = self._create_with_retry(messages, generation_params)
+            t0 = time.perf_counter()
+            response, retries = self._create_with_retry_n(messages, generation_params)
 
             extracted_text = response.choices[0].message.content
+            usage = getattr(response, "usage", None)
+            tok = (f" · 토큰 입력 {usage.prompt_tokens:,} / 출력 {usage.completion_tokens:,}"
+                   if usage is not None and isinstance(getattr(usage, "prompt_tokens", None), int)
+                   and isinstance(getattr(usage, "completion_tokens", None), int) else "")
+            finish = getattr(response.choices[0], "finish_reason", None)
+            logger.info(f"LLM 응답 — 모델 {self.dashscope_model_id} · {time.perf_counter() - t0:.1f}초{tok} · "
+                        f"재시도 {retries}회 · 종료 사유 {finish} · 프롬프트 {len(prompt):,}자")
+            if finish == "length":
+                logger.warning(f"LLM 응답이 길이 제한(max_tokens={generation_params.get('max_tokens')})에서 잘렸습니다 — JSON 이 불완전할 수 있습니다")
             
             # Parse JSON response
             try:
@@ -386,12 +400,12 @@ class AlibabaCloudExtractor(CloudExtractor):
                     "processing_time": None,
                     "confidence": None
                 }
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse JSON response: {extracted_text}")
+            except json.JSONDecodeError as e:
+                logger.error(f"LLM 응답 JSON 해석 실패 — {e} · 응답 앞부분: {str(extracted_text)[:300]!r}")
                 return {"error": "Invalid JSON response"}
                 
         except Exception as e:
-            logger.error(f"Alibaba Cloud API error: {e}")
+            logger.error(f"LLM API 오류 — 모델 {self.dashscope_model_id}: {type(e).__name__}: {str(e)[:400]}")
             return {"error": str(e)}
     
     def _create_prompt(self, text: str, schema: Dict[str, Any], document_type: str) -> str:

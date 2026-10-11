@@ -17,6 +17,8 @@ from pathlib import Path
 from typing import List, Dict, Optional, Union, Generator
 from datetime import datetime
 from abc import ABC, abstractmethod
+
+from ..google_gate import google_vision_enabled, GOOGLE_DISABLED_MSG
 import argparse
 
 # Document processing imports
@@ -116,11 +118,11 @@ class FileProcessor:
                 image_paths.append(str(image_path))
             
             doc.close()
-            logger.info(f"PDF converted to {len(image_paths)} images")
+            logger.info(f"PDF → 이미지 {len(image_paths)}쪽 변환 (OCR 용, 2배 확대)")
             return image_paths
             
         except Exception as e:
-            logger.error(f"Error processing PDF {file_path}: {e}")
+            logger.error(f"PDF 이미지 변환 실패 {file_path.name}: {type(e).__name__}: {e}")
             return []
     
     def _process_docx(self, file_path: Path) -> List[str]:
@@ -219,7 +221,7 @@ class FileProcessor:
         try:
             doc = fitz.open(str(file_path))
         except Exception as e:
-            logger.warning(f"PDF open failed, falling back to OCR: {file_path.name}: {e}")
+            logger.warning(f"PDF 를 열지 못해 OCR 경로로 처리: {file_path.name}: {e}")
             return None
 
         try:
@@ -235,7 +237,7 @@ class FileProcessor:
                 if self._page_is_image_dominant(page):
                     image_pages += 1
         except Exception as e:
-            logger.warning(f"PDF text read failed, falling back to OCR: {file_path.name}: {e}")
+            logger.warning(f"PDF 본문층을 읽지 못해 OCR 경로로 처리: {file_path.name}: {e}")
             return None
         finally:
             doc.close()
@@ -277,8 +279,7 @@ class FileProcessor:
             return None
 
         logger.info(
-            f"PDF text layer extracted: {len(text)} characters, {n_pages} pages "
-            f"({file_path.name}) — OCR 공급자 호출 없음")
+            f"PDF 텍스트층 사용 — {len(text):,}자 · {n_pages}쪽 (그림 쪽 {image_pages}) · {file_path.name} — OCR 공급자 호출 없음")
         return text
 
     @staticmethod
@@ -412,7 +413,7 @@ class FileProcessor:
                 f"({text.count('<표>')} x '<표>' / {len(text)}자): {file_path.name} — OCR 경로로 전환")
             return None
 
-        logger.info(f"HWP text extracted: {len(text)} characters ({file_path.name})")
+        logger.info(f"HWP 본문 텍스트 추출 — {len(text):,}자 ({file_path.name}) — OCR 공급자 호출 없음")
         return text
 
     def _read_plain_text(self, file_path: Path) -> Optional[str]:
@@ -426,7 +427,7 @@ class FileProcessor:
                 logger.error(f"Error reading text file {file_path}: {e}")
                 return None
             if text:
-                logger.info(f"Text file read as {encoding}: {len(text)} characters ({file_path.name})")
+                logger.info(f"텍스트 파일 읽음 — 인코딩 {encoding} · {len(text):,}자 ({file_path.name}) — OCR 공급자 호출 없음")
                 return text
             return None
 
@@ -441,15 +442,20 @@ class UniversalOCRProcessor:
     Supports automatic fallback: if the primary provider fails for an entire
     document, the next provider in the fallback chain is tried.
 
-    Default fallback order: alibaba → google → mistral → naver
+    Default fallback order: alibaba → mistral → naver (Google Vision 은 GOOGLE_VISION_ENABLED=1 일 때만 맨 뒤)
     """
 
     # Default fallback order (most capable / cheapest first)
-    DEFAULT_FALLBACK_ORDER = ["alibaba", "mistral", "google", "naver"]
+    # 2026-10-11: Google 제외 (개인 계정 과금 방지) — GOOGLE_VISION_ENABLED=1 일 때만 맨 뒤에 붙는다
+    DEFAULT_FALLBACK_ORDER = ["alibaba", "mistral", "naver"]
 
     def __init__(self, provider: str = "alibaba", output_dir: str = "universal_ocr_results",
                  model: str = None, fallback: bool = True):
         self.provider_name = provider.lower()
+        if self.provider_name == "google" and not google_vision_enabled():
+            logger.warning(f"OCR 공급자 google 요청 — {GOOGLE_DISABLED_MSG} · alibaba 로 바꿉니다")
+            self.provider_name = "alibaba"
+            model = None
         self.base_output_dir = Path(output_dir)
         self.base_output_dir.mkdir(parents=True, exist_ok=True)
         self.model = model
@@ -458,7 +464,8 @@ class UniversalOCRProcessor:
         # Build fallback chain: requested provider first, then the rest
         if self.fallback_enabled:
             self.fallback_chain = [self.provider_name] + [
-                p for p in self.DEFAULT_FALLBACK_ORDER if p != self.provider_name
+                p for p in self.DEFAULT_FALLBACK_ORDER + (["google"] if google_vision_enabled() else [])
+                if p != self.provider_name
             ]
         else:
             self.fallback_chain = [self.provider_name]
@@ -467,14 +474,11 @@ class UniversalOCRProcessor:
         self.ocr_provider = self._create_provider(self.provider_name, model)
         self._setup_output_dir()
 
-        logger.info(f"Initialized {self.provider_name} OCR processor")
-        logger.info(f"Output directory: {self.provider_output_dir}")
-        if self.fallback_enabled:
-            logger.info(f"Fallback chain: {' → '.join(self.fallback_chain)}")
-        if hasattr(self.ocr_provider, 'model'):
-            logger.info(f"Model: {self.ocr_provider.model}")
-        if hasattr(self.ocr_provider, 'temperature'):
-            logger.info(f"Temperature: {self.ocr_provider.temperature}, Top-p: {self.ocr_provider.top_p}")
+        logger.debug(f"OCR 처리기 준비 — 공급자 {self.provider_name} · 출력 {self.provider_output_dir}"
+                     + (f" · 폴백 체인 {' → '.join(self.fallback_chain)}" if self.fallback_enabled else "")
+                     + (f" · 모델 {self.ocr_provider.model}" if hasattr(self.ocr_provider, 'model') else "")
+                     + (f" · temperature {self.ocr_provider.temperature}, top_p {self.ocr_provider.top_p}"
+                        if hasattr(self.ocr_provider, 'temperature') else ""))
 
     def _create_provider(self, provider_name: str, model: str = None):
         """Create an OCR provider instance by name."""
@@ -575,8 +579,7 @@ class UniversalOCRProcessor:
 
             for fallback_provider in self.fallback_chain[1:]:  # skip primary (already tried)
                 logger.warning(
-                    f"OCR provider '{primary_provider}' failed: {primary_error}. "
-                    f"Trying fallback provider: {fallback_provider}"
+                    f"OCR 공급자 '{primary_provider}' 실패: {str(primary_error)[:300]} → 폴백 공급자 '{fallback_provider}' 시도"
                 )
                 try:
                     self.ocr_provider = self._create_provider(fallback_provider, self.model)
@@ -588,14 +591,14 @@ class UniversalOCRProcessor:
                         result['fallback_used'] = True
                         result['original_provider'] = primary_provider
                         result['fallback_reason'] = primary_error
-                        logger.info(f"Fallback to '{fallback_provider}' succeeded")
+                        logger.info(f"OCR 공급자 폴백 성공 — '{fallback_provider}'")
                         return result
                 except Exception as e:
-                    logger.warning(f"Fallback provider '{fallback_provider}' also failed: {e}")
+                    logger.warning(f"OCR 폴백 공급자 '{fallback_provider}' 도 실패: {type(e).__name__}: {str(e)[:300]}")
                     continue
 
             # All fallbacks exhausted
-            logger.error(f"All OCR providers failed for {file_path}")
+            logger.error(f"모든 OCR 공급자 실패 — {Path(file_path).name} (체인 {' → '.join(self.fallback_chain)})")
             result['fallback_exhausted'] = True
 
         return result
@@ -603,7 +606,7 @@ class UniversalOCRProcessor:
     def _process_with_current_provider(self, file_path: str) -> Dict:
         """Process a single file with the current OCR provider (no fallback)."""
         file_path = Path(file_path)
-        logger.info(f"Processing file: {file_path.name} with {self.provider_name}")
+        logger.debug(f"OCR 파일 처리 — {file_path.name} · 공급자 {self.provider_name}")
         
         try:
             output_paths = self.create_structured_output_paths(str(file_path))
@@ -661,7 +664,7 @@ class UniversalOCRProcessor:
                             'error': error_msg,
                             'metadata': metadata
                         })
-                        logger.warning(f"OCR failed for page {i+1}: {error_msg}")
+                        logger.warning(f"OCR {i+1}쪽 실패: {str(error_msg)[:300]}")
                     else:
                         # OCR succeeded
                         all_text.append(page_text)
@@ -675,7 +678,7 @@ class UniversalOCRProcessor:
                         })
                     
                 except Exception as e:
-                    logger.error(f"Error processing page {i+1}: {e}")
+                    logger.error(f"OCR {i+1}쪽 처리 오류: {type(e).__name__}: {e}")
                     failed_pages += 1
                     total_errors.append(f"Page {i+1}: {str(e)}")
                     page_results.append({
@@ -732,11 +735,11 @@ class UniversalOCRProcessor:
             with open(output_paths['result_file'], 'w', encoding='utf-8') as f:
                 json.dump(result_data, f, ensure_ascii=False, indent=2)
             
-            logger.info(f"OCR processing complete for {file_path.name}: {len(full_text)} characters")
+            logger.debug(f"OCR 처리 끝 — {file_path.name}: {len(full_text)}자")
             return result_data
             
         except Exception as e:
-            logger.error(f"Error in file processing for {file_path}: {e}")
+            logger.error(f"OCR 파일 처리 오류 — {file_path.name}: {type(e).__name__}: {e}")
             return {
                 'file_name': file_path.name,
                 'file_path': str(file_path),
@@ -789,7 +792,7 @@ class UniversalOCRProcessor:
         with open(output_paths['result_file'], 'w', encoding='utf-8') as f:
             json.dump(result_data, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"Direct text extraction complete for {file_path.name}: {len(text)} characters")
+        logger.debug(f"원문 텍스트 저장 — {file_path.name}: {len(text)}자")
         return result_data
 
     def process_directory(self, directory_path: str) -> Dict:

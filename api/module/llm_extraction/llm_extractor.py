@@ -55,7 +55,7 @@ class LLMExtractionProcessor:
     def initialize_model(self, model_name: str) -> bool:
         """Initialize the specified model"""
         try:
-            logger.info(f"Initializing LLM model: {model_name}")
+            logger.debug(f"LLM 모델 준비 — {model_name}")
             
             # Create extractor
             self.extractor = create_extractor(model_name, "config/model_config.yaml")
@@ -63,11 +63,11 @@ class LLMExtractionProcessor:
             # Create document extractor
             self.doc_extractor = DocumentMetadataExtractor(self.extractor)
             
-            logger.info(f"✅ LLM model {model_name} initialized successfully")
+            logger.debug(f"LLM 모델 준비 완료 — {model_name}")
             return True
             
         except Exception as e:
-            logger.error(f"❌ Failed to initialize LLM model {model_name}: {e}")
+            logger.error(f"LLM 모델 준비 실패 — {model_name}: {type(e).__name__}: {e}")
             return False
     
     def extract_metadata_from_text(self, text: str, document_type: str = "기타문서", 
@@ -102,7 +102,7 @@ class LLMExtractionProcessor:
             }
             
         except Exception as e:
-            logger.error(f"Error during LLM metadata extraction: {e}")
+            logger.error(f"LLM 추출 오류 — {type(e).__name__}: {e}")
             return {
                 "success": False,
                 "error": str(e),

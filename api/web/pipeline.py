@@ -34,6 +34,7 @@ import hashlib
 import json
 import logging
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
@@ -41,7 +42,35 @@ from typing import Dict, Any, Optional, Tuple, Callable
 import re
 import unicodedata
 
+try:                                     # 앱·CLI 는 api/ 를 루트로(module.*), 일부 테스트는 api.web.pipeline 으로 올린다
+    from module import log_context as LC
+except ImportError:                      # pragma: no cover
+    from api.module import log_context as LC
+
 logger = logging.getLogger(__name__)
+
+# 실행 로그 한 줄 = 단계 하나 (M3 콘솔 로그 보강). component 는 시스템·업로드·문맥·OCR·LLM·NER·통합·VLM·API·측정·채점,
+# stage 는 콘솔의 진행 단계 이벤트(upload · route · ocr · consolidate · consolidate_done · extract_done)다.
+_MODALITY_KO = {"image": "이미지", "video": "영상", "document": "문서", "text": "텍스트", "audio": "음성"}
+_NER_MODE_KO = {"model": "모델 사용", "regex_fallback": "정규표현식 대체"}
+
+
+def _log(level: int, component: str, msg: str, stage: Optional[str] = None, exc_info: bool = False) -> None:
+    extra: Dict[str, Any] = {"component": component}
+    if stage:
+        extra["stage"] = stage
+    logger.log(level, msg, extra=extra, exc_info=exc_info)
+
+
+def _filled(md: Any) -> int:
+    if not isinstance(md, dict):
+        return 0
+    return sum(1 for k, v in md.items() if not str(k).startswith("_") and v not in (None, "", [], {}))
+
+
+def _short(v: Any, n: int = 160) -> str:
+    s = str(v)
+    return s if len(s) <= n else s[: n - 1] + "…"
 
 
 def safe_filename(filename: str) -> str:
@@ -99,22 +128,28 @@ class PipelineOrchestrator:
         result_dir.mkdir(parents=True, exist_ok=True)
 
         file_size_mb = len(file_bytes) / (1024 * 1024)
-        logger.info(f"Pipeline setup: {sanitized} ({file_size_mb:.2f}MB)")
 
         # 원본 파일명과 SHA-256 은 정제(safe_filename) **전에** 여기서 잡아 둔다 (v4 키 2·23, A1).
         # 저장용 이름은 공백이 '_' 로 바뀌고 쉼표 등이 빠지므로 파일명 채점에 그대로 쓰면 틀린다.
         # 해시는 바이트가 손에 있는 지금 한 번만 계산한다 — 큰 영상을 다시 읽지 않는다.
         original_filename = unicodedata.normalize("NFC", os.path.basename(filename or "")) or sanitized
+        t0 = time.perf_counter()
+        sha256 = hashlib.sha256(file_bytes).hexdigest()
+        hash_sec = time.perf_counter() - t0
+        _log(logging.INFO, "업로드",
+             f"파일 준비 — {original_filename} · {file_size_mb:.2f} MB ({len(file_bytes):,} 바이트) · "
+             f"저장 이름 {sanitized} · SHA-256 {hash_sec:.3f}초", stage="upload")
         return {
             "request_id": request_id,
             "filename": sanitized,
             "original_filename": original_filename,
-            "sha256": hashlib.sha256(file_bytes).hexdigest(),
+            "sha256": sha256,
             "file_size": len(file_bytes),
             "upload_path": upload_path,
             "result_dir": result_dir,
             "file_size_mb": file_size_mb,
             "start_time": datetime.now(),
+            "timings": {"sha256": round(hash_sec, 4)},
         }
 
     # ------------------------------------------------------------------
@@ -128,25 +163,63 @@ class PipelineOrchestrator:
         ocr_dir = ctx["result_dir"] / "ocr"
         ocr_dir.mkdir(parents=True, exist_ok=True)
 
+        t0 = time.perf_counter()
         try:
             processor = UniversalOCRProcessor(
                 provider=ocr_provider, output_dir=str(ocr_dir), model=ocr_model
             )
+            model_used = getattr(processor.ocr_provider, "model", None)
+            _log(logging.INFO, "OCR",
+                 f"OCR 준비 — 공급자 {ocr_provider} · 모델 {model_used or ocr_model or '(공급자 기본)'} · "
+                 f"폴백 체인 {' → '.join(processor.fallback_chain)} (PDF 텍스트층이 있으면 OCR 을 부르지 않음)")
             ocr_result = processor.process_single_file(str(ctx["upload_path"]))
+            sec = time.perf_counter() - t0
 
             if ocr_result.get("status") == "success":
                 ocr_text = ocr_result.get("full_text", "")
-                logger.info(f"OCR complete: {len(ocr_text)} chars")
+                _log(logging.INFO, "OCR",
+                     f"텍스트·OCR 완료 — {len(ocr_text):,}자 · {ocr_result.get('total_pages') or '?'}쪽 · "
+                     f"{self._ocr_method(ctx, ocr_result, model_used)} · {sec:.1f}초 · 추출 시작", stage="ocr")
             else:
                 ocr_text = ""
-                logger.warning(f"OCR failed: {ocr_result.get('error')}")
+                _log(logging.WARNING, "OCR",
+                     f"텍스트·OCR 실패 — {_short(ocr_result.get('error'), 300)} · {sec:.1f}초"
+                     + (" · 모든 폴백 공급자 실패" if ocr_result.get("fallback_exhausted") else ""), stage="ocr")
 
         except Exception as e:
-            logger.warning(f"OCR error: {e}")
+            sec = time.perf_counter() - t0
+            _log(logging.WARNING, "OCR", f"텍스트·OCR 오류 — {type(e).__name__}: {_short(e, 300)} · {sec:.1f}초",
+                 stage="ocr")
             ocr_text = ""
             ocr_result = {"status": "failed", "error": str(e)}
 
+        ctx.setdefault("timings", {})["ocr"] = round(sec, 2)
         return ocr_text, ocr_result
+
+    @staticmethod
+    def _ocr_method(ctx: Dict, ocr_result: Dict, model: Optional[str]) -> str:
+        """OCR 결과 → '무엇으로 읽었는지' 한 구절 (텍스트층·OCR 공급자/모델·폴백)."""
+        provider = ocr_result.get("ocr_provider")
+        if provider == "direct_text":
+            ext = os.path.splitext(str(ctx.get("upload_path") or ""))[1].lower()
+            return "PDF 텍스트층 사용 (OCR 생략)" if ext == ".pdf" else "파일 본문 텍스트 사용 (OCR 생략)"
+        pages = ocr_result.get("pages") or []
+        models = sorted({str((pg.get("metadata") or {}).get("model")) for pg in pages
+                         if isinstance(pg, dict) and (pg.get("metadata") or {}).get("model")})
+        out = f"OCR {provider or '?'} · 모델 {', '.join(models) or model or '?'}"
+        fb_pages = [pg for pg in pages if isinstance(pg, dict) and (pg.get("metadata") or {}).get("fallback_used")]
+        if fb_pages:
+            orig = (fb_pages[0].get("metadata") or {}).get("original_model")
+            out += f" · 모델 폴백 {len(fb_pages)}쪽 ({orig} → {(fb_pages[0].get('metadata') or {}).get('model')})"
+        rl = sum(1 for pg in pages if isinstance(pg, dict) and (pg.get("metadata") or {}).get("rate_limited"))
+        if rl:
+            out += f" · 속도 제한 실패 {rl}쪽"
+        if ocr_result.get("fallback_used"):
+            out += (f" · 공급자 폴백 {ocr_result.get('original_provider')} → {provider} "
+                    f"(사유: {_short(ocr_result.get('fallback_reason'), 120)})")
+        if ocr_result.get("status") == "partial" or ocr_result.get("failed_pages"):
+            out += f" · 실패 {ocr_result.get('failed_pages')}쪽"
+        return out
 
     # ------------------------------------------------------------------
     # Stage 2: LLM extraction
@@ -160,13 +233,15 @@ class PipelineOrchestrator:
     def run_llm(self, ocr_text: str, document_type: str,
                 filename: str, model_name: str) -> Dict[str, Any]:
         """Run LLM metadata extraction on OCR text."""
-        logger.info(f"LLM extraction start: model={model_name}")
+        _log(logging.INFO, "LLM", f"LLM 추출 시작 — 모델 {model_name} · 문서 유형 {document_type} · 본문 {len(ocr_text or ''):,}자")
+        t0 = time.perf_counter()
         result = self.llm_processor.extract_metadata_from_text(
             text=ocr_text,
             document_type=document_type,
             document_name=filename,
             model_name=model_name,
         )
+        sec = time.perf_counter() - t0
         metadata = (result or {}).get("metadata")
         if isinstance(metadata, dict):
             hallucinated = [f for f in self._FILE_DERIVED_FIELDS
@@ -174,8 +249,15 @@ class PipelineOrchestrator:
             for field in hallucinated:
                 metadata[field] = None
             if hallucinated:
-                logger.warning(
-                    f"LLM이 파일 유래 필드를 본문에서 추론함 → 제거: {hallucinated}")
+                _log(logging.WARNING, "LLM", f"LLM 이 파일 유래 필드를 본문에서 추론함 → 제거: {hallucinated}")
+        if isinstance(result, dict):
+            result["_seconds"] = round(sec, 2)
+            if result.get("success"):
+                _log(logging.INFO, "LLM",
+                     f"LLM 추출 완료 — 모델 {result.get('model_used') or model_name} · {sec:.1f}초 · "
+                     f"채운 항목 {_filled(metadata)}개")
+            else:
+                _log(logging.WARNING, "LLM", f"LLM 추출 실패 — 모델 {model_name} · {_short(result.get('error'), 300)} · {sec:.1f}초")
         return result
 
     # ------------------------------------------------------------------
@@ -185,8 +267,8 @@ class PipelineOrchestrator:
     def run_ner(self, ocr_result: Dict, result_dir: Path,
                 ner_model: str, ocr_text: str) -> Dict[str, Any]:
         """Run NER entity extraction."""
-        logger.info(f"NER start: model={ner_model}")
         ner_dir = result_dir / "ner"
+        t0 = time.perf_counter()
 
         try:
             ocr_output_dir = ocr_result.get("output_directory")
@@ -197,19 +279,32 @@ class PipelineOrchestrator:
                 (ocr_output_dir / "temp.ocr").write_text(ocr_text, encoding="utf-8")
 
             ner_model_name = self.available_ner_models[ner_model]["name"]
+            _log(logging.INFO, "NER", f"NER 추출 시작 — 모델 {ner_model} ({ner_model_name})")
             ner_result = self.ner_predict(
                 str(ocr_output_dir), str(ner_dir),
                 model_name=ner_model_name, debug=False,
             )
-            logger.info(f"NER complete: {ner_result.get('total_entities', 0)} entities")
+            sec = time.perf_counter() - t0
+            if isinstance(ner_result, dict):
+                ner_result["_seconds"] = round(sec, 2)
+                mode = ner_result.get("mode")
+                if ner_result.get("success", False):
+                    why = " · 모델 미적재 (사유는 위 NER 줄)" if mode != "model" and ner_result.get("load_error") else ""
+                    _log(logging.INFO, "NER",
+                         f"NER 추출 완료 — 방식 {_NER_MODE_KO.get(mode, mode or '알 수 없음')} · 모델 {ner_model_name} · "
+                         f"엔티티 {ner_result.get('total_entities', 0)}개 · {sec:.1f}초{why}")
+                else:
+                    _log(logging.WARNING, "NER", f"NER 실패 — {_short(ner_result.get('error'), 300)} · {sec:.1f}초")
             return ner_result
 
         except Exception as e:
-            logger.warning(f"NER error: {e}")
+            sec = time.perf_counter() - t0
+            _log(logging.WARNING, "NER", f"NER 오류 — {type(e).__name__}: {_short(e, 300)} · {sec:.1f}초")
             return {
                 "success": False, "error": str(e),
                 "entity_types": {}, "total_entities": 0,
-                "extracted_entities": [],
+                "extracted_entities": [], "_seconds": round(sec, 2),
+                "mode": None, "model_loaded": False, "load_error": None, "entity_count": 0,
             }
 
     # ------------------------------------------------------------------
@@ -235,18 +330,30 @@ class PipelineOrchestrator:
         ner_ok = ner_result and ner_result.get("success", False)
 
         if not llm_ok and not ner_ok:
-            logger.warning("Both LLM and NER failed — skipping consolidation")
+            _log(logging.WARNING, "통합", "통합 생략 — LLM·NER 추출이 모두 실패했습니다", stage="consolidate_done")
             return None, False, "Both LLM and NER extraction failed"
 
         if not llm_ok:
-            logger.warning("LLM extraction failed — consolidation will use NER results only")
+            _log(logging.WARNING, "통합", "LLM 추출 실패 — 통합은 NER 결과만으로 진행합니다")
             llm_result = llm_result or {"success": False, "metadata": {}}
 
         if not ner_ok:
-            logger.warning("NER extraction failed — consolidation will use LLM results only")
+            # 이미지·영상 경로는 NER 를 돌리지 않는다(빈 NER 결과를 넘긴다) — 실패가 아니라 정보로 남긴다
+            _log(logging.WARNING if ocr_text else logging.INFO, "통합",
+                 "NER 결과 없음 — 통합은 LLM(VLM) 결과만으로 진행합니다")
             ner_result = ner_result or {"success": False, "entities": {}, "total_entities": 0, "extracted_entities": []}
 
-        logger.info(f"Consolidation start (LLM: {'OK' if llm_ok else 'FAILED'}, NER: {'OK' if ner_ok else 'FAILED'})")
+        fallback = os.getenv("CONSOLIDATION_FALLBACK_MODEL", "alibaba-qwen3.5-plus")
+        if fallback.lower() in ("", "none", "off"):
+            fallback = None
+        ner_mode = ner_result.get("mode") if isinstance(ner_result, dict) else None
+        _log(logging.INFO, "통합",
+             f"추출 완료 · 통합 시작 — 모델 {consolidation_model} · 폴백 {fallback or '없음'} · "
+             f"LLM {'OK' if llm_ok else '실패'} · NER {'OK' if ner_ok else '없음/실패'}"
+             + (f" ({_NER_MODE_KO.get(ner_mode, ner_mode)})" if ner_ok and ner_mode else "")
+             + f" · 시간 제한 {os.getenv('CONSOLIDATION_TIMEOUT_SEC') or '240(기본)'}초",
+             stage="consolidate")
+        t0 = time.perf_counter()
 
         try:
             # Ensure ner_result has extracted_entities
@@ -267,13 +374,10 @@ class PipelineOrchestrator:
             llm_with_ocr = llm_result.copy()
             llm_with_ocr["ocr_text"] = ocr_text
 
-            # 폴백 중재자. 환경변수로 바꿀 수 있게 한다 — 기본값 qwen3.5-plus 는
+            # 폴백 중재자(fallback, 위에서 읽음). 환경변수로 바꿀 수 있게 한다 — 기본값 qwen3.5-plus 는
             # 2026-09 측정에서 통합검증 프롬프트를 90초 제한 안에 끝내지 못해
             # (실측 94.9초) 전 호출이 실패하고 있었다. CONSOLIDATION_TIMEOUT_SEC 을
             # 함께 올리지 않으면 이 폴백은 동작하지 않는다.
-            fallback = os.getenv("CONSOLIDATION_FALLBACK_MODEL", "alibaba-qwen3.5-plus")
-            if fallback.lower() in ("", "none", "off"):
-                fallback = None
             agent = ConsolidationAgent(
                 model_name=consolidation_model,
                 output_dir=str(result_dir),
@@ -287,25 +391,58 @@ class PipelineOrchestrator:
                 document_type=document_type,
             )
 
+            sec = time.perf_counter() - t0
+            if isinstance(result, dict):
+                result["consolidation_seconds"] = round(sec, 2)
             if result.get("success", False):
+                counts = self._consolidation_counts(result)
+                used = result.get("model_used") or consolidation_model
+                fb = " (폴백)" if result.get("fallback_used") else ""
                 if result.get("consolidation_degraded"):
                     # LLM 중재 없이 규칙 기반으로 병합된 결과다. 예외가 아니라 정상 반환이므로
                     # 여기서 명시하지 않으면 저장 결과만 보고는 구분할 수 없다.
-                    logger.error(
-                        "통합검증이 저하 모드로 완료됨 — LLM 중재 없음. "
-                        f"사유: {result.get('degraded_reason')}"
-                    )
+                    _log(logging.ERROR, "통합",
+                         f"통합 완료(저하) — LLM 중재 없이 규칙 기반 병합 · 사유 {_short(result.get('degraded_reason'), 300)} · "
+                         f"{counts} · {sec:.1f}초", stage="consolidate_done")
                 else:
-                    logger.info("Consolidation complete")
+                    _log(logging.INFO, "통합", f"통합 완료 — 모델 {used}{fb} · {counts} · {sec:.1f}초",
+                         stage="consolidate_done")
+                lost = result.get("consolidation_lost_fields")
+                if lost:
+                    _log(logging.WARNING, "통합",
+                         f"통합 결과에서 필드가 사라짐 {result.get('consolidation_fields_before')}→"
+                         f"{result.get('consolidation_fields_after')}: {lost}")
                 return result, True, None
             else:
                 error = result.get("error", "Consolidation failed")
-                logger.warning(f"Consolidation failed: {error}")
+                _log(logging.WARNING, "통합", f"통합 실패 — {_short(error, 300)} · {sec:.1f}초", stage="consolidate_done")
                 return result, False, error
 
         except Exception as e:
-            logger.error(f"Consolidation error: {e}", exc_info=True)
+            sec = time.perf_counter() - t0
+            _log(logging.ERROR, "통합", f"통합 실패 — {type(e).__name__}: {_short(e, 300)} · {sec:.1f}초",
+                 stage="consolidate_done", exc_info=True)
             return None, False, str(e)
+
+    @staticmethod
+    def _consolidation_counts(result: Dict[str, Any]) -> str:
+        """중재자 판정 수 — 일치·충돌·LLM 전용·NER 전용·누락 (판정 목록 기준) + 요약 신뢰도."""
+        vr = result.get("validation_report") or {}
+        decisions = vr.get("decisions") or []
+        c: Dict[str, int] = {}
+        for d in decisions:
+            if isinstance(d, dict):
+                c[str(d.get("decision"))] = c.get(str(d.get("decision")), 0) + 1
+        summ = vr.get("summary") or {}
+        conf = summ.get("overall_confidence", vr.get("confidence_score"))
+        out = (f"판정 {len(decisions)}건: 일치 {c.get('AGREED', 0)} · 충돌 {c.get('CONFLICT', 0)} · "
+               f"LLM 전용 {c.get('LLM_ONLY', 0)} · NER 전용 {c.get('NER_ONLY', 0)} · 누락 {c.get('MISSING', 0)}")
+        if isinstance(conf, (int, float)):
+            out += f" · 신뢰도 {conf:.2f}"
+        errs = vr.get("validation_errors") or []
+        if errs:
+            out += f" · 검증 오류 {len(errs)}건"
+        return out
 
     # ------------------------------------------------------------------
     # Multimodal: modality routing + VLM (image) extraction
@@ -319,9 +456,49 @@ class PipelineOrchestrator:
         """
         from module.clip_extraction.router import route
         plan = route(str(ctx["upload_path"]), media_hint=media_hint)
-        extra = f" (render={plan['render']})" if plan.get("render") else ""
-        logger.info(f"Router: {ctx['filename']} → modality={plan['modality']}{extra}")
+        modality = plan["modality"]
+        extra = " · 1쪽 슬라이드를 그림으로 렌더링" if plan.get("render") == "pptx_slide1" else (
+            f" · 렌더링 {plan['render']}" if plan.get("render") else "")
+        nxt = ("텍스트·OCR 시작" if modality in ("document", "text") else
+               "추출 시작" if modality in ("image", "video") else "")
+        _log(logging.INFO, "업로드",
+             f"경로 — 매체 {_MODALITY_KO.get(modality, modality)} ({modality}){extra}"
+             + (f" · 매체 지정 {media_hint}" if media_hint else "") + (f" · {nxt}" if nxt else ""), stage="route")
         return plan
+
+    @staticmethod
+    def _vlm_chain_line(extractor, what: str, context: Optional[Dict[str, Any]]) -> None:
+        labels = [getattr(b, "model_label", "?") for b in getattr(extractor, "backends", []) or []]
+        ctx_txt = ""
+        if context:
+            ctx_txt = (f" · 계약서 문맥 제목 {context.get('title')!r}" if context.get("title") else "") + \
+                      (f" · 종류 {context.get('work_type')}" if context.get("work_type") else "")
+        _log(logging.INFO, "VLM", f"{what} 시작 — 백엔드 체인 {' → '.join(labels) or '(없음)'}{ctx_txt}")
+
+    @staticmethod
+    def _vlm_done_line(res, backend: str, sec: float, unified: Dict[str, Any], extra: str = "") -> None:
+        usage = getattr(res, "usage", None) or {}
+        tok = (f" · 토큰 입력 {usage.get('prompt_tokens'):,} / 출력 {usage.get('completion_tokens'):,}"
+               if isinstance(usage.get("prompt_tokens"), int) and isinstance(usage.get("completion_tokens"), int) else "")
+        lat = getattr(res, "latency_s", None)
+        _log(logging.INFO, "VLM",
+             f"VLM 추출 완료 — {extra}{backend} · 응답 {lat if lat is not None else '?'}초{tok} · "
+             f"유형 {unified.get('work_type') or '없음'} · 채운 항목 {_filled(unified)}개 · 전체 {sec:.1f}초",
+             stage="extract_done")
+
+    @staticmethod
+    def _measure_line(ctx: Dict, md: Dict[str, Any], file_meta: Optional[Dict[str, Any]], sec: Optional[float]) -> None:
+        """파일 측정 결과 한 줄 — 형식·크기·해상도·생성일과 잰 방법."""
+        tech = (file_meta or {}).get("technical") or {}
+        how = [str(v) for k, v in tech.items() if k.endswith("_source") and v]
+        size = md.get("file_size")
+        _log(logging.INFO, "측정",
+             f"파일 측정 — 형식 {md.get('digital_format') or '?'} · 크기 "
+             f"{f'{size:,} 바이트' if isinstance(size, int) else (size or '?')} · 해상도 {md.get('resolution') or '없음'} · "
+             f"생성일 {md.get('file_created_date') or '없음'}"
+             + (f" · 방법 {', '.join(how)}" if how else "")
+             + (f" · SHA-256 {ctx.get('timings', {}).get('sha256'):.3f}초" if isinstance(ctx.get('timings', {}).get('sha256'), float) else "")
+             + (f" · {sec:.2f}초" if sec is not None else ""))
 
     def run_vlm(self, ctx: Dict, prefer: str = "auto",
                 context: Optional[Dict[str, Any]] = None,
@@ -348,10 +525,12 @@ class PipelineOrchestrator:
             if render == "pptx_slide1" or str(image_path).lower().endswith(".pptx"):
                 from module.clip_extraction.pptx_render import PptxRenderError, render_first_slide
                 png = ctx["result_dir"] / "pptx_slide1.png"
+                t_r = time.perf_counter()
                 try:
                     render_first_slide(image_path, png)
+                    _log(logging.INFO, "VLM", f"PPTX 1쪽 렌더링 완료 — {time.perf_counter() - t_r:.1f}초 · 그림을 VLM 에 넣습니다")
                 except PptxRenderError as e:
-                    logger.error(f"PPTX 1쪽 렌더링 실패 — VLM 생략: {e}")
+                    _log(logging.ERROR, "VLM", f"PPTX 1쪽 렌더링 실패 — VLM 생략: {e}", stage="extract_done")
                     return {"success": False, "metadata": {}, "confidence": 0.0,
                             "model_used": "none", "error": f"PPTX 1쪽 렌더링 불가: {e}",
                             "extraction_time": round(time.perf_counter() - t0, 2),
@@ -360,32 +539,40 @@ class PipelineOrchestrator:
                 render_info = {"method": "pptx_slide1", "ok": True, "png": str(png)}
 
             extractor = VLMExtractor(prefer=prefer, max_tokens=4096)   # omni-flash 출력이 2048 을 넘는 경우 8% (2026-10-11 실측)
+            self._vlm_chain_line(extractor, "VLM 이미지 추출", context)
             res = extractor.extract(image_path, context=context)
             backend = getattr(res, "backend_used", "?")
             if not res.ok or not res.parse_ok or not res.parsed:
+                err = res.error or "VLM ran but JSON parse failed"
+                _log(logging.ERROR, "VLM", f"VLM 추출 실패 — {_short(err, 300)} · {time.perf_counter() - t0:.1f}초",
+                     stage="extract_done")
                 return {"success": False, "metadata": {}, "confidence": 0.0,
                         "model_used": backend,
-                        "error": res.error or "VLM ran but JSON parse failed",
+                        "error": err,
                         "extraction_time": round(time.perf_counter() - t0, 2),
+                        "_seconds": round(time.perf_counter() - t0, 2),
                         "_render": render_info}
             # 기술 메타데이터·SHA256 은 항상 **원본** 파일에서 — 렌더링한 PNG 가 아니다.
+            t_m = time.perf_counter()
             unified = map_vlm_to_unified(res.parsed, str(ctx["upload_path"]))
             file_meta = unified.pop("_file_meta", {})
-            logger.info(f"VLM extraction complete via {backend}: "
-                        f"work_type={unified.get('work_type')}")
+            self._vlm_done_line(res, backend, time.perf_counter() - t0, unified)
+            self._measure_line(ctx, unified, file_meta, time.perf_counter() - t_m)
             return {
                 "success": True,
                 "metadata": unified,
                 "confidence": 0.7,  # VLM does not self-score; fixed visual-extraction prior
                 "model_used": backend,
                 "extraction_time": round(time.perf_counter() - t0, 2),
+                "_seconds": round(time.perf_counter() - t0, 2),
                 "_file_meta": file_meta,
                 "_vlm_raw": res.parsed,
                 "_render": render_info,
                 "_prompt_context": dict(context) if context else None,
             }
         except Exception as e:
-            logger.error(f"VLM extraction error: {e}", exc_info=True)
+            _log(logging.ERROR, "VLM", f"VLM 추출 오류 — {type(e).__name__}: {_short(e, 300)}", stage="extract_done",
+                 exc_info=True)
             return {"success": False, "metadata": {}, "confidence": 0.0,
                     "model_used": "none", "error": str(e),
                     "extraction_time": round(time.perf_counter() - t0, 2)}
@@ -410,7 +597,11 @@ class PipelineOrchestrator:
         try:
             frame_dir = ctx["result_dir"] / "keyframes"
             kf = extract_keyframes(str(ctx["upload_path"]), str(frame_dir), schedule=frame_schedule)
+            kf_sec = time.perf_counter() - t0
             if not kf.get("frames"):
+                _log(logging.ERROR, "VLM",
+                     f"키프레임 추출 실패 — {kf.get('error') or '프레임 없음'} · 길이 {kf.get('duration')}초 · {kf_sec:.1f}초",
+                     stage="extract_done")
                 return {"success": False, "metadata": {}, "confidence": 0.0,
                         "model_used": "none",
                         "error": f"키프레임 추출 실패: {kf.get('error') or '프레임 없음'}",
@@ -419,31 +610,43 @@ class PipelineOrchestrator:
 
             paths = [f["path"] for f in kf["frames"]]
             times = [f["t"] for f in kf["frames"]]
+            _log(logging.INFO, "VLM",
+                 f"키프레임 {kf.get('kept', len(paths))}장 추출 — 길이 {kf.get('duration')}초 · 표 {kf.get('schedule')} · "
+                 f"목표 {kf.get('target')} · 후보 {kf.get('sampled')} · 시각 {', '.join(f'{t}s' for t in times)} · {kf_sec:.1f}초")
             extractor = VLMExtractor(prefer=prefer, max_tokens=4096)   # omni-flash 출력이 2048 을 넘는 경우 8% (2026-10-11 실측)
+            self._vlm_chain_line(extractor, f"VLM 영상 추출({len(paths)}프레임 1회 호출)", context)
             res = extractor.extract_video(paths, times, label=ctx["filename"], context=context)
             backend = getattr(res, "backend_used", "?")
             if not res.ok or not res.parse_ok or not res.parsed:
+                err = res.error or "VLM ran but JSON parse failed"
+                _log(logging.ERROR, "VLM", f"VLM 영상 추출 실패 — {_short(err, 300)} · {time.perf_counter() - t0:.1f}초",
+                     stage="extract_done")
                 return {"success": False, "metadata": {}, "confidence": 0.0,
                         "model_used": backend,
-                        "error": res.error or "VLM ran but JSON parse failed",
+                        "error": err,
                         "extraction_time": round(time.perf_counter() - t0, 2),
+                        "_seconds": round(time.perf_counter() - t0, 2),
                         "_keyframes": kf}
 
+            t_m = time.perf_counter()
             unified = map_vlm_to_unified(res.parsed, str(ctx["upload_path"]))
             file_meta = unified.pop("_file_meta", {})
-            logger.info(f"Video extraction via {backend}: {kf['kept']} frames "
-                        f"({kf['duration']}s), work_type={unified.get('work_type')}")
+            self._vlm_done_line(res, backend, time.perf_counter() - t0, unified,
+                                extra=f"영상 {kf.get('kept', len(paths))}프레임 · ")
+            self._measure_line(ctx, unified, file_meta, time.perf_counter() - t_m)
             return {
                 "success": True, "metadata": unified, "confidence": 0.7,
                 "model_used": backend,
                 "extraction_time": round(time.perf_counter() - t0, 2),
+                "_seconds": round(time.perf_counter() - t0, 2),
                 "_file_meta": file_meta, "_vlm_raw": res.parsed,
                 "_keyframes": {k: v for k, v in kf.items() if k != "frames"},
                 "_frame_times": times,
                 "_prompt_context": dict(context) if context else None,
             }
         except Exception as e:
-            logger.error(f"Video extraction error: {e}", exc_info=True)
+            _log(logging.ERROR, "VLM", f"영상 추출 오류 — {type(e).__name__}: {_short(e, 300)}", stage="extract_done",
+                 exc_info=True)
             return {"success": False, "metadata": {}, "confidence": 0.0,
                     "model_used": "none", "error": str(e),
                     "extraction_time": round(time.perf_counter() - t0, 2)}
@@ -474,10 +677,9 @@ class PipelineOrchestrator:
                 existing = [d for d in existing if d.get("field") not in inherited_fields]
                 response["consolidation_decisions"] = existing + decisions
             response["contract_inheritance"] = {"applied": True, **summary}
-            logger.info(f"Contract inheritance: +{summary['inherited']} fields "
-                        f"(title_match={summary['title_match']})")
+            _log(logging.INFO, "통합", f"계약서 상속 — 필드 +{summary['inherited']}개 (제목 일치 {summary['title_match']})")
         except Exception as e:
-            logger.error(f"Contract inheritance failed: {e}", exc_info=True)
+            _log(logging.ERROR, "통합", f"계약서 상속 실패 — {type(e).__name__}: {e}", exc_info=True)
             response["contract_inheritance"] = {"applied": False, "error": str(e)}
         return response
 
@@ -539,6 +741,12 @@ class PipelineOrchestrator:
             "entity_count": self._count_ner_entities(ner_result),
             "ner_success": ner_result.get("success", False) if ner_result else False,
             "ner_error": ner_result.get("error") if ner_result and not ner_result.get("success", False) else None,
+            # NER 추출 방식 — 모델을 올리지 못하면 정규표현식만 쓴다 (ner_system.ner_predict 의 mode/model_loaded/load_error)
+            "ner_mode": (ner_result or {}).get("mode"),
+            "ner_model_loaded": bool((ner_result or {}).get("model_loaded")),
+            "ner_load_error": (ner_result or {}).get("load_error"),
+            "ner_entity_count": int((ner_result or {}).get("entity_count")
+                                    or (ner_result or {}).get("total_entities") or 0),
             "processing_time": round(total_time, 2),
             "consolidate": consolidate,
             "consolidation_model": consolidation_model if consolidate else None,
@@ -550,6 +758,16 @@ class PipelineOrchestrator:
             "consolidation_confidence": consolidation_result.get("validation_report", {}).get("confidence_score", 0.0) if consolidation_result else None,
             "consolidation_model_used": consolidation_result.get("model_used", consolidation_model) if consolidation_result else None,
             "consolidation_fallback_used": consolidation_result.get("fallback_used", False) if consolidation_result else False,
+            "consolidation_degraded": bool(consolidation_result.get("consolidation_degraded")) if consolidation_result else False,
+            # 단계별 소요(초) — 실행 로그와 같은 값
+            "stage_seconds": {k: v for k, v in {
+                "sha256": (ctx.get("timings") or {}).get("sha256"),
+                "ocr": (ctx.get("timings") or {}).get("ocr"),
+                "extraction": (llm_result or {}).get("_seconds"),
+                "ner": (ner_result or {}).get("_seconds"),
+                "consolidation": (consolidation_result or {}).get("consolidation_seconds"),
+                "contract_rules": (ctx.get("timings") or {}).get("contract_rules"),
+            }.items() if v is not None},
             # v4 출처 기록
             "test": test,
             "contract_context": contract_context,
@@ -565,8 +783,17 @@ class PipelineOrchestrator:
                 licensee_party = found.get("name")
                 response["licensee_party_detail"] = {
                     k: found.get(k) for k in ("source", "signature", "preamble", "agree")}
+                src_ko = {"signature": "서명란", "preamble": "전문(前文)"}.get(found.get("source"), found.get("source"))
+                if licensee_party:
+                    agree = found.get("agree")
+                    _log(logging.INFO, "문맥",
+                         f"이용자 당사자 규칙 — {licensee_party!r} (출처 {src_ko}"
+                         + (" · 서명란·전문 일치" if agree is True else " · 서명란·전문 불일치" if agree is False else "")
+                         + ") → 저작권자(키 5)")
+                else:
+                    _log(logging.WARNING, "문맥", "이용자 당사자 규칙 — 서명란·전문에서 이용자를 찾지 못했습니다 (저작권자 키 5 는 모델 값 대체)")
             except Exception as e:                  # 규칙 실패가 응답을 깨면 안 된다
-                logger.warning(f"이용자 당사자 규칙 추출 실패: {e}")
+                _log(logging.WARNING, "문맥", f"이용자 당사자 규칙 추출 실패: {e}")
         response["licensee_party"] = licensee_party
         if licensee_party:
             for _key in ("metadata", "consolidated_metadata"):
@@ -583,7 +810,7 @@ class PipelineOrchestrator:
             from module.llm_extraction.schemas import tta_serializer
             response["tta_metadata"] = tta_serializer.build(_src, response)
         except Exception as e:                      # 직렬화 실패로 추출 결과를 잃지 않는다
-            logger.warning(f"TTA 직렬화 실패: {e}")
+            _log(logging.WARNING, "시스템", f"TTA 직렬화 실패: {e}")
             response["tta_metadata"] = None
 
         # v4 A2: 시험평가용 23키 예측 (keys23 순서). 같은 _src 에서 한 번 더 접는다.
@@ -606,7 +833,7 @@ class PipelineOrchestrator:
                 src[k] = v
                 lost.append(k)
         if lost and warn:
-            logger.warning(f"직렬화: 통합에서 사라진 필드를 원본으로 복원 {lost}")
+            _log(logging.WARNING, "통합", f"직렬화: 통합에서 사라진 필드를 원본으로 복원 {lost}")
         return src
 
     def _attach_test_prediction(self, response: Dict[str, Any],
@@ -622,7 +849,7 @@ class PipelineOrchestrator:
                 src = self._final_source(response, warn=False)
             response["test_prediction"] = eval23_serializer.build(src, response, response.get("test"))
         except Exception as e:
-            logger.warning(f"eval23 직렬화 실패: {e}")
+            _log(logging.WARNING, "시스템", f"23개 항목 직렬화 실패: {e}")
             response["test_prediction"] = None
 
     @staticmethod
@@ -762,7 +989,7 @@ class PipelineOrchestrator:
 
         # Guard: stop early if OCR returned no text
         if not ocr_text or not ocr_text.strip():
-            logger.warning("OCR returned empty text — skipping LLM, NER, and consolidation")
+            _log(logging.WARNING, "OCR", "텍스트·OCR — 텍스트 없음 (LLM·NER·통합 생략)", stage="ocr")
             response = self.build_response(
                 ctx,
                 model_name=model_name, document_type=document_type,
@@ -779,12 +1006,13 @@ class PipelineOrchestrator:
 
         # Run LLM and NER concurrently — they're independent, both only need OCR text
         # LLM is I/O-bound (cloud API), NER is CPU-bound (local model) — no resource conflict
+        # 작업 스레드로 문맥(세트 묶음)을 복사해 넘긴다 — 두 스레드의 로그도 같은 세트로 붙는다
         with ThreadPoolExecutor(max_workers=2) as executor:
-            llm_future = executor.submit(
-                self.run_llm, ocr_text, document_type, ctx["filename"], model_name
+            llm_future = LC.submit(
+                executor, self.run_llm, ocr_text, document_type, ctx["filename"], model_name
             )
-            ner_future = executor.submit(
-                self.run_ner, ocr_result, ctx["result_dir"], ner_model, ocr_text
+            ner_future = LC.submit(
+                executor, self.run_ner, ocr_result, ctx["result_dir"], ner_model, ocr_text
             )
             llm_result = llm_future.result()
             ner_result = ner_future.result()
@@ -795,6 +1023,7 @@ class PipelineOrchestrator:
                 ctx["result_dir"], consolidation_model,
             )
         else:
+            _log(logging.INFO, "통합", "통합 생략 — consolidate=False (LLM 결과를 그대로 사용)")
             con_result, con_success, con_error = None, False, None
 
         response = self.build_response(
@@ -832,6 +1061,7 @@ class PipelineOrchestrator:
         (₩35.4/₩35.6) 와 ~55초를 쓰고, 필드를 지운 적도 있다(9→4). consolidated_metadata 에
         원본을 그대로 복사해 두면 '통합 결과 우선' 으로 읽는 호출자(_final_metadata)도 같은 값을 본다.
         """
+        _log(logging.INFO, "통합", "통합 생략 — 저작물 통합 검증 끔 (consolidate_work=False) · VLM 결과와 파일 측정값을 그대로 씁니다")
         response["consolidated_metadata"] = dict(response.get("metadata") or {})
         response["work_consolidation"] = {
             "applied": False,
@@ -843,15 +1073,27 @@ class PipelineOrchestrator:
         """PDF 면 제호·종별을 규칙으로 읽는다 (contract_context.parse). 실패/비PDF → None."""
         if not str(ctx["upload_path"]).lower().endswith(".pdf"):
             return None
+        t0 = time.perf_counter()
         try:
             from module.clip_extraction.contract_context import parse
             out = parse(ctx["upload_path"])
+            sec = time.perf_counter() - t0
+            ctx.setdefault("timings", {})["contract_rules"] = round(sec, 3)
             if isinstance(out, dict):
                 # 진단용 'pdf' 는 저장용 정제 이름('…_운수_자판기_1.pdf')이 아니라 원본 파일명으로 — 응답의 file_name 과 같게
                 out["pdf"] = ctx.get("original_filename") or out.get("pdf")
+                title, wtype = out.get("title"), out.get("work_type")
+                if title or wtype:
+                    ticked = out.get("work_type_ticked") or []
+                    msg = (f"계약서 규칙 파싱 — 제호 {repr(title) if title else '못 찾음'} · 종별 {wtype or '못 찾음'}"
+                           + (f" (체크 {', '.join(map(str, ticked))})" if ticked else "") + f" · {sec:.2f}초")
+                else:
+                    err = f" ({out.get('error')})" if out.get("error") else ""
+                    msg = f"계약서 규칙 파싱 — 제호·종별을 찾지 못했습니다{err} · {sec:.2f}초"
+                _log(logging.INFO if (title and wtype) else logging.WARNING, "문맥", msg)
             return out
         except Exception as e:
-            logger.warning(f"계약서 규칙 파싱 실패: {e}")
+            _log(logging.WARNING, "문맥", f"계약서 규칙 파싱 실패: {e}")
             return None
 
     @staticmethod
@@ -860,12 +1102,14 @@ class PipelineOrchestrator:
 
         모델이 만든 값을 덮어쓰지 않는다 — 비어 있을 때만 넣는다.
         """
+        t0 = time.perf_counter()
         try:
             from module.clip_extraction.technical_metadata import extract_technical_metadata
             tech = extract_technical_metadata(str(ctx["upload_path"]))
         except Exception as e:  # 기술속성 산출 실패가 파이프라인을 죽이면 안 된다
-            logger.warning(f"파일 기술속성 산출 실패: {e}")
+            _log(logging.WARNING, "측정", f"파일 기술속성 산출 실패: {e}")
             return
+        sec = time.perf_counter() - t0
         for key in ("metadata", "consolidated_metadata"):
             meta = response.get(key)
             if not isinstance(meta, dict):
@@ -879,6 +1123,13 @@ class PipelineOrchestrator:
                 ext = os.path.splitext(str(ctx["upload_path"]))[1].lstrip(".").upper()
                 if ext:
                     meta["digital_format"] = ext
+        shown = response.get("consolidated_metadata") or response.get("metadata") or {}
+        if isinstance(shown, dict):
+            PipelineOrchestrator._measure_line(
+                ctx, {**{k: tech.get(k) for k in ("resolution", "file_size", "file_created_date")},
+                      **{k: v for k, v in shown.items() if k in ("digital_format", "resolution", "file_size",
+                                                                  "file_created_date") and v not in (None, "", [])}},
+                {"technical": tech.get("_technical") or {}}, sec)
 
     @staticmethod
     def _format_ner_entities(ner_result: Optional[Dict]) -> Dict:
