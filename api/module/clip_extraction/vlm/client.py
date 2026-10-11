@@ -15,11 +15,24 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+# ping 전용 timeout(초). 추출 호출의 timeout(기본 300s)·재시도를 ping 에도 쓰면 SYN 단계에서 멎은
+# 서버 하나에 5분을 기다린다. 환경변수 VLM_PING_TIMEOUT_SEC 로 바꿀 수 있다.
+PING_TIMEOUT_SEC = 10.0
+
+
+def _ping_timeout() -> float:
+    try:
+        v = float(os.getenv("VLM_PING_TIMEOUT_SEC", "") or PING_TIMEOUT_SEC)
+    except ValueError:
+        v = PING_TIMEOUT_SEC
+    return v if v > 0 else PING_TIMEOUT_SEC
 
 
 @dataclass
@@ -63,7 +76,12 @@ def _encode_image(image_path: Path) -> str:
     return f"data:image/jpeg;base64,{data}"
 
 
+_THOUGHT_BLOCK = re.compile(r"<thought>.*?</thought>", re.S)
+
+
 def _extract_json(text: str) -> dict[str, Any] | None:
+    # Google AI Studio 의 Gemma 4 는 추론을 <thought>…</thought> 로 본문에 먼저 쓴다(끌 수 없음) — 그 안의 중괄호를 JSON 으로 잡지 않게 먼저 지운다.
+    text = _THOUGHT_BLOCK.sub("", text or "")
     """
     Best-effort parse of a JSON object from model output. Handles bare JSON,
     ```json fenced blocks, and leading/trailing prose.
@@ -95,18 +113,33 @@ class VLMClient:
         api_key: str,
         timeout: float = 300.0,
         image_first: bool = True,
+        extra_body: dict | None = None,
+        connect_timeout: float | None = None,
+        max_retries: int = 1,
     ):
         from openai import OpenAI
+        self.extra_body = extra_body   # 예: {"enable_thinking": False} — qwen3.7 계열은 기본이 생각 켬
         self.model_label = model_label
         self.model = model
         self.image_first = image_first
+        if connect_timeout is not None:
+            import httpx   # 연결 단계만 짧게 — 닿지 않는 서버(SYN 무응답)에서 300초를 기다리지 않게
+            timeout = httpx.Timeout(timeout, connect=connect_timeout)
         self.client = OpenAI(base_url=base_url, api_key=api_key or "not-needed",
-                             timeout=timeout, max_retries=1)
+                             timeout=timeout, max_retries=max_retries)
 
     def ping(self) -> tuple[bool, str]:
-        """Cheap reachability check — lists models. Returns (ok, detail)."""
+        """Cheap reachability check — lists models. Returns (ok, detail).
+
+        짧은 timeout(_ping_timeout, 기본 10s)·재시도 없음으로 돈다. 느려서 '불가' 로 보여도 실제 호출은
+        extract()/extract_video() 가 폴백하므로 잃는 것은 체인의 시작 순서뿐이다.
+        """
         try:
-            models = self.client.models.list()
+            client = self.client.with_options(timeout=_ping_timeout(), max_retries=0)
+        except Exception:  # noqa: BLE001 — with_options 가 없는 구버전 SDK 면 기본 설정으로
+            client = self.client
+        try:
+            models = client.models.list()
             ids = [m.id for m in models.data]
             return True, f"{len(ids)} model(s): {', '.join(ids[:3])}"
         except Exception as e:  # noqa: BLE001
@@ -133,6 +166,7 @@ class VLMClient:
         t0 = time.perf_counter()
         try:
             resp = self.client.chat.completions.create(
+                **({'extra_body': self.extra_body} if self.extra_body else {}),
                 model=self.model,
                 messages=messages,
                 max_tokens=max_tokens,
@@ -162,6 +196,61 @@ class VLMClient:
                 model_label=self.model_label,
                 image=image_path.name,
                 ok=False,
+                latency_s=round(time.perf_counter() - t0, 2),
+                error=f"{type(e).__name__}: {e}",
+            )
+
+    def extract_frames(
+        self,
+        frame_paths: list,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 1024,
+        temperature: float = 0.0,
+        label: str = "video",
+    ) -> VLMResult:
+        """여러 프레임을 **한 번의 호출**로 보내 영상 전체 속성을 추출한다.
+
+        프레임을 한 장씩 따로 호출하면 모델이 '개별 이미지 N장'으로 볼 뿐 영상의
+        전개를 보지 못한다. 영상 모델 비교시험도 이 방식(다중 이미지 1회 호출)으로
+        측정했고 qwen3.5-omni-plus 가 92.3% 로 1위였다.
+
+        네이티브 비디오 입력(type:"video")은 base64 크기 제한(9.4MB→HTTP 413)에
+        걸려 쓰지 않는다.
+        """
+        parts = [{"type": "image_url", "image_url": {"url": _encode_image(Path(p))}}
+                 for p in frame_paths]
+        text_part = {"type": "text", "text": user_prompt}
+        content = parts + [text_part] if self.image_first else [text_part] + parts
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": content},
+        ]
+
+        t0 = time.perf_counter()
+        try:
+            resp = self.client.chat.completions.create(
+                **({'extra_body': self.extra_body} if self.extra_body else {}),
+                model=self.model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            latency = time.perf_counter() - t0
+            text = resp.choices[0].message.content or ""
+            parsed = _extract_json(text)
+            usage = {}
+            if resp.usage:
+                usage = {"prompt_tokens": resp.usage.prompt_tokens,
+                         "completion_tokens": resp.usage.completion_tokens}
+            return VLMResult(
+                model_label=self.model_label, image=label, ok=True,
+                latency_s=round(latency, 2), raw_text=text, parsed=parsed,
+                parse_ok=parsed is not None, usage=usage,
+            )
+        except Exception as e:  # noqa: BLE001
+            return VLMResult(
+                model_label=self.model_label, image=label, ok=False,
                 latency_s=round(time.perf_counter() - t0, 2),
                 error=f"{type(e).__name__}: {e}",
             )

@@ -1,0 +1,843 @@
+"""배치 평가 API — 매니페스트 기반 계약서+저작물 세트 일괄 처리.
+
+**왜 별도 엔드포인트가 필요한가**
+브라우저가 4,000세트를 하나씩 올리며 몇 시간 도는 구조는 못 쓴다 — 탭을 닫거나
+새로고침하면 진행분이 날아가고, 재개할 방법도 없다. 그래서 작업을 서버가 소유한다:
+업로드는 1회(ZIP), 실행은 백그라운드 스레드, UI는 진행률만 구독한다. 탭을 닫아도
+작업은 계속되고 나중에 다시 붙을 수 있다.
+
+CLI 하네스(`module.evaluation.cli`)와 **같은 BatchRunner**를 쓰므로 UI로 돌리든
+CLI로 돌리든 결과가 같다.
+
+엔드포인트:
+  POST /api/batch/create          ZIP 업로드 또는 서버경로 → 작업 생성
+  GET  /api/batch/jobs            작업 목록
+  GET  /api/batch/{id}/status     상태·진행률
+  GET  /api/batch/{id}/stream     SSE 진행률 스트림
+  POST /api/batch/{id}/cancel     중단
+  GET  /api/batch/{id}/report     집계 리포트(markdown/json)
+  GET  /api/batch/{id}/results    results.jsonl 다운로드
+"""
+
+from __future__ import annotations
+
+import asyncio
+import io
+import json
+import logging
+import shutil
+import threading
+import time
+import uuid
+import zipfile
+from collections import deque
+from pathlib import Path
+from typing import Any, Deque, Dict, Optional
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/api/batch", tags=["batch"])
+
+MAX_ARCHIVE_BYTES = 8 * 1024 * 1024 * 1024   # 8GB
+_JOBS: Dict[str, "BatchJob"] = {}
+_JOBS_LOCK = threading.Lock()
+
+BATCH_ROOT: Path = Path("batch_jobs")        # app.py 가 init_batch_api() 로 덮어쓴다
+RESULTS_ROOT: Path = Path("results")         # 파이프라인 단계별 산출물 위치
+_ORCH = None                                 # 파이프라인 오케스트레이터(공유)
+
+
+def init_batch_api(orchestrator, batch_root: Path, results_root: Path = None):
+    """app.py 에서 1회 호출 — 오케스트레이터와 저장 위치를 주입한다."""
+    global _ORCH, BATCH_ROOT, RESULTS_ROOT
+    _ORCH = orchestrator
+    BATCH_ROOT = Path(batch_root)
+    BATCH_ROOT.mkdir(parents=True, exist_ok=True)
+    if results_root is not None:
+        RESULTS_ROOT = Path(results_root)
+    _recover_jobs()
+
+
+def _recover_jobs():
+    """서버 재기동 시 디스크에 남은 작업을 목록에 되살린다.
+
+    작업 상태는 메모리에만 있어서 재시작·배포 한 번에 목록이 통째로 사라졌다.
+    실행 자체는 재개할 수 없지만(스레드가 죽었으므로), 결과와 산출물은 디스크에
+    그대로 있으므로 **리포트 조회와 세트별 다운로드는 되어야 한다**.
+    4,000세트를 몇 시간 돌린 뒤 배포 한 번에 접근 경로를 잃으면 곤란하다.
+    """
+    if not BATCH_ROOT.is_dir():
+        return
+    recovered = 0
+    for d in sorted(BATCH_ROOT.iterdir()):
+        if not d.is_dir() or d.name in _JOBS:
+            continue
+        res = d / "_eval_out" / "results.jsonl"
+        # 결과가 없어도 job.json 이 있으면 되살린다. 검증 단계에서 죽은 작업
+        # (채점 기준과 정답셋이 어긋나 중단된 경우 등)이 재시작 한 번에 통째로
+        # 사라지면, 왜 죽었는지 적어 둔 validation.warning 까지 함께 없어진다.
+        # 운영자 입장에서는 '제출한 적이 없는 것'처럼 보여 원인을 못 찾는다.
+        has_meta = (d / "job.json").exists()
+        if not res.exists() and not has_meta:
+            continue
+        job = BatchJob(d.name, d, name=d.name)
+        # 이름과 설정은 메모리에만 있었다. 채점 기준(plan/tta)을 잃으면 상세 모달이
+        # 엉뚱한 속성 목록으로 그려지므로, 생성 때 남겨 둔 job.json 을 먼저 읽는다.
+        try:
+            saved = json.loads((d / "job.json").read_text(encoding="utf-8"))
+            job.name = saved.get("name") or job.name
+            job.config = saved.get("config") or {}
+            job.validation = saved.get("validation") or None
+        except (OSError, json.JSONDecodeError):
+            pass
+        try:
+            job.created_at = d.stat().st_mtime
+        except OSError:
+            pass
+        # 결과 파일을 한 번 훑어 건수·실패·비용·채점 기준을 되살린다.
+        #   · 실패를 0 으로 고정하면 재시작 뒤 '실패 0' 이라는 틀린 숫자가 뜬다.
+        #   · job.json 이 없는 예전 작업(실측: 서버의 12건 중 11건)은 채점 기준을
+        #     되찾을 길이 없어 plan 으로 떨어지고, TTA 결과가 11속성 화면으로 그려진다.
+        #     결과 줄에 기준이 새겨져 있으므로 거기서 되짚어 채워 넣는다.
+        from module.evaluation.scoring import infer_scoring_set
+        per_set: Dict[str, Dict[str, Any]] = {}
+        attr_names: set = set()
+        basis = None
+        # 결과 파일이 없는 작업(검증 단계에서 죽은 경우)도 되살리므로 여기서 지킨다.
+        with (res.open(encoding="utf-8") if res.exists() else io.StringIO("")) as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                # 재개로 같은 set_id 가 여러 줄이면 **마지막 줄**을 센다.
+                # 리포트(`load_results`)·상세(`_set_result`) 와 같은 규칙이어야 한다 —
+                # 여기만 '마지막 성공분'으로 두면 목록의 실패 건수가 리포트와 어긋난다.
+                per_set[str(r.get("set_id"))] = {"ok": bool(r.get("ok")),
+                                                 "cost": r.get("cost_krw") or 0.0}
+                basis = basis or r.get("scoring_set")
+                attr_names |= set(r.get("per_attr") or {})
+        n = len(per_set)
+        job.total = n
+        job.progress = {"i": n, "total": n,
+                        "failed": sum(1 for v in per_set.values() if not v["ok"]),
+                        "cost_krw_total": round(sum(v["cost"] for v in per_set.values()), 1)}
+        if not job.config.get("scoring_set"):
+            job.config = {**job.config,
+                          "scoring_set": basis or infer_scoring_set(attr_names)}
+        rep = d / "_eval_out" / "report.json"
+        if rep.exists():
+            try:
+                job.summary = {"aggregate": json.loads(rep.read_text(encoding="utf-8")),
+                               "recovered": True}
+            except (OSError, json.JSONDecodeError):
+                pass
+        # 실행 스레드는 없다. 리포트가 있으면 완료로, 없으면 중단된 것으로 표시한다.
+        if rep.exists():
+            job.state, job.error = "done", None
+        elif n:
+            job.state = "cancelled"
+            job.error = "서버 재시작으로 중단됨 (결과는 보존)"
+        else:
+            # 세트를 한 건도 처리하지 못한 작업 — 보통 검증에서 멈춘 것이다.
+            # validation.warning 에 사유가 남아 있으므로 그걸 그대로 보여준다.
+            job.state = "error"
+            job.error = ((job.validation or {}).get("warning")
+                         or "검증 단계에서 중단됨 (결과 없음)")
+        with _JOBS_LOCK:
+            _JOBS[d.name] = job
+        recovered += 1
+    if recovered:
+        logger.info(f"배치 작업 {recovered}건 복구 (디스크 기준)")
+
+
+def _safe_extract(zf: zipfile.ZipFile, dest: Path) -> None:
+    """Zip-slip 방어 — 아카이브 밖으로 나가는 경로를 거부한다.
+
+    사용자가 올린 ZIP을 그대로 풀면 '../../etc/...' 같은 항목이 서버 파일을 덮어쓸 수 있다.
+    """
+    dest = dest.resolve()
+    for member in zf.infolist():
+        name = member.filename
+        if name.startswith("/") or ".." in Path(name).parts:
+            raise HTTPException(400, f"아카이브에 위험한 경로가 있습니다: {name}")
+        target = (dest / name).resolve()
+        if not str(target).startswith(str(dest)):
+            raise HTTPException(400, f"아카이브 경로가 대상 폴더를 벗어납니다: {name}")
+    zf.extractall(dest)
+
+
+def _save_job_meta(job: "BatchJob") -> None:
+    """이름·설정·검증결과를 작업 폴더에 남긴다 — 재시작 후 _recover_jobs 가 읽는다.
+
+    채점 기준(plan/tta)과 정답셋 대조 결과가 메모리에만 있으면 배포 한 번에
+    사라지고, 되살아난 작업은 기본값(11속성)으로 그려진다.
+    """
+    try:
+        (job.work_dir / "job.json").write_text(
+            json.dumps({"name": job.name, "config": job.config,
+                        "validation": job.validation}, ensure_ascii=False),
+            encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _find_manifest(root: Path) -> Optional[Path]:
+    direct = root / "manifest.jsonl"
+    if direct.exists():
+        return direct
+    hits = sorted(root.rglob("manifest.jsonl"))
+    return hits[0] if hits else None
+
+
+class BatchJob:
+    """작업 1건 — 상태·진행률·이벤트 버퍼를 소유한다."""
+
+    def __init__(self, job_id: str, work_dir: Path, name: str = ""):
+        self.job_id = job_id
+        self.name = name or job_id
+        self.work_dir = work_dir
+        self.out_dir = work_dir / "_eval_out"
+        self.state = "pending"          # pending|running|done|cancelled|error
+        self.created_at = time.time()
+        self.started_at: Optional[float] = None
+        self.finished_at: Optional[float] = None
+        self.error: Optional[str] = None
+        self.total = 0
+        self.progress: Dict[str, Any] = {"i": 0, "total": 0, "failed": 0,
+                                         "cost_krw_total": 0.0}
+        self.summary: Optional[Dict] = None
+        self.validation: Optional[Dict] = None
+        self.config: Dict[str, Any] = {}     # 어떤 모델로 돌렸는지 리포트에 남긴다
+        self.runner = None
+        # 작업 생성 직후~러너 할당 사이에 취소가 들어오면 조용히 무시되고 그대로 완주해버린다.
+        # 취소 의사를 여기에 먼저 남겨두고, 러너가 붙는 즉시 반영한다.
+        self.cancel_requested = False
+        self._events: Deque[Dict] = deque(maxlen=2000)
+        self._seq = 0
+        self._lock = threading.Lock()
+
+    def push(self, ev: Dict):
+        with self._lock:
+            self._seq += 1
+            ev = {**ev, "seq": self._seq, "ts": time.time()}
+            self._events.append(ev)
+            if ev.get("type") == "start":
+                # 실제 실행 대상 수로 교체한다. job.total 은 매니페스트 전체 건수라
+                # --limit 이나 재개(이미 완료분 제외) 시 "1 / 20" 처럼 어긋난다.
+                self.total = ev.get("total", self.total)
+            if ev.get("type") == "progress":
+                self.progress = {
+                    "i": ev.get("i", 0), "total": ev.get("total", self.total),
+                    "failed": ev.get("failed", 0),
+                    "cost_krw_total": ev.get("cost_krw_total", 0.0),
+                    "last_set": ev.get("set_id"), "last_ok": ev.get("ok"),
+                    "last_accuracy": ev.get("accuracy"),
+                }
+
+    def events_after(self, seq: int):
+        with self._lock:
+            return [e for e in self._events if e["seq"] > seq]
+
+    def info(self) -> Dict:
+        return {
+            "job_id": self.job_id, "name": self.name, "state": self.state,
+            "total": self.total, "progress": self.progress,
+            "summary": self.summary, "validation": self.validation,
+            # 복구된 작업은 config 가 비어 있을 수 있다 — 채점 기준만은 결과에서 되짚는다
+            "config": self.config, "scoring_set": _scoring_set(self),
+            "error": self.error, "created_at": self.created_at,
+            "started_at": self.started_at, "finished_at": self.finished_at,
+        }
+
+
+def _run_job(job: BatchJob, manifest_path: Path, cfg_kwargs: Dict):
+    """백그라운드 스레드 본체."""
+    from module.evaluation.batch_runner import EVAL23, BatchRunner, RunConfig
+    from module.evaluation.manifest import (load_ground_truth, load_manifest,
+                                            validate_manifest)
+    try:
+        job.state = "running"
+        job.started_at = time.time()
+        entries = load_manifest(manifest_path)
+        gt = load_ground_truth(manifest_path.parent / "ground_truth.jsonl")
+        scoring_set = cfg_kwargs.get("scoring_set") or "plan"
+        eval23 = scoring_set == EVAL23
+        job.validation = validate_manifest(entries, test=cfg_kwargs.get("test"))
+        job.validation["ground_truth"] = len(gt)
+        job.validation["scoring_set"] = scoring_set
+
+        # 검증에 실패하면 시작하지 않는다(M2 B4). 예전에는 validation 만 저장하고 그대로 돌아서
+        # 계약서 leg 요금을 쓴 뒤 저작물 open("") 에서 죽고, 재개마다 같은 세트가 다시 과금됐다.
+        if not job.validation.get("ok"):
+            msg = ("매니페스트 검증 실패 — 실행하지 않습니다: "
+                   + " / ".join(job.validation.get("problems") or ["(사유 없음)"]))
+            job.validation["warning"] = msg
+            job.total = len(entries)
+            _save_job_meta(job)
+            job.push({"type": "validated", **job.validation})
+            logger.error(f"배치 작업 {job.job_id} 거부: {msg}")
+            job.state = "error"
+            job.error = msg[:400]
+            job.push({"type": "error", "error": job.error})
+            return
+
+        # 채점 기준과 정답셋의 속성 이름이 어긋나면 전 항목이 skipped_no_gt 로 빠지고
+        # 결과는 0% 로 보인다 — 오류가 아니라 "다 틀렸다" 처럼 읽힌다. 먼저 잡아 알린다.
+        # (eval23 은 여기서 채점하지 않는다 — gold23.jsonl 은 M1 평가기가 끝에 대조한다.)
+        from module.evaluation.scoring import attributes_for
+        # 기준 선택은 attributes_for 한 곳에서만 한다 — 여기서 또 고르면 기준이
+        # 늘어날 때 한쪽만 고쳐지고 경고가 엉뚱한 목록으로 나간다.
+        want = set() if eval23 else {a.name for a in attributes_for(scoring_set)}
+        have = set()
+        for rec in ([] if eval23 else list(gt.values())[:20]):
+            # attributes 가 null 인 줄에서 set(None) 로 죽으면 작업 전체가 실패한다
+            have |= set((rec or {}).get("attributes") or {})
+        overlap = len(want & have)
+        job.validation["gt_attr_overlap"] = "-" if eval23 else f"{overlap}/{len(want)}"
+        if have and overlap == 0:
+            msg = (f"정답셋이 '{cfg_kwargs.get('scoring_set')}' 기준과 맞지 않습니다 — "
+                   f"겹치는 속성 0개. 정답셋 속성: {sorted(have)[:5]}… "
+                   f"기대: {sorted(want)[:5]}…  이대로 돌리면 전 항목이 미채점으로 빠집니다.")
+            job.validation["warning"] = msg
+            logger.error(msg)
+        elif have and overlap < len(want):
+            # 부분 불일치가 더 위험하다 — 0개면 0% 로 눈에 띄지만, 몇 개만 빠지면
+            # 그 속성이 분모에서 조용히 사라져 **정확도가 실제보다 높게** 나온다.
+            missing = sorted(want - have)
+            msg = (f"정답셋에 없는 채점 속성 {len(missing)}개: {missing[:6]}… "
+                   f"이 속성은 미채점으로 빠지므로 정확도 분모가 {len(want)} → "
+                   f"{overlap} 로 줄어 실제보다 높게 보일 수 있습니다.")
+            job.validation["warning"] = msg
+            job.validation["missing_gt_attrs"] = missing
+            logger.warning(msg)
+
+        # 이름은 있는데 값이 비어 있는 속성(tier '제외' 등)은 전 세트에서 미채점으로
+        # 빠진다. 이름 대조만으로는 드러나지 않으므로 따로 센다 — 예컨대 권리 체크박스
+        # 7종이 통째로 비면 분모가 14 → 7 로 줄고, 경고 없이 정확도만 올라간다.
+        sample = [r for r in list(gt.values())[:20] if (r or {}).get("attributes")]
+        if sample:
+            blank = []
+            for name in sorted(want & have):
+                empty = sum(1 for r in sample
+                            if ((r["attributes"].get(name) or {}).get("value")
+                                in (None, "", [])))
+                if empty == len(sample):
+                    blank.append(name)
+            if blank:
+                job.validation["unscorable_attrs"] = blank
+                note = (f"정답 값이 비어 채점되지 않을 속성 {len(blank)}개: {blank[:6]}… "
+                        f"분모가 {len(want)} → {len(want) - len(blank)} 로 줄어듭니다.")
+                job.validation.setdefault("warning", note)
+                logger.warning(note)
+        job.total = len(entries)
+        _save_job_meta(job)            # 채점 기준·검증결과를 디스크에 고정
+        job.push({"type": "validated", **job.validation})
+
+        cfg = RunConfig(**cfg_kwargs)
+        runner = BatchRunner(_ORCH, cfg, job.out_dir, progress_cb=job.push)
+        job.runner = runner
+        if job.cancel_requested:          # 러너 할당 전에 들어온 취소를 반영
+            runner.cancel()
+        summary = runner.run(entries, gt)
+        job.summary = summary
+
+        if eval23:
+            # v4: 채점은 M1 평가기 — gold 가 있으면 test_metrics.json·report.md, 없으면 예측 요약 report.md.
+            # report.json 은 finalize 가 쓴다(복구·/report?fmt=json 이 읽는다).
+            fin = runner.finalize_eval23()
+            job.summary["eval23"] = fin
+            job.summary["aggregate"] = {"scoring_set": EVAL23, **fin}
+        else:
+            from module.evaluation.report import aggregate, load_results, render_markdown
+            agg = aggregate(load_results(job.out_dir / "results.jsonl"))
+            (job.out_dir / "report.md").write_text(render_markdown(agg), encoding="utf-8")
+            (job.out_dir / "report.json").write_text(
+                json.dumps(agg, ensure_ascii=False, indent=1), encoding="utf-8")
+            job.summary["aggregate"] = agg
+        job.state = "cancelled" if summary.get("cancelled") else "done"
+    except Exception as e:
+        logger.error(f"배치 작업 실패 {job.job_id}: {e}", exc_info=True)
+        job.state = "error"
+        job.error = f"{type(e).__name__}: {e}"[:400]
+        job.push({"type": "error", "error": job.error})
+    finally:
+        job.finished_at = time.time()
+        job.push({"type": "finished", "state": job.state})
+
+
+@router.post("/create")
+async def create_batch(
+    archive: UploadFile = File(default=None),
+    manifest_path: str = Form(default=None),
+    name: str = Form(default=""),
+    workers: int = Form(default=0),          # 0 = 자동 (v3 4 · v4/eval23 8)
+    limit: int = Form(default=0),
+    max_cost_krw: float = Form(default=0),
+    vlm_prefer: str = Form(default="auto"),
+    # 단계별 모델 — 미지정 시 /api/llm-extract 단일처리와 동일한 기본값
+    model_name: str = Form(default="alibaba-qwen3.5-122b-a10b"),
+    ocr_provider: str = Form(default="alibaba"),
+    ocr_model: str = Form(default=""),
+    ner_model: str = Form(default="klue-roberta-large"),
+    consolidate: bool = Form(default=True),
+    consolidation_model: str = Form(default="alibaba-qwen3.5-122b-a10b"),
+    # 채점 기준 — "plan"(연구개발계획서 11속성) 또는 "tta"(TTA 표준 14속성).
+    # 두 기준은 정답의 출처가 달라서, ZIP 의 ground_truth.jsonl 도 같은 기준으로
+    # 만들어져 있어야 한다. 어긋나면 전 항목이 skipped_no_gt 로 빠진다.
+    scoring_set: str = Form(default="plan"),
+    # v4(eval23, M2 B2~B5) — test 를 주면 채점 기준이 eval23 이 된다. 예측은 _eval_out/test_predictions/ 에
+    # 기록되고, gold_path(gold23.jsonl, 서버 경로)가 있으면 끝에 M1 평가기가 test_metrics.json·report.md 를 쓴다.
+    test: str = Form(default=""),
+    gold_path: str = Form(default=""),
+    consolidate_work: bool = Form(default=False),
+    tau: float = Form(default=0.65),
+):
+    """ZIP(manifest.jsonl + contracts/ + works/ + ground_truth.jsonl) 또는 서버 경로로 작업 생성."""
+    if _ORCH is None:
+        raise HTTPException(503, "배치 API가 초기화되지 않았습니다")
+    if not archive and not manifest_path:
+        raise HTTPException(400, "archive(ZIP) 또는 manifest_path 중 하나가 필요합니다")
+    test = (test or "").strip() or None
+    if test and test not in ("T-001", "T-002"):
+        raise HTTPException(400, f"test 는 T-001 또는 T-002 이어야 합니다: {test}")
+    if scoring_set not in ("plan", "tta", "eval23"):
+        scoring_set = "plan"
+    if test:
+        scoring_set = "eval23"
+    gold_path = (gold_path or "").strip() or None
+    if gold_path and not Path(gold_path).is_file():
+        raise HTTPException(400, f"gold 파일을 찾을 수 없습니다: {gold_path}")
+    eval23 = scoring_set == "eval23"
+
+    job_id = uuid.uuid4().hex[:12]
+    work_dir = BATCH_ROOT / job_id
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    if archive:
+        if not archive.filename.lower().endswith(".zip"):
+            raise HTTPException(400, "ZIP 파일만 지원합니다")
+        zpath = work_dir / "upload.zip"
+        size = 0
+        with zpath.open("wb") as f:
+            while chunk := await archive.read(4 * 1024 * 1024):
+                size += len(chunk)
+                if size > MAX_ARCHIVE_BYTES:
+                    f.close()
+                    shutil.rmtree(work_dir, ignore_errors=True)
+                    raise HTTPException(413, "아카이브가 너무 큽니다 (>8GB)")
+                f.write(chunk)
+        extract_dir = work_dir / "sets"
+        extract_dir.mkdir(exist_ok=True)
+        try:
+            with zipfile.ZipFile(zpath) as zf:
+                _safe_extract(zf, extract_dir)
+        except zipfile.BadZipFile:
+            shutil.rmtree(work_dir, ignore_errors=True)
+            raise HTTPException(400, "손상된 ZIP 파일입니다")
+        zpath.unlink(missing_ok=True)
+        mpath = _find_manifest(extract_dir)
+        if not mpath:
+            shutil.rmtree(work_dir, ignore_errors=True)
+            raise HTTPException(400, "아카이브에 manifest.jsonl 이 없습니다")
+    else:
+        mpath = Path(manifest_path)
+        if not mpath.is_file():
+            raise HTTPException(400, f"매니페스트를 찾을 수 없습니다: {manifest_path}")
+
+    job = BatchJob(job_id, work_dir, name=name or mpath.parent.name)
+    with _JOBS_LOCK:
+        _JOBS[job_id] = job
+
+    cfg_kwargs = {
+        # 상한 8 — 실측(2026-09-09, qwen3-vl-235b): 동시 4·8 은 100% 성공,
+        # 동시 12 는 22% 성공(나머지는 429). 16 은 애초에 통과할 수 없는 값이었다.
+        "workers": max(1, min(8, workers or (8 if eval23 else 4))),
+        "limit": limit or None,
+        "max_cost_krw": max_cost_krw or None,
+        "vlm_prefer": vlm_prefer,
+        "model_name": model_name,
+        "ocr_provider": ocr_provider,
+        "ocr_model": ocr_model or None,
+        "ner_model": ner_model,
+        "consolidate": consolidate,
+        "consolidation_model": consolidation_model,
+        "scoring_set": scoring_set,
+        # v4 전용 — v3 작업에서는 쓰이지 않는다(RunConfig 기본값과 같다)
+        "test": test,
+        "consolidate_work": bool(consolidate_work),
+        "gold": gold_path,
+        "tau": tau,
+    }
+    job.config = {k: v for k, v in cfg_kwargs.items()}
+    # 실행 전에 먼저 남긴다 — 검증 전에 죽은 작업도 이름·채점 기준은 되살아나야 한다.
+    _save_job_meta(job)
+    threading.Thread(target=_run_job, args=(job, mpath, cfg_kwargs),
+                     daemon=True, name=f"batch-{job_id}").start()
+    return {"job_id": job_id, "state": job.state, "manifest": str(mpath)}
+
+
+@router.get("/jobs")
+async def list_jobs():
+    with _JOBS_LOCK:
+        jobs = [j.info() for j in _JOBS.values()]
+    jobs.sort(key=lambda j: j["created_at"], reverse=True)
+    return {"jobs": jobs}
+
+
+def _get(job_id: str) -> BatchJob:
+    with _JOBS_LOCK:
+        job = _JOBS.get(job_id)
+    if not job:
+        raise HTTPException(404, f"작업을 찾을 수 없습니다: {job_id}")
+    return job
+
+
+@router.get("/{job_id}/status")
+async def job_status(job_id: str):
+    return _get(job_id).info()
+
+
+@router.post("/{job_id}/cancel")
+async def job_cancel(job_id: str):
+    job = _get(job_id)
+    job.cancel_requested = True     # 러너가 아직 없어도 의사를 남긴다
+    if job.runner:
+        job.runner.cancel()
+    if job.state == "pending":
+        job.state = "cancelled"
+    job.push({"type": "cancel_requested"})
+    return {"ok": True, "job_id": job_id, "state": job.state}
+
+
+@router.get("/{job_id}/stream")
+async def job_stream(job_id: str, after: int = 0):
+    """SSE — 진행률 이벤트를 순번(seq) 이후부터 흘려보낸다.
+
+    새로고침해도 `after`로 이어붙일 수 있어 UI가 상태를 잃지 않는다.
+    """
+    job = _get(job_id)
+
+    async def gen():
+        seq = after
+        idle = 0
+        while True:
+            evs = job.events_after(seq)
+            for e in evs:
+                seq = e["seq"]
+                yield f"data: {json.dumps(e, ensure_ascii=False)}\n\n"
+            if evs:
+                idle = 0
+            else:
+                idle += 1
+                if idle % 10 == 0:                       # 프록시 타임아웃 방지 하트비트
+                    yield ": keep-alive\n\n"
+            if job.state in ("done", "error", "cancelled") and not job.events_after(seq):
+                yield f"data: {json.dumps({'type': 'closed', 'state': job.state})}\n\n"
+                return
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache",
+                                      "Connection": "keep-alive",
+                                      "X-Accel-Buffering": "no"})
+
+
+@router.get("/{job_id}/report")
+async def job_report(job_id: str, fmt: str = "md"):
+    job = _get(job_id)
+    path = job.out_dir / ("report.json" if fmt == "json" else "report.md")
+    if not path.exists():
+        raise HTTPException(404, "리포트가 아직 생성되지 않았습니다")
+    if fmt == "json":
+        agg = json.loads(path.read_text(encoding="utf-8"))
+        # 이 키들이 이미 들어 있는 리포트(신규)는 그대로 두고, 옛 리포트에만 채워 준다.
+        order, _, _ = _attr_spec(job)
+        return JSONResponse({"scoring_set": _scoring_set(job), "attr_order": order, **agg})
+    return PlainTextResponse(path.read_text(encoding="utf-8"),
+                             media_type="text/markdown; charset=utf-8")
+
+
+@router.get("/{job_id}/results")
+async def job_results(job_id: str, limit: int = 0):
+    """results.jsonl — limit>0 이면 최근 N건만(UI 표 미리보기용).
+
+    **리포트와 같은 로더를 쓴다.** results.jsonl 은 재개 시 append 되므로 같은
+    set_id 가 여러 줄 남는다. 리포트는 `load_results` 로 마지막 판정만 집계하는데
+    이 표만 파일을 그대로 읽으면, 같은 작업인데 표에는 **이전 실행의 정확도**가
+    뜨고 리포트에는 새 값이 뜬다 — 어느 쪽이 맞는지 알 수 없게 된다.
+    앞에서 N건을 자르던 것도 고친다: 화면 문구는 "최근 N건"인데 실제로는 가장
+    오래된 N건을 보내고 있었다.
+    """
+    from module.evaluation.report import load_results
+    job = _get(job_id)
+    path = job.out_dir / "results.jsonl"
+    if not path.exists():
+        raise HTTPException(404, "결과가 아직 없습니다")
+    rows = load_results(path)
+    if limit and len(rows) > limit:
+        rows = rows[-limit:]
+    for r in rows:
+        r.pop("extracted", None)       # 표 미리보기에는 과하다
+        r.pop("traceback", None)
+    order, _, _ = _attr_spec(job)
+    return {"job_id": job_id, "count": len(rows), "scoring_set": _scoring_set(job),
+            "attr_order": order, "results": rows}
+
+
+# ---------------------------------------------------------------------------
+# 세트별 파이프라인 산출물 — OCR 텍스트 · NER 엔티티 · LLM 메타데이터 · 통합검증
+# ---------------------------------------------------------------------------
+# 파이프라인은 실행할 때마다 results/{request_id}/ 에 단계별 산출물을 남긴다.
+# 배치 결과에 그 request_id 를 기록해 두었으므로(contract/work 각각) 세트 단위로
+# 되찾을 수 있다. 채점 결과만 보고 "왜 틀렸는지" 확인할 방법이 없으면 곤란하다.
+
+def _set_result(job: "BatchJob", set_id: str) -> Dict[str, Any]:
+    path = job.out_dir / "results.jsonl"
+    if not path.exists():
+        raise HTTPException(404, "결과가 아직 없습니다")
+    found = None
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if str(r.get("set_id")) == str(set_id):
+                found = r          # 재개로 여러 번 있으면 마지막 것
+    if not found:
+        raise HTTPException(404, f"세트를 찾을 수 없습니다: {set_id}")
+    return found
+
+
+def _leg_dirs(rec: Dict[str, Any]) -> Dict[str, Path]:
+    legs = {}
+    for leg, key in (("contract", "contract_request_id"), ("work", "work_request_id")):
+        rid = rec.get(key)
+        if rid:
+            d = RESULTS_ROOT / str(rid)
+            if d.is_dir():
+                legs[leg] = d
+    return legs
+
+
+@router.get("/{job_id}/set/{set_id}/artifacts")
+async def set_artifacts(job_id: str, set_id: str):
+    """세트의 단계별 산출물 파일 목록 (계약서 leg + 저작물 leg)."""
+    job = _get(job_id)
+    rec = _set_result(job, set_id)
+    legs = _leg_dirs(rec)
+    out = {"set_id": set_id, "job_id": job_id,
+           "contract_request_id": rec.get("contract_request_id"),
+           "work_request_id": rec.get("work_request_id"),
+           "legs": {}}
+    for leg, d in legs.items():
+        files = []
+        for f in sorted(d.rglob("*")):
+            if f.is_file():
+                files.append({"path": str(f.relative_to(d)), "bytes": f.stat().st_size})
+        out["legs"][leg] = {"request_id": str(d.name), "files": files}
+    if not legs:
+        out["note"] = "산출물 디렉터리가 없습니다 (구버전 실행이거나 정리됨)"
+    return out
+
+
+@router.get("/{job_id}/set/{set_id}/download")
+async def set_download(job_id: str, set_id: str):
+    """세트의 모든 파이프라인 산출물을 ZIP 하나로 내려받는다.
+
+    contract/ 와 work/ 하위에 OCR·NER·llm_metadata.json·consolidated_metadata.json 이
+    그대로 들어간다 — 채점 결과를 다시 따져볼 때 필요한 원본이다.
+    """
+    import io
+    job = _get(job_id)
+    rec = _set_result(job, set_id)
+    legs = _leg_dirs(rec)
+    if not legs:
+        raise HTTPException(404, "이 세트의 산출물을 찾을 수 없습니다")
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for leg, d in legs.items():
+            for f in sorted(d.rglob("*")):
+                if f.is_file():
+                    zf.writestr(f"{leg}/{f.relative_to(d)}", f.read_bytes())
+        # 채점 결과도 같이 넣어 둔다 — 산출물과 판정을 따로 보관하면 대조가 번거롭다
+        zf.writestr("scoring.json", json.dumps(rec, ensure_ascii=False, indent=1))
+    buf.seek(0)
+    return StreamingResponse(
+        buf, media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="set_{set_id}_artifacts.zip"'})
+
+
+# ---------------------------------------------------------------------------
+# 세트 상세 — 감사(audit)용 단일 응답
+# ---------------------------------------------------------------------------
+# 모달 하나로 "무엇이 맞고 무엇이 틀렸는지"를 끝까지 볼 수 있어야 한다:
+# 속성별 정답/추출/판정 + 계약서·저작물 leg 각각의 메타데이터 + 산출물 파일 목록.
+# 이걸 여러 엔드포인트로 쪼개면 UI 가 3번 왕복하고 상태가 어긋난다.
+
+def _scoring_set(job: "BatchJob") -> str:
+    """이 작업이 어떤 채점 기준(plan/tta)으로 돌았는지.
+
+    설정이 우선이지만, 서버 재시작으로 복구된 작업은 설정이 메모리와 함께 사라진다
+    (실측: 서버의 옛 작업은 config={} 로 되살아난다). 그때는 결과에 찍힌 속성 이름으로
+    되짚는다 — 두 기준은 이름이 하나도 겹치지 않아 한 줄만 봐도 판별된다.
+    """
+    from module.evaluation.scoring import infer_scoring_set
+    s = (job.config or {}).get("scoring_set")
+    if s in ("plan", "tta", "eval23"):
+        return s
+    path = job.out_dir / "results.jsonl"
+    try:
+        with path.open(encoding="utf-8") as f:
+            for line in f:
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                # 결과 줄에 기준이 새겨져 있으면 그대로 믿는다 (eval23 은 per_attr 이 없다)
+                if row.get("scoring_set") in ("plan", "tta", "eval23"):
+                    s = row["scoring_set"]
+                    job.config = {**(job.config or {}), "scoring_set": s}
+                    return s
+                names = list((row.get("per_attr") or {}))
+                if names:                     # 실패 세트는 per_attr 이 비어 있다
+                    s = infer_scoring_set(names)
+                    job.config = {**(job.config or {}), "scoring_set": s}
+                    return s
+    except OSError:
+        pass
+    return "plan"
+
+
+def _attr_spec(job: "BatchJob"):
+    """작업의 채점 기준에 맞는 (속성 순서, leg 매핑).
+
+    11속성을 여기에 박아 두면 TTA 작업은 한 줄도 대조되지 않고 빈 행 11개가 나온다
+    (실측: 서버 작업 79ca00491f31 의 상세가 전부 null 이었다). 목록은 채점기에서
+    그대로 가져온다.
+
+    leg 는 '틀렸을 때 어느 단계를 봐야 하는가'다. 저작물 leg 의 값은 계약서 값으로
+    덮지 않으므로(work_type·description 등), 계약서 상속 목록에 있는 필드만
+    contract 로 본다 — 기존 11속성 매핑(제목·저자·라이선스)과 정확히 같은 결과가 나온다.
+    """
+    from module.clip_extraction.contract_inheritance import INHERITABLE_FIELDS
+    from module.evaluation.scoring import attributes_for
+    if _scoring_set(job) == "eval23":
+        # v4 23키 — 1~16 은 계약서(T-001), 17~23 은 저작물(T-002) leg 에서 나온다 (M1 §1).
+        from module.evaluation.v4.keys23 import KEY_NAMES, T001_KEYS
+        return (list(KEY_NAMES),
+                {k: ("contract" if k in T001_KEYS else "work") for k in KEY_NAMES},
+                {k: k for k in KEY_NAMES})
+    # work_title 은 상속 목록에 없지만 계약서 제목 매칭으로 상속된다(특례).
+    inherited = set(INHERITABLE_FIELDS) | {"work_title"}
+    order, leg, field = [], {}, {}
+    for a in attributes_for(_scoring_set(job)):
+        cands = a.field if isinstance(a.field, tuple) else (a.field,)
+        names = [f for f in cands if isinstance(f, str)]
+        order.append(a.name)
+        leg[a.name] = "contract" if any(f in inherited for f in names) else "work"
+        field[a.name] = names[0] if names else None
+    return order, leg, field
+
+
+def _load_gt(manifest_dir: Path) -> Dict[str, Dict]:
+    p = manifest_dir / "ground_truth.jsonl"
+    out: Dict[str, Dict] = {}
+    if not p.exists():
+        return out
+    with p.open(encoding="utf-8") as f:
+        for line in f:
+            try:
+                g = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            key = str(g.get("set_id") or g.get("id") or "")
+            if key:
+                out[key] = g
+    return out
+
+
+def _leg_metadata(rid: Optional[str]) -> Dict[str, Any]:
+    """leg 산출물에서 메타데이터와 파일 목록을 읽는다."""
+    if not rid:
+        return {}
+    d = RESULTS_ROOT / str(rid)
+    if not d.is_dir():
+        return {"request_id": rid, "missing": True}
+    meta, ocr_chars, entities = {}, None, None
+    jf = d / "llm_metadata.json"
+    if jf.exists():
+        try:
+            r = json.loads(jf.read_text(encoding="utf-8"))
+            meta = r.get("consolidated_metadata") or r.get("metadata") or {}
+            ocr_chars = len(r.get("ocr_text") or "")
+            entities = r.get("entity_count")
+        except (OSError, json.JSONDecodeError):
+            pass
+    files = []
+    for f in sorted(d.rglob("*")):
+        if f.is_file():
+            files.append({"path": str(f.relative_to(d)), "bytes": f.stat().st_size})
+    return {"request_id": rid,
+            "metadata": {k: v for k, v in meta.items() if v not in (None, "", [])},
+            "ocr_chars": ocr_chars, "entity_count": entities, "files": files}
+
+
+@router.get("/{job_id}/set/{set_id}/detail")
+async def set_detail(job_id: str, set_id: str):
+    """모달 1회 호출용 — 채점 상세 + leg별 메타데이터 + 산출물 목록."""
+    job = _get(job_id)
+    rec = _set_result(job, set_id)
+    gt = _load_gt(Path(job.work_dir / "sets")) or _load_gt(job.work_dir)
+    if not gt:
+        for cand in sorted(job.work_dir.rglob("ground_truth.jsonl")):
+            gt = _load_gt(cand.parent)
+            if gt:
+                break
+    g = gt.get(str(set_id), {})
+    gattr = g.get("attributes", {})
+
+    order, leg, field = _attr_spec(job)
+    rows = []
+    for name in order:
+        info = (rec.get("per_attr") or {}).get(name) or {}
+        ga = gattr.get(name) or {}
+        st = info.get("status")
+        # 정답은 정답셋이 1순위지만, ZIP 이 정리된 뒤에도 모달은 열려야 한다.
+        # 채점 기록(per_attr.gt)에 대조에 쓴 값이 그대로 남아 있으므로 그걸 쓴다.
+        expected = ga.get("value")
+        if expected is None and "gt" in info:
+            expected = info.get("gt")
+        rows.append({
+            "name": name,
+            "schema_field": ga.get("schema_field") or field.get(name),
+            "leg": leg.get(name, "work"),
+            "status": st,
+            "match": info.get("match"),
+            "expected": expected,
+            # eval23 은 per_attr 이 없다 — 기록된 23키 값(extracted)을 그대로 보여준다
+            "extracted": info.get("got") if info else (rec.get("extracted") or {}).get(field.get(name) or name),
+            "tier": ga.get("tier"),
+            "method": info.get("method"),
+            "recall": info.get("recall"),
+            "batch_level": info.get("batch_level"),
+            "note": info.get("reason") or ga.get("note"),
+        })
+
+    return {
+        "set_id": set_id, "job_id": job_id,
+        "scoring_set": _scoring_set(job),
+        "media": rec.get("media"), "license_bucket": rec.get("license_bucket"),
+        "ok": rec.get("ok"), "error": rec.get("error"),
+        "accuracy": rec.get("accuracy"), "n_match": rec.get("n_match"),
+        "n_scored": rec.get("n_scored"),
+        "elapsed_sec": rec.get("elapsed_sec"), "stages": rec.get("stages"),
+        "classification": g.get("classification"),
+        "attributes": rows,
+        "legs": {"contract": _leg_metadata(rec.get("contract_request_id")),
+                 "work": _leg_metadata(rec.get("work_request_id"))},
+    }

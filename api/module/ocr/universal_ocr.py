@@ -6,14 +6,19 @@ Supports multiple OCR providers: Google Cloud Vision, Mistral, Naver Clova OCR, 
 """
 
 import os
+import re
 import sys
 import json
 import base64
+import io
 import logging
+from contextlib import closing
 from pathlib import Path
 from typing import List, Dict, Optional, Union, Generator
 from datetime import datetime
 from abc import ABC, abstractmethod
+
+from ..google_gate import google_vision_enabled, GOOGLE_DISABLED_MSG
 import argparse
 
 # Document processing imports
@@ -29,6 +34,14 @@ try:
     PANDAS_AVAILABLE = True
 except ImportError:
     PANDAS_AVAILABLE = False
+
+try:
+    # pyhwp — HWP v5(OLE 복합문서)의 본문 텍스트를 직접 읽는다
+    from hwp5.xmlmodel import Hwp5File
+    from hwp5.hwp5txt import TextTransform
+    HWP_AVAILABLE = True
+except ImportError:
+    HWP_AVAILABLE = False
 
 # Configure logging first
 logger = logging.getLogger(__name__)
@@ -52,10 +65,16 @@ class OCRProvider(ABC):
 
 class FileProcessor:
     """Handles file conversion to images for OCR processing."""
-    
+
+    # 텍스트를 이미 품고 있는 형식 — 이미지로 굽지 않고 원문을 바로 읽는다.
+    # (.hwp 는 스캔 이미지가 아니라 텍스트 바이너리 문서다)
+    TEXT_NATIVE_EXTENSIONS = ['.hwp', '.txt', '.md']
+
     def __init__(self, output_dir: str):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        # 직접 추출이 실제로 몇 쪽을 읽었는지 — 호출자가 결과에 실어 보낸다.
+        self.last_page_count = 1
     
     def process_file(self, file_path: str) -> List[str]:
         """Convert file to images and return image paths."""
@@ -99,11 +118,11 @@ class FileProcessor:
                 image_paths.append(str(image_path))
             
             doc.close()
-            logger.info(f"PDF converted to {len(image_paths)} images")
+            logger.info(f"PDF → 이미지 {len(image_paths)}쪽 변환 (OCR 용, 2배 확대)")
             return image_paths
             
         except Exception as e:
-            logger.error(f"Error processing PDF {file_path}: {e}")
+            logger.error(f"PDF 이미지 변환 실패 {file_path.name}: {type(e).__name__}: {e}")
             return []
     
     def _process_docx(self, file_path: Path) -> List[str]:
@@ -131,9 +150,291 @@ class FileProcessor:
         return []
     
     def _process_hwp(self, file_path: Path) -> List[str]:
-        """Convert HWP to images (placeholder)."""
-        logger.warning("HWP to image conversion not implemented yet")
+        """HWP 는 extract_text() 가 텍스트를 직접 뽑는다. 여기까지 왔다면 직접
+        추출이 실패한 것이므로, 확장자만 .hwp 인 다른 포맷인지 확인한다.
+        (공유마당 배포본 중 내용이 실제로는 PDF 인 .HWP 파일이 있었다.)"""
+        try:
+            with open(file_path, 'rb') as f:
+                magic = f.read(4)
+        except Exception as e:
+            logger.error(f"Error reading HWP {file_path}: {e}")
+            return []
+
+        if magic == b'%PDF':
+            logger.info(f"{file_path.name}: 확장자는 .hwp 이지만 내용은 PDF — PDF 경로로 처리")
+            return self._process_pdf(file_path)
+
+        logger.warning(f"HWP text extraction failed and container is not PDF: {file_path.name}")
         return []
+
+    # ------------------------------------------------------------------
+    # 텍스트 직접 추출 (이미지 래스터화 없이)
+    # ------------------------------------------------------------------
+
+    def extract_text(self, file_path: str) -> Optional[str]:
+        """이미지 변환 없이 파일에서 원문 텍스트를 바로 추출한다.
+
+        OCR 단계의 목적은 '문서 → 텍스트'다. .hwp/.txt 는 이미 텍스트를 담고
+        있으므로 래스터화 → OCR 을 태우면 원문을 한 번 열화시킬 뿐이고
+        API 비용도 든다. 추출 대상이 아니거나 실패하면 None 을 돌려주어
+        호출자가 기존 이미지 경로로 계속 가게 한다.
+        """
+        file_path = Path(file_path)
+        suffix = file_path.suffix.lower()
+
+        if suffix not in self.TEXT_NATIVE_EXTENSIONS and suffix != '.pdf':
+            return None
+        if not file_path.exists():
+            logger.error(f"File not found: {file_path}")
+            return None
+
+        if suffix == '.pdf':
+            return self._extract_pdf_text(file_path)
+        if suffix == '.hwp':
+            return self._extract_hwp_text(file_path)
+        return self._read_plain_text(file_path)
+
+    # PDF 본문층 판정 임계값 ------------------------------------------------
+    PDF_MIN_CHARS_PER_PAGE = 60      # 문서 전체 평균
+    PDF_PAGE_TEXT_FLOOR = 40         # 이 페이지에 '글이 있다' 고 볼 최소 글자수
+    PDF_MIN_TEXT_PAGE_RATIO = 0.6    # 표지 한 장이 그림이어도 통과하도록
+    PDF_MAX_GARBAGE_RATIO = 0.02     # (cid:NN) · U+FFFD 허용 비율
+    PDF_MIN_WORD_CHAR_RATIO = 0.30   # 한글·영문·숫자가 차지해야 할 최소 비율
+    PDF_IMAGE_PAGE_COVERAGE = 0.80   # 페이지의 이 비율을 덮는 그림 = 스캔본
+
+    def _extract_pdf_text(self, file_path: Path) -> Optional[str]:
+        """전자적으로 생성된(born-digital) PDF 의 본문층을 그대로 읽는다.
+
+        PDF 는 .hwp/.txt 와 달리 '텍스트를 품은 형식'이 아니라 둘 다 담을 수
+        있는 그릇이다. 워드에서 내보낸 계약서는 정확한 본문층을 가지고 있고,
+        이걸 이미지로 구워 VLM 에게 다시 받아치게 하면 원문을 열화시킨다.
+        (19건 평가에서 신재흥→신재홍, 아이티앤→아이티엔, 매타도어→메타도어 —
+        14개 오답 중 5개가 이 한 글자 오독이었다.)
+
+        반대로 스캔본은 본문층이 없거나, 있어도 남이 돌린 낡은 OCR 결과다.
+        그래서 확장자가 아니라 내용으로 판정한다. 하나라도 걸리면 None 을
+        돌려주어 기존 래스터화 → OCR 경로로 보낸다.
+        """
+        if os.getenv('OCR_PDF_TEXT_LAYER', '1').lower() in ('0', 'false', 'no'):
+            return None
+
+        try:
+            doc = fitz.open(str(file_path))
+        except Exception as e:
+            logger.warning(f"PDF 를 열지 못해 OCR 경로로 처리: {file_path.name}: {e}")
+            return None
+
+        try:
+            n_pages = doc.page_count
+            if n_pages == 0:
+                return None
+
+            self.last_page_count = n_pages
+            page_texts: List[str] = []
+            image_pages = 0
+            for page in doc:
+                page_texts.append(self._pdf_page_text(page))
+                if self._page_is_image_dominant(page):
+                    image_pages += 1
+        except Exception as e:
+            logger.warning(f"PDF 본문층을 읽지 못해 OCR 경로로 처리: {file_path.name}: {e}")
+            return None
+        finally:
+            doc.close()
+
+        # 스캔본 판정 — 페이지 절반 이상이 전면 그림이면 본문층을 믿지 않는다.
+        if image_pages * 2 >= n_pages:
+            logger.info(
+                f"{file_path.name}: {image_pages}/{n_pages} 페이지가 전면 이미지 — "
+                f"스캔본으로 보고 OCR 경로로 처리")
+            return None
+
+        text = "\n\n".join(t for t in page_texts if t).strip()
+        if not text:
+            return None
+
+        pages_with_text = sum(1 for t in page_texts if len(t) >= self.PDF_PAGE_TEXT_FLOOR)
+        if pages_with_text < n_pages * self.PDF_MIN_TEXT_PAGE_RATIO:
+            logger.info(
+                f"{file_path.name}: 본문층이 {pages_with_text}/{n_pages} 페이지에만 있음 — OCR 경로로 처리")
+            return None
+
+        if len(text) / n_pages < self.PDF_MIN_CHARS_PER_PAGE:
+            logger.info(
+                f"{file_path.name}: 본문층이 너무 얇음 ({len(text)}자 / {n_pages}쪽) — OCR 경로로 처리")
+            return None
+
+        # 글꼴에 ToUnicode 가 없으면 fitz 는 (cid:NN) 이나 U+FFFD 를 돌려준다.
+        garbage = len(re.findall(r'\(cid:\d+\)', text)) * 7 + text.count('\ufffd')
+        if garbage / len(text) > self.PDF_MAX_GARBAGE_RATIO:
+            logger.info(
+                f"{file_path.name}: 본문층 인코딩이 깨져 있음 (깨진 비율 {garbage / len(text):.1%}) — OCR 경로로 처리")
+            return None
+
+        word_chars = sum(1 for c in text if c.isalnum())
+        if word_chars / len(text) < self.PDF_MIN_WORD_CHAR_RATIO:
+            logger.info(
+                f"{file_path.name}: 본문층에 글자다운 글자가 적음 "
+                f"({word_chars / len(text):.1%}) — OCR 경로로 처리")
+            return None
+
+        logger.info(
+            f"PDF 텍스트층 사용 — {len(text):,}자 · {n_pages}쪽 (그림 쪽 {image_pages}) · {file_path.name} — OCR 공급자 호출 없음")
+        return text
+
+    @staticmethod
+    def _pdf_page_text(page) -> str:
+        """페이지 텍스트를 읽되, 줄바꿈이 '자동 줄내림'이면 도로 이어붙인다.
+
+        PDF 본문층은 화면에 보이는 줄 그대로 끊겨 있다. 계약서 서식은 권리
+        목록이 늘 같은 자리에서 넘어가서 '전시권' 이 19건 중 10건에서
+        '□전 / 시권' 으로 갈라졌다 — 사람 눈에는 한 단어지만 문자열로는 아니다.
+
+        줄 순서는 fitz 가 준 블록 순서를 그대로 따른다. 2단으로 짠 계약서가
+        섞여 있어서 (왼단 x≈40, 오른단 x≈461) y 좌표로 다시 정렬하면 두 단이
+        번갈아 끼어들어 제4조 한복판에 제7조가 들어앉는다.
+
+        이어지는 줄인지는 폭으로 가른다. 오른쪽 끝까지 꽉 채운 줄 다음 줄은
+        이어지는 줄이고, 중간에서 끝난 줄은 거기서 문단이 끝난 것이다. '오른쪽
+        끝'은 같은 단에서만 재야 하므로, 가로로 겹치는 줄들 중 가장 오른쪽을
+        그 줄의 단 경계로 본다. 한글끼리는 그대로 붙이고(전+시권), 로마자
+        끼리는 줄내림이 삼킨 공백을 되돌려 준다.
+        """
+        try:
+            data = page.get_text("dict")
+        except Exception:
+            return page.get_text().strip()
+
+        lines = []
+        for block in data.get("blocks", []):
+            for line in block.get("lines") or []:
+                text = "".join(sp.get("text", "") for sp in line.get("spans", []))
+                if text.strip():
+                    lines.append((line["bbox"], text))
+        if not lines:
+            return page.get_text().strip()
+
+        tolerance = max(2.0, 0.01 * page.rect.width)
+        heights = sorted(b[3] - b[1] for b, _ in lines)
+        line_height = heights[len(heights) // 2] or 1.0
+
+        # 각 줄이 속한 단의 오른쪽 끝 — 가로로 겹치는 줄들 중 가장 먼 x1.
+        column_right = []
+        for bbox, _ in lines:
+            edge = bbox[2]
+            for other, _ in lines:
+                overlap = min(bbox[2], other[2]) - max(bbox[0], other[0])
+                if overlap > 0.5 * min(bbox[2] - bbox[0], other[2] - other[0]):
+                    edge = max(edge, other[2])
+            column_right.append(edge)
+
+        out = [lines[0][1]]
+        for i in range(1, len(lines)):
+            (px0, py0, px1, _) = lines[i - 1][0]
+            (cx0, cy0, _, _), text = lines[i]
+            filled = px1 >= column_right[i - 1] - tolerance
+            # 바로 다음 줄인가 — 한 줄 높이만큼만 내려왔으면 이어지는 줄이다.
+            # 단이 바뀌면 y 가 위로 되돌아가므로 여기서 걸러진다.
+            adjacent = 0 < (cy0 - py0) <= 2.0 * line_height
+            # 계약서 서식은 이어지는 줄을 라벨 아래로 들여쓰므로 왼쪽 여백은
+            # 묻지 않는다. 다만 앞 줄의 오른쪽 끝을 넘어서 시작하면 다른 단이다.
+            same_column = cx0 < px1
+            # 다음 줄이 새 항목으로 시작하면 이어붙이지 않는다. 제목이 우연히
+            # 오른쪽 끝을 꽉 채우면 바로 아래 '저작자 : …' 를 삼켜서 저작물명과
+            # 저작자를 한꺼번에 망가뜨린다 (긴 제목 계약서에서 실제로 났다).
+            starts_new_field = FileProcessor._NEW_FIELD_RE.match(text)
+            if (filled and adjacent and same_column
+                    and not starts_new_field and out[-1] and text):
+                prev_ch, next_ch = out[-1].rstrip()[-1:], text.lstrip()[:1]
+                joiner = "" if (FileProcessor._is_cjk(prev_ch)
+                                and FileProcessor._is_cjk(next_ch)) else " "
+                out[-1] = out[-1].rstrip() + joiner + text.lstrip()
+            else:
+                out.append(text)
+
+        text = "\n".join(t for t in out if t.strip()).strip()
+        return text if text else page.get_text().strip()
+
+    # '라벨 : 값' · '제N조 (…)' · '(1)' 처럼 새 항목을 여는 줄
+    _NEW_FIELD_RE = re.compile(r'\s*(?:제\s*\d+\s*조\b|\(\s*\d+\s*\)|[^\s:,]{1,12}\s*:\s)')
+
+    @staticmethod
+    def _is_cjk(ch: str) -> bool:
+        if not ch:
+            return False
+        o = ord(ch)
+        return (0xAC00 <= o <= 0xD7A3      # 한글 음절
+                or 0x1100 <= o <= 0x11FF   # 한글 자모
+                or 0x3130 <= o <= 0x318F
+                or 0x4E00 <= o <= 0x9FFF)  # 한자
+
+    def _page_is_image_dominant(self, page) -> bool:
+        """페이지를 거의 다 덮는 그림이 있으면 스캔한 장으로 본다."""
+        try:
+            page_area = abs(page.rect.width * page.rect.height)
+            if page_area <= 0:
+                return False
+            for img in page.get_images(full=True):
+                for rect in page.get_image_rects(img[0]):
+                    if abs(rect.width * rect.height) / page_area >= self.PDF_IMAGE_PAGE_COVERAGE:
+                        return True
+        except Exception:
+            return False
+        return False
+
+    def _extract_hwp_text(self, file_path: Path) -> Optional[str]:
+        """HWP v5 문서의 본문 텍스트를 추출한다 (pyhwp)."""
+        if not HWP_AVAILABLE:
+            logger.warning("pyhwp not available. HWP text extraction skipped.")
+            return None
+
+        try:
+            buffer = io.BytesIO()
+            with closing(Hwp5File(str(file_path))) as hwp5file:
+                TextTransform().transform_hwp5_to_text(hwp5file, buffer)
+            text = buffer.getvalue().decode('utf-8', errors='replace').strip()
+        except Exception as e:
+            # HWP v3(비 OLE)·암호화·손상 문서 — 예외를 올리지 않고 빈 손으로 돌아간다.
+            logger.warning(f"HWP text extraction failed for {file_path.name}: {e}")
+            return None
+
+        if not text:
+            logger.warning(f"HWP contains no extractable text: {file_path.name}")
+            return None
+
+        # pyhwp 는 표를 통째로 '<표>' 한 토큰으로 치환하고 셀 안의 글자는 버린다.
+        # 한국어 계약서는 대부분이 표라서, 이대로 통과시키면 '<표>' 만 늘어선
+        # 문자열이 성공으로 저장되고 빈-OCR 가드도 (비어있지 않으므로) 걸리지 않는다.
+        # 실질 내용이 없으면 None 을 돌려주어 이미지 → OCR 경로로 넘긴다.
+        table_chars = text.count('<표>') * 3
+        if len(text) - table_chars < 50:
+            logger.warning(
+                f"HWP text is mostly table placeholders "
+                f"({text.count('<표>')} x '<표>' / {len(text)}자): {file_path.name} — OCR 경로로 전환")
+            return None
+
+        logger.info(f"HWP 본문 텍스트 추출 — {len(text):,}자 ({file_path.name}) — OCR 공급자 호출 없음")
+        return text
+
+    def _read_plain_text(self, file_path: Path) -> Optional[str]:
+        """평문 텍스트 파일을 읽는다. 공유마당 어문저작물 .txt 는 대부분 CP949 다."""
+        for encoding in ('utf-8', 'cp949'):
+            try:
+                text = file_path.read_text(encoding=encoding).strip()
+            except UnicodeDecodeError:
+                continue
+            except Exception as e:
+                logger.error(f"Error reading text file {file_path}: {e}")
+                return None
+            if text:
+                logger.info(f"텍스트 파일 읽음 — 인코딩 {encoding} · {len(text):,}자 ({file_path.name}) — OCR 공급자 호출 없음")
+                return text
+            return None
+
+        # 어느 인코딩으로도 깨끗이 안 열리면 손실을 감수하고 읽는다.
+        logger.warning(f"Unknown encoding, reading with replacement: {file_path.name}")
+        text = file_path.read_text(encoding='utf-8', errors='replace').strip()
+        return text or None
 
 class UniversalOCRProcessor:
     """Universal OCR processor supporting multiple providers and file types.
@@ -141,15 +442,20 @@ class UniversalOCRProcessor:
     Supports automatic fallback: if the primary provider fails for an entire
     document, the next provider in the fallback chain is tried.
 
-    Default fallback order: alibaba → google → mistral → naver
+    Default fallback order: alibaba → mistral → naver (Google Vision 은 GOOGLE_VISION_ENABLED=1 일 때만 맨 뒤)
     """
 
     # Default fallback order (most capable / cheapest first)
-    DEFAULT_FALLBACK_ORDER = ["alibaba", "mistral", "google", "naver"]
+    # 2026-10-11: Google 제외 (개인 계정 과금 방지) — GOOGLE_VISION_ENABLED=1 일 때만 맨 뒤에 붙는다
+    DEFAULT_FALLBACK_ORDER = ["alibaba", "mistral", "naver"]
 
     def __init__(self, provider: str = "alibaba", output_dir: str = "universal_ocr_results",
                  model: str = None, fallback: bool = True):
         self.provider_name = provider.lower()
+        if self.provider_name == "google" and not google_vision_enabled():
+            logger.warning(f"OCR 공급자 google 요청 — {GOOGLE_DISABLED_MSG} · alibaba 로 바꿉니다")
+            self.provider_name = "alibaba"
+            model = None
         self.base_output_dir = Path(output_dir)
         self.base_output_dir.mkdir(parents=True, exist_ok=True)
         self.model = model
@@ -158,7 +464,8 @@ class UniversalOCRProcessor:
         # Build fallback chain: requested provider first, then the rest
         if self.fallback_enabled:
             self.fallback_chain = [self.provider_name] + [
-                p for p in self.DEFAULT_FALLBACK_ORDER if p != self.provider_name
+                p for p in self.DEFAULT_FALLBACK_ORDER + (["google"] if google_vision_enabled() else [])
+                if p != self.provider_name
             ]
         else:
             self.fallback_chain = [self.provider_name]
@@ -167,14 +474,11 @@ class UniversalOCRProcessor:
         self.ocr_provider = self._create_provider(self.provider_name, model)
         self._setup_output_dir()
 
-        logger.info(f"Initialized {self.provider_name} OCR processor")
-        logger.info(f"Output directory: {self.provider_output_dir}")
-        if self.fallback_enabled:
-            logger.info(f"Fallback chain: {' → '.join(self.fallback_chain)}")
-        if hasattr(self.ocr_provider, 'model'):
-            logger.info(f"Model: {self.ocr_provider.model}")
-        if hasattr(self.ocr_provider, 'temperature'):
-            logger.info(f"Temperature: {self.ocr_provider.temperature}, Top-p: {self.ocr_provider.top_p}")
+        logger.debug(f"OCR 처리기 준비 — 공급자 {self.provider_name} · 출력 {self.provider_output_dir}"
+                     + (f" · 폴백 체인 {' → '.join(self.fallback_chain)}" if self.fallback_enabled else "")
+                     + (f" · 모델 {self.ocr_provider.model}" if hasattr(self.ocr_provider, 'model') else "")
+                     + (f" · temperature {self.ocr_provider.temperature}, top_p {self.ocr_provider.top_p}"
+                        if hasattr(self.ocr_provider, 'temperature') else ""))
 
     def _create_provider(self, provider_name: str, model: str = None):
         """Create an OCR provider instance by name."""
@@ -194,7 +498,7 @@ class UniversalOCRProcessor:
                 raise ValueError("DASHSCOPE_API_KEY or ALIBABA_API_KEY environment variable not set")
 
             region = os.getenv('ALIBABA_REGION', 'singapore')
-            alibaba_model = model or os.getenv('ALIBABA_MODEL', 'qwen3-vl-235b-a22b-instruct')
+            alibaba_model = model or os.getenv('ALIBABA_MODEL', 'qwen3.7-plus')   # 2026-10-11: qwen3-vl-235b 퇴역 → qwen3.7-plus(생각 끔)
 
             temperature = float(os.getenv('ALIBABA_TEMPERATURE', '1.0'))
             top_p = float(os.getenv('ALIBABA_TOP_P', '0.8'))
@@ -243,7 +547,10 @@ class UniversalOCRProcessor:
             'category_dir': category_dir,
             'doc_dir': doc_dir,
             'images_dir': images_dir,
-            'text_file': doc_dir / f"{file_path.stem}.ocr",
+            # 원문 전사는 .txt 로 저장한다. '.ocr' 은 뷰어·에디터가 텍스트로
+            # 인식하지 못해 감사·확인이 번거로웠다. NER 은 .ocr/.txt/.md 를 모두
+            # 받으므로(ner_system.py:1095) 확장자 변경이 파이프라인을 깨지 않는다.
+            'text_file': doc_dir / f"{file_path.stem}.txt",
             'result_file': doc_dir / f"{file_path.stem}_ocr_result.json"
         }
     
@@ -272,8 +579,7 @@ class UniversalOCRProcessor:
 
             for fallback_provider in self.fallback_chain[1:]:  # skip primary (already tried)
                 logger.warning(
-                    f"OCR provider '{primary_provider}' failed: {primary_error}. "
-                    f"Trying fallback provider: {fallback_provider}"
+                    f"OCR 공급자 '{primary_provider}' 실패: {str(primary_error)[:300]} → 폴백 공급자 '{fallback_provider}' 시도"
                 )
                 try:
                     self.ocr_provider = self._create_provider(fallback_provider, self.model)
@@ -285,14 +591,14 @@ class UniversalOCRProcessor:
                         result['fallback_used'] = True
                         result['original_provider'] = primary_provider
                         result['fallback_reason'] = primary_error
-                        logger.info(f"Fallback to '{fallback_provider}' succeeded")
+                        logger.info(f"OCR 공급자 폴백 성공 — '{fallback_provider}'")
                         return result
                 except Exception as e:
-                    logger.warning(f"Fallback provider '{fallback_provider}' also failed: {e}")
+                    logger.warning(f"OCR 폴백 공급자 '{fallback_provider}' 도 실패: {type(e).__name__}: {str(e)[:300]}")
                     continue
 
             # All fallbacks exhausted
-            logger.error(f"All OCR providers failed for {file_path}")
+            logger.error(f"모든 OCR 공급자 실패 — {Path(file_path).name} (체인 {' → '.join(self.fallback_chain)})")
             result['fallback_exhausted'] = True
 
         return result
@@ -300,11 +606,19 @@ class UniversalOCRProcessor:
     def _process_with_current_provider(self, file_path: str) -> Dict:
         """Process a single file with the current OCR provider (no fallback)."""
         file_path = Path(file_path)
-        logger.info(f"Processing file: {file_path.name} with {self.provider_name}")
+        logger.debug(f"OCR 파일 처리 — {file_path.name} · 공급자 {self.provider_name}")
         
         try:
             output_paths = self.create_structured_output_paths(str(file_path))
             temp_file_processor = FileProcessor(output_paths['images_dir'])
+
+            # HWP/TXT 처럼 원문 텍스트를 품은 파일은 OCR 공급자를 거치지 않는다.
+            direct_text = temp_file_processor.extract_text(str(file_path))
+            if direct_text:
+                return self._save_direct_text_result(
+                    file_path, direct_text, output_paths,
+                    temp_file_processor.last_page_count)
+
             image_paths = temp_file_processor.process_file(str(file_path))
             
             if not image_paths:
@@ -350,7 +664,7 @@ class UniversalOCRProcessor:
                             'error': error_msg,
                             'metadata': metadata
                         })
-                        logger.warning(f"OCR failed for page {i+1}: {error_msg}")
+                        logger.warning(f"OCR {i+1}쪽 실패: {str(error_msg)[:300]}")
                     else:
                         # OCR succeeded
                         all_text.append(page_text)
@@ -364,7 +678,7 @@ class UniversalOCRProcessor:
                         })
                     
                 except Exception as e:
-                    logger.error(f"Error processing page {i+1}: {e}")
+                    logger.error(f"OCR {i+1}쪽 처리 오류: {type(e).__name__}: {e}")
                     failed_pages += 1
                     total_errors.append(f"Page {i+1}: {str(e)}")
                     page_results.append({
@@ -421,11 +735,11 @@ class UniversalOCRProcessor:
             with open(output_paths['result_file'], 'w', encoding='utf-8') as f:
                 json.dump(result_data, f, ensure_ascii=False, indent=2)
             
-            logger.info(f"OCR processing complete for {file_path.name}: {len(full_text)} characters")
+            logger.debug(f"OCR 처리 끝 — {file_path.name}: {len(full_text)}자")
             return result_data
             
         except Exception as e:
-            logger.error(f"Error in file processing for {file_path}: {e}")
+            logger.error(f"OCR 파일 처리 오류 — {file_path.name}: {type(e).__name__}: {e}")
             return {
                 'file_name': file_path.name,
                 'file_path': str(file_path),
@@ -441,6 +755,46 @@ class UniversalOCRProcessor:
                 'result_file_path': None
             }
     
+    def _save_direct_text_result(self, file_path: Path, text: str,
+                                 output_paths: Dict[str, Path],
+                                 page_count: int = 1) -> Dict:
+        """이미지 OCR 없이 뽑은 원문을 OCR 결과와 동일한 모양으로 저장·반환한다.
+
+        후속 단계는 full_text(pipeline.py:120)와 output_directory 안의 .txt
+        (pipeline.py:174, ner_system.py:1095)만 보므로 키만 맞추면 그대로 돈다.
+        """
+        with open(output_paths['text_file'], 'w', encoding='utf-8') as f:
+            f.write(text)
+
+        result_data = {
+            'file_name': file_path.name,
+            'file_path': str(file_path),
+            'total_pages': max(1, page_count),
+            'total_text_length': len(text),
+            'pages': [{
+                'page_number': 1,
+                'image_path': '',          # 래스터화하지 않았다
+                'extracted_text': text,
+                'text_length': len(text),
+                'status': 'success',
+                'metadata': {'extraction_method': 'direct_text'}
+            }],
+            'full_text': text,
+            'ocr_provider': 'direct_text',   # OCR 공급자 호출 없음
+            'status': 'success',
+            'failed_pages': 0,
+            'successful_pages': 1,
+            'output_directory': str(output_paths['doc_dir']),
+            'text_file_path': str(output_paths['text_file']),
+            'result_file_path': str(output_paths['result_file'])
+        }
+
+        with open(output_paths['result_file'], 'w', encoding='utf-8') as f:
+            json.dump(result_data, f, ensure_ascii=False, indent=2)
+
+        logger.debug(f"원문 텍스트 저장 — {file_path.name}: {len(text)}자")
+        return result_data
+
     def process_directory(self, directory_path: str) -> Dict:
         """Process all files in a directory."""
         directory_path = Path(directory_path)
@@ -508,6 +862,16 @@ class UniversalOCRProcessor:
         try:
             output_paths = self.create_structured_output_paths(str(file_path))
             temp_file_processor = FileProcessor(output_paths['images_dir'])
+
+            # HWP/TXT 는 원문을 그대로 흘려보낸다 (OCR 공급자 호출 없음)
+            direct_text = temp_file_processor.extract_text(str(file_path))
+            if direct_text:
+                self._save_direct_text_result(
+                    file_path, direct_text, output_paths,
+                    temp_file_processor.last_page_count)
+                yield direct_text
+                return
+
             image_paths = temp_file_processor.process_file(str(file_path))
             
             if not image_paths:
@@ -549,6 +913,15 @@ class UniversalOCRProcessor:
         try:
             output_paths = self.create_structured_output_paths(str(file_path))
             temp_file_processor = FileProcessor(output_paths['images_dir'])
+
+            direct_text = temp_file_processor.extract_text(str(file_path))
+            if direct_text:
+                result = self._save_direct_text_result(
+                    file_path, direct_text, output_paths,
+                    temp_file_processor.last_page_count)
+                result['processing_mode'] = 'api_client'
+                return result
+
             image_paths = temp_file_processor.process_file(str(file_path))
             
             if not image_paths:

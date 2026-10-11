@@ -25,17 +25,35 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-# 계약서에서 저작물 레코드로 상속 가능한 권리/계약 필드 (67-field unified schema 부분집합).
+# 계약서에서 저작물 레코드로 상속 가능한 권리/계약 필드 (unified schema 부분집합).
 # 시각/식별 필드(description, keyword, digital_format, language 등)는 제외.
 INHERITABLE_FIELDS = [
-    # 권리 주체
+    # 권리 주체 — TTA 4.1~4.6. author/economic_rights_holder/licensor 는 스키마에
+    # 추가(2026-09-08)해 놓고 이 목록에 넣지 않아, 계약서가 채워도 저작물 레코드까지
+    # 오지 못했다. copyright_holder 로 떨어지는 대체 경로 때문에 점수는 나와서
+    # 한동안 드러나지 않았다.
     "copyright_holder", "co_author", "neighboring_rights_holder",
+    "author", "economic_rights_holder", "licensor", "rights_holder_identifier",
+    # 저작물 유형 — TTA 3.1. 정답이 계약서의 종별이므로 계약서 값을 상속한다.
+    # ⚠ 이건 '분류를 잘하는가' 의 측정이 아니다. 계약서 종별은 미디어에서 기계적으로
+    #   파생된 값이라(이미지→사진저작물), Watteau 유화가 사진저작물로 적혀 있다.
+    #   모델이 미술저작물이라고 답한 건 오히려 맞았는데 오답 처리됐다.
+    #   저작물 자체의 분류 성능을 재려면 공유마당/KOGL 카탈로그의 분류를 정답으로 써야 한다.
+    "work_type",
     # 공개/이용 조건
     "disclosure_type", "commercial_use", "economic_rights", "kogl_type",
     "granted_rights", "portrait_rights", "third_party_rights", "co_author_consent",
     "copyrightability", "unprotected_work", "work_for_hire",
+    # 저작재산권 세부 권리 — TTA 7.1~7.8.
+    # granted_rights 만 상속되던 탓에, 모델이 개별 필드 쪽을 채운 호출에서는 권리 7종이
+    # 통째로 사라졌다. 같은 ZIP 을 네 번 돌렸을 때 세트 점수가 92.9%~0% 로 흔들린
+    # 주된 이유다(모델이 어느 모양으로 채우는지가 호출마다 달랐다).
+    "reproduction_right", "public_performance_right", "public_transmission_right",
+    "exhibition_right", "distribution_right", "rental_right",
+    "derivative_work_creation_right", "other_rights",
     # 기간/일자
     "valid_period", "contract_duration", "signature_date",
+    "license_start_date", "license_end_date",
     "effective_date", "expiration_date", "created_date", "production_date",
     # 계약 정보
     "contract_type", "payment_amount", "payment_currency",
@@ -45,6 +63,33 @@ INHERITABLE_FIELDS = [
     # 개인정보 관련 (동의서 계열)
     "personal_info", "consent_type", "consent_status", "consent_date",
 ]
+
+# 계약서가 법적 원본인 필드 — 저작물 분석값이 있어도 계약서 값이 이긴다.
+#
+# 일반 규칙은 "저작물 자체 분석 값 우선" 이고, 설명·색상·개체처럼 파일을 봐야 아는
+# 것에는 그 규칙이 맞다. 그러나 권리주체·권리·기간은 계약서가 원본이고 TTA 정답도
+# 계약서(제2조·제3조)에서 온다. 여기서는 저작물에서 주운 값이 계약서를 가리면 안 된다.
+#
+# 실측(19세트): 저작자가 8/14 에 그친 원인 중 4건이 이 경우였다. 어문 저작물 본문에
+# 등장한 사람 이름(이정림)을 저작자로 잡고, 계약서의 한국저작권위원회가 상속되지
+# 못했다. 원장에서 저작자·권리자·저작권자명 세 열이 모두 한국저작권위원회로 일치하므로
+# 계약서 값이 맞다.
+CONTRACT_AUTHORITATIVE_FIELDS = {
+    # 저작물의 종별 — 계약서 제2조 '종별' 체크박스가 TTA 정답의 출처다.
+    # 사진을 보고 미술저작물인지 사진저작물인지 가리는 건 눈으로는 갈리지만
+    # (19건 중 3건이 그렇게 어긋났다) 계약서에는 당사자가 체크해 둔 답이 있다.
+    "work_type",
+    # 권리주체 (TTA 4.x)
+    "author", "copyright_holder", "economic_rights_holder", "licensor",
+    "rights_holder_identifier", "co_author",
+    # 저작재산권 세부 권리 (TTA 7.x)
+    "reproduction_right", "public_performance_right", "public_transmission_right",
+    "exhibition_right", "distribution_right", "rental_right",
+    "derivative_work_creation_right", "other_rights", "granted_rights", "economic_rights",
+    # 기간 (TTA 8.x)
+    "license_start_date", "license_end_date", "valid_period", "contract_duration",
+    "effective_date", "expiration_date",
+}
 
 # work_title 은 특별 취급: 매칭 성공 시에만 상속.
 _TITLE_FIELD = "work_title"
@@ -118,12 +163,12 @@ def inherit_contract_fields(
     Returns:
         merged: 병합된 저작물 메타데이터 (원본 dict 는 수정하지 않음)
         decisions: consolidator 형식의 provenance 항목 리스트 (상속 필드만)
-        summary: {"inherited": n, "skipped_existing": n, "title_match": str}
+        summary: {"inherited": n, "skipped_existing": n, "overwritten": n, "title_match": str}
     """
     merged = dict(work_metadata or {})
     contract = contract_metadata or {}
     decisions: List[Dict[str, Any]] = []
-    inherited = skipped = 0
+    inherited = skipped = overwritten = 0
 
     def _empty(v: Any) -> bool:
         return v is None or v == "" or v == [] or v == {}
@@ -145,8 +190,19 @@ def inherit_contract_fields(
         cval = contract.get(field)
         if _empty(cval):
             continue
-        if not _empty(merged.get(field)):
-            skipped += 1  # 저작물 자체 분석 값 우선 — 계약서 값은 덮지 않음
+        wval = merged.get(field)
+        if not _empty(wval):
+            if field not in CONTRACT_AUTHORITATIVE_FIELDS:
+                skipped += 1  # 저작물 자체 분석 값 우선 — 계약서 값은 덮지 않음
+                continue
+            if _norm(wval) == _norm(cval):
+                skipped += 1  # 같은 값이면 덮을 이유가 없다
+                continue
+            merged[field] = cval
+            overwritten += 1
+            _add_decision(field, cval, "CONTRACT_INHERITED",
+                          f"계약서가 원본인 항목 — 저작물 분석값({str(wval)[:40]})을 계약서 값으로 대체",
+                          _INHERITED_CONF)
             continue
         merged[field] = cval
         inherited += 1
@@ -175,5 +231,6 @@ def inherit_contract_fields(
                           f"계약서에 저작물 {len(cands)}건 — 파일명/설명으로 특정 불가 (후보: {', '.join(cands[:5])})",
                           _AMBIGUOUS_CONF)
 
-    summary = {"inherited": inherited, "skipped_existing": skipped, "title_match": title_match}
+    summary = {"inherited": inherited, "skipped_existing": skipped,
+               "overwritten": overwritten, "title_match": title_match}
     return merged, decisions, summary

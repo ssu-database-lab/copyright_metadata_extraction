@@ -6,6 +6,7 @@ This module provides the main ConsolidationAgent class that uses
 Qwen3-Next-80B to intelligently compare and merge LLM and NER results.
 """
 
+import os
 import json
 import logging
 from typing import Dict, List, Any, Optional
@@ -19,6 +20,38 @@ from module.consolidator.reasoning_generator import ReasoningGenerator
 from module.consolidator.schemas.consolidation_schemas import ConsolidationSchemas
 
 logger = logging.getLogger(__name__)
+
+
+def _nonnull_count(d) -> int:
+    return sum(1 for v in (d or {}).values() if v not in (None, "", [], {}))
+
+
+def _consolidation_diagnostics(llm_result, consolidated_result) -> Dict[str, Any]:
+    """중재 전후를 나란히 남긴다 — 결과가 줄어든 경우 원인을 나중에 볼 수 있도록.
+
+    통합이 성공을 보고하면서 필드를 통째로 잃는 사례가 관측됐는데(최근 60건 중 9건,
+    대부분 저작물측 9필드 VLM 결과), 중재자 원문 응답을 저장하지 않아 왜 그런지
+    확인할 수 없었다. 응답을 버리지 말고 남긴다. 손실이 없을 때는 응답 전문을
+    보관하지 않는다 — 정상 건까지 쌓으면 결과 디렉터리가 불필요하게 커진다.
+    """
+    raw_md = (llm_result or {}).get("metadata") or {}
+    con_md = (consolidated_result or {}).get("consolidated_metadata") or {}
+    before, after = _nonnull_count(raw_md), _nonnull_count(con_md)
+    lost = [k for k, v in raw_md.items()
+            if v not in (None, "", [], {}) and con_md.get(k) in (None, "", [], {})]
+    diag = {
+        "consolidation_fields_before": before,
+        "consolidation_fields_after": after,
+        "consolidation_lost_fields": lost,
+    }
+    if lost:
+        logger.error(
+            f"통합에서 필드 손실: {before} → {after} (잃은 필드 {len(lost)}개: {lost[:8]}). "
+            "중재자 원문 응답을 consolidation_raw_response 에 남깁니다.")
+        diag["consolidation_raw_response"] = consolidated_result.get("raw_response")
+        diag["consolidation_prompt_chars"] = consolidated_result.get("prompt_chars")
+    return diag
+
 
 class ConsolidationAgent:
     """
@@ -59,9 +92,7 @@ class ConsolidationAgent:
         if not self.llm_processor.initialize_model(model_name):
             raise RuntimeError(f"Failed to initialize model: {model_name}")
         
-        logger.info(f"ConsolidationAgent initialized with model: {model_name}")
-        if enable_hybrid and fallback_model:
-            logger.info(f"Hybrid mode enabled - fallback model: {fallback_model}")
+        logger.debug(f"중재자 준비 — 모델 {model_name}" + (f" · 폴백 {fallback_model}" if enable_hybrid and fallback_model else ""))
     
     def consolidate(
         self,
@@ -85,18 +116,18 @@ class ConsolidationAgent:
             Dictionary with consolidated metadata and validation report
         """
         try:
-            logger.info("Starting consolidation process")
+            logger.debug("통합 검증 시작")
             
             # Extract data
             llm_metadata = llm_result.get('metadata', {})
             ner_entities = ner_result.get('extracted_entities', [])
             
             if not llm_metadata and not ner_entities:
-                logger.warning("Both LLM and NER results are empty")
+                logger.warning("통합 검증 — LLM·NER 결과가 모두 비어 있어 빈 결과를 냅니다")
                 return self._create_empty_result()
             
             # Step 1: Field mapping (no LLM needed)
-            logger.info("Step 1: Mapping NER entities to LLM fields")
+            logger.debug("1단계: NER 엔티티 → LLM 필드 대응")
             field_mappings = self.field_mapper.map_entities_to_fields(
                 ner_entities=ner_entities,
                 llm_metadata=llm_metadata,
@@ -105,14 +136,15 @@ class ConsolidationAgent:
             )
             
             # Step 2: Validation (no LLM needed)
-            logger.info("Step 2: Validating formats and logic")
+            logger.debug("2단계: 형식·논리 검증")
             validation_errors = self.validator.validate_logic(
                 metadata=llm_metadata,
                 document_type=document_type
             )
             
             # Step 3: LLM-based consolidation (with hybrid fallback)
-            logger.info("Step 3: LLM consolidation (hybrid mode enabled)")
+            logger.debug(f"3단계: LLM 중재 (NER 엔티티 {len(ner_entities)}개 · 대응 필드 {len(field_mappings or {})}개 · "
+                         f"검증 오류 {len(validation_errors or [])}건)")
             consolidated_result = self._llm_consolidate(
                 llm_metadata=llm_metadata,
                 ner_entities=ner_entities,
@@ -122,7 +154,7 @@ class ConsolidationAgent:
             )
             
             # Step 4: Post-process and generate evidence
-            logger.info("Step 4: Generating evidence and reasoning")
+            logger.debug("4단계: 근거·판정 이유 정리")
             final_result = self._post_process(
                 consolidated_result=consolidated_result,
                 llm_result=llm_result,
@@ -138,11 +170,11 @@ class ConsolidationAgent:
                 if consolidated_result.get('primary_model_failed'):
                     final_result['primary_model_error'] = consolidated_result.get('primary_model_error')
             
-            logger.info("Consolidation completed successfully")
+            logger.debug("통합 검증 끝")
             return final_result
             
         except Exception as e:
-            logger.error(f"Error during consolidation: {e}", exc_info=True)
+            logger.error(f"통합 검증 오류 — {type(e).__name__}: {e}", exc_info=True)
             return self._create_error_result(str(e))
     
     def _llm_consolidate(
@@ -171,7 +203,7 @@ class ConsolidationAgent:
         schema = ConsolidationSchemas.get_consolidation_schema()
         
         # Try primary model first
-        logger.info(f"Attempting consolidation with primary model: {self.model_name}")
+        logger.debug(f"주 중재자 호출 — {self.model_name} · 프롬프트 {len(prompt_text or ''):,}자")
         try:
             result = self._call_model_for_consolidation(
                 model_name=self.model_name,
@@ -184,17 +216,19 @@ class ConsolidationAgent:
             if result and result.get('consolidated_metadata') is not None:
                 result['model_used'] = self.model_name
                 result['fallback_used'] = False
-                logger.info(f"✅ Successfully consolidated with {self.model_name}")
+                logger.debug(f"주 중재자 성공 — {self.model_name}")
                 return result
             else:
                 raise ValueError("Failed to parse JSON from primary model response")
                 
         except (ValueError, json.JSONDecodeError, Exception) as e:
-            logger.warning(f"Primary model ({self.model_name}) failed: {e}")
+            logger.warning(f"주 중재자 실패 — {self.model_name}: {type(e).__name__}: {str(e)[:300]}"
+                           + (f" → 폴백 {self.fallback_model}" if self.enable_hybrid and self.fallback_model
+                              else " → 규칙 기반 병합(저하)"))
             
             # Try fallback model if hybrid mode is enabled
             if self.enable_hybrid and self.fallback_model:
-                logger.info(f"🔄 Falling back to {self.fallback_model} for better JSON quality")
+                logger.info(f"폴백 중재자로 다시 시도 — {self.fallback_model}")
                 try:
                     # Initialize fallback model
                     fallback_processor = LLMExtractionProcessor(
@@ -216,22 +250,26 @@ class ConsolidationAgent:
                         result['fallback_used'] = True
                         result['primary_model_failed'] = True
                         result['primary_model_error'] = str(e)
-                        logger.info(f"✅ Successfully consolidated with fallback model: {self.fallback_model}")
+                        logger.info(f"폴백 중재자 성공 — {self.fallback_model}")
                         return result
                     else:
                         raise ValueError("Failed to parse JSON from fallback model response")
                         
                 except Exception as fallback_error:
-                    logger.error(f"Fallback model ({self.fallback_model}) also failed: {fallback_error}")
+                    logger.error(f"폴백 중재자도 실패 — {self.fallback_model}: {type(fallback_error).__name__}: "
+                                 f"{str(fallback_error)[:300]} → 규칙 기반 병합(저하)")
                     # Both models failed, use basic fallback
                     return self._fallback_consolidate(
-                        llm_metadata, ner_entities, field_mappings
+                        llm_metadata, ner_entities, field_mappings,
+                        reason=f"주 모델({self.model_name}) 및 폴백({self.fallback_model}) 모두 실패: "
+                               f"{type(fallback_error).__name__}: {str(fallback_error)[:120]}"
                     )
             else:
                 # Hybrid mode disabled or no fallback model, use basic fallback
-                logger.warning("Hybrid mode disabled or no fallback model, using basic consolidation")
                 return self._fallback_consolidate(
-                    llm_metadata, ner_entities, field_mappings
+                    llm_metadata, ner_entities, field_mappings,
+                    reason=f"주 모델({self.model_name}) 실패, 폴백 미설정: "
+                           f"{type(e).__name__}: {str(e)[:120]}"
                 )
     
     def _call_model_for_consolidation(
@@ -296,13 +334,20 @@ class ConsolidationAgent:
                 # For Alibaba Cloud, call the API
                 if hasattr(cloud_extractor, 'client'):
                     try:
+                        _t_call = datetime.now()
                         response = cloud_extractor.client.chat.completions.create(
                             model=cloud_extractor.dashscope_model_id,
                             messages=messages,
                             temperature=0.1,   # Low temperature for deterministic JSON
                             top_p=0.8,
                             max_tokens=8192,
-                            timeout=90.0,
+                            # 기본값 240초는 실측에서 나왔다(2026-09, 30계약서 × 6중재자 × 2회):
+                            #   현행 qwen3.5-122b  중앙 68초 · p95 108초
+                            #   폴백 qwen3.5-plus  중앙 149초 · p95 180초
+                            # 이전 기본값 90초에서는 폴백이 **단 한 번도 성공한 적이 없고**
+                            # (전 호출 90초×4회 재시도=365초 후 무동작 반환), 현행 모델조차
+                            # 재시도로 겨우 통과했다. 240초는 폴백 p95 에 여유를 둔 값이다.
+                            timeout=float(os.getenv('CONSOLIDATION_TIMEOUT_SEC', '240')),
                             response_format={"type": "json_object"}  # Force valid JSON output
                         )
                         
@@ -311,8 +356,15 @@ class ConsolidationAgent:
                         
                         # Check if response was truncated
                         finish_reason = response.choices[0].finish_reason if hasattr(response.choices[0], 'finish_reason') else None
+                        _usage = getattr(response, "usage", None)
+                        _tok = (f" · 토큰 입력 {_usage.prompt_tokens:,} / 출력 {_usage.completion_tokens:,}"
+                                if _usage is not None and isinstance(getattr(_usage, "prompt_tokens", None), int)
+                                and isinstance(getattr(_usage, "completion_tokens", None), int) else "")
+                        logger.info(f"중재자 응답 — 모델 {cloud_extractor.dashscope_model_id} · "
+                                    f"{(datetime.now() - _t_call).total_seconds():.1f}초{_tok} · 종료 사유 {finish_reason} · "
+                                    f"프롬프트 {len(prompt_text or ''):,}자")
                         if finish_reason == 'length':
-                            logger.warning(f"Response was truncated (finish_reason: {finish_reason}). Consider increasing max_tokens.")
+                            logger.warning(f"중재자 응답이 길이 제한(max_tokens)에서 잘렸습니다 (finish_reason: {finish_reason}) — JSON 이 불완전할 수 있습니다")
                             # Try to extract what we have, but note it may be incomplete
                         
                         # Parse JSON response with improved error handling
@@ -324,10 +376,10 @@ class ConsolidationAgent:
                         # Strategy 1: Try direct JSON parse
                         try:
                             consolidated_metadata = json.loads(cleaned_text)
-                            logger.info("Successfully parsed JSON directly")
+                            logger.debug("중재자 JSON 해석 성공")
                         except json.JSONDecodeError as json_err:
                             json_parse_errors.append(f"Direct parse failed: {json_err}")
-                            logger.warning(f"JSON parse error, trying alternative methods: {json_err}")
+                            logger.warning(f"중재자 JSON 해석 실패 — 다른 방법으로 복구를 시도합니다: {json_err}")
                             
                             # Strategy 2: Try to extract JSON from markdown code blocks
                             import re
@@ -337,7 +389,7 @@ class ConsolidationAgent:
                             if json_block_match:
                                 try:
                                     consolidated_metadata = json.loads(json_block_match.group(1))
-                                    logger.info("Successfully parsed JSON from code block")
+                                    logger.info("중재자 JSON 복구 — 코드 블록에서 읽음")
                                 except json.JSONDecodeError as e:
                                     json_parse_errors.append(f"Code block parse failed: {e}")
                             
@@ -379,7 +431,7 @@ class ConsolidationAgent:
                                         json_str = cleaned_text[start_idx:end_idx]
                                         try:
                                             consolidated_metadata = json.loads(json_str)
-                                            logger.info("Successfully parsed JSON using brace matching")
+                                            logger.info("중재자 JSON 복구 — 중괄호 짝 맞추기로 읽음")
                                         except json.JSONDecodeError as e:
                                             json_parse_errors.append(f"Brace matching parse failed: {e}")
                             
@@ -399,7 +451,7 @@ class ConsolidationAgent:
                                             potential_json += '}' * (potential_json.count('{') - potential_json.count('}'))
                                         
                                         consolidated_metadata = json.loads(potential_json)
-                                        logger.info("Successfully parsed JSON after repair attempt")
+                                        logger.info("중재자 JSON 복구 — 수리 후 읽음")
                                     except json.JSONDecodeError as e:
                                         json_parse_errors.append(f"Repair attempt failed: {e}")
                             
@@ -410,7 +462,7 @@ class ConsolidationAgent:
                                 if json_match:
                                     try:
                                         consolidated_metadata = json.loads(json_match.group())
-                                        logger.info("Successfully parsed JSON using regex extraction")
+                                        logger.info("중재자 JSON 복구 — 정규식 추출로 읽음")
                                     except json.JSONDecodeError as e:
                                         json_parse_errors.append(f"Regex extraction failed: {e}")
                             
@@ -429,23 +481,35 @@ class ConsolidationAgent:
                                         f.write(f"Raw Response:\n{raw_response_text}\n\n")
                                         f.write(f"Cleaned Text:\n{cleaned_text}\n\n")
                                         f.write(f"Parse Errors:\n{chr(10).join(json_parse_errors)}")
-                                    logger.error(f"Saved debug response to: {debug_file}")
+                                    logger.error(f"중재자 JSON 을 읽지 못해 원문 응답을 저장했습니다: {debug_file.name}")
                                 
                                 raise ValueError(error_msg)
                         
-                        # Extract decisions from consolidated metadata
-                        # Handle both nested and flat structures
+                        # 중재자 응답에서 결과를 꺼낸다. 감싼 형태와 평평한 형태를 모두 받는다.
+                        #
+                        # 원래 코드는 평평한 형태를 처리하려 했지만 그 else 가지가
+                        # 실행될 수 없었다 — if 에서 이미 dict 인지 보고, else 안에서
+                        # 다시 isinstance(dict) 를 확인했기 때문이다. dict 가 아니면
+                        # else 로 오지만 그 안의 조건도 전부 거짓이 된다. 결국 모델이
+                        # {"work_title": ...} 처럼 평평하게 답하면 .get('consolidated_metadata')
+                        # 가 {} 를 돌려주고, 추출 결과가 통째로 사라진 채
+                        # status="completed" 로 저장됐다.
+                        decisions, summary, final_metadata = [], {}, {}
                         if isinstance(consolidated_metadata, dict):
-                            decisions = consolidated_metadata.get('decisions', [])
-                            summary = consolidated_metadata.get('summary', {})
-                            final_metadata = consolidated_metadata.get('consolidated_metadata', {})
-                        else:
-                            # If response is flat, try to extract from root
-                            decisions = consolidated_metadata.get('decisions', []) if isinstance(consolidated_metadata, dict) else []
-                            summary = consolidated_metadata.get('summary', {}) if isinstance(consolidated_metadata, dict) else {}
-                            final_metadata = consolidated_metadata if isinstance(consolidated_metadata, dict) else {}
+                            decisions = consolidated_metadata.get('decisions', []) or []
+                            summary = consolidated_metadata.get('summary', {}) or {}
+                            final_metadata = consolidated_metadata.get('consolidated_metadata') or {}
+                            if not final_metadata:
+                                # 감싸는 키가 없다 = 평평한 형태. 제어용 키를 뺀 나머지가 결과다.
+                                flat = {k: v for k, v in consolidated_metadata.items()
+                                        if k not in ('decisions', 'summary', 'consolidated_metadata')}
+                                if flat:
+                                    logger.warning(
+                                        "중재자가 consolidated_metadata 래퍼 없이 응답했습니다 — "
+                                        f"루트의 {len(flat)}개 필드를 결과로 사용합니다.")
+                                    final_metadata = flat
                         
-                        logger.info(f"Consolidation complete: {len(decisions)} decisions made")
+                        logger.debug(f"중재자 판정 {len(decisions)}건")
                         
                         # Calculate confidence from decisions if summary doesn't have it
                         if summary and 'overall_confidence' in summary:
@@ -463,16 +527,22 @@ class ConsolidationAgent:
                             "summary": summary,
                             "status": "completed",
                             "llm_confidence": llm_confidence,
-                            "raw_response": raw_response_text
+                            "raw_response": raw_response_text,
+                            "prompt_chars": len(prompt_text or "")
                         }
                         
                     except Exception as e:
-                        logger.error(f"Cloud API call failed for {model_name}: {e}")
+                        logger.warning(f"중재자 API 호출 실패 — {model_name}: {type(e).__name__}: {str(e)[:300]}")
                         raise  # Re-raise to trigger fallback
             else:
                 # Not a cloud extractor, use standard extract_metadata
+                # 프롬프트를 자르지 않는다. 예전에는 [:2000] 으로 잘랐는데, 실제
+                # 통합검증 프롬프트는 저작물 9필드에서 2,074자·계약서 44필드에서 8,383자다.
+                # 잘린 자리에 정확히 "Required JSON output format" 블록과 마지막
+                # "JSON response:" 지시가 들어 있어서, 모델은 출력 형식을 모른 채 답하고
+                # 그 결과 consolidated_metadata 래퍼가 없는 응답이 나왔다.
                 result = extractor.extract_metadata(
-                    text=prompt_text[:2000],  # Truncate if too long
+                    text=prompt_text,
                     schema=schema,
                     document_type=f"{document_type}_consolidation"
                 )
@@ -482,15 +552,19 @@ class ConsolidationAgent:
                 else:
                     consolidated_metadata = result
                 
-                # Extract decisions from consolidated metadata
+                # 위와 같은 규칙 — 래퍼가 없으면 루트를 결과로 본다.
+                decisions, summary, final_metadata = [], {}, {}
                 if isinstance(consolidated_metadata, dict):
-                    decisions = consolidated_metadata.get('decisions', [])
-                    summary = consolidated_metadata.get('summary', {})
-                    final_metadata = consolidated_metadata.get('consolidated_metadata', {})
-                else:
-                    decisions = []
-                    summary = {}
-                    final_metadata = {}
+                    decisions = consolidated_metadata.get('decisions', []) or []
+                    summary = consolidated_metadata.get('summary', {}) or {}
+                    final_metadata = consolidated_metadata.get('consolidated_metadata') or {}
+                    if not final_metadata:
+                        flat = {k: v for k, v in consolidated_metadata.items()
+                                if k not in ('decisions', 'summary', 'consolidated_metadata')}
+                        if flat:
+                            logger.warning("중재자 응답에 래퍼가 없어 루트 "
+                                           f"{len(flat)}개 필드를 결과로 사용합니다.")
+                            final_metadata = flat
                 
                 # Calculate confidence
                 if summary and 'overall_confidence' in summary:
@@ -507,10 +581,11 @@ class ConsolidationAgent:
                     "summary": summary,
                     "status": "completed",
                     "llm_confidence": llm_confidence,
-                    "raw_response": None
+                    "raw_response": None,   # 이 경로는 원문 텍스트를 보관하지 않는다
+                    "prompt_chars": len(prompt_text or "")
                 }
         except Exception as e:
-            logger.error(f"Error calling model {model_name} for consolidation: {e}", exc_info=True)
+            logger.debug(f"중재자 호출 오류 상세 — {model_name}: {e}", exc_info=True)
             raise  # Re-raise to allow fallback handling
     
     def _create_consolidation_prompt(
@@ -670,29 +745,42 @@ JSON response:
             "summary": summary
         }
         
+        # LLM 중재가 실제로 일어났는지. 저하된 결과를 정상 결과처럼 저장하면
+        # 감사에서 구분할 방법이 없다.
+        degraded = bool(consolidated_result.get('degraded'))
         return {
             "success": True,
             "consolidated_metadata": consolidated_result.get('consolidated_metadata', {}),
             "validation_report": validation_report,
             "llm_metadata": llm_result.get('metadata', {}),
             "ner_entities": ner_result.get('extracted_entities', []),
-            "model_used": self.model_name,
+            # 중재가 없었으면 요청 모델명을 적지 않는다 — 그 모델은 아무것도 만들지 않았다
+            "model_used": ("(규칙 기반 폴백 — LLM 중재 없음)" if degraded
+                           else consolidated_result.get('model_used') or self.model_name),
+            "requested_model": self.model_name,
+            "consolidation_degraded": degraded,
+            "degraded_reason": consolidated_result.get('degraded_reason'),
             "status": consolidated_result.get('status', 'completed'),
-            "llm_confidence": consolidated_result.get('llm_confidence', 0.0)
+            "llm_confidence": consolidated_result.get('llm_confidence', 0.0),
+            **_consolidation_diagnostics(llm_result, consolidated_result),
         }
     
     def _fallback_consolidate(
         self,
         llm_metadata: Dict[str, Any],
         ner_entities: List[tuple],
-        field_mappings: Dict[str, List]
+        field_mappings: Dict[str, List],
+        reason: str = "unknown"
     ) -> Dict[str, Any]:
+        """LLM 중재가 실패했을 때의 규칙 기반 병합.
+
+        **이건 성공이 아니다.** 통합검증의 핵심(LLM 중재)이 일어나지 않았고
+        결과는 LLM 추출값을 거의 그대로 통과시킨 것에 가깝다. 호출자와 저장 결과가
+        그 사실을 알 수 있어야 한다 — 예전에는 overall_confidence 를 0.6 으로 채워
+        정상 결과와 구분되지 않았고, 그래서 폴백 중재자가 전 호출 실패 중인 것을
+        아무도 알아채지 못했다(2026-09 발견).
         """
-        Fallback consolidation when LLM call fails
-        
-        Performs basic merging without LLM assistance
-        """
-        logger.info("Using fallback consolidation (no LLM)")
+        logger.error(f"통합검증 LLM 중재 실패 → 규칙 기반 폴백으로 저하됨. 사유: {reason}")
         
         consolidated = llm_metadata.copy()
         decisions = []
@@ -764,9 +852,15 @@ JSON response:
                 "llm_only_fields": sum(1 for d in decisions if d.get('decision') == 'LLM_ONLY'),
                 "ner_only_fields": sum(1 for d in decisions if d.get('decision') == 'NER_ONLY'),
                 "missing_fields": sum(1 for d in decisions if d.get('decision') == 'MISSING'),
-                "overall_confidence": 0.6  # Lower confidence for fallback
+                # 0.6 은 '조금 낮은 정상값'처럼 보여서 필터를 통과했다. LLM 중재가
+                # 아예 없었으므로 통합 신뢰도는 0 이다.
+                "overall_confidence": 0.0,
+                "degraded": True,
+                "degraded_reason": reason
             },
-            "status": "fallback"
+            "status": "fallback",
+            "degraded": True,
+            "degraded_reason": reason
         }
     
     def _get_nested_value(self, metadata: Dict[str, Any], field_path: str) -> Optional[Any]:

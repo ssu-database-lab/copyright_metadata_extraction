@@ -7,6 +7,8 @@ and inference services for metadata extraction.
 
 import os
 import json
+import random
+import time
 import logging
 import requests
 from typing import Dict, Any, Optional
@@ -214,6 +216,46 @@ class OpenAIExtractor(CloudExtractor):
 
 class AlibabaCloudExtractor(CloudExtractor):
     """Alibaba Cloud DashScope API extractor using OpenAI-compatible interface."""
+
+    # 되돌릴 수 있는 오류는 폴백으로 넘기기 전에 같은 모델로 다시 쏜다.
+    #
+    #  · 429                    : 속도 제한. 본문에 quota 라고 적혀 있어도 과금 문제가 아니다.
+    #  · DataInspectionFailed   : 입력 검열기의 오탐. 2026-09-11 에 저작재산권 이용허락
+    #    계약서 한 건(한국정책방송원 1960년대 보도사진, KOGL 공개자료)이 이 오류로 거부됐는데,
+    #    같은 바이트를 그대로 13회 재전송했을 때 거부는 0회였다(운영과 동일한 18,360자
+    #    프롬프트·86필드 스키마로 10회 + 단순 프롬프트 3회). 재현되지 않으므로 정책 판단이
+    #    아니라 분류기 흔들림으로 본다. DashScope request_id 3883bf08-b546-9037-a844-1e68126b9d1c.
+    #
+    # 재전송하는 내용은 **원문 그대로**다. 검열을 피하려고 본문을 고치면 추출 대상 자체가
+    # 바뀌어 버리고, 그건 오류 처리가 아니라 우회다.
+    RETRY_MAX_ATTEMPTS = 4
+    RETRY_BASE_DELAY_SEC = 2.0
+
+    @staticmethod
+    def _is_retryable(e: Exception) -> bool:
+        msg = str(e)
+        return ("RateLimitError" in type(e).__name__ or "429" in msg
+                or "DataInspectionFailed" in msg or "data_inspection_failed" in msg)
+
+    def _create_with_retry(self, messages: list, generation_params: Dict[str, Any]):
+        """되돌릴 수 있는 오류만 지수 백오프로 재시도한다. 그 밖은 그대로 올린다."""
+        return self._create_with_retry_n(messages, generation_params)[0]
+
+    def _create_with_retry_n(self, messages: list, generation_params: Dict[str, Any]):
+        """_create_with_retry 와 같고 (응답, 재시도 횟수) 를 돌려준다 — 실행 로그에 재시도 수를 남기려고."""
+        for attempt in range(self.RETRY_MAX_ATTEMPTS + 1):
+            try:
+                return self.client.chat.completions.create(
+                    model=self.dashscope_model_id, messages=messages, **generation_params), attempt
+            except Exception as e:
+                if not self._is_retryable(e) or attempt == self.RETRY_MAX_ATTEMPTS:
+                    raise
+                kind = ("입력 검열 오탐" if "DataInspection" in str(e) else "속도 제한(429)")
+                delay = self.RETRY_BASE_DELAY_SEC * (2 ** attempt) + random.uniform(0, 1)
+                logger.warning(
+                    f"DashScope {kind} — {self.dashscope_model_id}, {delay:.1f}초 후 재시도 "
+                    f"({attempt + 1}/{self.RETRY_MAX_ATTEMPTS})")
+                time.sleep(delay)
     
     def __init__(self, api_key: str, model_id: str = "qwen-plus", region: str = "singapore", 
                  temperature: float = 1.0, top_p: float = 0.8, top_k: int = None):
@@ -229,6 +271,18 @@ class AlibabaCloudExtractor(CloudExtractor):
             "qwen3.5-122b-a10b": "Qwen3.5-122B-A10B (recommended, best value)",
             "qwen3.5-plus": "Qwen3.5-Plus (397B-A17B, flagship)",
             "qwen3.5-flash": "Qwen3.5-Flash (35B-A3B, cost-effective)",
+            # Qwen3.6 / 3.7 / 3.8 (current generation, 2026)
+            "qwen3.8-max": "Qwen3.8-Max (2.4T MoE, 1M ctx)",
+            "qwen3.8-max-0902": "Qwen3.8-Max-0902 (refreshed snapshot)",
+            "qwen3.8-flash": "Qwen3.8-Flash (~6B active MoE, 1M ctx)",
+            "qwen3.8-27b": "Qwen3.8-27B (dense, Apache 2.0)",
+            "qwen3.8-2.4t-a95b": "Qwen3.8-2.4T-A95B (text only \u2014 cannot see images)",
+            "qwen3.7-plus": "Qwen3.7-Plus",
+            "qwen3.7-max": "Qwen3.7-Max (text only)",
+            "qwen3.7-flash": "Qwen3.7-Flash",
+            "qwen3.6-plus": "Qwen3.6-Plus",
+            "qwen3.6-35b-a3b": "Qwen3.6-35B-A3B",
+            "qwen3.6-flash": "Qwen3.6-Flash",
             # Qwen3 (previous generation)
             "qwen3-max": "Qwen3-Max",
             "qwen3-next-80b-a3b-instruct": "Qwen3-Next-80B-A3B-Instruct",
@@ -246,6 +300,17 @@ class AlibabaCloudExtractor(CloudExtractor):
             "qwen3.5-122b-a10b": "qwen3.5-122b-a10b",
             "qwen3.5-plus": "qwen3.5-plus",
             "qwen3.5-flash": "qwen3.5-flash",
+            "qwen3.8-max": "qwen3.8-max",
+            "qwen3.8-max-0902": "qwen3.8-max-0902",
+            "qwen3.8-flash": "qwen3.8-flash",
+            "qwen3.8-27b": "qwen3.8-27b",
+            "qwen3.8-2.4t-a95b": "qwen3.8-2.4t-a95b",
+            "qwen3.7-plus": "qwen3.7-plus",
+            "qwen3.7-max": "qwen3.7-max",
+            "qwen3.7-flash": "qwen3.7-flash",
+            "qwen3.6-plus": "qwen3.6-plus",
+            "qwen3.6-35b-a3b": "qwen3.6-35b-a3b",
+            "qwen3.6-flash": "qwen3.6-flash",
             "qwen3-max": "qwen3-max",
             "qwen3-next-80b-a3b-instruct": "qwen3-next-80b-a3b-instruct",
             "qwen3-vl-235b-a22b-instruct": "qwen3-vl-235b-a22b-instruct",
@@ -256,10 +321,17 @@ class AlibabaCloudExtractor(CloudExtractor):
             "qwen-vl-plus": "qwen-vl-plus",
         }
         
-        # Validate model
+        # 모델 목록은 **참고용**이지 게이트가 아니다.
+        # 하드코딩 목록은 필연적으로 뒤처진다 — 실제로 이 목록이 qwen3.5 에서 멈춰 있어
+        # 3.6/3.7/3.8 계열을 추출기·중재자로 아예 선택할 수 없었고, 7월에 권고된
+        # qwen3.7-plus 중재자 파일럿이 실행되지 못한 원인이었다.
+        # 어떤 모델이 실재하는지는 DashScope API 가 판단하게 두고, 모르는 이름은
+        # 경고만 남기고 통과시킨다(오타는 첫 호출에서 API 오류로 드러난다).
         if model_id not in self.available_models:
-            available_models = ", ".join(self.available_models.keys())
-            raise ValueError(f"Unsupported model: {model_id}. Available models: {available_models}")
+            logger.warning(
+                f"'{model_id}' 은(는) 알려진 목록에 없습니다. 그대로 DashScope 에 전달합니다. "
+                f"이름이 틀렸다면 첫 호출에서 API 오류가 납니다."
+            )
         
         self.dashscope_model_id = self.model_mapping.get(model_id, model_id)
         
@@ -302,13 +374,19 @@ class AlibabaCloudExtractor(CloudExtractor):
             generation_params["top_k"] = self.top_k
         
         try:
-            response = self.client.chat.completions.create(
-                model=self.dashscope_model_id,
-                messages=messages,
-                **generation_params
-            )
-            
+            t0 = time.perf_counter()
+            response, retries = self._create_with_retry_n(messages, generation_params)
+
             extracted_text = response.choices[0].message.content
+            usage = getattr(response, "usage", None)
+            tok = (f" · 토큰 입력 {usage.prompt_tokens:,} / 출력 {usage.completion_tokens:,}"
+                   if usage is not None and isinstance(getattr(usage, "prompt_tokens", None), int)
+                   and isinstance(getattr(usage, "completion_tokens", None), int) else "")
+            finish = getattr(response.choices[0], "finish_reason", None)
+            logger.info(f"LLM 응답 — 모델 {self.dashscope_model_id} · {time.perf_counter() - t0:.1f}초{tok} · "
+                        f"재시도 {retries}회 · 종료 사유 {finish} · 프롬프트 {len(prompt):,}자")
+            if finish == "length":
+                logger.warning(f"LLM 응답이 길이 제한(max_tokens={generation_params.get('max_tokens')})에서 잘렸습니다 — JSON 이 불완전할 수 있습니다")
             
             # Parse JSON response
             try:
@@ -322,12 +400,12 @@ class AlibabaCloudExtractor(CloudExtractor):
                     "processing_time": None,
                     "confidence": None
                 }
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse JSON response: {extracted_text}")
+            except json.JSONDecodeError as e:
+                logger.error(f"LLM 응답 JSON 해석 실패 — {e} · 응답 앞부분: {str(extracted_text)[:300]!r}")
                 return {"error": "Invalid JSON response"}
                 
         except Exception as e:
-            logger.error(f"Alibaba Cloud API error: {e}")
+            logger.error(f"LLM API 오류 — 모델 {self.dashscope_model_id}: {type(e).__name__}: {str(e)[:400]}")
             return {"error": str(e)}
     
     def _create_prompt(self, text: str, schema: Dict[str, Any], document_type: str) -> str:

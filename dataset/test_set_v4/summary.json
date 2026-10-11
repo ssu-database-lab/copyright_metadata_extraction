@@ -1,0 +1,53 @@
+{
+ "created_at": "2026-10-09T14:25:35+00:00",
+ "seed": 20261009,
+ "index_sha256": "3f63a9d578e187deccc035132910ea5fdf0487d2035593f3a47ff1c7b66c5fd6",
+ "exclude_policy": "none",
+ "excluded": {
+  "content_dup": 1
+ },
+ "overlap_in_t002": {
+  "tuning_19": 12,
+  "pinned_43": 31,
+  "dev_29": 22
+ },
+ "t002": {
+  "image/ccl": 500,
+  "image/donated": 500,
+  "image/expired": 500,
+  "image/kogl": 500,
+  "video/ccl": 500,
+  "video/donated": 500,
+  "video/expired": 500,
+  "video/kogl": 500
+ },
+ "t002_kogl_image_mix": {
+  "KOGL 원본": 250,
+  "공유마당 kogl": 250
+ },
+ "t001": {
+  "image/ccl": 475,
+  "image/donated": 475,
+  "image/expired": 475,
+  "image/kogl": 475,
+  "text/ccl": 50,
+  "text/donated": 50,
+  "text/expired": 50,
+  "text/kogl": 50,
+  "video/ccl": 475,
+  "video/donated": 475,
+  "video/expired": 475,
+  "video/kogl": 475
+ },
+ "shortfalls": {},
+ "unique_works": 4200,
+ "contracts_needed": 335,
+ "contracts_needed_by_cell": {
+  "image/kogl": 54,
+  "text/donated": 1,
+  "text/kogl": 19,
+  "video/donated": 2,
+  "video/expired": 1,
+  "video/kogl": 258
+ }
+}

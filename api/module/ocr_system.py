@@ -12,6 +12,11 @@ from tqdm import tqdm
 # 로깅 설정
 logger = logging.getLogger(__name__)
 
+try:
+    from .google_gate import google_vision_enabled, GOOGLE_DISABLED_MSG
+except ImportError:          # 패키지 밖에서 직접 실행할 때
+    from google_gate import google_vision_enabled, GOOGLE_DISABLED_MSG
+
 def _get_relative_structure(file_path: Path, base_input_path: Path) -> Path:
     """입력 파일의 상대적 디렉토리 구조를 반환합니다."""
     try:
@@ -482,6 +487,9 @@ def ocr_google(input_path: str, output_path: str) -> Dict[str, Any]:
     start_time = time.time()
     
     try:
+        if not google_vision_enabled():          # 개인 계정 과금 방지
+            logger.warning(GOOGLE_DISABLED_MSG)
+            return {"success": False, "error": GOOGLE_DISABLED_MSG}
         # JSON 설정 로드
         config = _load_ocr_config()
         google_config = config.get('google', {})
@@ -643,7 +651,7 @@ def ocr_complete(input_path: str, output_path: str,
     
     try:
         if ocr_engines is None:
-            ocr_engines = ["google", "naver", "mistral"]
+            ocr_engines = ["naver", "mistral"] + (["google"] if google_vision_enabled() else [])
         
         # 결과 저장용 딕셔너리
         engine_results = {}

@@ -51,7 +51,7 @@ SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 DASHSCOPE_BASE = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
 DEFAULT_GEMMA_URL = "http://127.0.0.1:8001/v1"
 GEMMA_MODEL = "google/gemma-4-31B-it"
-QWEN_MODEL = "qwen3-vl-235b-a22b-instruct"
+QWEN_MODEL = "qwen3.7-plus"   # 2026-10-11: qwen3-vl-235b 퇴역
 
 
 def discover_images(image_dir: Path) -> list[Path]:
@@ -80,11 +80,12 @@ def build_clients(which: list[str], gemma_url: str) -> list[VLMClient]:
         ))
     if "qwen" in which:
         clients.append(VLMClient(
-            model_label="Qwen3-VL-235B (DashScope)",
+            model_label="Qwen3.7-Plus (DashScope)",
             base_url=DASHSCOPE_BASE,
             model=QWEN_MODEL,
             api_key=os.getenv("DASHSCOPE_API_KEY", ""),
             image_first=False,  # matches existing OCR pipeline ordering
+            extra_body={"enable_thinking": False},
         ))
     return clients
 

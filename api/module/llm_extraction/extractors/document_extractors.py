@@ -25,7 +25,7 @@ class ContractExtractor:
     
     def extract_contract_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
         """Extract metadata from contract documents"""
-        logger.info(f"Extracting contract metadata from: {document_name}")
+        logger.debug(f"LLM 추출 — contract 스키마 · {document_name}")
         
         # Preprocess text for better extraction
         processed_text = self._preprocess_contract_text(text)
@@ -99,7 +99,7 @@ class ConsentExtractor:
     
     def extract_consent_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
         """Extract metadata from consent forms"""
-        logger.info(f"Extracting consent metadata from: {document_name}")
+        logger.debug(f"LLM 추출 — consent 스키마 · {document_name}")
         
         # Preprocess text for better extraction
         processed_text = self._preprocess_consent_text(text)
@@ -155,7 +155,7 @@ class PublicCopyrightConsentExtractor:
     
     def extract_public_copyright_consent_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
         """Extract metadata from public copyright consent forms"""
-        logger.info(f"Extracting public copyright consent metadata from: {document_name}")
+        logger.debug(f"LLM 추출 — public copyright consent 스키마 · {document_name}")
         
         # Preprocess text for better extraction
         processed_text = self._preprocess_consent_text(text)
@@ -211,7 +211,7 @@ class CopyrightTransferConsentExtractor:
     
     def extract_copyright_transfer_consent_metadata(self, text: str, document_name: str = "") -> ExtractionResult:
         """Extract metadata from copyright transfer consent forms"""
-        logger.info(f"Extracting copyright transfer consent metadata from: {document_name}")
+        logger.debug(f"LLM 추출 — copyright transfer consent 스키마 · {document_name}")
         
         # Preprocess text for better extraction
         processed_text = self._preprocess_transfer_text(text)
@@ -270,7 +270,7 @@ class DocumentMetadataExtractor:
     
     def extract_metadata(self, text: str, document_type: str, document_name: str = "") -> ExtractionResult:
         """Extract metadata based on document type with enhanced detection"""
-        logger.info(f"Extracting metadata for {document_type}: {document_name}")
+        logger.debug(f"LLM 추출 — 문서 유형 {document_type} · {document_name}")
         
         # Enhanced document type detection
         if any(keyword in document_type for keyword in [

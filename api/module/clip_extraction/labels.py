@@ -3,7 +3,7 @@ Korean candidate-label vocabularies for zero-shot classification.
 
 These labels mirror the unified-schema fields produced by the existing
 LLM extraction pipeline, so a VLM verdict can be fused into the same
-67-field metadata object.
+unified-schema metadata object.
 """
 
 # --- work_type --- (저작권법 제4조: 저작물의 예시) -------------------------

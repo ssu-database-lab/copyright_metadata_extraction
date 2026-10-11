@@ -10,6 +10,7 @@ from typing import Dict
 from google.cloud import vision
 from google.protobuf.json_format import MessageToDict
 import module.env_loader  # noqa: F401 — loads .env on import
+from ..google_gate import google_vision_enabled, GOOGLE_DISABLED_MSG
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,8 @@ class GoogleCloudOCRProvider:
     """Google Cloud Vision API OCR provider."""
     
     def __init__(self):
+        if not google_vision_enabled():          # 개인 계정 과금 방지 — 어떤 경로로 불려도 여기서 막는다
+            raise RuntimeError(GOOGLE_DISABLED_MSG)
         # Set up Google Cloud credentials — search multiple locations
         if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
             search_paths = [

@@ -41,6 +41,7 @@ import importlib.util
 import logging
 import os
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -56,7 +57,7 @@ SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 DASHSCOPE_BASE = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
 DEFAULT_GEMMA_URL = "http://127.0.0.1:8001/v1"
 GEMMA_MODEL = "google/gemma-4-31B-it"
-QWEN_MODEL = "qwen3-vl-235b-a22b-instruct"
+QWEN_MODEL = "qwen3.7-plus"   # 2026-10-11: qwen3-vl-235b 퇴역(Alibaba 2026-10-10) → qwen3.7-plus, 생각 끔
 
 
 # -- lightweight sibling imports (avoid the api.module NER stack) -----------
@@ -89,8 +90,21 @@ SYSTEM_PROMPT = _prompts_mod.SYSTEM_PROMPT
 USER_PROMPT = _prompts_mod.USER_PROMPT
 
 
+def _prompt_with_context(base: str, context) -> str:
+    """계약서 문맥 {"title", "work_type"} 이 있으면 base 끝에 참고 줄을 붙인다 (M2 spec A4).
+
+    context 가 None/빈 dict 이면 base 그대로 — 웹앱 등 기존 호출자의 프롬프트는 바뀌지 않는다.
+    """
+    if not context:
+        return base
+    if not isinstance(context, dict):
+        raise TypeError("context 는 {'title': ..., 'work_type': ...} 형태의 dict 여야 합니다")
+    return _prompts_mod.user_prompt_with_context(
+        base, title=context.get("title"), work_type=context.get("work_type"))
+
+
 _MANAGED_KEYS = ("OPENROUTER_API_KEY", "DASHSCOPE_API_KEY", "OPENROUTER_VLM_MODEL",
-                 "OPENROUTER_BASE_URL", "DASHSCOPE_BASE_URL", "GEMMA_URL")
+                 "OPENROUTER_BASE_URL", "DASHSCOPE_BASE_URL", "GEMMA_URL", "GEMINI_API_KEY")
 
 
 def _ensure_env_loaded() -> None:
@@ -170,11 +184,12 @@ def make_qwen_backend():
     """Qwen3-VL on DashScope (cloud). api_key from env DASHSCOPE_API_KEY."""
     _ensure_env_loaded()
     return VLMClient(
-        model_label="Qwen3-VL-235B (DashScope)",
+        model_label="Qwen3.7-Plus (DashScope)",
         base_url=os.getenv("DASHSCOPE_BASE_URL", DASHSCOPE_BASE),
         model=QWEN_MODEL,
         api_key=os.getenv("DASHSCOPE_API_KEY", ""),
         image_first=False,  # matches existing OCR pipeline ordering
+        extra_body={"enable_thinking": False},
     )
 
 
@@ -186,6 +201,57 @@ def make_gemma_backend(gemma_url: str | None = None):
         model=GEMMA_MODEL,
         api_key="not-needed",
         image_first=True,  # Gemma prefers image-first
+        # 연구실 서버가 닿지 않으면 연결 단계에서 바로 넘긴다 — 예전에는 요청당 약 4분(257초 실측)을 기다렸다
+        connect_timeout=float(os.getenv("GEMMA_CONNECT_TIMEOUT_SEC", "10")),
+        max_retries=0,
+    )
+
+
+def make_google_gemma_backend():
+    """Gemma 4 31B on Google AI Studio (Gemini API, OpenAI-compatible) — 무료(유료 등급 없음), 분당 30회(실측 2026-10-11).
+    키: GEMINI_API_KEY. 추론 블록(<thought>)은 client._extract_json 이 지운다. 무료 등급 약관상 입력이 제품 개선·사람 검토에
+    쓰일 수 있으므로 계약서·개인정보에는 쓰지 않는다 (저작물 이미지 전용). 기본 체인에는 아직 넣지 않는다."""
+    _ensure_env_loaded()
+    return VLMClient(
+        model_label="Gemma 4 31B (Google AI Studio)",
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        model=os.getenv("GOOGLE_GEMMA_MODEL", "gemma-4-31b-it"),
+        api_key=os.getenv("GEMINI_API_KEY", ""),
+        image_first=True,
+    )
+
+
+def make_omni_backend():
+    """qwen3.5-omni-plus on DashScope — **영상 트랙 1순위**.
+
+    8개 모델 × 5영상 비교시험에서 정확도 92.3%(24/26)로 1위이면서 평균 5.0초로
+    상위권 중 유일하게 빨랐다(2위 qwen3.7-plus 84.6%/15.0초).
+    근거: docs/영상모델_비교보고서_20260803.md
+    """
+    _ensure_env_loaded()
+    # 2026-10-11: 기본을 qwen3.8-omni-flash 로 — 파일럿 영상 100건 Macro 80.9% vs 3.5-omni-plus 78.6%
+    # (+2.33점, 95% CI [+0.73, +3.99]), 단가 입력 $0.15 / 출력 $0.47 (3.5-omni-plus 는 $1.4 / $8.3). docs/v4/vision_backends_20261011.md
+    omni_model = os.getenv("OMNI_MODEL", "qwen3.8-omni-flash")
+    return VLMClient(
+        # 라벨은 실제 모델을 따른다 — 예전에는 고정 문자열이라 OMNI_MODEL 을 바꿔도 결과에 3.5-Omni-Plus 로 기록됐다
+        model_label="Qwen3.5-Omni-Plus (DashScope)" if omni_model == "qwen3.5-omni-plus" else f"{omni_model} (DashScope)",
+        base_url=os.getenv("DASHSCOPE_BASE_URL", DASHSCOPE_BASE),
+        model=omni_model,
+        api_key=os.getenv("DASHSCOPE_API_KEY", ""),
+        image_first=False,
+    )
+
+
+def make_omni_backup_backend():
+    """영상 트랙 2순위 — qwen3.5-omni-plus (2026-10-10 까지의 1순위). OMNI_BACKUP_MODEL 로 바꿀 수 있다."""
+    _ensure_env_loaded()
+    model = os.getenv("OMNI_BACKUP_MODEL", "qwen3.5-omni-plus")
+    return VLMClient(
+        model_label="Qwen3.5-Omni-Plus (DashScope)" if model == "qwen3.5-omni-plus" else f"{model} (DashScope)",
+        base_url=os.getenv("DASHSCOPE_BASE_URL", DASHSCOPE_BASE),
+        model=model,
+        api_key=os.getenv("DASHSCOPE_API_KEY", ""),
+        image_first=False,
     )
 
 
@@ -206,12 +272,21 @@ def default_backends(prefer: str = "gemma", gemma_url: str | None = None) -> lis
     openrouter = make_openrouter_backend()
     gemma_local = make_gemma_backend(gemma_url)
     qwen = make_qwen_backend()
+    if prefer == "omni":
+        # 영상 트랙 기본 체인 — 비교시험 순위 그대로(92.3% → 80.8% → 76.9%)
+        # 영상: qwen3.8-omni-flash → qwen3.5-omni-plus(이전 1순위, 백업) → qwen3.7-plus → Gemma
+        return [make_omni_backend(), make_omni_backup_backend(), qwen, openrouter, gemma_local]
+    google_gemma = make_google_gemma_backend()
+    if prefer == "auto":
+        # 이미지 기본 체인 (2026-10-11 결정): qwen3.8-omni-flash → qwen3.7-plus → Gemma 4(Google, 무료) → Gemma(OpenRouter) → Gemma(연구실)
+        # 파일럿 이미지 100건: omni-flash 100/100·설명 통과 0.916·19초·₩1.34, qwen3.7-plus 98/100·0.863, Gemma(Google) 97/100·0.874·92초
+        return [make_omni_backend(), qwen, google_gemma, openrouter, gemma_local]
     if prefer == "qwen":
-        return [qwen, openrouter, gemma_local]
+        return [qwen, google_gemma, openrouter, gemma_local]
     if prefer == "gemma-local":
-        return [gemma_local, openrouter, qwen]
-    # "gemma" | "openrouter" | anything else → API-first Gemma chain
-    return [openrouter, gemma_local, qwen]
+        return [gemma_local, google_gemma, openrouter, qwen]
+    # "gemma" | "openrouter" → Gemma 우선: Google(무료) → OpenRouter → 연구실 → qwen3.7-plus
+    return [google_gemma, openrouter, gemma_local, qwen]
 
 
 @dataclass
@@ -232,7 +307,7 @@ class VLMExtractor:
     def __init__(
         self,
         backends: list | None = None,
-        prefer: str = "gemma",
+        prefer: str = "auto",
         gemma_url: str | None = None,
         max_tokens: int = 1024,
         temperature: float = 0.0,
@@ -252,19 +327,29 @@ class VLMExtractor:
     # -- backend selection --------------------------------------------------
 
     def _probe_chain(self):
-        """Ping backends in order; return the first reachable one + its index."""
+        """Ping backends in order; return the first reachable one + its index.
+
+        첫 번째로 응답한 백엔드에서 **멈춘다**. 뒤쪽 백엔드는 실제 호출이 실패할 때 extract()/extract_video()
+        가 그때 폴백하므로 미리 두드릴 이유가 없다. 예전에는 체인 전체를 두드려서, 자체 서버(GEMMA_URL)가
+        SYN 단계에서 멎어 있으면 다리마다 클라이언트 타임아웃만큼 기다렸다(실측: 이미지 leg 272.85s 중 ~250s).
+        `_probe_log` 에는 두드린 백엔드만 남는다.
+        """
         self._probe_log = []
         selected = None
         selected_idx: int | None = None
         for idx, backend in enumerate(self.backends):
+            t0 = time.perf_counter()
             ok, detail = backend.ping()
+            sec = time.perf_counter() - t0
             self._probe_log.append(_ProbeResult(backend.model_label, ok, detail))
-            if ok and selected is None:
+            if ok:
                 selected, selected_idx = backend, idx
-                logger.info("VLM backend selected: %s (%s)", backend.model_label, detail)
-            elif not ok:
-                logger.warning("VLM backend unreachable: %s — %s",
-                               backend.model_label, detail)
+                logger.info("VLM 백엔드 확인 — %s 응답함 (%s, %.1f초) → 이 백엔드로 시작", backend.model_label,
+                            str(detail)[:120], sec)
+                break
+            nxt = self.backends[idx + 1].model_label if idx + 1 < len(self.backends) else None
+            logger.warning("VLM 백엔드 응답 없음 — %s: %s (%.1f초)%s", backend.model_label, str(detail)[:300], sec,
+                           f" → 다음 {nxt}" if nxt else " — 남은 백엔드 없음")
         return selected, selected_idx
 
     def active_backend(self):
@@ -282,8 +367,7 @@ class VLMExtractor:
             )
         # Note any backends ahead of the selected one that were skipped.
         for p in self._probe_log[:idx]:
-            logger.info("falling back: primary %s unreachable → using %s",
-                        p.label, selected.model_label)
+            logger.debug("VLM 폴백 — 앞 순위 %s 응답 없음 → %s 사용", p.label, selected.model_label)
         self._active, self._active_index = selected, idx
         return selected
 
@@ -310,14 +394,18 @@ class VLMExtractor:
 
     # -- extraction ---------------------------------------------------------
 
-    def extract(self, image_path: str | Path):
+    def extract(self, image_path: str | Path, context: dict | None = None):
         """
         Extract attributes from one image using the active backend. If the call
         errors (exception or VLMResult.ok is False), advance to the next backend
         in the chain and retry. The returned VLMResult carries a `backend_used`
         field. If every backend fails, returns a VLMResult with ok=False.
+
+        context: 계약서 참고 문맥 {"title", "work_type"} — 프롬프트 끝에 참고 줄로 붙는다 (A4).
+                 None 이면 프롬프트는 기존과 동일하다.
         """
         image_path = Path(image_path)
+        user_prompt = _prompt_with_context(USER_PROMPT, context)
         # Ensure a backend is selected (sets the start index) before we begin.
         if self._active is None:
             self.active_backend()
@@ -328,32 +416,34 @@ class VLMExtractor:
             backend = self.backends[idx]
             try:
                 result = backend.extract(
-                    image_path, SYSTEM_PROMPT, USER_PROMPT,
+                    image_path, SYSTEM_PROMPT, user_prompt,
                     max_tokens=self.max_tokens, temperature=self.temperature,
                 )
             except Exception as e:  # noqa: BLE001 — defensive: client shouldn't raise
                 last_error = f"{type(e).__name__}: {e}"
                 result = None
 
-            if result is not None and result.ok:
+            if result is not None and result.ok and result.parse_ok:   # JSON 을 못 읽은 응답도 실패로 보고 다음 백엔드로
                 _attach_backend(result, backend.model_label)
+                _attach_context(result, context)
                 if idx != start:
-                    logger.info("fallback succeeded on %s for %s",
-                                backend.model_label, image_path.name)
+                    logger.info("VLM 폴백 성공 — %s (%s, %.1f초)",
+                                backend.model_label, image_path.name, getattr(result, "latency_s", 0.0) or 0.0)
                     # Promote the working backend so later calls start here.
                     self._active, self._active_index = backend, idx
                 return result
 
             # This backend failed — log and try the next.
-            err = result.error if result is not None else last_error
+            err = (result.error or ("JSON 해석 실패" if result.ok and not result.parse_ok else None)) if result is not None else last_error
             last_error = err or "unknown error"
+            lat = f", {result.latency_s}초" if result is not None and result.latency_s else ""
             if idx + 1 < len(self.backends):
                 nxt = self.backends[idx + 1]
-                logger.warning("primary %s failed (%s) → falling back to %s",
-                               backend.model_label, last_error, nxt.model_label)
+                logger.warning("VLM 추출 실패 — %s: %s%s → 폴백 %s",
+                               backend.model_label, str(last_error)[:300], lat, nxt.model_label)
             else:
-                logger.error("backend %s failed (%s); no more fallbacks",
-                             backend.model_label, last_error)
+                logger.error("VLM 추출 실패 — %s: %s%s · 남은 백엔드 없음",
+                             backend.model_label, str(last_error)[:300], lat)
 
         # Every backend in the chain failed.
         fail = VLMResult(
@@ -363,6 +453,64 @@ class VLMExtractor:
             latency_s=0.0,
             error=f"all {len(self.backends)} backend(s) failed; last: {last_error}",
         )
+        _attach_backend(fail, "none")
+        return fail
+
+    def extract_video(self, frame_paths: list, frame_times: list | None = None,
+                      label: str = "video", context: dict | None = None):
+        """키프레임 여러 장을 한 번의 호출로 보내 영상 속성을 추출한다.
+
+        extract() 와 동일한 폴백 체인 규칙을 따른다 — 실패하면 다음 백엔드로
+        넘어가고, 성공한 백엔드를 승격시켜 이후 호출이 거기서 시작하게 한다.
+        context 는 extract() 와 같다 (계약서 참고 문맥, 없으면 프롬프트 불변).
+        """
+        from .prompts import VIDEO_SYSTEM_PROMPT, video_user_prompt
+
+        if not frame_paths:
+            fail = VLMResult(model_label="none", image=label, ok=False, latency_s=0.0,
+                             error="키프레임이 없습니다")
+            _attach_backend(fail, "none")
+            return fail
+
+        user_prompt = _prompt_with_context(video_user_prompt(frame_times or []), context)
+        if self._active is None:
+            self.active_backend()
+        start = self._active_index or 0
+
+        last_error = ""
+        for idx in range(start, len(self.backends)):
+            backend = self.backends[idx]
+            try:
+                result = backend.extract_frames(
+                    frame_paths, VIDEO_SYSTEM_PROMPT, user_prompt,
+                    max_tokens=self.max_tokens, temperature=self.temperature,
+                    label=label,
+                )
+            except Exception as e:  # noqa: BLE001
+                last_error = f"{type(e).__name__}: {e}"
+                result = None
+
+            if result is not None and result.ok and result.parse_ok:   # JSON 을 못 읽은 응답도 실패로 보고 다음 백엔드로
+                _attach_backend(result, backend.model_label)
+                _attach_context(result, context)
+                if idx != start:
+                    logger.info("VLM 영상 폴백 성공 — %s (%s, %.1f초)",
+                                backend.model_label, label, getattr(result, "latency_s", 0.0) or 0.0)
+                    self._active, self._active_index = backend, idx
+                return result
+
+            err = (result.error or ("JSON 해석 실패" if result.ok and not result.parse_ok else None)) if result is not None else last_error
+            last_error = err or "unknown error"
+            lat = f", {result.latency_s}초" if result is not None and result.latency_s else ""
+            if idx + 1 < len(self.backends):
+                logger.warning("VLM 영상 추출 실패 — %s: %s%s → 폴백 %s", backend.model_label,
+                               str(last_error)[:300], lat, self.backends[idx + 1].model_label)
+            else:
+                logger.error("VLM 영상 추출 실패 — %s: %s%s · 남은 백엔드 없음",
+                             backend.model_label, str(last_error)[:300], lat)
+
+        fail = VLMResult(model_label="none", image=label, ok=False, latency_s=0.0,
+                         error=f"all {len(self.backends)} backend(s) failed; last: {last_error}")
         _attach_backend(fail, "none")
         return fail
 
@@ -379,6 +527,11 @@ def _attach_backend(result, backend_label: str) -> None:
     untouched while exposing `backend_used` to callers.
     """
     setattr(result, "backend_used", backend_label)
+
+
+def _attach_context(result, context) -> None:
+    """어떤 계약서 문맥이 프롬프트에 들어갔는지 결과에 남긴다 (`prompt_context`, 없으면 None)."""
+    setattr(result, "prompt_context", dict(context) if context else None)
 
 
 # -- CLI smoke test ---------------------------------------------------------
