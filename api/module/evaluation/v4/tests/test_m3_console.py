@@ -33,6 +33,7 @@ from fastapi.testclient import TestClient                    # noqa: E402
 
 from web import console_api as CA                            # noqa: E402
 from web import console_auth as AU                           # noqa: E402
+from module.evaluation import batch_runner as BR             # noqa: E402
 
 NEW_CONTRACT = ROOT / "dataset/new_contracts/00002_13387752 운수 자판기 (1).pdf"
 GOLD_T001_NEW5 = ROOT / "dataset/test_set_v4/gold23_t001_new5.jsonl"
@@ -68,6 +69,8 @@ class ConsoleOrch:
         self.lock = threading.Lock()
 
     def run(self, file_bytes: bytes, filename: str, **kw) -> Dict[str, Any]:
+        if not file_bytes and kw.get("source_path"):          # 실행기는 파일을 제자리로 넘긴다 (source_path)
+            file_bytes = Path(kw["source_path"]).read_bytes()
         if self.block is not None:
             self.block.wait(20)
         if self.fail:
@@ -215,6 +218,10 @@ def _make_t002(tmp: Path) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # 앱 · 로그인 도구
 # ---------------------------------------------------------------------------
+# 텍스트층 계약서 1건의 추정 비용 — qwen3.5 생각 끔(기본)이면 추출 + 통합만, OCR 요금 없음
+TEXT_CONTRACT_KRW = BR.COST_LLM_EXTRACT_NO_THINK + BR.COST_CONSOLIDATION_DOC_NO_THINK
+
+
 class Console:
     def __init__(self, tmp: Path, monkeypatch):
         self.tmp = tmp
@@ -544,8 +551,8 @@ def test_status_sources_models_and_no_internal_names(console):
     assert st["version"] == "v1.0" and st["services"] == {"dashscope": "ok"}
     assert st["models"]["ocr"] == "qwen3.7-plus" and st["models"]["ocr_fallback"] == "qwen3.8-max"
     assert st["models"]["extraction"] == "qwen3.5-122b-a10b" and st["models"]["ner"] == "klue-roberta-large"
-    assert st["defaults"] == {"tau": 0.65, "workers": {"T-001": 3, "T-002": 6}, "max_workers": 8}
-    assert st["active"] == {"batch": None, "single": None}
+    assert st["defaults"] == {"tau": 0.65, "workers": {"T-001": 50, "T-002": 32}, "max_workers": 200}
+    assert st["active"] == {"batch": None, "batches": [], "single": None}
     src = {s["id"]: s for s in st["sources"]}
     assert set(src) >= {"t001_new5", "t002", "pilot200", "t001", "ids", "syn"}
     assert src["t001"]["enabled"] is False and src["t001"]["reason"] == "신규 양식 계약서 대기"
@@ -562,9 +569,11 @@ def test_estimate(console):
     c = logged_in(console)
     if GOLD_T001_NEW5.is_file():
         e = c.get("/api/test/estimate?test=T-001&source=t001_new5").json()
-        assert e["n_sets"] == 5 and e["est_krw"] == pytest.approx(224.0) and e["est_sec"] == 170   # 소량 하한: ceil(5/3) × 85 s
+        # 기본 50명(생각 끔): 한 묶음 × 57.5 s · 건당 ₩25.5. 측정 범위 밖(40명 미만)은 끝 값 50 s
+        assert e["n_sets"] == 5 and e["est_krw"] == pytest.approx(5 * 25.5) and e["est_sec"] == 58
         assert e["by_cell"] == {"text/donated": 5}
-        assert c.get("/api/test/estimate?source=t001_new5&n=2&workers=6").json()["est_sec"] == 85   # 한 묶음 × 85 s
+        assert c.get("/api/test/estimate?source=t001_new5&n=2&workers=3").json()["est_sec"] == 50
+        assert c.get("/api/test/estimate?source=t001_new5&n=2&workers=60").json()["est_sec"] == 65
     e = c.get("/api/test/estimate?source=syn").json()
     assert e["n_sets"] == 3 and e["est_krw"] == pytest.approx(1.34 * 2 + 1.77) and e["est_sec"] == 37   # 한 묶음 × 37 s
     e = c.get("/api/test/estimate?source=syn&cells=video/kogl").json()
@@ -584,6 +593,23 @@ def test_estimate(console):
 # ---------------------------------------------------------------------------
 # 판정 매핑
 # ---------------------------------------------------------------------------
+def test_t001_estimate_follows_load_test(monkeypatch):
+    E = type("E", (), {"media": "text", "license_bucket": "ccl", "extra": {}, "set_id": "x"})
+    four_k = [E() for _ in range(4000)]
+    monkeypatch.delenv("CONSOLIDATION_THINKING", raising=False)                              # 기본: 생각 끔
+    assert CA._estimate("T-001", four_k, 50)["est_sec"] == round(80 * 57.5)                  # ≈77분
+    assert CA._estimate("T-001", four_k, 50)["est_krw"] == pytest.approx(4000 * 25.5)
+    assert CA._estimate("T-001", four_k, 100)["est_sec"] == round(4000 * 17000 / 1_000_000 * 60)   # 토큰 한도가 상한
+    monkeypatch.setenv("CONSOLIDATION_THINKING", "on")
+    assert CA._estimate("T-001", four_k, 60)["est_sec"] == 67 * 102                         # 켬 ≈1.9 h
+    assert CA._estimate("T-001", four_k, 100)["est_sec"] == round(4000 * 24400 / 1_000_000 * 60)
+    assert CA._estimate("T-001", four_k, 500)["workers"] == CA.MAX_WORKERS
+    assert CA._interp(CA.T001_LATENCY_THINKING, 54) == pytest.approx(96.5)
+    W = type("W", (), {"license_bucket": "ccl", "extra": {}, "set_id": "x"})
+    works = [type("I", (W,), {"media": "image"})() for _ in range(2000)] + [type("V", (W,), {"media": "video"})() for _ in range(2000)]
+    assert CA._estimate("T-002", works, 32)["est_sec"] == round((2000 * 4.6 + 2000 * 188.0) / 68.0)   # 드라이브 읽기가 상한 ≈1.6 h
+
+
 def test_verdict_mapping():
     v = CA.verdict_of
     assert v(None) is None
@@ -647,7 +673,7 @@ def test_single_t001_end_to_end_record_evidence_previews(console):
     d = wait_done(c, rid)
     assert d["state"] == "done", d
     assert d["macro_f1"] == pytest.approx(1.0) and d["passed"] is True and d["n_sets"] == 1
-    assert d["cost_krw"] == pytest.approx(44.8) and d["done"] == 1 and d["failed"] == 0
+    assert d["cost_krw"] == pytest.approx(TEXT_CONTRACT_KRW) and d["done"] == 1 and d["failed"] == 0
     assert d["set_id"] == "13387752" and d["gold"] is True and d["config"]["set_id"] == "13387752"
     assert {"test_metrics.json", "per_set.jsonl", "report.md", "test.log", "run.zip"} <= set(d["downloads"])
     no_internal(d)
@@ -692,7 +718,7 @@ def test_single_t001_end_to_end_record_evidence_previews(console):
     ch = items("copyright_holder")
     assert ch["서명란"] == "한국저작권위원회" and ch["두 출처 일치"] == "예" and ch["모델 저작권자 값(쓰지 않음)"] == "김은혜"
     assert ev["copyright_holder"]["source_label"] == "본문 규칙(이용자 당사자)"
-    assert items("creator")["통합 판정"] == "AGREED (신뢰도 1.0)"
+    assert items("creator")["통합 판정"] == "일치 (AGREED) · 신뢰도 1.0"
     assert items("rental_right")["해석 불가 원문"] == "△"
     assert items("contract_validity_period")["기간 원문"] == "2009.9.27 ~ 2033.4.14"
     assert items("file_name")["원본 파일명"] == NEW_CONTRACT.name
@@ -720,7 +746,7 @@ def test_single_t001_end_to_end_record_evidence_previews(console):
     for t in ("start", "set_start", "set_done", "progress", "log", "state", "finalized", "closed"):
         assert t in types, (t, types)
     sd = next(e for e in evs if e["type"] == "set_done")
-    assert sd["set_id"] == "13387752" and sd["ok"] is True and sd["cost_krw"] == pytest.approx(44.8)
+    assert sd["set_id"] == "13387752" and sd["ok"] is True and sd["cost_krw"] == pytest.approx(TEXT_CONTRACT_KRW)
     ss = next(e for e in evs if e["type"] == "set_start")
     for e in (sd, ss):
         assert e["cell"] == "text/donated" and e["media"] == "text" and e["title"] == "운수 자판기"
@@ -1050,3 +1076,47 @@ def test_real_templates_render_if_present(console):
     assert login(c).status_code == 303
     r = c.get("/console")
     assert r.status_code == 200 and "v1.0" in r.text and "시험 콘솔" in r.text
+
+
+# ---------------------------------------------------------------------------
+# 다시 실행 — 실패·미실행 세트만 같은 실행에서 (4,000세트 규모에서 빠진 세트를 끝까지 채운다)
+# ---------------------------------------------------------------------------
+def test_retry_reruns_only_failed_sets_and_rescores(console):
+    c = logged_in(console)
+    console.fail = True                                                      # 첫 회차: 세트 전부 실패
+    rid = c.post("/api/test/batch", json={"source": "syn", "workers": 1}).json()["run_id"]
+    d = wait_done(c, rid)
+    assert d["state"] == "done" and d["remaining"] == {"ok": 0, "failed": 3, "pending": 0, "retries": 0}
+    csv_r = c.get(f"/api/test/runs/{rid}/download/unfinished.csv")
+    assert csv_r.status_code == 200 and csv_r.text.startswith("﻿") and csv_r.text.count("실패") == 3
+    console.fail = False                                                     # 두 번째 회차는 성공
+    r = c.post(f"/api/test/runs/{rid}/retry", json={})
+    assert r.status_code == 200 and r.json()["runs"] == [{"run_id": rid, "test": "T-002", "failed": 3, "pending": 0}]
+    d2 = wait_done(c, rid)
+    assert d2["state"] == "done" and d2["remaining"] == {"ok": 3, "failed": 0, "pending": 0, "retries": 1}
+    assert d2["macro_f1"] is not None and d2["config"]["retries"][0]["failed"] == 3
+    items = c.get(f"/api/test/runs/{rid}/sets").json()["items"]
+    assert {i["state"] for i in items} == {"ok"} and {i["attempts"] for i in items} == {2}
+    again = c.post(f"/api/test/runs/{rid}/retry", json={})
+    assert again.status_code == 400 and again.json()["error"] == "nothing_to_retry"
+    assert c.get(f"/api/test/runs/{rid}/download/unfinished.csv").text.count("\n") == 1     # 머리글만
+
+
+def test_retry_finishes_cancelled_run_and_guards(console):
+    c = logged_in(console)
+    console.block = threading.Event()
+    rid = c.post("/api/test/batch", json={"source": "syn", "workers": 1, "sample": "first"}).json()["run_id"]
+    wait_state(c, rid, ("running",))
+    assert c.post(f"/api/test/runs/{rid}/retry", json={}).json()["error"] == "not_finished"
+    c.post(f"/api/test/runs/{rid}/cancel")
+    console.block.set()
+    d = wait_done(c, rid)
+    assert d["state"] == "cancelled" and d["remaining"]["pending"] >= 1
+    first_done = d["remaining"]["ok"]
+    console.block = None
+    r = c.post(f"/api/test/runs/{rid}/retry", json={}).json()
+    assert r["runs"][0]["pending"] == 3 - first_done
+    d2 = wait_done(c, rid)
+    assert d2["state"] == "done" and d2["remaining"]["pending"] == 0 and d2["remaining"]["failed"] == 0
+    items = {i["set_id"]: i["attempts"] for i in c.get(f"/api/test/runs/{rid}/sets").json()["items"]}
+    assert sorted(items.values()) == [1, 1, 1]                               # 성공한 세트는 다시 돌리지 않았다

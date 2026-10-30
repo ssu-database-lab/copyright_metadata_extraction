@@ -1360,7 +1360,7 @@ def locate_set(run, set_id: str, rec: Dict[str, Any], refresh: Any = None) -> Di
     from . import console_api as CA
     meta = rec.get("_meta") or {}
     test = rec.get("test") or meta.get("test") or run.test
-    contract = CA._record_file(rec, "contract")
+    contract = CA._source_file(run, rec, "contract")       # 원본이 없으면 실행 폴더의 사본
     decisions: List[Dict[str, Any]] = []
     try:
         con = CA._consolidation_payload(run, rec, test)

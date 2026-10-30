@@ -41,6 +41,13 @@ load_env_file()
 logger = logging.getLogger(__name__)
 
 
+def _thinking_kwargs(env_name: str) -> Dict[str, Any]:
+    """qwen3.5 의 생각(thinking) 모드를 끈다 — 기본 끔(2026-10-20 결정), 환경변수를 on 으로 주면 켠다.
+    근거는 module/consolidator/consolidation_agent.py 의 _thinking_off 참고 (계약서 200건 같은 정확도, 시간 절반)."""
+    off = os.getenv(env_name, "off").strip().lower() in ("off", "0", "false", "no")
+    return {"extra_body": {"enable_thinking": False}} if off else {}
+
+
 # =====================================================================
 # Shared extraction prompt — single source of truth for all extractors
 # =====================================================================
@@ -246,7 +253,8 @@ class AlibabaCloudExtractor(CloudExtractor):
         for attempt in range(self.RETRY_MAX_ATTEMPTS + 1):
             try:
                 return self.client.chat.completions.create(
-                    model=self.dashscope_model_id, messages=messages, **generation_params), attempt
+                    model=self.dashscope_model_id, messages=messages,
+                    **{**generation_params, **_thinking_kwargs("EXTRACTION_THINKING")}), attempt
             except Exception as e:
                 if not self._is_retryable(e) or attempt == self.RETRY_MAX_ATTEMPTS:
                     raise

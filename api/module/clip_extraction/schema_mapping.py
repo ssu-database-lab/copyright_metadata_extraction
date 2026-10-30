@@ -131,6 +131,7 @@ def _sha256_of_file(file_path: str) -> Optional[str]:
 def map_vlm_to_unified(
     vlm_output: Dict[str, Any],
     file_path: Optional[str] = None,
+    sha256: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     VLM JSON 출력을 통합 스키마 dict로 변환한다.
@@ -192,7 +193,7 @@ def map_vlm_to_unified(
         if tech.get("_technical"):
             file_meta["technical"] = tech["_technical"]
 
-        sha256 = _sha256_of_file(file_path)
+        sha256 = sha256 or _sha256_of_file(file_path)   # 이미 계산한 값이 있으면 큰 영상을 다시 읽지 않는다
         # 스키마에는 해시/UCI 전용 필드가 없으므로 _file_meta로만 보존한다.
         file_meta["file_path"] = str(file_path)
         file_meta["file_name"] = os.path.basename(str(file_path))

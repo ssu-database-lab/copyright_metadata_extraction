@@ -874,6 +874,10 @@ async def llm_extract_metadata(
     ner_model: str = Form(default="klue-roberta-large"),
     consolidate: bool = Form(default=True),
     consolidation_model: str = Form(default="alibaba-qwen3.5-122b-a10b"),
+    # 이미지·영상 저작물에도 통합검증(중재자)을 돌릴지 — 기본 끔. 저작물에는 비교할 NER 결과가 없어 중재가 바꾸는 것이 없고,
+    # 87필드 전부에 근거를 쓰다 출력 한도(8,192토큰)에서 잘렸다(무하유 2026-10-12 이미지 8건 중 6건, 건당 ₩35·70–105초).
+    # 시험(Te-2)도 끈 채로 평가했다. consolidate=false 면 이 값과 관계없이 돌지 않는다.
+    consolidate_work: bool = Form(default=False),
     vlm_prefer: str = Form(default="auto"),  # 이미지 VLM 체인: auto(기본: qwen3.8-omni-flash→qwen3.7-plus→Gemma) | gemma | qwen
     contract_metadata: str = Form(default=None),  # 계약서→저작물 상속용: 계약서 분석 결과 JSON (이미지 처리 시)
     stream: bool = Form(default=False)
@@ -949,7 +953,7 @@ async def llm_extract_metadata(
                     yield _send_progress_update(f"VLM 추출 완료 ({backend})", 3, 70, {"vlm_backend": backend})
                     await asyncio.sleep(0.01)
                     con_result, con_success, con_error = None, False, None
-                    do_con = consolidate and vlm_result.get("success")
+                    do_con = consolidate and consolidate_work and vlm_result.get("success")
                     if do_con:
                         yield _send_progress_update("메타데이터 통합 중...", 4, 90)
                         await asyncio.sleep(0.01)
@@ -966,6 +970,9 @@ async def llm_extract_metadata(
                         consolidation_error=con_error)
                     response["modality"] = "image"; response["vlm_backend"] = backend
                     response["vlm_raw"] = vlm_result.get("_vlm_raw")
+                    response["consolidate_work"] = consolidate_work
+                    if not consolidate_work:          # 비스트리밍(pipeline.run)과 같은 최종값 — consolidated_metadata = VLM 결과
+                        pipeline_orchestrator._skip_work_consolidation(response)
                     if contract_meta_dict:
                         yield _send_progress_update("계약서 권리정보 상속 중...", 4, 95)
                         pipeline_orchestrator.apply_contract_inheritance(response, contract_meta_dict)
@@ -1067,6 +1074,7 @@ async def llm_extract_metadata(
             ocr_provider=ocr_provider, ocr_model=ocr_model,
             ner_model=ner_model, consolidate=consolidate,
             consolidation_model=consolidation_model,
+            consolidate_work=consolidate_work,
             vlm_prefer=vlm_prefer,
             contract_metadata=contract_meta_dict,
         )
