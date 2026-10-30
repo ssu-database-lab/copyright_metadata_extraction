@@ -80,7 +80,8 @@ def test_predictions_count_cached_while_running(tmp_path):
 
 
 def test_set_detail_shows_both_tests_for_the_same_item(console, roots):
-    """같은 항목을 Te-1(계약서 1~16번)·Te-2(저작물 17~23번)가 나눠 처리한다 — 상세 화면은 짝 실행의 결과로 나머지를 채운다."""
+    """Te-1 은 1~16번만 채점하므로 상세 화면이 17~23번을 짝 실행(Te-2)의 결과로 채운다. Te-2 는 1~23번을 채점하고
+    1~16번은 함께 도는 Te-1 의 결과를 기다려 그대로 쓴다 (같은 계약서를 두 번 처리하지 않는다)."""
     from module.evaluation.v4.keys23 import KEYS
     cdir = roots / "계약서"
     cdir.mkdir()
@@ -106,11 +107,56 @@ def test_set_detail_shows_both_tests_for_the_same_item(console, roots):
     assert any(k1[K.name]["value"] not in (None, "", []) for K in KEYS if K.test == "T-002")   # 예전에는 모두 NULL
     assert d1["record"]["set_id"] == "90000001" and d1["partner"]["record"]["test"] == "T-002"
 
-    d2 = c.get(f"/api/test/runs/{run['T-002']}/sets/90000001").json()   # 반대쪽에서도 같다
+    d2 = c.get(f"/api/test/runs/{run['T-002']}/sets/90000001").json()   # Te-2 — 1~16번도 자기 값(= Te-1 결과)
     k2 = {k["key"]: k for k in d2["keys"]}
     assert d2["partner"]["test"] == "T-001"
-    assert all(k2[K.name].get("from_test") == "T-001" for K in KEYS if K.test == "T-001")
+    assert d2["record"]["_meta"]["contract_items"]["source"] == "te1"
+    assert d2["record"]["_meta"]["contract_items"]["run_id"] == run["T-001"]
+    for K in KEYS:
+        if K.test == "T-001" and K.name != "file_name":
+            assert "from_test" not in k2[K.name] and k2[K.name]["value"] == own["T-001"][K.name]["value"], K.name
+    assert k2["file_name"]["value"] == own["T-002"]["file_name"]["value"]    # 파일명은 저작물 파일
+    fin = c.get(f"/api/test/runs/{run['T-002']}").json()["summary"]["evaluation"]
+    assert fin["contract_items"]["te1"] == fin["contract_items"]["runs"][run["T-001"]] >= 1
 
     only = c.get(f"/api/test/runs/{run['T-001']}/sets/90000009").json()  # Te-2 에 없는 항목 — 알리기만 한다
     assert only["partner"] == {"run_id": run["T-002"], "test": "T-002", "available": False}
     assert not any("from_test" in k for k in only["keys"])
+
+
+def test_te2_after_te1_reuses_its_results_and_processes_the_rest(console, roots):
+    """절차서 순서 — Te-1 을 먼저 돌리고 Te-2 를 따로 돌린다. Te-2 의 1~16번: Te-1 이 처리한 같은 계약서는 그 결과,
+    Te-1 에 없던 계약서나 이름만 같고 내용이 다른 계약서는 Te-2 가 직접 처리한다. 불러오기 화면은 미리 센다."""
+    from module.evaluation.v4.keys23 import CONTRACT_ITEM_KEYS
+    te1_dir, te2_dir = roots / "Te-1 계약서", roots / "Te-2 계약서"
+    te1_dir.mkdir()
+    te2_dir.mkdir()
+    (te1_dir / "90000001 계약서.pdf").write_bytes(b"%PDF-1.4\nsame contract\n")
+    (te2_dir / "90000001 계약서.pdf").write_bytes(b"%PDF-1.4\nsame contract\n")     # 같은 파일 (다른 폴더)
+    (te2_dir / "90000002 계약서.pdf").write_bytes(b"%PDF-1.4\nonly in Te-2\n")      # Te-1 에 없던 계약서
+    (te1_dir / "90000003 계약서.pdf").write_bytes(b"%PDF-1.4\nold\n")
+    (te2_dir / "90000003 계약서.pdf").write_bytes(b"%PDF-1.4\nnew version\n")          # 이름만 같고 내용이 다르다
+    c = logged_in(console)
+    s1 = _scan(c, test="T-001", contract_dirs=[str(te1_dir)], answers={"T-001": {"mode": "none"}})
+    te1 = c.post("/api/test/folder/start", json={"scan_id": s1["scan_id"]}).json()["run_id"]
+    wait_done(c, te1)
+
+    s2 = _scan(c, test="T-002", contract_dirs=[str(te2_dir)], work_dirs=[str(console.syn["img"].parent)],
+               answers={"T-002": {"mode": "builtin"}})
+    plan = s2["tests"]["T-002"]["contract_items"]
+    assert (plan["te1"], plan["process"], plan["no_contract"], plan["partner"]) == (1, 2, 0, 0)
+    assert plan["runs"] == [{"run_id": te1, "name": CA._get_run(te1).name, "n": 1}]
+    te2 = c.post("/api/test/folder/start", json={"scan_id": s2["scan_id"]}).json()["run_id"]
+    d = wait_done(c, te2)
+    assert d["config"]["contract_items"]["te1"] == 1
+    assert d["summary"]["evaluation"]["contract_items"] == {"te1": 1, "contract_leg": 2, "none": 0, "runs": {te1: 1}}
+
+    rec = lambda rid, sid: json.loads((console.runs / rid / "out" / "test_predictions" / f"{sid}.json").read_text(encoding="utf-8"))   # noqa: E731
+    r1, mine = rec(te2, "90000001"), rec(te1, "90000001")
+    assert r1["_meta"]["contract_items"]["source"] == "te1" and r1["_meta"]["contract_items"]["run_id"] == te1
+    assert all(r1[k] == mine[k] for k in CONTRACT_ITEM_KEYS if k not in ("work_title", "work_type") or mine[k])
+    assert r1["file_name"] == "90000001_1_테스트 사진.jpg"
+    assert rec(te2, "90000002")["_meta"]["contract_items"]["source"] == "contract_leg"
+    assert rec(te2, "90000003")["_meta"]["contract_items"]["source"] == "contract_leg"      # 해시가 달라 다시 처리
+    log = (console.runs / te2 / "out" / "test.log").read_text(encoding="utf-8")
+    assert f"Te-1 실행 {te1} 의 결과를 씁니다" in log and "Te-1 결과 없음 → 계약서" in log

@@ -50,13 +50,17 @@ KEY_NAMES: tuple[str, ...] = tuple(k.name for k in KEYS)
 BY_NAME: dict[str, Key] = {k.name: k for k in KEYS}
 T001_KEYS: tuple[str, ...] = tuple(k.name for k in KEYS if k.test == "T-001")
 T002_KEYS: tuple[str, ...] = tuple(k.name for k in KEYS if k.test == "T-002")
+# Te-2 가 계약서에서 받는 항목 (1~16번에서 file_name 을 뺀 것 — Te-2 의 파일명은 저작물 파일의 이름이다).
+# Te-1 결과가 있으면 그 값을 쓰고, 없으면 Te-2 가 계약서를 직접 처리한다 (batch_runner, 2610028 최종 절차서)
+CONTRACT_ITEM_KEYS: tuple[str, ...] = tuple(n for n in T001_KEYS if n != "file_name")
 RIGHTS_KEYS: tuple[str, ...] = tuple(k.name for k in KEYS if k.type == "rights")
 WORK_TYPES: tuple[str, ...] = ("어문", "음악", "연극", "미술", "건축", "사진", "영상", "도형", "컴퓨터프로그램", "기타")
 
 
 def scored_keys(test: str) -> tuple[str, ...]:
-    """시험별 채점 대상 키 (other_rights 는 전 계약서에서 상태 ③ 이므로 평가기에서 제외된다)."""
-    return T001_KEYS if test == "T-001" else T002_KEYS
+    """시험별 채점 대상 키 — 2610028 최종 절차서 부록 2: Te-1 은 1~16번, Te-2 는 1~23번
+    (other_rights 는 전 계약서에서 상태 ③ 이므로 평가기에서 제외된다)."""
+    return T001_KEYS if test == "T-001" else KEY_NAMES
 
 
 def empty_prediction() -> dict[str, None]:

@@ -1001,11 +1001,78 @@ def _public_final(fin: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     fin = fin or {}
     out = {k: fin.get(k) for k in ("evaluated", "test", "predictions", "predictions_ok", "n_sets", "n_predictions",
                                    "n_gold_dropped", "macro_f1", "micro_f1", "passed", "per_key_f1", "excluded_keys",
-                                   "warning_counts", "only_predicted", "tau")}
+                                   "warning_counts", "only_predicted", "tau", "contract_items")}
     out["error"] = scrub_text(fin.get("error")) if fin.get("error") else None
     out["warning"] = scrub_text(fin.get("warning")) if fin.get("warning") else None
     out["pass_mark"] = PASS_MARK
     return out
+
+
+# ---------------------------------------------------------------------------
+# Te-2 의 1~16번 — 같은 계약서를 처리한 Te-1 결과 (2610028 최종 절차서: Te-2 는 1~23번 평가)
+# ---------------------------------------------------------------------------
+TE1_WAIT_POLL_SEC = 3.0
+
+
+def _te1_runs(exclude: Optional[str] = None) -> List["TestRun"]:
+    """끝났거나 도는 중인 Te-1 일괄 실행 — 가장 최근 것이 앞."""
+    with _RUNS_LOCK:
+        runs = [r for r in _RUNS.values() if r.kind == "batch" and r.test == "T-001" and r.run_id != exclude]
+    runs.sort(key=lambda r: (r.created_at or "", r.run_id), reverse=True)
+    return runs
+
+
+def _contract_items_plan(entries: list, partner_ids: Optional[set] = None) -> Dict[str, Any]:
+    """불러오기 화면용 — Te-2 세트마다 1~16번을 어디서 받을지 센다 (세트 ID + 계약서 파일 이름·크기로 어림).
+    실행 중에는 세트마다 계약서 sha256 으로 다시 확인하고, 맞지 않으면 계약서를 직접 처리한다."""
+    from module.evaluation.v4.te1_reuse import ok_contracts, probably_same
+    srcs = [(r, ok_contracts(r.out_dir / "results.jsonl")) for r in _te1_runs() if r.state not in ACTIVE_STATES]
+    partner_ids = partner_ids or set()
+    n = {"te1": 0, "partner": 0, "process": 0, "no_contract": 0}
+    by_run: Dict[str, int] = {}
+    for e in entries:
+        if not e.contract:
+            n["no_contract"] += 1
+            continue
+        if e.set_id in partner_ids:
+            n["partner"] += 1
+            continue
+        hit = next((r for r, ok in srcs if probably_same(ok.get(e.set_id), e.contract)), None)
+        if hit is None:
+            n["process"] += 1
+        else:
+            n["te1"] += 1
+            by_run[hit.run_id] = by_run.get(hit.run_id, 0) + 1
+    names = {r.run_id: r.name for r, _ in srcs}
+    return {**n, "runs": [{"run_id": rid, "name": names.get(rid), "n": k}
+                          for rid, k in sorted(by_run.items(), key=lambda kv: -kv[1])]}
+
+
+def _te1_lookup(run: "TestRun"):
+    """Te-2 실행기의 te1_lookup — 함께 도는 Te-1(둘 다)이 있으면 그 결과를 먼저 보고, 아직 처리 전이면 기다린다
+    (같은 계약서를 두 번 처리하지 않게). 그다음 지난 Te-1 실행을 최근 것부터."""
+    from module.evaluation.v4.te1_reuse import Te1Index
+    partners = [o for o in _partner_runs(run) if o.test == "T-001"]
+    rest = [r for r in _te1_runs(exclude=run.run_id) if r not in partners]
+    idx = Te1Index([(r.run_id, r.pred_dir) for r in partners + rest])
+
+    def lookup(entry) -> Optional[Dict[str, Any]]:
+        hit = idx.find(entry.set_id, entry.contract)
+        if hit is not None:
+            return hit
+        waiting = [o for o in partners if entry.set_id in o.set_info]
+        if waiting:
+            logger.info("[%s] 함께 도는 Te-1 이 이 계약서를 처리하기를 기다립니다", entry.set_id, extra={"component": "계약서"})
+        while waiting and not run.cancel_requested:
+            if all(o.state not in ACTIVE_STATES for o in waiting):
+                break
+            time.sleep(TE1_WAIT_POLL_SEC)
+            hit = idx.find(entry.set_id, entry.contract)
+            if hit is not None:
+                return hit
+        return idx.find(entry.set_id, entry.contract) if waiting else None
+
+    return lookup
 
 
 def _execute(run: TestRun, entries: list) -> None:
@@ -1031,6 +1098,8 @@ def _execute_bound(run: TestRun, entries: list) -> None:
         logger.info("파이프라인 구성 완료 — %.1f초", time.perf_counter() - t0, extra={"component": "시스템"})
         cfg = RunConfig(**run.cfg_kwargs)
         runner = _RUNNER_FACTORY(_OrchProxy(orch, run), cfg, run.out_dir, run.on_runner_event)
+        if run.kind == "batch" and run.test == "T-002" and getattr(cfg, "contract_items", "te1") == "te1":
+            runner.te1_lookup = _te1_lookup(run)
         run.runner = runner
         run.attach_runner_log(runner)
         if run.cancel_requested:
@@ -1308,7 +1377,8 @@ def _interp(table, x: float) -> float:
 
 
 def _estimate(test: str, entries: list, workers: Optional[int] = None,
-              consolidate_work: bool = False) -> Dict[str, Any]:
+              consolidate_work: bool = False, contract_sets: int = 0) -> Dict[str, Any]:
+    """예상 소요·비용. contract_sets = Te-2 가 계약서를 직접 처리할 세트 수 (Te-1 결과가 없는 세트)."""
     by_cell: Dict[str, int] = {}
     for e in entries:
         c = _entry_cell(e)
@@ -1332,6 +1402,10 @@ def _estimate(test: str, entries: list, workers: Optional[int] = None,
         # 소량 실행의 하한: 작업자 수만큼씩 묶어 도는 세트 묶음 수 × 세트 하나의 소요
         per_set = EST_T002_SET_SEC + (EST_WORK_CONSOLIDATION_SEC if consolidate_work else 0)
         sec = max(sec, math.ceil(n / w) * per_set) if n else 0
+        if contract_sets:
+            think = os.getenv("CONSOLIDATION_THINKING", "off").strip().lower() not in ("off", "0", "false", "no")
+            krw += contract_sets * (EST_T001_KRW_THINKING if think else EST_T001_KRW)
+            sec += math.ceil(contract_sets / w) * _interp(T001_LATENCY_THINKING if think else T001_LATENCY, w)
     return {"n_sets": n, "by_cell": dict(sorted(by_cell.items())), "est_sec": int(round(sec)),
             "est_krw": round(krw, 2), "workers": w}
 
@@ -1936,12 +2010,25 @@ def _build_evidence(test: str, rec: Dict[str, Any], resp: Dict[str, Any], vrows:
     def detail(k: str) -> Dict[str, Any]:
         return ((vrows.get(k) or {}).get("detail")) or {}
 
+    from module.evaluation.v4.keys23 import CONTRACT_ITEM_KEYS
+    ci = meta.get("contract_items") if isinstance(meta.get("contract_items"), dict) else {}
     ev: Dict[str, Dict[str, Any]] = {}
     for key in KEYS:
         k = key.name
         v = rec.get(k)
-        if key.test != test and not (test == "T-002" and k in ("work_title", "work_type", "file_name")):
+        if test == "T-001" and key.test != test:
             ev[k] = _ev(None, f"해당 없음 — {key.test} 전용 항목이라 이 시험({test})에서는 채점하지 않습니다", [])
+            continue
+        if test == "T-002" and k in CONTRACT_ITEM_KEYS and ci.get("source") in ("te1", "contract_leg"):
+            if ci["source"] == "te1":
+                ev[k] = _ev("Te-1 결과", f"같은 계약서(sha256 일치)를 처리한 Te-1 실행 {ci.get('run_id')} 의 값을 그대로 씁니다.",
+                            [("Te-1 실행", ci.get("run_id")), ("계약서 sha256", ci.get("contract_sha256"))])
+            else:
+                ev[k] = _ev("계약서 처리", f"Te-1 결과가 없어 이 세트에서 계약서를 처리한 값입니다 ({ci.get('reason') or ''}).",
+                            [("계약서 요청 ID", ci.get("request_id"))])
+            continue
+        if test == "T-002" and k in CONTRACT_ITEM_KEYS and k not in ("work_title", "work_type"):
+            ev[k] = _ev(None, "계약서 결과가 없어 비워 둡니다 — Te-1 결과도, 이 세트의 계약서 처리 결과도 없습니다.", [])
             continue
         if k == "work_title":
             if test == "T-001":
@@ -1955,8 +2042,8 @@ def _build_evidence(test: str, rec: Dict[str, Any], resp: Dict[str, Any], vrows:
                                        ("모델 추출값", pm.get("model_work_title")), ("채택", lab)])
             else:
                 lab = _SOURCE_KO.get(ctx.get("source")) if ctx else None
-                ev[k] = _ev(lab, "Te-2 비채점 항목 — 계약서 규칙 파싱(또는 시험 목록 제목)으로 얻은 제호를 VLM 참고 문맥으로 주고 "
-                                 "그대로 적습니다." if ctx else "계약서 문맥이 없어 비워 둡니다 (Te-2 비채점 항목).",
+                ev[k] = _ev(lab, "계약서 결과가 없어 계약서 규칙 파싱(또는 시험 목록 제목)으로 얻은 제호를 적습니다 "
+                                 "(VLM 참고 문맥과 같은 값)." if ctx else "계약서 문맥이 없어 비워 둡니다.",
                             [("계약서 문맥 제호", ctx.get("title")), ("문맥 출처", lab),
                              ("모델 값", pm.get("model_work_title"))])
         elif k == "file_name":
@@ -1976,8 +2063,8 @@ def _build_evidence(test: str, rec: Dict[str, Any], resp: Dict[str, Any], vrows:
                 ev[k] = _ev(lab, summ, items, skip_missing=("해석 불가 원문",))
             else:
                 lab = _SOURCE_KO.get(ctx.get("source")) if ctx else None
-                ev[k] = _ev(lab, "Te-2 비채점 항목 — 계약서 문맥의 종류를 그대로 적습니다." if ctx
-                            else "계약서 문맥이 없어 비워 둡니다 (Te-2 비채점 항목).",
+                ev[k] = _ev(lab, "계약서 결과가 없어 계약서 문맥의 종류를 적습니다." if ctx
+                            else "계약서 문맥이 없어 비워 둡니다.",
                             [("계약서 문맥 종류", ctx.get("work_type")), ("모델 값", pm.get("model_work_type"))])
         elif k == "creator":
             d = _decision(decisions, ("author", "creator"))
@@ -2125,10 +2212,10 @@ def _partner_runs(run: TestRun) -> List[TestRun]:
 
 
 def _set_detail(run: TestRun, set_id: str, merge: bool = True) -> Dict[str, Any]:
-    """세트 하나의 23개 항목·근거·미리보기. merge 면 짝 실행(Te-1 ↔ Te-2)에 같은 항목이 있을 때 그 시험의 항목
-    (Te-1 은 1~16번, Te-2 는 17~23번)을 짝 실행의 값·판정·근거로 채운다 — 같은 저작물을 두 시험이 나눠 처리하므로
-    한 화면에서 23개를 모두 본다. 채점은 그대로 시험별이다 (각 행의 from_test·from_run 이 어느 실행의 결과인지 알린다)."""
-    from module.evaluation.v4.keys23 import KEYS
+    """세트 하나의 23개 항목·근거·미리보기. merge 면 이 시험이 채점하지 않는 항목(Te-1 의 17~23번)을 짝 실행(Te-2)의
+    값·판정·근거로 채운다 — 한 화면에서 23개를 모두 본다. Te-2 는 1~23번을 모두 채점하므로(1~16번은 Te-1 결과를
+    쓰거나 계약서를 직접 처리) 자기 값을 그대로 보인다. 각 행의 from_test·from_run 이 어느 실행의 결과인지 알린다."""
+    from module.evaluation.v4.keys23 import KEYS, scored_keys
     rec = _load_record(run, set_id)
     meta = rec.get("_meta") or {}
     test = rec.get("test") or meta.get("test") or run.test
@@ -2155,7 +2242,7 @@ def _set_detail(run: TestRun, set_id: str, merge: bool = True) -> Dict[str, Any]
                       "kind": row.get("kind"), "matched": row.get("matched")}
         keys.append({
             "no": key.no, "key": key.name, "label_ko": key.label_ko, "group_ko": key.group_ko, "test": key.test,
-            "scored": key.test == test and key.type != "na",
+            "scored": key.name in scored_keys(test) and key.type != "na",
             "value": rec.get(key.name), "display": _display(key, rec.get(key.name), test),
             "source": (evidence.get(key.name) or {}).get("source_label"),
             "verdict": verdict_of(row),
@@ -2204,7 +2291,7 @@ def _set_detail(run: TestRun, set_id: str, merge: bool = True) -> Dict[str, Any]
             pkeys = {k.get("key"): k for k in pd.get("keys") or []}
             pev = pd.get("evidence") or {}
             for i, k in enumerate(keys):
-                if k["test"] == ptest and k["test"] != test and k["key"] in pkeys:
+                if k["test"] == ptest and k["key"] not in scored_keys(test) and k["key"] in pkeys:
                     keys[i] = dict(pkeys[k["key"]], from_run=o.run_id, from_test=ptest)
                     if k["key"] in pev:
                         evidence[k["key"]] = pev[k["key"]]
@@ -2489,7 +2576,42 @@ def _same_origin(request: Request) -> bool:
     return urlsplit(origin).netloc.lower() == (request.headers.get("host") or "").lower()
 
 
+# 시험 PC 에서는 로그인 없이 — 시험원이 같은 PC 의 브라우저로 여는 간소화 콘솔(/test)용.
+# 켜짐 조건: CONSOLE_NO_LOGIN (값이 없으면 WSL 에서만 켬 — 공개 서버는 기본 꺼짐) + 같은 PC(루프백)에서 온 요청 +
+# 프록시 머리말 없음(nginx 같은 앞단을 거친 요청은 루프백처럼 보여도 바깥 요청이다).
+NO_LOGIN_ENV = "CONSOLE_NO_LOGIN"
+LOCAL_USER = "시험"
+_LOOPBACK = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
+_PROXY_HEADERS = ("x-forwarded-for", "x-real-ip", "forwarded", "x-forwarded-host")
+
+
+def no_login_enabled() -> bool:
+    v = (os.environ.get(NO_LOGIN_ENV) or "").strip().lower()
+    if v:
+        return v in ("1", "on", "true", "yes")
+    return CF.is_wsl()
+
+
+def _client_host(request: Request) -> str:
+    return request.client.host if request.client else ""
+
+
+def _open_local(request: Request) -> bool:
+    if not no_login_enabled() or _client_host(request) not in _LOOPBACK:
+        return False
+    if any(request.headers.get(h) for h in _PROXY_HEADERS):
+        return False
+    # 브라우저가 쓴 주소도 이 PC 여야 한다 — 다른 사이트의 도메인을 127.0.0.1 로 돌려(DNS 리바인딩) 들어오는 것을 막는다
+    host = (request.headers.get("host") or "").strip().lower()
+    name = host[1:host.index("]")] if host.startswith("[") and "]" in host else host.rsplit(":", 1)[0]
+    return name in ("localhost", "127.0.0.1", "::1")
+
+
 def _api_user(request: Request) -> str:
+    if _open_local(request):
+        if request.method not in ("GET", "HEAD", "OPTIONS") and not _same_origin(request):
+            raise ConsoleError(403, "forbidden", "다른 사이트에서 보낸 요청은 받지 않습니다")
+        return LOCAL_USER
     s = auth.get_settings()
     if not s.configured:
         raise ConsoleError(503, "console_not_configured",
@@ -2628,6 +2750,21 @@ async def console_logout(request: Request):
     resp = RedirectResponse("/console/login", status_code=303)
     auth.clear_session_cookie(resp, request)
     return resp
+
+
+@router.get("/test", include_in_schema=False)
+async def simple_console_page(request: Request):
+    """간소화 시험 콘솔 (시험 · 진행 · 결과·지표) — 시험 PC 에서는 로그인 없이, 그 밖에는 콘솔 로그인으로."""
+    if _open_local(request):
+        user, open_mode = LOCAL_USER, True
+    else:
+        s = auth.get_settings()
+        if not s.configured:
+            return _not_configured_page()
+        user, open_mode = auth.session_user(request, s), False
+        if not user:
+            return _login_redirect(request)
+    return _render("console_simple.html", {"request": request, "user": user, "version": VERSION, "open_mode": open_mode})
 
 
 @router.get("/console/{rest:path}", include_in_schema=False)
@@ -2791,9 +2928,10 @@ async def api_single(request: Request, user: str = Depends(_api_user)):
         run.test, run.source, run.set_id, run.gold, run.n_sets = test, "upload", sid, has_gold, 1
         run.gold_path = str(gold_path) if has_gold else None
         run.file_to_set = {primary.name: sid}
+        # 단건 Te-2 의 계약서는 제목·종별 힌트로만 쓴다 (화면 안내 그대로) — 1~16번은 일괄 시험에서 채운다
         run.cfg_kwargs = {"workers": 1, "scoring_set": "eval23", "test": test, "frame_schedule": "v4",
                           "consolidate_work": consolidate_work, "only_predicted": True, "title_fallback": False,
-                          "tau": tau, "gold": run.gold_path}
+                          "tau": tau, "gold": run.gold_path, "contract_items": "off"}
         run.config = {"test": test, "source": "upload", "set_id": sid, "workers": 1, "tau": tau, "only_predicted": True,
                       "title_fallback": False, "consolidate_work": consolidate_work,
                       "contract_file": cpath.name if cpath else None, "work_file": wpath.name if wpath else None,
@@ -2838,7 +2976,8 @@ async def api_batch(request: Request, user: str = Depends(_api_user)):
     consolidate_work = _bool_param(body.get("consolidate_work"), False)
     max_cost = _float_param(body.get("max_cost"), "max_cost", None, 0.0, 1e9)
     max_cost = max_cost if max_cost and max_cost > 0 else None
-    est = _estimate(test, entries, workers, consolidate_work)
+    plan = await run_in_threadpool(_contract_items_plan, entries) if test == "T-002" else None
+    est = _estimate(test, entries, workers, consolidate_work, (plan or {}).get("process", 0))
     name = re.sub(r"\s+", " ", str(body.get("name") or "")).strip()[:80] or f"{src.get('label')} {len(entries)}건"
 
     run = TestRun(_new_run_id("batch"), "batch", _ROOT)
@@ -2861,6 +3000,8 @@ async def api_batch(request: Request, user: str = Depends(_api_user)):
                       "consolidate_work": consolidate_work, "max_cost": max_cost,
                       "gold": os.path.basename(run.gold_path) if run.gold_path else None,
                       "missing_ids": missing[:50] if missing else None}
+        if plan is not None:
+            run.config["contract_items"] = plan
         write_manifest(entries, run.dir / "manifest.jsonl")
         _register(run)
     except BaseException:
@@ -2961,7 +3102,11 @@ def _folder_scan(body: Dict[str, Any]) -> Dict[str, Any]:
         ts = CF.build_sets(test, contracts, works, records, known=_known_ids(test), include_unkeyed=include_unkeyed,
                            media_of=_media_of_path, manifest_entry=ManifestEntry)
         w = _folder_workers(body.get("workers"), test)
-        est = _estimate(test, ts.entries, w, consolidate_work and test == "T-002")
+        plan = None
+        if test == "T-002":                          # 1~16번 — Te-1 결과를 쓸 세트 · 계약서를 직접 처리할 세트
+            pids = {e.set_id for e in internal["T-001"]["entries"]} if "T-001" in internal else None
+            plan = _contract_items_plan(ts.entries, pids)
+        est = _estimate(test, ts.entries, w, consolidate_work and test == "T-002", (plan or {}).get("process", 0))
         media: Dict[str, int] = {}
         for e in ts.entries:
             media[e.media] = media.get(e.media, 0) + 1
@@ -2979,9 +3124,10 @@ def _folder_scan(body: Dict[str, Any]) -> Dict[str, Any]:
             "no_id": ts.no_id[:CF.MAX_EXAMPLES], "n_no_id": len(ts.no_id),
             "sample": sample,
             "estimate": {"sec": est["est_sec"], "krw": est["est_krw"], "workers": est["workers"]},
+            "contract_items": plan,
         }
         internal[test] = {"entries": ts.entries, "gold_path": gold_path, "answer_file": answer_file,
-                          "records": records if mode == "file" else None, "mode": mode}
+                          "records": records if mode == "file" else None, "mode": mode, "contract_items": plan}
     # 시험 대상 = 고른 시험들의 세트 ID 합집합 (Te-1 4,000 + Te-2 4,000 → 어문 200 은 Te-1 에만 있어 4,200)
     item_media: Dict[str, str] = {}
     for test in tests:
@@ -3017,6 +3163,94 @@ async def api_folder_scan(request: Request, user: str = Depends(_api_user)):
     return await run_in_threadpool(_folder_scan, body)          # 경로는 바꾸지 않는다 (scrub 하지 않음)
 
 
+PEEK_ROWS = 300
+
+
+def _gold_filled(rec: Dict[str, Any], names: Iterable[str]) -> int:
+    ks = rec.get("keys") or {}
+    return sum(1 for n in names if isinstance(ks.get(n), dict) and ks[n].get("state") in ("value", "empty"))
+
+
+def _folder_peek(body: Dict[str, Any]) -> Dict[str, Any]:
+    """간소화 콘솔 — 경로 하나의 미리보기 (계약서 폴더 · 저작물 폴더 · 정답 파일). 세트는 만들지 않는다 (그건 scan)."""
+    kind = str(body.get("kind") or "")
+    roots = CF.data_roots()
+    t0 = time.perf_counter()
+    if kind in ("contract", "work"):
+        d = _folder(CF.resolve_allowed, body.get("path"), roots)
+        files = list(_folder(lambda: list(CF.walk_files([d], CONTRACT_EXT if kind == "contract" else WORK_EXT, True))))
+        by_ext: Dict[str, int] = {}
+        by_media: Dict[str, int] = {}
+        ids: set = set()
+        items: List[Dict[str, Any]] = []
+        no_id = 0
+        for p in files:
+            ext = p.suffix.lower().lstrip(".")
+            by_ext[ext] = by_ext.get(ext, 0) + 1
+            media = (_media_of_path(str(p)) or "text") if kind == "work" else None
+            if media:
+                by_media[media] = by_media.get(media, 0) + 1
+            sid = CF.choose_id(CF.id_groups(p))
+            if sid is None:
+                no_id += 1
+            else:
+                ids.add(sid)
+            if len(items) < PEEK_ROWS:
+                try:
+                    size = p.stat().st_size
+                except OSError:
+                    size = None
+                rel = os.path.relpath(p.parent, d)
+                items.append({"name": p.name, "dir": "" if rel == "." else rel.replace(os.sep, "\\"), "set_id": sid,
+                              "size": size, "media": media})
+        return {"kind": kind, "path": CF.display_path(d), "n_files": len(files), "n_ids": len(ids), "n_no_id": no_id,
+                "by_ext": dict(sorted(by_ext.items(), key=lambda kv: -kv[1])), "by_media": by_media,
+                "items": items, "truncated": len(files) > len(items), "sec": round(time.perf_counter() - t0, 1)}
+    if kind == "answers":
+        from module.evaluation.v4.keys23 import KEYS
+        f = _folder(CF.resolve_allowed, body.get("path"), roots, want="file")
+        test = _test_param(body.get("test"))
+        test = test if test in TESTS else None              # 시험을 주면 scan 과 같게 — 그 시험 레코드 + 시험 표시 없는 레코드
+        try:
+            a = _folder(CF.load_answers, f, KEYS, test)
+        except (ValueError, UnicodeDecodeError) as e:          # 깨진 JSON · 인코딩
+            raise ConsoleError(400, "answer_unreadable", f"정답 파일을 읽을 수 없습니다 — {type(e).__name__}: {str(e)[:160]}")
+        k1 = [k.name for k in KEYS if k.test == "T-001"]
+        k2 = [k.name for k in KEYS if k.test == "T-002"]
+        by_test: Dict[str, int] = {}
+        n_k1 = n_k2 = 0
+        items = []
+        for sid in sorted(a.records):
+            rec = a.records[sid]
+            t = rec.get("test") or "-"
+            by_test[t] = by_test.get(t, 0) + 1
+            f1, f2 = _gold_filled(rec, k1), _gold_filled(rec, k2)
+            n_k1 += f1 > 0
+            n_k2 += f2 > 0
+            if len(items) < PEEK_ROWS:
+                items.append({"set_id": sid, "test": rec.get("test"), "work_title": CF._gold_value(rec, "work_title"),
+                              "work_type": CF._gold_value(rec, "work_type"), "file_name": CF._gold_value(rec, "file_name"),
+                              "n_contract_keys": f1, "n_work_keys": f2})
+        return {"kind": kind, "path": CF.display_path(f), "file": f.name, "format": a.fmt, "n": len(a.records), "test": test,
+                "by_test": by_test, "n_with_contract_keys": n_k1, "n_with_work_keys": n_k2,
+                "n_contract_keys": len(k1), "n_work_keys": len(k2),
+                "problems": a.problems[:20], "n_problems": len(a.problems), "missing_columns": a.missing_columns,
+                "skipped_rows": a.skipped_rows, "items": items, "truncated": len(a.records) > len(items),
+                "sec": round(time.perf_counter() - t0, 1)}
+    raise ConsoleError(400, "bad_kind", "미리보기 종류는 contract · work · answers 가운데 하나입니다")
+
+
+@router.post(API + "/folder/peek")
+async def api_folder_peek(request: Request, user: str = Depends(_api_user)):
+    try:
+        body = await request.json()
+    except Exception:
+        raise ConsoleError(400, "bad_request", "요청 본문(JSON)을 읽을 수 없습니다")
+    if not isinstance(body, dict):
+        raise ConsoleError(400, "bad_request", "요청 본문은 JSON 객체여야 합니다")
+    return await run_in_threadpool(_folder_peek, body)
+
+
 def _make_folder_run(test: str, sc: Dict[str, Any], view: Dict[str, Any], scan: Dict[str, Any],
                      opts: Dict[str, Any]) -> TestRun:
     from module.evaluation.manifest import write_manifest
@@ -3037,7 +3271,8 @@ def _make_folder_run(test: str, sc: Dict[str, Any], view: Dict[str, Any], scan: 
             gold_path = Path(sc["gold_path"])
         w = _folder_workers(opts.get("workers"), test)
         cw = bool(opts.get("consolidate_work")) and test == "T-002"
-        est = _estimate(test, entries, w, cw)
+        plan = sc.get("contract_items")
+        est = _estimate(test, entries, w, cw, (plan or {}).get("process", 0))
         base = opts.get("name") or ""
         label = CF.test_label(test)
         run.name = (f"{base} · {label}" if base and len(view["order"]) > 1 else base) or f"{label} {FOLDER_SOURCE_LABEL} {len(entries)}건"
@@ -3049,6 +3284,8 @@ def _make_folder_run(test: str, sc: Dict[str, Any], view: Dict[str, Any], scan: 
         run.cfg_kwargs = {"workers": w, "scoring_set": "eval23", "test": test, "frame_schedule": "v4",
                           "consolidate_work": cw, "only_predicted": opts["only_predicted"], "title_fallback": False,
                           "tau": opts["tau"], "gold": run.gold_path, "max_cost_krw": opts.get("max_cost")}
+        if test == "T-002":
+            run.cfg_kwargs["contract_items"] = "te1"
         ans = tv["answer"]
         run.config = {"test": test, "source": "folder", "source_label": FOLDER_SOURCE_LABEL, **view["folders"],
                       "answer": {k: ans.get(k) for k in ("mode", "label", "file", "n")},
@@ -3057,6 +3294,8 @@ def _make_folder_run(test: str, sc: Dict[str, Any], view: Dict[str, Any], scan: 
                       "n_missing": tv["n_missing"], "n_duplicates": tv["n_duplicates"], "n_unkeyed": tv["n_unkeyed"],
                       "include_unkeyed": tv["include_unkeyed"], "media": tv.get("media") or {},
                       "n_items": view.get("n_items"), "items_media": view.get("items_media") or {}}
+        if plan is not None:
+            run.config["contract_items"] = plan          # 불러오기 때의 어림 — 실제 출처는 채점 결과의 contract_items
         write_manifest(entries, run.dir / "manifest.jsonl")
         _write_json_atomic(run.dir / "registration.json", {"version": VERSION, "registered_at": _iso(),
                                                             "folders": view["folders"], **tv})
@@ -3096,8 +3335,9 @@ async def api_folder_start(request: Request, user: str = Depends(_api_user)):
     for test in order:
         run = await run_in_threadpool(_make_folder_run, test, scan["internal"][test], view, scan, opts)
         runs.append((run, scan["internal"][test]["entries"]))
-    # 둘 다: 두 시험을 동시에 돌린다 — 서로 독립이다 (T-002 는 계약서를 규칙으로만 읽고 T-001 결과를 쓰지 않는다).
-    # 실행마다 스레드·작업자·로그·비용 상한이 따로이고, 한쪽을 취소해도 다른 쪽은 계속한다.
+    # 둘 다: 두 시험을 동시에 돌린다. Te-2 의 1~16번은 함께 도는 Te-1 의 결과를 쓴다 — Te-2 세트가 먼저 끝나면
+    # Te-1 이 그 계약서를 처리할 때까지 기다린다(_te1_lookup). 실행마다 스레드·작업자·로그·비용 상한이 따로이고,
+    # 한쪽을 취소해도 다른 쪽은 계속한다 (Te-1 이 그 세트를 처리하지 못하고 끝나면 Te-2 가 계약서를 직접 처리한다).
     if len(runs) > 1:
         for r, _ in runs:
             r.config["parallel"] = [{"run_id": o.run_id, "test": o.test} for o, _ in runs if o is not r]

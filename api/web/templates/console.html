@@ -593,14 +593,14 @@ const KEYS = [
 const KBY = Object.fromEntries(KEYS.map(K => [K.key, K]));
 const GROUPS = ['식별정보','권리주체정보','권리정보','이용허락·계약정보','내용·특징정보','파일·기술정보'];
 const SHORT = {work_title:'제목',file_name:'파일명',work_type:'유형',creator:'저작자',copyright_holder:'권리자',reproduction_right:'복제',performance_right:'공연',public_transmission_right:'공중송신',exhibition_right:'전시',distribution_right:'배포',rental_right:'대여',derivative_work_right:'2차적',other_rights:'기타',license_start_date:'시작일',license_end_date:'종료일',contract_validity_period:'유효기간',keywords:'키워드',hashtags:'해시태그',file_format:'포맷',file_size:'크기',resolution:'해상도',description:'설명',file_hash:'해시'};
-const scoredKeys = test => KEYS.filter(K => K.test === test && K.key !== 'other_rights');
+const scoredKeys = test => KEYS.filter(K => (test === 'T-002' || K.test === test) && K.key !== 'other_rights');   // 최종 절차서: Te-2 는 1~23번
 // 시험 이름은 시험 절차서를 따른다 (Te-1 · Te-2). 내부 코드(T-001 · T-002)는 정답·목록 파일과 API 에 그대로 쓴다.
 const TN = t => ({'T-001': 'Te-1', 'T-002': 'Te-2'})[t] || t;
 const TFULL = {'T-001': '공유저작물 속성정보 정확도', 'T-002': '멀티모달 저작물 속성정보 정확도'};   // 절차서의 시험 항목 이름 (결과 화면 · 결과보기 단추)
 const MEDIA_KO = {text: '어문', image: '이미지', video: '영상'};
 const mediaTxt = m => Object.keys(m || {}).filter(k => m[k]).sort((a, b) => ['text','image','video'].indexOf(a) - ['text','image','video'].indexOf(b)).map(k => `${MEDIA_KO[k] || k} ${nf(m[k])}`).join(' · ');
 const maxW = () => (S.status && S.status.defaults && S.status.defaults.max_workers) || 200;
-const TESTS = {'T-001':{label:'Te-1 계약서',desc:'계약서 1건 → 1~16번 항목 채점'},'T-002':{label:'Te-2 저작물',desc:'저작물 파일 → 17~23번 항목 채점'}};
+const TESTS = {'T-001':{label:'Te-1 계약서',desc:'계약서 1건 → 1~16번 항목 채점'},'T-002':{label:'Te-2 저작물',desc:'저작물 파일 → 1~23번 항목 채점 (1~16번은 같은 계약서의 Te-1 결과, 없으면 처리)'}};
 const STEP_L = ['업로드','텍스트·OCR','추출','통합','23개 항목'];
 const STATE_KO = {queued:'대기',running:'실행 중',scoring:'채점 중',done:'완료',cancelled:'취소됨',error:'오류',interrupted:'중단됨'};
 const STATE_LED = {queued:'off',running:'run',scoring:'run',done:'ok',cancelled:'warn',error:'err',interrupted:'err'};
@@ -969,7 +969,7 @@ function keyRows(d, test){
   return KEYS.map(K => {
     const x = by[K.key] || {};
     const value = Object.prototype.hasOwnProperty.call(x, 'value') ? x.value : rec[K.key];
-    const scored = x.scored != null ? !!x.scored : (K.test === test && K.key !== 'other_rights');
+    const scored = x.scored != null ? !!x.scored : ((test === 'T-002' || K.test === test) && K.key !== 'other_rights');
     return Object.assign({}, K, {label: x.label_ko || K.label, group: x.group_ko || K.group, scored, value, display: x.display, source: x.source, verdict: x.verdict || null, gold: x.gold, detail: x.detail, from: x.from_test || null, fromRun: x.from_run || null, raw: x});
   });
 }
@@ -1016,7 +1016,7 @@ function dvKeysHTML(p){
   const ok = meta.ok !== false, pt = d.partner && typeof d.partner === 'object' ? d.partner : null, ptOn = pt && pt.available;
   const ptNos = pt ? KEYS.filter(K => K.test === pt.test).map(K => K.no) : [];
   const ptRange = ptNos.length ? `${Math.min(...ptNos)}~${Math.max(...ptNos)}번` : '';
-  const ptNote = !pt ? '' : ptOn
+  const ptNote = !pt || d.test === 'T-002' ? '' : ptOn
     ? `${esc(ptRange)}은 함께 실행한 ${esc(TN(pt.test))} 실행 <span class="mono">${esc(pt.run_id)}</span>의 결과입니다 (채점은 시험별).${pt.ok === false ? ` <span class="errc">${esc(TN(pt.test))} 처리 실패: ${esc(scrub(pt.error || ''))}</span>` : ''}`
     : `함께 실행한 ${esc(TN(pt.test))}(<span class="mono">${esc(pt.run_id)}</span>)에는 이 항목이 없어 ${esc(ptRange)}은 비어 있습니다.`;
   return `<section class="c-panel dv-k" aria-label="23개 항목">

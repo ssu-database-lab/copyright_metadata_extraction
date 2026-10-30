@@ -125,6 +125,11 @@ def build_parser() -> argparse.ArgumentParser:
                     help="T-002: 계약서가 없는 세트에 매니페스트 제목을 문맥으로 준다 (본 시험 흉내 — 개발·파일럿용)")
     v4.add_argument("--only-predicted", action="store_true",
                     help="평가기 gold 를 예측이 있는 set_id 로 제한 (개발·파일럿 런 — 4,000세트 전부를 FN 으로 세지 않음). 기본 off")
+    v4.add_argument("--contract-items", default="te1", choices=["te1", "process", "off"],
+                    help="T-002 의 1~16번: te1 = --te1-predictions 의 같은 계약서 결과를 쓰고 없으면 계약서를 처리(기본) · "
+                         "process = 늘 계약서를 처리 · off = 처리하지 않음(개발용)")
+    v4.add_argument("--te1-predictions", nargs="+", default=None, metavar="DIR",
+                    help="T-002: Te-1 실행 폴더(또는 test_predictions 폴더) — 앞에 준 것부터 찾는다 (가장 최근 실행을 먼저)")
     return ap
 
 
@@ -213,7 +218,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                     frame_schedule=args.frame_schedule, gold=args.gold, tau=args.tau,
                     content_check=(args.content_check == "on"), embed_cache=args.embed_cache,
                     embed_revision=args.embed_revision, n_boot=args.n_boot,
-                    only_predicted=args.only_predicted, title_fallback=args.title_fallback)
+                    only_predicted=args.only_predicted, title_fallback=args.title_fallback,
+                    contract_items=args.contract_items)
 
     def cb(ev):
         if ev["type"] == "progress" and (ev["i"] % 10 == 0 or not ev["ok"] or eval23):
@@ -236,6 +242,11 @@ def main(argv: Optional[List[str]] = None) -> int:
               + f" · workers {cfg.workers}")
 
         runner = BatchRunner(build_orchestrator(out_dir), cfg, out_dir, progress_cb=cb)
+        if args.te1_predictions:
+            from .v4.te1_reuse import index_from_paths
+            te1 = index_from_paths(args.te1_predictions)
+            runner.te1_lookup = lambda e: te1.find(e.set_id, e.contract)
+            print(f"  Te-1 결과 — {', '.join(r for r, _ in te1.sources)} (1~16번은 같은 계약서의 결과를 씁니다)")
 
         # Ctrl-C 로 실제로 멈춰야 한다. 기본 동작으로는 이미 제출된 세트가 전부 실행되어
         # 중단했다고 생각한 뒤에도 요금이 계속 발생한다.

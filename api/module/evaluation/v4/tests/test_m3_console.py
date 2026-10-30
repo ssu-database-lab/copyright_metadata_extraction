@@ -867,7 +867,7 @@ def test_batch_t002_verdicts_filters_evidence_previews(console):
     k1, k2 = by["90000001"]["keys"], by["90000002"]["keys"]
     assert k1["keywords"]["verdict"] == "PARTIAL" and k1["keywords"]["set_f1"] == pytest.approx(2 / 3)
     assert k1["hashtags"]["verdict"] == "TP" and k1["description"]["verdict"] == "TP"
-    assert k1["file_hash"]["verdict"] == "TP" and k1["work_title"]["verdict"] is None
+    assert k1["file_hash"]["verdict"] == "TP" and k1["work_title"]["verdict"] == "NA"     # Te-2 도 1~16번을 채점 — 이 gold 는 정답 없음(③)
     assert k2["keywords"]["verdict"] == "EMPTY_OK" and k2["hashtags"]["verdict"] == "NA"
     assert k2["resolution"]["verdict"] == "WRONG" and k2["description"]["verdict"] == "WRONG"
     assert k2["file_size"]["verdict"] == "FN" and k2["file_format"]["verdict"] == "TP"
@@ -889,7 +889,8 @@ def test_batch_t002_verdicts_filters_evidence_previews(console):
     assert kd["keywords"]["counts"] == {"tp": 2, "fp": 1, "fn": 1, "state": "value", "kind": None, "matched": False}
     assert kd["resolution"]["detail"] == {"gold_norm": "64x48", "pred_norm": "64x48"}
     assert set(kd["description"]["detail"]) >= {"cosine", "tau", "shared_tokens"}
-    assert kd["creator"]["detail"] is None and kd["creator"]["counts"] is None
+    # Te-2 도 1~16번을 채점한다 — 이 gold 는 저작자 정답이 없어(③) 판정 없이 제외로 남는다
+    assert kd["creator"]["detail"] == {"skipped": "gold_na"} and kd["creator"]["verdict"] == "NA" and kd["creator"]["scored"]
     assert kd["creator"]["display"] == "NULL" and kd["file_name"]["display"] == "90000001_1_테스트 사진.jpg"
     items = lambda k: {i["label"]: i["value"] for i in det["evidence"][k]["items"]}   # noqa: E731
     assert items("keywords")["일치한 짝"] == "바다 = 바다, 하늘 = 하늘"

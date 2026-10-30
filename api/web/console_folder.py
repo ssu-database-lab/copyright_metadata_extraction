@@ -445,7 +445,9 @@ def load_answers(path: Path, keys, test: Optional[str] = None) -> Answers:
         if not heads & _SET_ID_HEADERS:
             raise FolderError(400, "answer_no_id", "정답 표에 세트 ID 열(set_id)이 없습니다")
         have = {kmap[h] for h in heads if h in kmap}
-        ans.missing_columns = [k.name for k in keys if k.name not in have and (test is None or k.test == test)]
+        from module.evaluation.v4.keys23 import scored_keys
+        want = set(scored_keys(test)) if test else None
+        ans.missing_columns = [k.name for k in keys if k.name not in have and (want is None or k.name in want)]
     for r in rows:
         rec, probs = _record_from_json(r, keys, kmap, src)
         ans.problems.extend(probs)

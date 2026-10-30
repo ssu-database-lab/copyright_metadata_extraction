@@ -417,9 +417,9 @@ def test_runner_eval23_t002_work_leg_kwargs_and_context(tmp_path: Path, work_fil
     out = tmp_path / "t002"
     entry = ManifestEntry(set_id="13178069", work=str(work_file), contract=str(NEW_CONTRACT), media="image")
     orch = FakeOrch(pred_fn=_t002_pred)
-    runner = BatchRunner(orch, RunConfig(workers=1, scoring_set="eval23", test="T-002"), out)
+    runner = BatchRunner(orch, RunConfig(workers=1, scoring_set="eval23", contract_items="off", test="T-002"), out)
     summary = runner.run([entry], {})
-    assert summary["ok"] == 1 and len(orch.calls) == 1                 # 계약서 leg 는 부르지 않는다(규칙 문맥만)
+    assert summary["ok"] == 1 and len(orch.calls) == 1                 # contract_items=off — 계약서 leg 는 부르지 않는다(규칙 문맥만)
     c = orch.calls[0]
     assert c["filename"] == "13178069_1_인도네시아 (309).JPG" and c["document_type"] == "기타문서"
     assert c["consolidate_work"] is False and c["frame_schedule"] == "v4" and c["media"] == "image"
@@ -450,7 +450,7 @@ def test_runner_eval23_t002_consolidate_work_and_no_parser(tmp_path: Path, work_
     monkeypatch.setattr(BR, "_CONTEXT_PARSER_LOADED", True)              # (지연 import 도 막는다 — A4 가 들어와도 같은 시나리오)
     entry = ManifestEntry(set_id="s", work=str(work_file), contract=str(NEW_CONTRACT), media="image")
     orch = FakeOrch(pred_fn=_t002_pred)
-    runner = BatchRunner(orch, RunConfig(workers=1, scoring_set="eval23", consolidate_work=True), tmp_path / "o")
+    runner = BatchRunner(orch, RunConfig(workers=1, scoring_set="eval23", contract_items="off", consolidate_work=True), tmp_path / "o")
     summary = runner.run([entry], {})
     c = orch.calls[0]
     assert c["consolidate_work"] is True and c["contract_context"] is None
@@ -465,7 +465,7 @@ def test_runner_eval23_t002_empty_rule_parse_means_no_context(tmp_path: Path, wo
     monkeypatch.setattr(BR, "parse_contract_context", lambda path: {"title": None, "work_type": None, "source": "rules"})
     entry = ManifestEntry(set_id="e", work=str(work_file), contract=str(NEW_CONTRACT), media="image")
     orch = FakeOrch(pred_fn=_t002_pred)
-    runner = BatchRunner(orch, RunConfig(workers=1, scoring_set="eval23", test="T-002"), tmp_path / "e")
+    runner = BatchRunner(orch, RunConfig(workers=1, scoring_set="eval23", contract_items="off", test="T-002"), tmp_path / "e")
     runner.run([entry], {})
     assert orch.calls[0]["contract_context"] is None
     rec = json.loads((tmp_path / "e" / "test_predictions" / "e.json").read_text(encoding="utf-8"))
@@ -756,7 +756,7 @@ def test_runner_t002_workers_all_get_context_with_slow_import(tmp_path: Path, wo
     entries = [ManifestEntry(set_id=f"r{i}", work=str(work_file), contract=str(NEW_CONTRACT), media="image", test="T-002")
                for i in range(4)]
     orch = FakeOrch(pred_fn=_t002_pred)
-    runner = BatchRunner(orch, RunConfig(workers=4, scoring_set="eval23", test="T-002"), tmp_path / "race")
+    runner = BatchRunner(orch, RunConfig(workers=4, scoring_set="eval23", contract_items="off", test="T-002"), tmp_path / "race")
     summary = runner.run(entries, {})
     runner.close_log()
     assert summary["ok"] == 4 and len(orch.calls) == 4
@@ -1004,3 +1004,110 @@ def test_disk_slot_is_per_drive(monkeypatch):
     ts = [th.Thread(target=job, args=(p,)) for p in ["/mnt/e/a", "/mnt/e/b", "/mnt/e/c", "/mnt/c/a", "/mnt/c/b"]]
     [t.start() for t in ts]; [t.join() for t in ts]
     assert peaks["mnt/e"] == 1 and peaks["mnt/c"] == 1 and peaks["all"] == 2
+
+
+# ---------------------------------------------------------------------------
+# 2610028 최종 절차서 — Te-2 는 1~23번: 1~16번은 같은 계약서의 Te-1 결과, 없으면 이 세트에서 계약서 leg
+# ---------------------------------------------------------------------------
+_TE1_VALUES = {"work_title": "운수 자판기", "work_type": "어문", "creator": ["김은혜"], "copyright_holder": ["김은혜"],
+               "reproduction_right": "허용", "license_start_date": "2026-01-01", "file_name": "계약서.pdf"}
+
+
+def _te1_record(contract: Path, set_id: str = "13178069", ok: bool = True, sha: str | None = None) -> Dict[str, Any]:
+    return {"set_id": set_id, "test": "T-001", **{k: None for k in KEY_NAMES}, **_TE1_VALUES,
+            "_meta": {"ok": ok, "files": {"contract": str(contract), "work": None},
+                      "file_sha256": sha or hashlib.sha256(contract.read_bytes()).hexdigest()}}
+
+
+def _t002_entry(work_file: Path, contract: Path) -> ManifestEntry:
+    return ManifestEntry(set_id="13178069", work=str(work_file), contract=str(contract), media="image")
+
+
+@pytest.fixture
+def contract_file(tmp_path: Path) -> Path:
+    p = tmp_path / "contracts" / "13178069 인도네시아 (309).pdf"
+    p.parent.mkdir(parents=True)
+    p.write_bytes(b"%PDF-1.4 contract bytes")
+    return p
+
+
+def test_t002_uses_te1_result_for_items_1_to_16(tmp_path: Path, work_file: Path, contract_file: Path, monkeypatch):
+    monkeypatch.setattr(BR, "parse_contract_context", lambda path: {"title": "규칙 제목", "work_type": "사진", "source": "rules"})
+    orch = FakeOrch(pred_fn=_t002_pred)
+    runner = BatchRunner(orch, RunConfig(workers=1, scoring_set="eval23", test="T-002"), tmp_path / "o")
+    hit = {"record": _te1_record(contract_file), "run_id": "te1-run", "path": "x.json", "contract_sha256": "s"}
+    runner.te1_lookup = lambda e: hit if e.contract == str(contract_file) else None
+    summary = runner.run([_t002_entry(work_file, contract_file)], {})
+    assert summary["ok"] == 1 and len(orch.calls) == 1                  # 저작물 leg 만 — 계약서는 다시 처리하지 않는다
+    assert summary["cost_krw"] == pytest.approx(BR.COST_VLM_IMAGE)
+    rec = json.loads((tmp_path / "o" / "test_predictions" / "13178069.json").read_text(encoding="utf-8"))
+    assert rec["creator"] == ["김은혜"] and rec["reproduction_right"] == "허용" and rec["license_start_date"] == "2026-01-01"
+    assert rec["work_title"] == "운수 자판기" and rec["work_type"] == "어문"      # 규칙 문맥보다 Te-1 결과가 앞선다
+    assert rec["file_name"] == "13178069_1_인도네시아 (309).JPG"              # 파일명은 저작물 파일의 이름
+    assert rec["keywords"] == ["바다", "하늘"] and rec["copyright_holder"] == ["김은혜"]
+    assert rec["_meta"]["contract_items"] == {"source": "te1", "run_id": "te1-run", "path": "x.json", "contract_sha256": "s"}
+    fin = runner.finalize_eval23()
+    assert fin["contract_items"] == {"te1": 1, "contract_leg": 0, "none": 0, "runs": {"te1-run": 1}}
+
+
+def test_t002_processes_contract_when_no_te1_result(tmp_path: Path, work_file: Path, contract_file: Path, monkeypatch):
+    monkeypatch.setattr(BR, "parse_contract_context", lambda path: {"title": "규칙 제목", "work_type": "사진", "source": "rules"})
+
+    def pred(filename: str) -> Dict[str, Any]:
+        return dict(_TE1_VALUES, creator=["계약서 leg"]) if filename.endswith(".pdf") else _t002_pred(filename)
+    orch = FakeOrch(pred_fn=pred)
+    runner = BatchRunner(orch, RunConfig(workers=1, scoring_set="eval23", test="T-002"), tmp_path / "o")
+    runner.te1_lookup = lambda e: None
+    summary = runner.run([_t002_entry(work_file, contract_file)], {})
+    assert summary["ok"] == 1 and [c["filename"] for c in orch.calls] == ["13178069_1_인도네시아 (309).JPG",
+                                                                        "13178069 인도네시아 (309).pdf"]
+    c = orch.calls[1]
+    assert c["document_type"] == "저작재산권 이용허락 계약서" and c["test"] == "T-001" and c["consolidate"] is True
+    rec = json.loads((tmp_path / "o" / "test_predictions" / "13178069.json").read_text(encoding="utf-8"))
+    assert rec["creator"] == ["계약서 leg"] and rec["file_name"] == "13178069_1_인도네시아 (309).JPG"
+    ci = rec["_meta"]["contract_items"]
+    assert ci["source"] == "contract_leg" and ci["reason"] == "Te-1 결과 없음" and ci["request_id"] == "rid-2"
+    assert set(rec["_meta"]["request_ids"]) == {"work", "contract"}
+    assert summary["cost_krw"] > BR.COST_VLM_IMAGE                      # 계약서 leg 요금이 더해진다
+    assert runner.finalize_eval23()["contract_items"]["contract_leg"] == 1
+
+
+def test_t002_contract_leg_failure_fails_the_set(tmp_path: Path, work_file: Path, contract_file: Path, monkeypatch):
+    monkeypatch.setattr(BR, "parse_contract_context", lambda path: None)
+
+    class HalfOrch(FakeOrch):
+        def run(self, file_bytes, filename, **kw):
+            r = super().run(file_bytes, filename, **kw)
+            if filename.endswith(".pdf"):
+                r.update(success=False, error="OCR 실패")
+            return r
+    runner = BatchRunner(HalfOrch(pred_fn=_t002_pred), RunConfig(workers=1, scoring_set="eval23", test="T-002"), tmp_path / "o")
+    summary = runner.run([_t002_entry(work_file, contract_file)], {})
+    assert summary["ok"] == 0 and summary["failed"] == 1                 # 다시 실행하면 이 세트를 처음부터 다시 한다
+    rec = json.loads((tmp_path / "o" / "test_predictions" / "13178069.json").read_text(encoding="utf-8"))
+    assert rec["_meta"]["ok"] is False and "계약서 처리 실패" in rec["_meta"]["error"] and "OCR 실패" in rec["_meta"]["error"]
+    assert rec["keywords"] == ["바다", "하늘"]                             # 저작물 leg 결과는 남는다
+
+
+def test_te1_index_matches_same_contract_file_newest_first(tmp_path: Path, contract_file: Path):
+    from api.module.evaluation.v4.te1_reuse import Te1Index, index_from_paths
+    old, new, bad = (tmp_path / n / "out" / "test_predictions" for n in ("old", "new", "bad"))
+    for d in (old, new, bad):
+        d.mkdir(parents=True)
+    (old / "13178069.json").write_text(json.dumps(_te1_record(contract_file), ensure_ascii=False), encoding="utf-8")
+    r_new = _te1_record(contract_file)
+    r_new["creator"] = ["최근 실행"]
+    (new / "13178069.json").write_text(json.dumps(r_new, ensure_ascii=False), encoding="utf-8")
+    (bad / "13178069.json").write_text(json.dumps(_te1_record(contract_file, ok=False)), encoding="utf-8")
+    idx = Te1Index([("bad", bad), ("new", new), ("old", old)])
+    hit = idx.find("13178069", str(contract_file))
+    assert hit["run_id"] == "new" and hit["record"]["creator"] == ["최근 실행"]      # 실패한 기록은 건너뛰고, 최근 실행이 먼저
+    other = contract_file.with_name("13178069 다른 계약서.pdf")
+    other.write_bytes(b"%PDF-1.4 a different contract")
+    assert idx.find("13178069", str(other)) is None                      # 세트 ID 가 같아도 다른 계약서면 쓰지 않는다
+    assert idx.find("99999999", str(contract_file)) is None
+    legacy = _te1_record(contract_file)
+    legacy["_meta"].pop("file_sha256")                                   # 해시 없는 옛 기록 — 그때의 계약서를 직접 잰다
+    (old / "13178069.json").write_text(json.dumps(legacy, ensure_ascii=False), encoding="utf-8")
+    assert Te1Index([("old", old)]).find("13178069", str(contract_file))["run_id"] == "old"
+    assert [r for r, _ in index_from_paths([tmp_path / "new", tmp_path / "old" / "out"]).sources] == ["new", "old"]
