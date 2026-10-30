@@ -26,6 +26,7 @@ mistralai>=1.0.0,<2.0.0
 openai>=1.0.0
 PyMuPDF>=1.23.0
 pyhwp>=0.1b15          # HWP v5 본문 텍스트 직접 추출 (universal_ocr._extract_hwp_text)
+python-docx>=1.1.0     # DOCX 본문 텍스트 직접 추출 (universal_ocr — 없으면 DOCX 를 읽지 못한다)
 
 # --- Data Processing ---
 numpy>=1.21.0

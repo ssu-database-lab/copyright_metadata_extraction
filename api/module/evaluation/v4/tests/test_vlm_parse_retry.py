@@ -70,3 +70,11 @@ def test_json_mode_flag(monkeypatch):
     assert not EX.make_gemma_backend().json_mode
     monkeypatch.setenv("VLM_JSON_MODE", "off")
     assert not EX.make_omni_backend().json_mode
+
+
+def test_empty_or_non_object_json_is_unreadable():
+    """2026-10-30: 영상 1건이 읽기 성공·내용 없음으로 와서 재시도·폴백 없이 실패했다 — 빈 객체는 못 읽은 것으로 본다."""
+    from module.clip_extraction.vlm.client import _extract_json
+    for text in ("{}", "```json\n{}\n```", "[1, 2]", '"설명"', "null", ""):
+        assert _extract_json(text) is None, text
+    assert _extract_json('앞말 {"work_type": "영상저작물"} 뒷말') == {"work_type": "영상저작물"}

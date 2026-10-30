@@ -104,9 +104,12 @@ def _extract_json(text: str) -> dict[str, Any] | None:
         if start != -1 and end != -1 and end > start:
             candidate = candidate[start:end + 1]
     try:
-        return json.loads(candidate)
+        obj = json.loads(candidate)
     except (json.JSONDecodeError, ValueError):
         return None
+    # 빈 객체({})·배열·문자열은 읽지 못한 것으로 본다 — 2026-10-30 영상 1건이 읽기 성공·내용 없음으로 와서
+    # 같은 모델 재시도도 폴백도 없이 실패했다. None 이면 재시도 → 폴백 → vlm_unparsed.jsonl 에 원문이 남는다.
+    return obj if isinstance(obj, dict) and obj else None
 
 
 class VLMClient:

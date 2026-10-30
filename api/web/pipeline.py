@@ -969,6 +969,54 @@ class PipelineOrchestrator:
     # Full pipeline (non-streaming convenience method)
     # ------------------------------------------------------------------
 
+    def run_video_response(self, ctx: Dict[str, Any], *, document_type: str = "기타문서",
+                           consolidate: bool = True, consolidate_work: bool = True,
+                           consolidation_model: str = "alibaba-qwen3.5-122b-a10b",
+                           video_prefer: str = "omni", contract_context: Optional[Dict] = None,
+                           frame_schedule: str = "v3", test: Optional[str] = None,
+                           contract_metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """영상 저작물 1건 — 키프레임 → 다중 프레임 VLM 1회 호출 → 응답 조립·저장.
+
+        run() 과 /api/llm-extract 의 스트리밍 경로가 함께 쓴다. 이미지 경로와 같은 모양을 돌려주므로
+        통합검증·응답 조립·계약서 상속은 그대로 재사용된다."""
+        vid_result = self.run_video(ctx, prefer=video_prefer, context=contract_context,
+                                    frame_schedule=frame_schedule)
+        vid_ok = vid_result.get("success", False)
+        do_con = consolidate and consolidate_work and vid_ok
+        if do_con:
+            con_result, con_success, con_error = self.run_consolidation(
+                vid_result,
+                {"success": False, "entities": {}, "total_entities": 0,
+                 "extracted_entities": []},
+                "", document_type, ctx["result_dir"], consolidation_model,
+            )
+        else:
+            con_result, con_success, con_error = None, False, None
+        response = self.build_response(
+            ctx,
+            model_name=vid_result.get("model_used", "VLM"), document_type=document_type,
+            ocr_text="", ocr_provider="(video/keyframes)", ocr_model=None,
+            llm_result=vid_result, ner_model=None, ner_result=None,
+            consolidate=do_con, consolidation_model=consolidation_model,
+            consolidation_result=con_result, consolidation_success=con_success,
+            consolidation_error=con_error,
+            test=test, contract_context=contract_context,
+        )
+        response["modality"] = "video"
+        response["vlm_backend"] = vid_result.get("model_used")
+        response["keyframes"] = vid_result.get("_keyframes")
+        response["frame_schedule"] = frame_schedule
+        response["consolidate_work"] = consolidate_work
+        if vid_ok and not consolidate_work:
+            self._skip_work_consolidation(response)
+        self._backfill_file_attributes(ctx, response)
+        # 계약서→저작물 권리정보 상속 — 이미지와 같다 (HF Space 연동: contract_metadata 동봉 시)
+        if vid_ok and contract_metadata:
+            self.apply_contract_inheritance(response, contract_metadata)
+        self._attach_test_prediction(response)
+        self.save_results(ctx["result_dir"], response, con_result, con_success)
+        return response
+
     def run(self, file_bytes: bytes, filename: str, **kwargs) -> Dict[str, Any]:
         """Run the full pipeline in one call (non-streaming). 폴더 시험의 작업 사본은 끝나면(실패해도) 지운다."""
         staged: list = []
@@ -1042,41 +1090,11 @@ class PipelineOrchestrator:
             return response
 
         if modality == "video":
-            # 키프레임 → 다중 프레임 VLM 1회 호출. 이미지 경로와 동일한 모양을
-            # 돌려주므로 통합검증·응답조립은 그대로 재사용된다.
-            vid_result = self.run_video(ctx, prefer=kwargs.get("video_prefer", "omni"),
-                                        context=contract_context, frame_schedule=frame_schedule)
-            vid_ok = vid_result.get("success", False)
-            do_con = consolidate and consolidate_work and vid_ok
-            if do_con:
-                con_result, con_success, con_error = self.run_consolidation(
-                    vid_result,
-                    {"success": False, "entities": {}, "total_entities": 0,
-                     "extracted_entities": []},
-                    "", document_type, ctx["result_dir"], consolidation_model,
-                )
-            else:
-                con_result, con_success, con_error = None, False, None
-            response = self.build_response(
-                ctx,
-                model_name=vid_result.get("model_used", "VLM"), document_type=document_type,
-                ocr_text="", ocr_provider="(video/keyframes)", ocr_model=None,
-                llm_result=vid_result, ner_model=None, ner_result=None,
-                consolidate=do_con, consolidation_model=consolidation_model,
-                consolidation_result=con_result, consolidation_success=con_success,
-                consolidation_error=con_error,
-                test=test, contract_context=contract_context,
-            )
-            response["modality"] = modality
-            response["keyframes"] = vid_result.get("_keyframes")
-            response["frame_schedule"] = frame_schedule
-            response["consolidate_work"] = consolidate_work
-            if vid_ok and not consolidate_work:
-                self._skip_work_consolidation(response)
-            self._backfill_file_attributes(ctx, response)
-            self._attach_test_prediction(response)
-            self.save_results(ctx["result_dir"], response, con_result, con_success)
-            return response
+            return self.run_video_response(
+                ctx, document_type=document_type, consolidate=consolidate,
+                consolidate_work=consolidate_work, consolidation_model=consolidation_model,
+                video_prefer=kwargs.get("video_prefer", "omni"), contract_context=contract_context,
+                frame_schedule=frame_schedule, test=test, contract_metadata=kwargs.get("contract_metadata"))
 
         if modality == "audio":
             # ASR 은 1차 구현 제외(계획서 §5): 한국어 음성이 데이터의 0.19%뿐이고

@@ -97,6 +97,9 @@ logger = logging.getLogger(__name__)
 
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tif', 'tiff', 'webp', 'bmp', 'gif'}
+# /api/llm-extract 는 영상도 받는다 — 확장자 목록은 라우터(영상 경로)와 같아야 한다 (OCR 경로를 쓰는 다른 API 는 그대로)
+from module.clip_extraction.router import _VIDEO_EXTS as VIDEO_EXTENSIONS  # noqa: E402
+LLM_EXTRACT_EXTENSIONS = ALLOWED_EXTENSIONS | VIDEO_EXTENSIONS
 
 # OCR 설정 확인
 def check_ocr_availability() -> Dict[str, bool]:
@@ -214,9 +217,9 @@ from web.console_api import router as console_router, init_console_api  # noqa: 
 init_console_api(templates=templates)
 app.include_router(console_router)
 
-def allowed_file(filename: str) -> bool:
+def allowed_file(filename: str, extensions=ALLOWED_EXTENSIONS) -> bool:
     """허용된 파일 형식인지 확인"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in extensions
 
 def secure_filename(filename: str) -> str:
     """파일명을 안전하게 변환"""
@@ -913,8 +916,8 @@ async def llm_extract_metadata(
                                          "error": f"contract_metadata JSON 파싱 실패: {e}"}, status_code=400)
 
     # Validate inputs
-    if not filename or not allowed_file(filename):
-        err = f'지원하지 않는 파일 형식입니다. 허용: {", ".join(ALLOWED_EXTENSIONS)}'
+    if not filename or not allowed_file(filename, LLM_EXTRACT_EXTENSIONS):
+        err = f'지원하지 않는 파일 형식입니다. 허용: {", ".join(sorted(LLM_EXTRACT_EXTENSIONS))}'
         if stream:
             async def err_stream():
                 yield _send_progress_update(err, 0, 0, {"error": err})
@@ -981,7 +984,25 @@ async def llm_extract_metadata(
                     await asyncio.sleep(0.01)
                     return
 
-                if modality in ("video", "audio"):
+                if modality == "video":
+                    # 비스트리밍(pipeline.run)과 같은 처리 — 키프레임 → VLM 1회 → (상속) → 저장
+                    yield _send_progress_update("영상 키프레임 추출·분석 중...", 2, 35)
+                    await asyncio.sleep(0.01)
+                    response = await asyncio.to_thread(
+                        pipeline_orchestrator.run_video_response, ctx,
+                        document_type=document_type, consolidate=consolidate,
+                        consolidate_work=consolidate_work, consolidation_model=consolidation_model,
+                        contract_metadata=contract_meta_dict)
+                    if not response.get("success"):
+                        err = response.get("error") or "영상 분석 실패"
+                        yield _send_progress_update(f"영상 분석 실패 ({response.get('vlm_backend')})", 0, 0,
+                                                    {"error": err, "result": response})
+                        return
+                    yield _send_progress_update("처리 완료", 5, 100, {"result": response})
+                    await asyncio.sleep(0.01)
+                    return
+
+                if modality == "audio":
                     error_response = {"success": False, "modality": modality, "request_id": ctx["request_id"],
                                       "filename": ctx["filename"],
                                       "error": f"{modality} 처리는 아직 지원되지 않습니다 (멀티모달 P3 예정)"}
@@ -1207,7 +1228,7 @@ async def download_specific_file(request_id: str, file_path: str):
 async def ner_extract_entities(
     file: UploadFile = File(...),
     model: str = Form("klue-roberta-large"),
-    ocr_provider: str = Form("google"),
+    ocr_provider: str = Form("alibaba"),   # Google Vision 은 2026-10-11 부터 꺼져 있다 (GOOGLE_VISION_ENABLED)
     ocr_model: str = Form(None)
 ):
     """NER 엔티티 추출 전용 엔드포인트"""
