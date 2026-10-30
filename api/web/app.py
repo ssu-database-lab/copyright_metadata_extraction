@@ -97,6 +97,9 @@ logger = logging.getLogger(__name__)
 
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tif', 'tiff', 'webp', 'bmp', 'gif'}
+# /api/llm-extract 는 영상도 받는다 — 확장자 목록은 라우터(영상 경로)와 같아야 한다 (OCR 경로를 쓰는 다른 API 는 그대로)
+from module.clip_extraction.router import _VIDEO_EXTS as VIDEO_EXTENSIONS  # noqa: E402
+LLM_EXTRACT_EXTENSIONS = ALLOWED_EXTENSIONS | VIDEO_EXTENSIONS
 
 # OCR 설정 확인
 def check_ocr_availability() -> Dict[str, bool]:
@@ -214,9 +217,9 @@ from web.console_api import router as console_router, init_console_api  # noqa: 
 init_console_api(templates=templates)
 app.include_router(console_router)
 
-def allowed_file(filename: str) -> bool:
+def allowed_file(filename: str, extensions=ALLOWED_EXTENSIONS) -> bool:
     """허용된 파일 형식인지 확인"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in extensions
 
 def secure_filename(filename: str) -> str:
     """파일명을 안전하게 변환"""
@@ -874,6 +877,10 @@ async def llm_extract_metadata(
     ner_model: str = Form(default="klue-roberta-large"),
     consolidate: bool = Form(default=True),
     consolidation_model: str = Form(default="alibaba-qwen3.5-122b-a10b"),
+    # 이미지·영상 저작물에도 통합검증(중재자)을 돌릴지 — 기본 끔. 저작물에는 비교할 NER 결과가 없어 중재가 바꾸는 것이 없고,
+    # 87필드 전부에 근거를 쓰다 출력 한도(8,192토큰)에서 잘렸다(무하유 2026-10-12 이미지 8건 중 6건, 건당 ₩35·70–105초).
+    # 시험(Te-2)도 끈 채로 평가했다. consolidate=false 면 이 값과 관계없이 돌지 않는다.
+    consolidate_work: bool = Form(default=False),
     vlm_prefer: str = Form(default="auto"),  # 이미지 VLM 체인: auto(기본: qwen3.8-omni-flash→qwen3.7-plus→Gemma) | gemma | qwen
     contract_metadata: str = Form(default=None),  # 계약서→저작물 상속용: 계약서 분석 결과 JSON (이미지 처리 시)
     stream: bool = Form(default=False)
@@ -909,8 +916,8 @@ async def llm_extract_metadata(
                                          "error": f"contract_metadata JSON 파싱 실패: {e}"}, status_code=400)
 
     # Validate inputs
-    if not filename or not allowed_file(filename):
-        err = f'지원하지 않는 파일 형식입니다. 허용: {", ".join(ALLOWED_EXTENSIONS)}'
+    if not filename or not allowed_file(filename, LLM_EXTRACT_EXTENSIONS):
+        err = f'지원하지 않는 파일 형식입니다. 허용: {", ".join(sorted(LLM_EXTRACT_EXTENSIONS))}'
         if stream:
             async def err_stream():
                 yield _send_progress_update(err, 0, 0, {"error": err})
@@ -949,7 +956,7 @@ async def llm_extract_metadata(
                     yield _send_progress_update(f"VLM 추출 완료 ({backend})", 3, 70, {"vlm_backend": backend})
                     await asyncio.sleep(0.01)
                     con_result, con_success, con_error = None, False, None
-                    do_con = consolidate and vlm_result.get("success")
+                    do_con = consolidate and consolidate_work and vlm_result.get("success")
                     if do_con:
                         yield _send_progress_update("메타데이터 통합 중...", 4, 90)
                         await asyncio.sleep(0.01)
@@ -966,6 +973,9 @@ async def llm_extract_metadata(
                         consolidation_error=con_error)
                     response["modality"] = "image"; response["vlm_backend"] = backend
                     response["vlm_raw"] = vlm_result.get("_vlm_raw")
+                    response["consolidate_work"] = consolidate_work
+                    if not consolidate_work:          # 비스트리밍(pipeline.run)과 같은 최종값 — consolidated_metadata = VLM 결과
+                        pipeline_orchestrator._skip_work_consolidation(response)
                     if contract_meta_dict:
                         yield _send_progress_update("계약서 권리정보 상속 중...", 4, 95)
                         pipeline_orchestrator.apply_contract_inheritance(response, contract_meta_dict)
@@ -974,7 +984,25 @@ async def llm_extract_metadata(
                     await asyncio.sleep(0.01)
                     return
 
-                if modality in ("video", "audio"):
+                if modality == "video":
+                    # 비스트리밍(pipeline.run)과 같은 처리 — 키프레임 → VLM 1회 → (상속) → 저장
+                    yield _send_progress_update("영상 키프레임 추출·분석 중...", 2, 35)
+                    await asyncio.sleep(0.01)
+                    response = await asyncio.to_thread(
+                        pipeline_orchestrator.run_video_response, ctx,
+                        document_type=document_type, consolidate=consolidate,
+                        consolidate_work=consolidate_work, consolidation_model=consolidation_model,
+                        contract_metadata=contract_meta_dict)
+                    if not response.get("success"):
+                        err = response.get("error") or "영상 분석 실패"
+                        yield _send_progress_update(f"영상 분석 실패 ({response.get('vlm_backend')})", 0, 0,
+                                                    {"error": err, "result": response})
+                        return
+                    yield _send_progress_update("처리 완료", 5, 100, {"result": response})
+                    await asyncio.sleep(0.01)
+                    return
+
+                if modality == "audio":
                     error_response = {"success": False, "modality": modality, "request_id": ctx["request_id"],
                                       "filename": ctx["filename"],
                                       "error": f"{modality} 처리는 아직 지원되지 않습니다 (멀티모달 P3 예정)"}
@@ -1067,6 +1095,7 @@ async def llm_extract_metadata(
             ocr_provider=ocr_provider, ocr_model=ocr_model,
             ner_model=ner_model, consolidate=consolidate,
             consolidation_model=consolidation_model,
+            consolidate_work=consolidate_work,
             vlm_prefer=vlm_prefer,
             contract_metadata=contract_meta_dict,
         )
@@ -1199,7 +1228,7 @@ async def download_specific_file(request_id: str, file_path: str):
 async def ner_extract_entities(
     file: UploadFile = File(...),
     model: str = Form("klue-roberta-large"),
-    ocr_provider: str = Form("google"),
+    ocr_provider: str = Form("alibaba"),   # Google Vision 은 2026-10-11 부터 꺼져 있다 (GOOGLE_VISION_ENABLED)
     ocr_model: str = Form(None)
 ):
     """NER 엔티티 추출 전용 엔드포인트"""

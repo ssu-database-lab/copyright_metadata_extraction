@@ -34,14 +34,29 @@ import hashlib
 import json
 import logging
 import os
+import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, Callable
+
 import re
 import unicodedata
 
+try:                                     # 무거운 로컬 작업 동시 개수 (LOCAL_HEAVY_SLOTS, module/local_limits.py)
+    from module.local_limits import disk_slot, heavy_slot
+except ImportError:
+    from api.module.local_limits import disk_slot, heavy_slot  # type: ignore
+
+# 시험 자료(폴더 시험)를 잠깐 복사해 두는 곳 — 빠른 로컬 디스크(WSL 이면 ext4 의 /tmp). 세트가 끝나면 지운다.
+# 실행 폴더(api/web/test_runs, 윈도 C:)에 두면 WSL 파일 다리로 쓰게 되어 느리고 C: 를 채운다.
+INPUT_STAGING_DIR = Path(os.getenv("INPUT_STAGING_DIR") or (Path(__import__("tempfile").gettempdir()) / "console_staging"))
+# 폴더 시험에서 결과 폴더의 source/ 에 남기는 사본 — 원본 폴더를 옮기거나 지워도 콘솔이 계약서 쪽 보기·위치 표시(노란 칠)와
+# 저작물 그림을 보여 주게. 문서는 그대로(계약서 1건 ≈100 KB → 4,000건 ≈400 MB), 그림은 긴 변 1280 px JPEG 만.
+KEEP_SOURCE_EXT = {".pdf"}
+KEEP_SOURCE_MAX_MB = float(os.getenv("KEEP_SOURCE_MAX_MB") or 50)
+WORK_PREVIEW_SIDE = 1280
 try:                                     # 앱·CLI 는 api/ 를 루트로(module.*), 일부 테스트는 api.web.pipeline 으로 올린다
     from module import log_context as LC
 except ImportError:                      # pragma: no cover
@@ -112,39 +127,68 @@ class PipelineOrchestrator:
     # Setup — shared by both streaming and non-streaming paths
     # ------------------------------------------------------------------
 
-    def setup(self, file_bytes: bytes, filename: str) -> Dict[str, Any]:
+    def setup(self, file_bytes: bytes, filename: str, source_path: Optional[os.PathLike] = None) -> Dict[str, Any]:
         """Save the uploaded file and prepare directories.
+
+        source_path: 이미 디스크에 있는 파일(시험 PC 의 폴더). 메모리에 통째로 올리지 않고, 드라이브마다 한 번에 하나씩
+        처음부터 끝까지 순서대로 읽어 INPUT_STAGING_DIR 로 복사하면서 SHA-256 을 계산한다(disk_slot). 뒤 단계(ffmpeg
+        키프레임처럼 파일 안을 뛰어다니며 읽는 일)는 빠른 로컬 사본을 읽고, 세트가 끝나면 run() 이 사본을 지운다.
+        이때 file_bytes 는 쓰지 않는다(빈 값이어도 된다). 근거: 통째 적재는 150 작업자에서 메모리 부족, 제자리 읽기는
+        WSL 에서 동시 읽기가 무너져(1개 102 MB/s → 2개 15 MB/s) 느렸다 (2026-10-19/20 부하 시험).
 
         Returns a context dict used by all subsequent stages.
         """
         sanitized = safe_filename(filename)
         request_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        original_filename = unicodedata.normalize("NFC", os.path.basename(filename or "")) or sanitized
 
-        upload_path = self.upload_dir / request_id / sanitized
-        upload_path.parent.mkdir(parents=True, exist_ok=True)
-        upload_path.write_bytes(file_bytes)
+        # 원본 파일명과 SHA-256 은 정제(safe_filename) **전에** 여기서 잡아 둔다 (v4 키 2·23, A1).
+        # 저장용 이름은 공백이 '_' 로 바뀌고 쉼표 등이 빠지므로 파일명 채점에 그대로 쓰면 틀린다.
+        # 해시는 여기서 한 번만 계산한다 — 큰 영상을 다시 읽지 않는다 (VLM 매핑도 이 값을 쓴다).
+        t0 = time.perf_counter()
+        if source_path is not None:
+            src = Path(source_path)
+            if not src.is_file():
+                raise FileNotFoundError(f"입력 파일이 없습니다: {src}")
+            upload_path = INPUT_STAGING_DIR / request_id / sanitized
+            upload_path.parent.mkdir(parents=True, exist_ok=True)
+            h = hashlib.sha256()
+            size = 0
+            wait0 = time.perf_counter()
+            with disk_slot(src):                    # 이 드라이브를 읽는 일은 한 번에 하나 — 순서대로 끝까지
+                waited = time.perf_counter() - wait0
+                with src.open("rb") as fi, upload_path.open("wb") as fo:
+                    for chunk in iter(lambda: fi.read(8 << 20), b""):
+                        h.update(chunk)
+                        fo.write(chunk)
+                        size += len(chunk)
+            shutil.copystat(src, upload_path)      # 수정 시각 유지 (파일 생성일 대체값)
+            sha256 = h.hexdigest()
+            where = f"작업 사본 {upload_path.parent.name} (드라이브 대기 {waited:.1f}초, 세트가 끝나면 지움)"
+        else:
+            upload_path = self.upload_dir / request_id / sanitized
+            upload_path.parent.mkdir(parents=True, exist_ok=True)
+            upload_path.write_bytes(file_bytes)
+            size = len(file_bytes)
+            sha256 = hashlib.sha256(file_bytes).hexdigest()
+            where = f"저장 이름 {sanitized}"
+        hash_sec = time.perf_counter() - t0
 
         result_dir = self.results_dir / request_id
         result_dir.mkdir(parents=True, exist_ok=True)
 
-        file_size_mb = len(file_bytes) / (1024 * 1024)
-
-        # 원본 파일명과 SHA-256 은 정제(safe_filename) **전에** 여기서 잡아 둔다 (v4 키 2·23, A1).
-        # 저장용 이름은 공백이 '_' 로 바뀌고 쉼표 등이 빠지므로 파일명 채점에 그대로 쓰면 틀린다.
-        # 해시는 바이트가 손에 있는 지금 한 번만 계산한다 — 큰 영상을 다시 읽지 않는다.
-        original_filename = unicodedata.normalize("NFC", os.path.basename(filename or "")) or sanitized
-        t0 = time.perf_counter()
-        sha256 = hashlib.sha256(file_bytes).hexdigest()
-        hash_sec = time.perf_counter() - t0
+        file_size_mb = size / (1024 * 1024)
         _log(logging.INFO, "업로드",
-             f"파일 준비 — {original_filename} · {file_size_mb:.2f} MB ({len(file_bytes):,} 바이트) · "
-             f"저장 이름 {sanitized} · SHA-256 {hash_sec:.3f}초", stage="upload")
+             f"파일 준비 — {original_filename} · {file_size_mb:.2f} MB ({size:,} 바이트) · "
+             f"{where} · SHA-256 {hash_sec:.3f}초", stage="upload")
         return {
             "request_id": request_id,
             "filename": sanitized,
             "original_filename": original_filename,
             "sha256": sha256,
-            "file_size": len(file_bytes),
+            "file_size": size,
+            "staged": source_path is not None,
+            "source_path": str(source_path) if source_path is not None else None,
             "upload_path": upload_path,
             "result_dir": result_dir,
             "file_size_mb": file_size_mb,
@@ -325,6 +369,7 @@ class PipelineOrchestrator:
         - Both failed → skip consolidation
         """
         from module.consolidator import ConsolidationAgent
+        from module.consolidator.consolidation_agent import _thinking_off, consolidation_timeout_sec
 
         llm_ok = llm_result and llm_result.get("success", False)
         ner_ok = ner_result and ner_result.get("success", False)
@@ -351,7 +396,8 @@ class PipelineOrchestrator:
              f"추출 완료 · 통합 시작 — 모델 {consolidation_model} · 폴백 {fallback or '없음'} · "
              f"LLM {'OK' if llm_ok else '실패'} · NER {'OK' if ner_ok else '없음/실패'}"
              + (f" ({_NER_MODE_KO.get(ner_mode, ner_mode)})" if ner_ok and ner_mode else "")
-             + f" · 시간 제한 {os.getenv('CONSOLIDATION_TIMEOUT_SEC') or '240(기본)'}초",
+             + f" · 생각 {'끔' if _thinking_off('CONSOLIDATION_THINKING') else '켬'}"
+             + f" · 시간 제한 {consolidation_timeout_sec():g}초" + ("" if os.getenv("CONSOLIDATION_TIMEOUT_SEC") else "(기본)"),
              stage="consolidate")
         t0 = time.perf_counter()
 
@@ -467,6 +513,57 @@ class PipelineOrchestrator:
         return plan
 
     @staticmethod
+    def _keep_source(ctx: Dict[str, Any]) -> None:
+        """폴더 시험의 문서(계약서 PDF)를 결과 폴더 source/document.pdf 로 남긴다 — 작업 사본은 세트 끝에 지워진다."""
+        src = Path(ctx["upload_path"])
+        if not ctx.get("staged") or src.suffix.lower() not in KEEP_SOURCE_EXT:
+            return
+        if (ctx.get("file_size") or 0) > KEEP_SOURCE_MAX_MB * 1048576:
+            _log(logging.INFO, "업로드", f"원본 사본 생략 — {ctx.get('file_size_mb', 0):.1f} MB > {KEEP_SOURCE_MAX_MB:g} MB")
+            return
+        try:
+            dst = ctx["result_dir"] / "source" / ("document" + src.suffix.lower())
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+        except Exception as e:  # noqa: BLE001 — 미리보기용 사본이 본 처리를 막지 않게
+            _log(logging.WARNING, "업로드", f"원본 사본 저장 실패 — {type(e).__name__}: {_short(e, 200)}")
+
+    @staticmethod
+    def _keep_work_preview(ctx: Dict[str, Any], image_path) -> None:
+        """폴더 시험의 그림 저작물은 미리보기 JPEG(긴 변 1280 px)만 source/work_preview.jpg 로 남긴다 — 원본(수백 MB TIF 도
+        있다)은 복사하지 않는다. 작업 사본을 읽으므로 E: 를 다시 읽지 않는다."""
+        if not ctx.get("staged"):
+            return
+        try:
+            from PIL import Image
+            dst = ctx["result_dir"] / "source" / "work_preview.jpg"
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            with heavy_slot():
+                Image.MAX_IMAGE_PIXELS = None                 # 큰 TIF 도 연다 (VLM 인코딩과 같다)
+                with Image.open(image_path) as im:
+                    im.draft("RGB", (WORK_PREVIEW_SIDE, WORK_PREVIEW_SIDE))   # JPEG 는 축소해서 푼다
+                    im = im.convert("RGB")
+                    im.thumbnail((WORK_PREVIEW_SIDE, WORK_PREVIEW_SIDE))
+                    im.save(dst, "JPEG", quality=85)
+        except Exception as e:  # noqa: BLE001
+            _log(logging.WARNING, "VLM", f"미리보기 그림 저장 실패 — {type(e).__name__}: {_short(e, 200)}")
+
+    @staticmethod
+    def _save_vlm_unparsed(ctx: Dict[str, Any], res) -> None:
+        """JSON 으로 읽지 못한 VLM 응답 원문을 결과 폴더의 vlm_unparsed.jsonl 에 남긴다 — 예전에는 버려서 원인을 볼 수 없었다."""
+        fails = getattr(res, "parse_failures", None)
+        if not fails:
+            return
+        try:
+            with open(ctx["result_dir"] / "vlm_unparsed.jsonl", "a", encoding="utf-8") as f:
+                for x in fails:
+                    f.write(json.dumps(x, ensure_ascii=False) + "\n")
+            _log(logging.WARNING, "VLM", f"JSON 으로 읽지 못한 응답 {len(fails)}건 — 원문을 vlm_unparsed.jsonl 에 저장"
+                 + (" · 다시 불러 성공" if res.ok and res.parse_ok else ""))
+        except Exception as e:  # noqa: BLE001 — 진단용 기록이 본 처리를 막지 않게
+            _log(logging.WARNING, "VLM", f"vlm_unparsed.jsonl 저장 실패 — {type(e).__name__}: {_short(e, 200)}")
+
+    @staticmethod
     def _vlm_chain_line(extractor, what: str, context: Optional[Dict[str, Any]]) -> None:
         labels = [getattr(b, "model_label", "?") for b in getattr(extractor, "backends", []) or []]
         ctx_txt = ""
@@ -541,6 +638,9 @@ class PipelineOrchestrator:
             extractor = VLMExtractor(prefer=prefer, max_tokens=4096)   # omni-flash 출력이 2048 을 넘는 경우 8% (2026-10-11 실측)
             self._vlm_chain_line(extractor, "VLM 이미지 추출", context)
             res = extractor.extract(image_path, context=context)
+            self._save_vlm_unparsed(ctx, res)
+            if render_info is None:                   # PPTX 는 pptx_slide1.png 가 이미 결과 폴더에 있다
+                self._keep_work_preview(ctx, image_path)
             backend = getattr(res, "backend_used", "?")
             if not res.ok or not res.parse_ok or not res.parsed:
                 err = res.error or "VLM ran but JSON parse failed"
@@ -554,7 +654,7 @@ class PipelineOrchestrator:
                         "_render": render_info}
             # 기술 메타데이터·SHA256 은 항상 **원본** 파일에서 — 렌더링한 PNG 가 아니다.
             t_m = time.perf_counter()
-            unified = map_vlm_to_unified(res.parsed, str(ctx["upload_path"]))
+            unified = map_vlm_to_unified(res.parsed, str(ctx["upload_path"]), sha256=ctx.get("sha256"))
             file_meta = unified.pop("_file_meta", {})
             self._vlm_done_line(res, backend, time.perf_counter() - t0, unified)
             self._measure_line(ctx, unified, file_meta, time.perf_counter() - t_m)
@@ -596,7 +696,8 @@ class PipelineOrchestrator:
         t0 = time.perf_counter()
         try:
             frame_dir = ctx["result_dir"] / "keyframes"
-            kf = extract_keyframes(str(ctx["upload_path"]), str(frame_dir), schedule=frame_schedule)
+            with heavy_slot():                       # ffmpeg 키프레임 — 동시에 몇 개만 (하드 읽기·메모리)
+                kf = extract_keyframes(str(ctx["upload_path"]), str(frame_dir), schedule=frame_schedule)
             kf_sec = time.perf_counter() - t0
             if not kf.get("frames"):
                 _log(logging.ERROR, "VLM",
@@ -616,6 +717,7 @@ class PipelineOrchestrator:
             extractor = VLMExtractor(prefer=prefer, max_tokens=4096)   # omni-flash 출력이 2048 을 넘는 경우 8% (2026-10-11 실측)
             self._vlm_chain_line(extractor, f"VLM 영상 추출({len(paths)}프레임 1회 호출)", context)
             res = extractor.extract_video(paths, times, label=ctx["filename"], context=context)
+            self._save_vlm_unparsed(ctx, res)
             backend = getattr(res, "backend_used", "?")
             if not res.ok or not res.parse_ok or not res.parsed:
                 err = res.error or "VLM ran but JSON parse failed"
@@ -629,7 +731,7 @@ class PipelineOrchestrator:
                         "_keyframes": kf}
 
             t_m = time.perf_counter()
-            unified = map_vlm_to_unified(res.parsed, str(ctx["upload_path"]))
+            unified = map_vlm_to_unified(res.parsed, str(ctx["upload_path"]), sha256=ctx.get("sha256"))
             file_meta = unified.pop("_file_meta", {})
             self._vlm_done_line(res, backend, time.perf_counter() - t0, unified,
                                 extra=f"영상 {kf.get('kept', len(paths))}프레임 · ")
@@ -867,8 +969,64 @@ class PipelineOrchestrator:
     # Full pipeline (non-streaming convenience method)
     # ------------------------------------------------------------------
 
+    def run_video_response(self, ctx: Dict[str, Any], *, document_type: str = "기타문서",
+                           consolidate: bool = True, consolidate_work: bool = True,
+                           consolidation_model: str = "alibaba-qwen3.5-122b-a10b",
+                           video_prefer: str = "omni", contract_context: Optional[Dict] = None,
+                           frame_schedule: str = "v3", test: Optional[str] = None,
+                           contract_metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """영상 저작물 1건 — 키프레임 → 다중 프레임 VLM 1회 호출 → 응답 조립·저장.
+
+        run() 과 /api/llm-extract 의 스트리밍 경로가 함께 쓴다. 이미지 경로와 같은 모양을 돌려주므로
+        통합검증·응답 조립·계약서 상속은 그대로 재사용된다."""
+        vid_result = self.run_video(ctx, prefer=video_prefer, context=contract_context,
+                                    frame_schedule=frame_schedule)
+        vid_ok = vid_result.get("success", False)
+        do_con = consolidate and consolidate_work and vid_ok
+        if do_con:
+            con_result, con_success, con_error = self.run_consolidation(
+                vid_result,
+                {"success": False, "entities": {}, "total_entities": 0,
+                 "extracted_entities": []},
+                "", document_type, ctx["result_dir"], consolidation_model,
+            )
+        else:
+            con_result, con_success, con_error = None, False, None
+        response = self.build_response(
+            ctx,
+            model_name=vid_result.get("model_used", "VLM"), document_type=document_type,
+            ocr_text="", ocr_provider="(video/keyframes)", ocr_model=None,
+            llm_result=vid_result, ner_model=None, ner_result=None,
+            consolidate=do_con, consolidation_model=consolidation_model,
+            consolidation_result=con_result, consolidation_success=con_success,
+            consolidation_error=con_error,
+            test=test, contract_context=contract_context,
+        )
+        response["modality"] = "video"
+        response["vlm_backend"] = vid_result.get("model_used")
+        response["keyframes"] = vid_result.get("_keyframes")
+        response["frame_schedule"] = frame_schedule
+        response["consolidate_work"] = consolidate_work
+        if vid_ok and not consolidate_work:
+            self._skip_work_consolidation(response)
+        self._backfill_file_attributes(ctx, response)
+        # 계약서→저작물 권리정보 상속 — 이미지와 같다 (HF Space 연동: contract_metadata 동봉 시)
+        if vid_ok and contract_metadata:
+            self.apply_contract_inheritance(response, contract_metadata)
+        self._attach_test_prediction(response)
+        self.save_results(ctx["result_dir"], response, con_result, con_success)
+        return response
+
     def run(self, file_bytes: bytes, filename: str, **kwargs) -> Dict[str, Any]:
-        """Run the full pipeline in one call (non-streaming)."""
+        """Run the full pipeline in one call (non-streaming). 폴더 시험의 작업 사본은 끝나면(실패해도) 지운다."""
+        staged: list = []
+        try:
+            return self._run(file_bytes, filename, _staged=staged, **kwargs)
+        finally:
+            for p in staged:
+                shutil.rmtree(Path(p).parent, ignore_errors=True)
+
+    def _run(self, file_bytes: bytes, filename: str, _staged: Optional[list] = None, **kwargs) -> Dict[str, Any]:
         model_name = kwargs.get("model_name", "alibaba-qwen3.5-122b-a10b")
         document_type = kwargs.get("document_type", "기타문서")
         ocr_provider = kwargs.get("ocr_provider", "alibaba")
@@ -885,7 +1043,10 @@ class PipelineOrchestrator:
         if test not in (None, "T-001", "T-002"):
             raise ValueError(f"test 는 'T-001'/'T-002'/None 이어야 합니다: {test!r}")
 
-        ctx = self.setup(file_bytes, filename)
+        ctx = self.setup(file_bytes, filename, source_path=kwargs.get("source_path"))   # 폴더 시험: 작업 사본
+        if ctx.get("staged") and _staged is not None:
+            _staged.append(ctx["upload_path"])
+        self._keep_source(ctx)
 
         # --- Modality routing: image → VLM (Gemma→Qwen); document/text → existing path ---
         plan = self.run_router(ctx, media_hint=media_hint)
@@ -929,41 +1090,11 @@ class PipelineOrchestrator:
             return response
 
         if modality == "video":
-            # 키프레임 → 다중 프레임 VLM 1회 호출. 이미지 경로와 동일한 모양을
-            # 돌려주므로 통합검증·응답조립은 그대로 재사용된다.
-            vid_result = self.run_video(ctx, prefer=kwargs.get("video_prefer", "omni"),
-                                        context=contract_context, frame_schedule=frame_schedule)
-            vid_ok = vid_result.get("success", False)
-            do_con = consolidate and consolidate_work and vid_ok
-            if do_con:
-                con_result, con_success, con_error = self.run_consolidation(
-                    vid_result,
-                    {"success": False, "entities": {}, "total_entities": 0,
-                     "extracted_entities": []},
-                    "", document_type, ctx["result_dir"], consolidation_model,
-                )
-            else:
-                con_result, con_success, con_error = None, False, None
-            response = self.build_response(
-                ctx,
-                model_name=vid_result.get("model_used", "VLM"), document_type=document_type,
-                ocr_text="", ocr_provider="(video/keyframes)", ocr_model=None,
-                llm_result=vid_result, ner_model=None, ner_result=None,
-                consolidate=do_con, consolidation_model=consolidation_model,
-                consolidation_result=con_result, consolidation_success=con_success,
-                consolidation_error=con_error,
-                test=test, contract_context=contract_context,
-            )
-            response["modality"] = modality
-            response["keyframes"] = vid_result.get("_keyframes")
-            response["frame_schedule"] = frame_schedule
-            response["consolidate_work"] = consolidate_work
-            if vid_ok and not consolidate_work:
-                self._skip_work_consolidation(response)
-            self._backfill_file_attributes(ctx, response)
-            self._attach_test_prediction(response)
-            self.save_results(ctx["result_dir"], response, con_result, con_success)
-            return response
+            return self.run_video_response(
+                ctx, document_type=document_type, consolidate=consolidate,
+                consolidate_work=consolidate_work, consolidation_model=consolidation_model,
+                video_prefer=kwargs.get("video_prefer", "omni"), contract_context=contract_context,
+                frame_schedule=frame_schedule, test=test, contract_metadata=kwargs.get("contract_metadata"))
 
         if modality == "audio":
             # ASR 은 1차 구현 제외(계획서 §5): 한국어 음성이 데이터의 0.19%뿐이고

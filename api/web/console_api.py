@@ -1,7 +1,8 @@
 """시험 콘솔 API — 로그인한 운영자만 쓰는 /console 화면과 /api/test/* (시험 실행·진행·결과·근거).
 
 무엇을 하는가
-  · 시험 모드: 계약서(T-001) 또는 저작물(T-002, 계약서는 문맥용) 파일 1건을 올려 바로 돌리고 23개 항목을 본다.
+  · 시험 모드: 계약서(Te-1) 또는 저작물(Te-2, 계약서는 문맥용) 파일 1건을 올려 바로 돌리고 23개 항목을 본다.
+  (화면의 시험 이름은 절차서의 Te-1 · Te-2, 내부 코드·파일·API 는 T-001 · T-002 — 입력은 둘 다 받는다)
   · 일괄 시험: 고정 시험 목록(csv)에서 셀·건수를 골라 돌린다.
   · 진행: SSE 로 세트별 시작·종료·로그·단계를 흘려보낸다 (`after` 로 이어 붙인다 — /api/batch/{id}/stream 과 같은 방식).
   · 결과·지표: 평가기 산출물(test_metrics.json · per_set.jsonl)을 그대로 읽어 세트×항목 판정 격자와 근거를 만든다.
@@ -46,6 +47,7 @@ from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse, Redirec
 from fastapi.routing import APIRoute
 
 from . import console_auth as auth
+from . import console_folder as CF
 
 try:                                     # 앱은 api/ 를 루트로 올린다(module.*) — 다른 경로로 올려도 같은 묶음 변수를 쓴다
     from module import log_context as LC
@@ -64,8 +66,11 @@ TESTS = ("T-001", "T-002")
 EVENT_BUFFER = 20000
 LOG_REPLAY_LINES = 400
 MAX_UPLOAD_BYTES = 4 * 1024 ** 3
-MAX_WORKERS = 8
-DEFAULT_WORKERS = {"T-001": 3, "T-002": 6}
+MAX_WORKERS = 200
+# 기본 작업자 — 부하 시험 (docs/v4/load_test_20261019.md). Te-1 은 생각 끔(기본, 2026-10-20)에서 50: 60 이면 토큰이 분당
+# 0.82–0.93M 으로 한도(1M/분)에 닿아 429 가 났다(200건 중 8회) — 50 ≈ 85 %. Te-2 는 E:(외장 USB 하드) 읽기가 병목이라
+# 작업자를 늘려도 빨라지지 않는다 (재시험 값으로 정함).
+DEFAULT_WORKERS = {"T-001": 50, "T-002": 32}
 DEFAULT_TAU = 0.65
 PING_TTL_SEC = 60.0
 PREVIEW_MAX_SIDE = 1280
@@ -73,10 +78,21 @@ CONTRACT_DPI = 120
 MAX_CONTRACT_PAGES = 40
 
 # 추정치 (2026-10-10/11 실측). 시간은 세트당 '실효' 시간 — 기준 workers 에서 잰 값이고 workers 에 반비례로 본다.
-EST_T001_KRW = 44.8
-EST_T001_SEC = 30.0           # 3 workers 기준
+# Te-1 은 생각(thinking) 설정에 따라 다르다 — 기본 끔. 켬(EXTRACTION_THINKING / CONSOLIDATION_THINKING=on) 값은 2026-10-19 실측.
+EST_T001_KRW = 25.5            # 끔: 추출 ₩10.8 + 중재 ₩14.7 (계약서 200건 토큰 실측) · 켬 ₩44.8
+EST_T001_KRW_THINKING = 44.8
+# Te-1 계약서 1건의 소요(중앙값, 초) — 작업자 수별 실측. 작업자가 늘면 공용 GPU(NER)·중재자 응답이 느려진다.
+T001_LATENCY = ((40, 50.0), (60, 65.0))          # 끔: 200건(스캔 25 %) 40·60 작업자
+T001_LATENCY_THINKING = ((3, 85.0), (16, 77.0), (32, 87.0), (48, 91.0), (60, 102.0), (80, 117.0), (100, 127.0))
+T001_TOKENS_PER_SET = 17000    # 끔: 추출+중재 2회 호출의 입력+출력 (실측 16.7~17.0k) · 켬 24.4k
+T001_TOKENS_PER_SET_THINKING = 24400
+DASHSCOPE_TPM = 1_000_000     # qwen3.5-122b-a10b 계정 한도 — 넘으면 429 로 기다리므로 처리량 상한이 된다
+EST_T002_REF_WORKERS = 6      # 아래 EST_T002_SEC 를 잰 작업자 수
+# Te-2 는 저작물 드라이브 읽기가 상한 — 드라이브마다 한 번에 하나씩 순서대로 복사(+SHA-256)하면 E:(외장 USB) 에서 약 68 MB/s
+# (2026-10-20 실측, 100건 7.5 GB). 장세영 목록 평균 크기: 이미지 4.6 MB · 영상 188 MB (1,990건 375 GB).
+EST_T002_MB = {"image": 4.6, "video": 188.0}
+EST_DISK_MBPS = 68.0
 EST_T002_SEC = 5.0            # 6 workers 기준 (대량 실행 처리량)
-EST_T001_SET_SEC = 85.0       # 세트 하나의 소요(계약서 leg) — 소량 실행은 처리량이 아니라 '세트 묶음 수 × 세트 소요' 로 끝난다
 EST_T002_SET_SEC = 37.0       # 세트 하나의 소요(저작물 leg, 실측 2026-10-11 콘솔 점검)
 EST_WORK_CONSOLIDATION_SEC = 55.0   # 저작물 leg 중재자를 켜면 세트당 더해지는 시간(직렬 기준)
 
@@ -218,13 +234,13 @@ _RUNNER_FACTORY: Callable = _default_runner
 def default_sources(repo: Path) -> List[Dict[str, Any]]:
     tv = repo / "dataset" / "test_set_v4"
     return [
-        {"id": "t001_new5", "label": "T-001 신규 양식 계약서", "test": "T-001",
+        {"id": "t001_new5", "label": "Te-1 신규 양식 계약서", "test": "T-001",
          "csv": [tv / "t001_new5_ids.csv"], "gold": tv / "gold23_t001_new5.jsonl"},
-        {"id": "t002", "label": "T-002 고정 시험 목록", "test": "T-002",
+        {"id": "t002", "label": "Te-2 고정 시험 목록", "test": "T-002",
          "csv": [tv / "t002_ids.csv"], "gold": tv / "gold23_t002.jsonl"},
-        {"id": "pilot200", "label": "T-002 파일럿 200", "test": "T-002",
+        {"id": "pilot200", "label": "Te-2 파일럿 200", "test": "T-002",
          "csv": [repo / "dataset" / "pilot200_v4" / "pilot_ids.csv"], "gold": tv / "gold23_t002.jsonl"},
-        {"id": "t001", "label": "T-001 고정 시험 목록", "test": "T-001",
+        {"id": "t001", "label": "Te-1 고정 시험 목록", "test": "T-001",
          "csv": [tv / "t001_ids.csv"], "gold": None, "enabled": False, "reason": "신규 양식 계약서 대기"},
         {"id": "ids", "label": "ID 목록 직접 입력", "test": None, "by_ids": True,
          # T-001 은 신규 양식 계약서가 있는 목록을 먼저 본다 — 같은 id 의 옛 양식 계약서로 채점하지 않게
@@ -342,6 +358,11 @@ _FRAME_T_RX = re.compile(r"_t(\d+(?:\.\d+)?)s\.", re.I)
 
 def _clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
+
+
+def _test_param(v: Any) -> Optional[str]:
+    """요청의 시험 구분 → 내부 코드 (Te-1 · T-001 · t001 → T-001). 모르는 값은 대문자 그대로 (뒤에서 bad_test)."""
+    return CF.norm_test(v) or (str(v or "").strip().upper() or None)
 
 
 def _int_param(v: Any, name: str, default: Optional[int], lo: int, hi: int) -> Optional[int]:
@@ -482,6 +503,7 @@ class TestRun:
         self.cancel_requested = False
         self.cost_exceeded = False
         self.threads: Dict[int, str] = {}     # (예전 방식, 쓰지 않음) — 세트 묶음은 log_context(contextvars) 로 한다
+        self._pred_count: Tuple[Any, float, int] = (None, 0.0, 0)   # (상태·진행, 센 시각, 개수) — 상세 조회마다 4,000개를 세지 않게
         self.file_to_set: Dict[str, str] = {}
         self.running_sets: set = set()
         self.set_info: Dict[str, Dict[str, Any]] = {}   # set_id → {cell, media, title} (set_start·set_done 이벤트에 붙인다)
@@ -644,6 +666,23 @@ class TestRun:
         run.name = run.name or run.run_id
         return run
 
+    @property
+    def pred_dir(self) -> Path:
+        return self.out_dir / "test_predictions"
+
+    def n_predictions(self) -> int:
+        """생성된 속성정보 파일(test_predictions/<set_id>.json) 개수 — 실패한 세트도 한 파일씩 남는다. 실행 중에는 5초마다만 센다."""
+        key = (self.state, self.progress.get("i"))
+        k0, at, n = self._pred_count
+        if k0 == key and (self.state in TERMINAL_STATES or time.time() - at < 5.0):
+            return n
+        try:
+            n = sum(1 for e in os.scandir(self.pred_dir) if e.name.endswith(".json") and ".tmp" not in e.name)
+        except OSError:
+            n = 0
+        self._pred_count = (key, time.time(), n)
+        return n
+
     # -- 화면용 ----------------------------------------------------------------
     def row(self) -> Dict[str, Any]:
         f = self.final or {}
@@ -655,7 +694,7 @@ class TestRun:
             "source": self.source, "state": self.state, "created_at": self.created_at,
             "started_at": self.started_at, "finished_at": self.finished_at, "n_sets": self.n_sets,
             "done": prog.get("i", 0), "failed": prog.get("failed", 0),
-            "cost_krw": round(float(prog.get("cost_krw_total") or 0.0), 2),
+            "cost_krw": round(float(prog.get("cost_krw_total") or 0.0) + float(self.config.get("cost_prev_krw") or 0.0), 2),   # 다시 실행한 회차 포함
             "macro_f1": f.get("macro_f1") if ev else None, "micro_f1": f.get("micro_f1") if ev else None,
             "passed": f.get("passed") if ev else None,
             "set_id": self.set_id, "gold": self.gold,
@@ -663,6 +702,7 @@ class TestRun:
 
     def detail(self) -> Dict[str, Any]:
         d = self.row()
+        n_pred = self.n_predictions()
         with self._lock:
             prog = dict(self.progress)
         d.update({
@@ -671,10 +711,14 @@ class TestRun:
             "running_sets": sorted(self.running_sets),
             "summary": {**(self.summary or {}), "evaluation": self.final} if (self.summary or self.final) else None,
             "error": self.error,
-            "downloads": [n for n in DOWNLOADS if n == "run.zip" or (self.out_dir / n).is_file()],
+            "downloads": [n for n in DOWNLOADS if n == "run.zip" or (self.out_dir / n).is_file()
+                          or n == PREDICTIONS_ZIP and n_pred],
             "version": VERSION,
         })
-        return scrub_json(d)
+        d = scrub_json(d)
+        d["n_predictions"] = n_pred                                   # 절차서: 생성된 속성정보 파일(*.json)을 확인한다
+        d["predictions_dir"] = CF.display_path(self.pred_dir)        # 시험 PC 의 폴더 (경로는 지우지 않는다)
+        return d
 
 
 _LINE_FMT = LC.ConsoleLineFormatter()
@@ -1054,12 +1098,15 @@ def _new_run_id(kind: str) -> str:
     raise ConsoleError(500, "internal", "실행 번호를 만들 수 없습니다")
 
 
-def _active_run(kind: str) -> Optional["TestRun"]:
+def _active_runs(kind: str) -> List["TestRun"]:
+    """진행 중인 실행 (등록 순서) — 둘 다(동시 실행)면 일괄 실행이 두 건이다."""
     with _RUNS_LOCK:
-        for r in _RUNS.values():
-            if r.kind == kind and r.state in ACTIVE_STATES:
-                return r
-    return None
+        return [r for r in _RUNS.values() if r.kind == kind and r.state in ACTIVE_STATES]
+
+
+def _active_run(kind: str) -> Optional["TestRun"]:
+    runs = _active_runs(kind)
+    return runs[0] if runs else None
 
 
 def _busy_error(active: "TestRun") -> ConsoleError:
@@ -1067,13 +1114,16 @@ def _busy_error(active: "TestRun") -> ConsoleError:
     return ConsoleError(409, "busy", f"이미 진행 중인 {what}이 있습니다 ({active.run_id})", active=active.run_id)
 
 
-def _register(run: TestRun) -> None:
+def _register(*runs: TestRun) -> None:
+    """실행을 등록한다 — 같은 종류의 실행이 진행 중이면 409. 여러 건(둘 다)은 한꺼번에 등록한다."""
     with _RUNS_LOCK:
-        active = _active_run(run.kind)
+        active = _active_run(runs[0].kind)
         if active is not None:
             raise _busy_error(active)
-        _RUNS[run.run_id] = run
-    run.save()
+        for run in runs:
+            _RUNS[run.run_id] = run
+    for run in runs:
+        run.save()
 
 
 def _get_run(run_id: str) -> TestRun:
@@ -1205,7 +1255,7 @@ def _select(test: Optional[str], source_id: Optional[str], ids: List[str], cells
             raise ConsoleError(400, "test_mismatch", f"이 목록은 {stest} 전용입니다")
         test = stest
     if test not in TESTS:
-        raise ConsoleError(400, "bad_test", "시험 구분(T-001 또는 T-002)을 고르세요")
+        raise ConsoleError(400, "bad_test", "시험 구분(Te-1 또는 Te-2)을 고르세요")
     missing: List[str] = []
     if src.get("by_ids"):
         bad = [i for i in ids if not _SET_ID_RX.match(i)]
@@ -1247,6 +1297,16 @@ def _vlm_unit_costs() -> Tuple[float, float, float]:
         return 1.34, 1.77, 35.4
 
 
+def _interp(table, x: float) -> float:
+    """(x, y) 표에서 직선 보간 — 표 밖은 끝 값."""
+    if x <= table[0][0]:
+        return table[0][1]
+    for (x0, y0), (x1, y1) in zip(table, table[1:]):
+        if x <= x1:
+            return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+    return table[-1][1]
+
+
 def _estimate(test: str, entries: list, workers: Optional[int] = None,
               consolidate_work: bool = False) -> Dict[str, Any]:
     by_cell: Dict[str, int] = {}
@@ -1254,21 +1314,24 @@ def _estimate(test: str, entries: list, workers: Optional[int] = None,
         c = _entry_cell(e)
         by_cell[c] = by_cell.get(c, 0) + 1
     n = len(entries)
-    ref = DEFAULT_WORKERS[test]
-    w = int(_clamp(workers or ref, 1, MAX_WORKERS))
+    w = int(_clamp(workers or DEFAULT_WORKERS[test], 1, MAX_WORKERS))
     if test == "T-001":
-        krw = n * EST_T001_KRW
-        sec = n * EST_T001_SEC * ref / w
+        think = os.getenv("CONSOLIDATION_THINKING", "off").strip().lower() not in ("off", "0", "false", "no")
+        krw = n * (EST_T001_KRW_THINKING if think else EST_T001_KRW)
+        lat, tok = (T001_LATENCY_THINKING, T001_TOKENS_PER_SET_THINKING) if think else (T001_LATENCY, T001_TOKENS_PER_SET)
+        # 작업자 수만큼씩 묶어 도는 묶음 수 × 그 작업자 수에서의 1건 소요 — 토큰 한도가 처리량의 상한
+        sec = max(math.ceil(n / w) * _interp(lat, w), n * tok / DASHSCOPE_TPM * 60) if n else 0
     else:
         img, vid, con = _vlm_unit_costs()
         krw = sum(vid if e.media == "video" else img for e in entries)
-        sec = n * EST_T002_SEC * ref / w
+        sec = n * EST_T002_SEC * EST_T002_REF_WORKERS / w
+        sec = max(sec, sum(EST_T002_MB.get(e.media, EST_T002_MB["image"]) for e in entries) / EST_DISK_MBPS)
         if consolidate_work:
             krw += n * con
             sec += n * EST_WORK_CONSOLIDATION_SEC / w
-    # 소량 실행의 하한: 작업자 수만큼씩 묶어 도는 세트 묶음 수 × 세트 하나의 소요
-    per_set = EST_T001_SET_SEC if test == "T-001" else EST_T002_SET_SEC + (EST_WORK_CONSOLIDATION_SEC if consolidate_work else 0)
-    sec = max(sec, math.ceil(n / w) * per_set) if n else 0
+        # 소량 실행의 하한: 작업자 수만큼씩 묶어 도는 세트 묶음 수 × 세트 하나의 소요
+        per_set = EST_T002_SET_SEC + (EST_WORK_CONSOLIDATION_SEC if consolidate_work else 0)
+        sec = max(sec, math.ceil(n / w) * per_set) if n else 0
     return {"n_sets": n, "by_cell": dict(sorted(by_cell.items())), "est_sec": int(round(sec)),
             "est_krw": round(krw, 2), "workers": w}
 
@@ -1419,9 +1482,12 @@ def _run_index(run: TestRun) -> Dict[str, Any]:
                      "file_name": os.path.basename(src) if src else None}
         order.append(sid)
     results: Dict[str, Dict[str, Any]] = {}
-    for r in _iter_jsonl(paths["results"]):
-        results[str(r.get("set_id"))] = {"ok": bool(r.get("ok")), "error": scrub_text(r.get("error")),
-                                         "elapsed_sec": r.get("elapsed_sec"), "cost_krw": r.get("cost_krw")}
+    attempts: Dict[str, int] = {}
+    for r in _iter_jsonl(paths["results"]):           # 다시 실행하면 같은 세트의 줄이 늘어난다 — 마지막 줄이 현재 상태
+        sid = str(r.get("set_id"))
+        attempts[sid] = attempts.get(sid, 0) + 1
+        results[sid] = {"ok": bool(r.get("ok")), "error": scrub_text(r.get("error")),
+                        "elapsed_sec": r.get("elapsed_sec"), "cost_krw": r.get("cost_krw"), "attempts": attempts[sid]}
     preds: Dict[str, Dict[str, Any]] = {}
     for r in _iter_jsonl(paths["preds"]):
         sid = str(r.get("set_id") or (r.get("_meta") or {}).get("set_id") or "")
@@ -1469,6 +1535,7 @@ def _set_items(run: TestRun) -> List[Dict[str, Any]]:
             "error": None if res is None else res.get("error"),
             "elapsed_sec": None if res is None else res.get("elapsed_sec"),
             "cost_krw": None if res is None else res.get("cost_krw"),
+            "attempts": 0 if res is None else res.get("attempts", 1),
             "keys": keys,
         })
     return items
@@ -1511,6 +1578,31 @@ def _record_file(rec: Dict[str, Any], which: str) -> Optional[Path]:
         return Path(p) if os.path.isfile(p) else None
     except (OSError, ValueError):
         return None
+
+
+# 결과 폴더 source/ 에 남긴 사본 (web/pipeline.py _keep_source·_keep_work_preview, batch_runner._keep_contract_copy)
+_KEPT = {"contract": ("document.pdf", "contract.pdf"), "work": ("work_preview.jpg",)}
+
+
+def _source_file(run: TestRun, rec: Dict[str, Any], which: str) -> Optional[Path]:
+    """미리보기·위치 표시용 원본 — 원본 파일이 있으면 그것, 없으면(옮기거나 지움) 실행 폴더에 남긴 사본.
+    사본은 레코드의 request_ids 가 가리키는 leg 폴더 안에서만 찾는다 (경로를 요청에서 받지 않는다)."""
+    p = _record_file(rec, which)
+    if p is not None:
+        return p
+    meta = rec.get("_meta") or {}
+    if not (meta.get("files") or {}).get(which):
+        return None
+    rids = meta.get("request_ids") or {}
+    for leg in ("contract", "work"):
+        d = _leg_dir(run, rids.get(leg))
+        if d is None:
+            continue
+        for name in _KEPT.get(which, ()):
+            c = d / "source" / name
+            if c.is_file() and _inside(c, run.dir):
+                return c
+    return None
 
 
 def _frames(leg: Optional[Path]) -> List[Dict[str, Any]]:
@@ -1566,10 +1658,10 @@ def _previews(run: TestRun, set_id: str, rec: Dict[str, Any]) -> Dict[str, Any]:
         elif kind == "pptx":
             if wdir is not None and (wdir / "pptx_slide1.png").is_file():
                 work["image_url"] = f"{base}/work.jpg"
-        elif kind == "image" and _record_file(rec, "work") is not None:
+        elif kind == "image" and _source_file(run, rec, "work") is not None:
             work["image_url"] = f"{base}/work.jpg"
     contract: Dict[str, Any] = {"pages": []}
-    cpath = _record_file(rec, "contract")
+    cpath = _source_file(run, rec, "contract")
     if cpath is not None:
         n = min(_page_count(cpath), MAX_CONTRACT_PAGES)
         contract["pages"] = [{"page": i, "url": f"{base}/contract/{i}.png"} for i in range(1, n + 1)]
@@ -1678,6 +1770,17 @@ def _decisions_by_key(decisions: Any) -> Dict[str, List[Dict[str, Any]]]:
 
 _LEG_KO = {"contract": "계약서", "work": "저작물"}
 _DECISIONS = ("AGREED", "CONFLICT", "LLM_ONLY", "NER_ONLY", "MISSING")
+# 근거 탭에 쓰는 판정 이름 — 통합 검증 탭(DEC)과 같은 한국어 이름, 원래 코드는 괄호로 남깁니다
+_DECISION_KO = {"AGREED": "일치", "CONFLICT": "충돌", "LLM_ONLY": "LLM 전용", "NER_ONLY": "NER 전용", "MISSING": "누락"}
+
+
+def _decision_text(d: Dict[str, Any]) -> str:
+    code = str(d.get("decision") or "")
+    conf = d.get("confidence")
+    name = f"{_DECISION_KO[code]} ({code})" if code in _DECISION_KO else code
+    return name + (f" · 신뢰도 {conf}" if conf is not None else "")
+
+
 MAX_NER_ENTITIES = 500
 
 
@@ -1852,8 +1955,8 @@ def _build_evidence(test: str, rec: Dict[str, Any], resp: Dict[str, Any], vrows:
                                        ("모델 추출값", pm.get("model_work_title")), ("채택", lab)])
             else:
                 lab = _SOURCE_KO.get(ctx.get("source")) if ctx else None
-                ev[k] = _ev(lab, "T-002 비채점 항목 — 계약서 규칙 파싱(또는 시험 목록 제목)으로 얻은 제호를 VLM 참고 문맥으로 주고 "
-                                 "그대로 적습니다." if ctx else "계약서 문맥이 없어 비워 둡니다 (T-002 비채점 항목).",
+                ev[k] = _ev(lab, "Te-2 비채점 항목 — 계약서 규칙 파싱(또는 시험 목록 제목)으로 얻은 제호를 VLM 참고 문맥으로 주고 "
+                                 "그대로 적습니다." if ctx else "계약서 문맥이 없어 비워 둡니다 (Te-2 비채점 항목).",
                             [("계약서 문맥 제호", ctx.get("title")), ("문맥 출처", lab),
                              ("모델 값", pm.get("model_work_title"))])
         elif k == "file_name":
@@ -1873,16 +1976,15 @@ def _build_evidence(test: str, rec: Dict[str, Any], resp: Dict[str, Any], vrows:
                 ev[k] = _ev(lab, summ, items, skip_missing=("해석 불가 원문",))
             else:
                 lab = _SOURCE_KO.get(ctx.get("source")) if ctx else None
-                ev[k] = _ev(lab, "T-002 비채점 항목 — 계약서 문맥의 종류를 그대로 적습니다." if ctx
-                            else "계약서 문맥이 없어 비워 둡니다 (T-002 비채점 항목).",
+                ev[k] = _ev(lab, "Te-2 비채점 항목 — 계약서 문맥의 종류를 그대로 적습니다." if ctx
+                            else "계약서 문맥이 없어 비워 둡니다 (Te-2 비채점 항목).",
                             [("계약서 문맥 종류", ctx.get("work_type")), ("모델 값", pm.get("model_work_type"))])
         elif k == "creator":
             d = _decision(decisions, ("author", "creator"))
             items = [("모델 추출값(LLM)", raw_md.get("author")), ("통합 결과", con_md.get("author") if con_md else None)]
             if d:
-                conf = d.get("confidence")
                 items += [("NER 값", d.get("ner_value")),
-                          ("통합 판정", f"{d.get('decision')}" + (f" (신뢰도 {conf})" if conf is not None else "")),
+                          ("통합 판정", _decision_text(d)),
                           ("판정 근거", d.get("reasoning"))]
             ev[k] = _ev("모델 추출 + 통합 검증" if consolidated else "모델 추출",
                         "계약서 '저작자' 항목을 모델이 읽고" + (" LLM·NER 대조(통합 검증)를 거친" if consolidated else "")
@@ -1989,10 +2091,8 @@ def _add_decision_items(entry: Dict[str, Any], key: str, rows: List[Dict[str, An
         many = len(rows) > 1
         for d in rows:
             sfx = f" · {field_label_ko(d.get('field')) or d.get('field')}" if many else ""
-            conf = d.get("confidence")
             items += [{"label": f"NER 값{sfx}", "value": _fmt(d.get("ner_value"))},
-                      {"label": f"통합 판정{sfx}",
-                       "value": f"{d.get('decision')}" + (f" (신뢰도 {conf})" if conf is not None else "")},
+                      {"label": f"통합 판정{sfx}", "value": _decision_text(d)},
                       {"label": f"판정 근거{sfx}", "value": _fmt(d.get("reasoning"))}]
     items.append({"label": "통합 검증", "value": _CONSOLIDATION_HINT})
 
@@ -2009,7 +2109,25 @@ def _display(key, value: Any, test: str) -> str:
     return str(value)
 
 
-def _set_detail(run: TestRun, set_id: str) -> Dict[str, Any]:
+def _partner_runs(run: TestRun) -> List[TestRun]:
+    """같은 폴더 시험에서 함께 돈 다른 시험의 실행 (Te-1 ↔ Te-2). 동시 실행은 config.parallel, 예전 순차 실행은 after/next."""
+    ids = [p.get("run_id") for p in (run.config.get("parallel") or []) if isinstance(p, dict)]
+    ids += [run.config.get("after"), run.config.get("next")]
+    out: List[TestRun] = []
+    for rid in ids:
+        if not rid or str(rid) == run.run_id:
+            continue
+        with _RUNS_LOCK:
+            o = _RUNS.get(str(rid))
+        if o is not None and o.test and o.test != run.test and o not in out:
+            out.append(o)
+    return out
+
+
+def _set_detail(run: TestRun, set_id: str, merge: bool = True) -> Dict[str, Any]:
+    """세트 하나의 23개 항목·근거·미리보기. merge 면 짝 실행(Te-1 ↔ Te-2)에 같은 항목이 있을 때 그 시험의 항목
+    (Te-1 은 1~16번, Te-2 는 17~23번)을 짝 실행의 값·판정·근거로 채운다 — 같은 저작물을 두 시험이 나눠 처리하므로
+    한 화면에서 23개를 모두 본다. 채점은 그대로 시험별이다 (각 행의 from_test·from_run 이 어느 실행의 결과인지 알린다)."""
     from module.evaluation.v4.keys23 import KEYS
     rec = _load_record(run, set_id)
     meta = rec.get("_meta") or {}
@@ -2070,12 +2188,41 @@ def _set_detail(run: TestRun, set_id: str) -> Dict[str, Any]:
     if pleg.get("vlm_backend"):
         models["vlm_backend"] = pleg.get("vlm_backend")
     models["config"] = rm
+    previews = _previews(run, set_id, rec)
+    partner: Optional[Dict[str, Any]] = None
+    if merge:
+        for o in _partner_runs(run):
+            if not _record_path(o, set_id).is_file():
+                partner = partner or {"run_id": o.run_id, "test": o.test, "available": False}
+                continue
+            try:
+                pd = _set_detail(o, set_id, merge=False)
+            except Exception as e:                  # 짝 실행을 못 읽어도 이 실행의 상세는 그대로 보인다
+                logger.warning("짝 실행 %s 의 세트 %s 를 읽지 못했습니다: %s", o.run_id, set_id, e)
+                continue
+            ptest = pd.get("test")
+            pkeys = {k.get("key"): k for k in pd.get("keys") or []}
+            pev = pd.get("evidence") or {}
+            for i, k in enumerate(keys):
+                if k["test"] == ptest and k["test"] != test and k["key"] in pkeys:
+                    keys[i] = dict(pkeys[k["key"]], from_run=o.run_id, from_test=ptest)
+                    if k["key"] in pev:
+                        evidence[k["key"]] = pev[k["key"]]
+            ppv = pd.get("previews") or {}
+            if ptest == "T-002" and ((ppv.get("work") or {}).get("image_url") or (ppv.get("work") or {}).get("frames")):
+                previews["work"] = ppv["work"]
+            if ptest == "T-001" and not (previews.get("contract") or {}).get("pages"):
+                previews["contract"] = ppv.get("contract") or {"pages": []}
+            partner = {"run_id": o.run_id, "test": ptest, "available": True, "ok": pd.get("ok"),
+                       "error": pd.get("error"), "gold": pd.get("gold"), "record": pd.get("record")}
+            break
     out = {
         "run_id": run.run_id, "set_id": str(set_id), "test": test,
         "ok": meta.get("ok"), "error": scrub_text(meta.get("error")) if meta.get("error") else None,
         "gold": bool(grec), "record": rec, "keys": keys, "evidence": evidence,
-        "previews": _previews(run, set_id, rec), "legs": legs, "models": models,
+        "previews": previews, "legs": legs, "models": models,
         "consolidation": _consolidation_payload(run, rec, test),
+        "partner": partner,
     }
     return scrub_json(out)
 
@@ -2137,7 +2284,10 @@ def _contract_png(src: Path, page: int, dest: Path) -> Path:
 # ---------------------------------------------------------------------------
 # 내려받기 (zip 은 흘려보낸다 — 4,000세트 프레임까지 메모리에 올리지 않는다)
 # ---------------------------------------------------------------------------
-DOWNLOADS = ("test_predictions.jsonl", "test_metrics.json", "report.md", "test.log", "per_set.jsonl", "run.zip")
+PREDICTIONS_ZIP = "predictions_json.zip"   # 속성정보 파일(*.json) — test_predictions/<set_id>.json 만 묶는다 (절차서 6단계)
+DOWNLOADS = ("test_predictions.jsonl", "test_metrics.json", "report.md", "test.log", "per_set.jsonl", "run.zip",
+             PREDICTIONS_ZIP)
+UNFINISHED_CSV = "unfinished.csv"          # 실패·미실행 세트 목록 (만들어서 준다)
 
 
 class _ZipSink(io.RawIOBase):
@@ -2229,6 +2379,15 @@ def _run_zip_items(run: TestRun) -> Iterator[Tuple[str, Any]]:
             if not f.is_file() or _inside(f, skip) or ".tmp" in f.name or not _inside(f, run.dir):
                 continue
             yield f"{prefix}/{f.relative_to(run.dir).as_posix()}", f
+
+
+def _predictions_zip_items(run: TestRun) -> Iterator[Tuple[str, Any]]:
+    """세트마다 하나인 속성정보 파일(*.json) — 압축을 풀면 test_predictions/<set_id>.json (콘솔이 보여 주는 값과 같다)."""
+    if not run.pred_dir.is_dir():
+        return
+    for f in sorted(run.pred_dir.glob("*.json")):
+        if f.is_file() and ".tmp" not in f.name and _inside(f, run.dir):
+            yield f"test_predictions/{f.name}", f
 
 
 def _attachment(name: str) -> Dict[str, str]:
@@ -2483,12 +2642,14 @@ async def console_deep_link(request: Request, rest: str):
 @router.get(API + "/status")
 def api_status(user: str = Depends(_api_user)):
     image_chain, video_chain = _chain_labels()
-    a_batch, a_single = _active_run("batch"), _active_run("single")
+    batches, a_single = _active_runs("batch"), _active_run("single")
     return {
         "version": VERSION, "system": SYSTEM_NAME, "user": user,
         "models": {**MODELS, "image_chain": image_chain, "video_chain": video_chain},
         "services": {"dashscope": _dashscope_status()},
-        "active": {"batch": a_batch.run_id if a_batch else None, "single": a_single.run_id if a_single else None},
+        "active": {"batch": batches[0].run_id if batches else None,
+                   "batches": [{"run_id": r.run_id, "test": r.test} for r in batches],
+                   "single": a_single.run_id if a_single else None},
         "sources": [_source_view(s) for s in _SOURCES],
         "defaults": {"tau": DEFAULT_TAU, "workers": dict(DEFAULT_WORKERS), "max_workers": MAX_WORKERS},
         "pass_mark": PASS_MARK,
@@ -2498,7 +2659,7 @@ def api_status(user: str = Depends(_api_user)):
 @router.get(API + "/estimate")
 def api_estimate(request: Request, user: str = Depends(_api_user)):
     q = request.query_params
-    test = (q.get("test") or "").strip().upper() or None
+    test = _test_param(q.get("test"))
     n = _int_param(q.get("n"), "n", None, 1, 1_000_000)
     seed = _int_param(q.get("seed"), "seed", 0, 0, 2 ** 31 - 1)
     workers = _int_param(q.get("workers"), "workers", None, 1, MAX_WORKERS)
@@ -2583,16 +2744,16 @@ async def api_single(request: Request, user: str = Depends(_api_user)):
         form = await request.form()
     except Exception:
         raise ConsoleError(400, "bad_request", "업로드 양식을 읽을 수 없습니다")
-    test = str(form.get("test") or "").strip().upper()
+    test = _test_param(form.get("test")) or ""
     if test not in TESTS:
-        raise ConsoleError(400, "bad_test", "시험 구분(T-001 또는 T-002)을 고르세요")
+        raise ConsoleError(400, "bad_test", "시험 구분(Te-1 또는 Te-2)을 고르세요")
     contract, work = _upload_field(form.get("contract")), _upload_field(form.get("work"))
     if test == "T-001":
         work = None                                    # T-001 은 계약서만 본다
         if contract is None:
-            raise ConsoleError(400, "missing_file", "T-001 은 계약서 파일이 필요합니다")
+            raise ConsoleError(400, "missing_file", "Te-1 은 계약서 파일이 필요합니다")
     elif work is None:
-        raise ConsoleError(400, "missing_file", "T-002 는 저작물 파일이 필요합니다")
+        raise ConsoleError(400, "missing_file", "Te-2 는 저작물 파일이 필요합니다")
     if contract is not None and os.path.splitext(contract.filename)[1].lower() not in CONTRACT_EXT:
         raise ConsoleError(400, "bad_file", "계약서는 PDF·DOCX·HWP·이미지 파일만 받습니다")
     if work is not None and os.path.splitext(work.filename)[1].lower() not in WORK_EXT:
@@ -2626,7 +2787,7 @@ async def api_single(request: Request, user: str = Depends(_api_user)):
                               media=media, license_bucket=bucket, test=test,
                               extra={"cell": f"{media}/{bucket}" if bucket else media,
                                      **({"title": title} if title else {}), "upload": primary.name})
-        run.name = f"{test} 단건 · {primary.name}"[:120]
+        run.name = f"{CF.test_label(test)} 단건 · {primary.name}"[:120]
         run.test, run.source, run.set_id, run.gold, run.n_sets = test, "upload", sid, has_gold, 1
         run.gold_path = str(gold_path) if has_gold else None
         run.file_to_set = {primary.name: sid}
@@ -2655,7 +2816,7 @@ async def api_batch(request: Request, user: str = Depends(_api_user)):
         raise ConsoleError(400, "bad_request", "요청 본문(JSON)을 읽을 수 없습니다")
     if not isinstance(body, dict):
         raise ConsoleError(400, "bad_request", "요청 본문은 JSON 객체여야 합니다")
-    test = (str(body.get("test") or "").strip().upper()) or None
+    test = _test_param(body.get("test"))
     source = body.get("source")
     ids = _list_param(body.get("ids"))
     cells = _list_param(body.get("cells"))
@@ -2711,6 +2872,252 @@ async def api_batch(request: Request, user: str = Depends(_api_user)):
 
 
 # ---------------------------------------------------------------------------
+# API — 폴더로 시험 (시험 PC 의 폴더를 제자리에서 읽는다 · web/console_folder.py)
+#   GET  /fs/roots · /fs/list?path=   폴더 고르기
+#   POST /folder/scan                 불러오기(등록 확인) — 짝 맞추기·정답 대조·예상치 (실행하지 않는다)
+#   POST /folder/start                확인한 그대로 실행 (둘 다 = T-001 과 T-002 를 동시에, 실행 2건)
+# ---------------------------------------------------------------------------
+FOLDER_SCAN_TTL_SEC = 1800
+FOLDER_SOURCE_LABEL = "폴더로 시험"
+_FOLDER_SCANS: Dict[str, Dict[str, Any]] = {}
+_FOLDER_LOCK = threading.Lock()
+
+
+def _folder(fn, *a, **kw):
+    try:
+        return fn(*a, **kw)
+    except CF.FolderError as e:
+        raise ConsoleError(e.status, e.code, e.message, **e.extra)
+
+
+@router.get(API + "/fs/roots")
+def api_fs_roots(user: str = Depends(_api_user)):
+    roots = CF.data_roots()
+    return {"enabled": bool(roots), "roots": CF.roots_view(roots), "env": CF.ENV_ROOTS}
+
+
+@router.get(API + "/fs/list")
+def api_fs_list(path: str = "", user: str = Depends(_api_user)):
+    roots = CF.data_roots()
+    if not str(path).strip():
+        if not roots:
+            raise ConsoleError(403, "folders_off", "이 서버에서는 폴더로 시험을 쓸 수 없습니다 (허용된 위치가 없습니다)")
+        path = CF.display_path(roots[0])
+    return _folder(CF.list_dir, path, roots, CONTRACT_EXT, WORK_EXT)
+
+
+def _folder_workers(v: Any, test: str) -> int:
+    if isinstance(v, dict):
+        v = v.get(test)
+    return int(_int_param(v, "workers", DEFAULT_WORKERS[test], 1, MAX_WORKERS))
+
+
+def _folder_scan(body: Dict[str, Any]) -> Dict[str, Any]:
+    from module.evaluation.manifest import ManifestEntry
+    from module.evaluation.v4.keys23 import KEYS
+    t = _test_param(body.get("test")) or ""
+    tests = TESTS if t in ("BOTH", "ALL", "T-001+T-002") else ((t,) if t in TESTS else ())
+    if not tests:
+        raise ConsoleError(400, "bad_test", "시험(Te-1 · Te-2 · 둘 다)을 고르세요")
+    roots = CF.data_roots()
+    recursive = _bool_param(body.get("recursive"), True)
+    include_unkeyed = _bool_param(body.get("include_unkeyed"), False)
+    cdirs = [_folder(CF.resolve_allowed, p, roots) for p in _list_param(body.get("contract_dirs"))]
+    wdirs = [_folder(CF.resolve_allowed, p, roots) for p in _list_param(body.get("work_dirs"))]
+    if "T-001" in tests and not cdirs:
+        raise ConsoleError(400, "no_contract_dir", "계약서 폴더를 고르세요 (Te-1 은 계약서가 필요합니다)")
+    if "T-002" in tests and not wdirs:
+        raise ConsoleError(400, "no_work_dir", "저작물 폴더를 고르세요 (Te-2 는 저작물 파일이 필요합니다)")
+    t0 = time.perf_counter()
+    contracts = list(_folder(lambda: list(CF.walk_files(cdirs, CONTRACT_EXT, recursive)))) if cdirs else []
+    works = list(_folder(lambda: list(CF.walk_files(wdirs, WORK_EXT, recursive)))) if wdirs else []
+    answers_in = body.get("answers") if isinstance(body.get("answers"), dict) else {}
+    consolidate_work = _bool_param(body.get("consolidate_work"), False)
+    views: Dict[str, Any] = {}
+    internal: Dict[str, Any] = {}
+    for test in tests:
+        spec = answers_in.get(test) if isinstance(answers_in.get(test), dict) else {}
+        mode = str(spec.get("mode") or "builtin")
+        if mode not in ("builtin", "file", "none"):
+            raise ConsoleError(400, "bad_answer_mode", "정답은 기본 정답 · 정답 파일 · 정답 없이 가운데 하나입니다")
+        records: Dict[str, Dict[str, Any]] = {}
+        aview: Dict[str, Any] = {"mode": mode}
+        gold_path: Optional[Path] = None
+        answer_file: Optional[Path] = None
+        if mode == "builtin":
+            gp = _SINGLE_GOLD.get(test)
+            if gp and gp.is_file():
+                records, gold_path = CF.load_gold_jsonl(gp, test), gp
+            aview.update(label="기본 정답", file=gp.name if gp else None, n=len(records), available=gold_path is not None)
+        elif mode == "file":
+            answer_file = _folder(CF.resolve_allowed, spec.get("path"), roots, want="file")
+            a = _folder(CF.load_answers, answer_file, KEYS, test)
+            records = a.records
+            aview.update(label="정답 파일", file=answer_file.name, path=CF.display_path(answer_file), n=len(records),
+                         format=a.fmt, problems=a.problems[:20], n_problems=len(a.problems),
+                         missing_columns=a.missing_columns, skipped_rows=a.skipped_rows)
+        else:
+            aview.update(label="정답 없이 (채점 안 함)", n=0)
+        ts = CF.build_sets(test, contracts, works, records, known=_known_ids(test), include_unkeyed=include_unkeyed,
+                           media_of=_media_of_path, manifest_entry=ManifestEntry)
+        w = _folder_workers(body.get("workers"), test)
+        est = _estimate(test, ts.entries, w, consolidate_work and test == "T-002")
+        media: Dict[str, int] = {}
+        for e in ts.entries:
+            media[e.media] = media.get(e.media, 0) + 1
+        sample = [{"set_id": e.set_id, "contract": os.path.basename(e.contract) if e.contract else None,
+                   "work": os.path.basename(e.work) if e.work else None, "media": e.media,
+                   "title": (e.extra or {}).get("title"), "scored": e.set_id in records}
+                  for e in ts.entries[:CF.SAMPLE_ROWS]]
+        views[test] = {
+            "test": test, "n_sets": len(ts.entries), "n_scored": ts.scored, "media": media, "by_cell": est["by_cell"],
+            "n_contract_files": ts.n_contract_files, "n_work_files": ts.n_work_files, "paired": ts.paired,
+            "answer": aview,
+            "missing": ts.missing[:CF.MAX_EXAMPLES], "n_missing": len(ts.missing),
+            "duplicates": ts.duplicates[:CF.MAX_EXAMPLES], "n_duplicates": len(ts.duplicates),
+            "unkeyed": ts.unkeyed[:CF.MAX_EXAMPLES], "n_unkeyed": len(ts.unkeyed), "include_unkeyed": include_unkeyed,
+            "no_id": ts.no_id[:CF.MAX_EXAMPLES], "n_no_id": len(ts.no_id),
+            "sample": sample,
+            "estimate": {"sec": est["est_sec"], "krw": est["est_krw"], "workers": est["workers"]},
+        }
+        internal[test] = {"entries": ts.entries, "gold_path": gold_path, "answer_file": answer_file,
+                          "records": records if mode == "file" else None, "mode": mode}
+    # 시험 대상 = 고른 시험들의 세트 ID 합집합 (Te-1 4,000 + Te-2 4,000 → 어문 200 은 Te-1 에만 있어 4,200)
+    item_media: Dict[str, str] = {}
+    for test in tests:
+        for e in internal[test]["entries"]:
+            if e.set_id not in item_media or test == "T-002":          # 저작물 파일이 있는 쪽(Te-2)의 매체를 따른다
+                item_media[e.set_id] = e.media or "text"
+    items_media: Dict[str, int] = {}
+    for m in item_media.values():
+        items_media[m] = items_media.get(m, 0) + 1
+    scan_id = secrets.token_hex(8)
+    folders = {"contract_dirs": [CF.display_path(d) for d in cdirs], "work_dirs": [CF.display_path(d) for d in wdirs],
+               "recursive": recursive}
+    out = {"scan_id": scan_id, "test": "BOTH" if len(tests) > 1 else tests[0], "tests": views, "order": list(tests),
+           "folders": folders, "n_contract_files": len(contracts), "n_work_files": len(works),
+           "scan_sec": round(time.perf_counter() - t0, 1), "consolidate_work": consolidate_work,
+           "n_items": len(item_media), "items_media": items_media, "expires_in": FOLDER_SCAN_TTL_SEC}
+    now = time.time()
+    with _FOLDER_LOCK:
+        for k in [k for k, v in _FOLDER_SCANS.items() if now - v["at"] > FOLDER_SCAN_TTL_SEC]:
+            _FOLDER_SCANS.pop(k, None)
+        _FOLDER_SCANS[scan_id] = {"at": now, "view": out, "internal": internal, "body": body}
+    return out
+
+
+@router.post(API + "/folder/scan")
+async def api_folder_scan(request: Request, user: str = Depends(_api_user)):
+    try:
+        body = await request.json()
+    except Exception:
+        raise ConsoleError(400, "bad_request", "요청 본문(JSON)을 읽을 수 없습니다")
+    if not isinstance(body, dict):
+        raise ConsoleError(400, "bad_request", "요청 본문은 JSON 객체여야 합니다")
+    return await run_in_threadpool(_folder_scan, body)          # 경로는 바꾸지 않는다 (scrub 하지 않음)
+
+
+def _make_folder_run(test: str, sc: Dict[str, Any], view: Dict[str, Any], scan: Dict[str, Any],
+                     opts: Dict[str, Any]) -> TestRun:
+    from module.evaluation.manifest import write_manifest
+    entries = sc["entries"]
+    tv = view["tests"][test]
+    run = TestRun(_new_run_id("batch"), "batch", _ROOT)
+    run.dir.mkdir(parents=True, exist_ok=True)
+    try:
+        gold_path: Optional[Path] = None
+        if sc["mode"] == "file" and sc.get("records") is not None:
+            gold_path = run.dir / "answers.jsonl"          # 실행 폴더에 정답을 고정해 둔다 (원본도 함께)
+            with gold_path.open("w", encoding="utf-8") as f:
+                for sid in sorted(sc["records"]):
+                    f.write(json.dumps(sc["records"][sid], ensure_ascii=False) + "\n")
+            if sc.get("answer_file"):
+                shutil.copy2(sc["answer_file"], run.dir / ("answers_source" + Path(sc["answer_file"]).suffix.lower()))
+        elif sc["mode"] == "builtin" and sc.get("gold_path"):
+            gold_path = Path(sc["gold_path"])
+        w = _folder_workers(opts.get("workers"), test)
+        cw = bool(opts.get("consolidate_work")) and test == "T-002"
+        est = _estimate(test, entries, w, cw)
+        base = opts.get("name") or ""
+        label = CF.test_label(test)
+        run.name = (f"{base} · {label}" if base and len(view["order"]) > 1 else base) or f"{label} {FOLDER_SOURCE_LABEL} {len(entries)}건"
+        run.test, run.source, run.n_sets = test, "folder", len(entries)
+        run.gold = gold_path is not None
+        run.gold_path = str(gold_path) if gold_path else None
+        run.estimate = {"sec": est["est_sec"], "krw": est["est_krw"], "by_cell": est["by_cell"]}
+        run.file_to_set = {os.path.basename((e.contract if test == "T-001" else e.work) or ""): e.set_id for e in entries}
+        run.cfg_kwargs = {"workers": w, "scoring_set": "eval23", "test": test, "frame_schedule": "v4",
+                          "consolidate_work": cw, "only_predicted": opts["only_predicted"], "title_fallback": False,
+                          "tau": opts["tau"], "gold": run.gold_path, "max_cost_krw": opts.get("max_cost")}
+        ans = tv["answer"]
+        run.config = {"test": test, "source": "folder", "source_label": FOLDER_SOURCE_LABEL, **view["folders"],
+                      "answer": {k: ans.get(k) for k in ("mode", "label", "file", "n")},
+                      "workers": w, "tau": opts["tau"], "only_predicted": opts["only_predicted"], "consolidate_work": cw,
+                      "max_cost": opts.get("max_cost"), "gold": os.path.basename(run.gold_path) if run.gold_path else None,
+                      "n_missing": tv["n_missing"], "n_duplicates": tv["n_duplicates"], "n_unkeyed": tv["n_unkeyed"],
+                      "include_unkeyed": tv["include_unkeyed"], "media": tv.get("media") or {},
+                      "n_items": view.get("n_items"), "items_media": view.get("items_media") or {}}
+        write_manifest(entries, run.dir / "manifest.jsonl")
+        _write_json_atomic(run.dir / "registration.json", {"version": VERSION, "registered_at": _iso(),
+                                                            "folders": view["folders"], **tv})
+    except BaseException:
+        shutil.rmtree(run.dir, ignore_errors=True)
+        raise
+    return run
+
+
+@router.post(API + "/folder/start")
+async def api_folder_start(request: Request, user: str = Depends(_api_user)):
+    try:
+        body = await request.json()
+    except Exception:
+        raise ConsoleError(400, "bad_request", "요청 본문(JSON)을 읽을 수 없습니다")
+    if not isinstance(body, dict):
+        raise ConsoleError(400, "bad_request", "요청 본문은 JSON 객체여야 합니다")
+    sid = str(body.get("scan_id") or "")
+    with _FOLDER_LOCK:
+        scan = _FOLDER_SCANS.get(sid)
+    if scan is None or time.time() - scan["at"] > FOLDER_SCAN_TTL_SEC:
+        raise ConsoleError(404, "scan_expired", "불러오기 결과가 없거나 만료되었습니다 — 불러오기를 다시 하세요")
+    active = _active_run("batch")
+    if active is not None:
+        raise _busy_error(active)
+    max_cost = _float_param(body.get("max_cost"), "max_cost", None, 0.0, 1e9)
+    opts = {"workers": body.get("workers"), "tau": _float_param(body.get("tau"), "tau", DEFAULT_TAU, 0.0, 1.0),
+            "only_predicted": _bool_param(body.get("only_predicted"), True),
+            "consolidate_work": _bool_param(body.get("consolidate_work"), scan["view"].get("consolidate_work", False)),
+            "max_cost": max_cost if max_cost and max_cost > 0 else None,
+            "name": re.sub(r"\s+", " ", str(body.get("name") or "")).strip()[:80]}
+    view = scan["view"]
+    order = [t for t in view["order"] if scan["internal"][t]["entries"]]
+    if not order:
+        raise ConsoleError(400, "empty", "실행할 세트가 없습니다 — 불러오기 결과를 보세요")
+    runs: List[Tuple[TestRun, list]] = []
+    for test in order:
+        run = await run_in_threadpool(_make_folder_run, test, scan["internal"][test], view, scan, opts)
+        runs.append((run, scan["internal"][test]["entries"]))
+    # 둘 다: 두 시험을 동시에 돌린다 — 서로 독립이다 (T-002 는 계약서를 규칙으로만 읽고 T-001 결과를 쓰지 않는다).
+    # 실행마다 스레드·작업자·로그·비용 상한이 따로이고, 한쪽을 취소해도 다른 쪽은 계속한다.
+    if len(runs) > 1:
+        for r, _ in runs:
+            r.config["parallel"] = [{"run_id": o.run_id, "test": o.test} for o, _ in runs if o is not r]
+    try:
+        _register(*(r for r, _ in runs))
+    except BaseException:
+        for r, _ in runs:
+            shutil.rmtree(r.dir, ignore_errors=True)
+        raise
+    for r, e in runs:
+        _start(r, e)
+    with _FOLDER_LOCK:
+        _FOLDER_SCANS.pop(sid, None)
+    return {"run_id": runs[0][0].run_id, "parallel": len(runs) > 1,
+            "runs": [{"run_id": r.run_id, "test": r.test, "n_sets": r.n_sets,
+                      "estimate": {"sec": (r.estimate or {}).get("sec"), "krw": (r.estimate or {}).get("krw")}}
+                     for r, _ in runs]}
+
+
+# ---------------------------------------------------------------------------
 # API — 실행 조회 · 진행 · 취소
 # ---------------------------------------------------------------------------
 @router.get(API + "/runs")
@@ -2724,7 +3131,11 @@ def api_runs(user: str = Depends(_api_user)):
 
 @router.get(API + "/runs/{run_id}")
 def api_run(run_id: str, user: str = Depends(_api_user)):
-    return _get_run(run_id).detail()
+    run = _get_run(run_id)
+    d = run.detail()
+    if run.kind == "batch":
+        d["remaining"] = _remaining(run)
+    return d
 
 
 @router.get(API + "/runs/{run_id}/stream")
@@ -2770,6 +3181,101 @@ def api_run_cancel(run_id: str, user: str = Depends(_api_user)):
         with LC.bind(run_id=run.run_id, set_id=None):
             logger.warning("취소 요청 — 진행 중인 세트만 마치고 멈춥니다", extra={"component": "시스템"})
     return {"ok": True, "state": run.state}
+
+
+RETRYABLE_STATES = ("done", "cancelled", "error", "interrupted")
+
+
+def _remaining(run: TestRun) -> Dict[str, int]:
+    """매니페스트 기준 — 성공 · 실패(마지막 시도가 실패) · 미실행(결과 없음) 세트 수."""
+    idx = _run_index(run)
+    failed = sum(1 for s in idx["order"] if (idx["results"].get(s) or {}).get("ok") is False)
+    pending = sum(1 for s in idx["order"] if s not in idx["results"])
+    return {"ok": len(idx["order"]) - failed - pending, "failed": failed, "pending": pending,
+            "retries": len(run.config.get("retries") or [])}
+
+
+def _unfinished_csv(run: TestRun) -> bytes:
+    """실패·미실행 세트 목록 (엑셀에서 바로 열리게 UTF-8 BOM)."""
+    import csv as _csv
+    idx = _run_index(run)
+    buf = io.StringIO()
+    w = _csv.writer(buf)
+    w.writerow(["set_id", "시험", "셀", "상태", "시도 횟수", "파일", "마지막 오류"])
+    label = CF.test_label(run.test)
+    for sid in idx["order"]:
+        res = idx["results"].get(sid)
+        if res is not None and res["ok"]:
+            continue
+        base = idx["sets"][sid]
+        w.writerow([sid, label, base.get("cell") or "", "실패" if res is not None else "미실행",
+                    0 if res is None else res.get("attempts", 1), base.get("file_name") or "",
+                    "" if res is None else (res.get("error") or "")])
+    return ("\ufeff" + buf.getvalue()).encode("utf-8")
+
+
+def _retry_entries(run: TestRun) -> Optional[list]:
+    """다시 실행할 매니페스트(전체) — 실행기가 성공한 세트는 건너뛴다(resume). 다시 할 것이 없으면 None."""
+    rem = _remaining(run)
+    if not rem["failed"] and not rem["pending"]:
+        return None
+    from module.evaluation.manifest import load_manifest
+    return load_manifest(run.dir / "manifest.jsonl")
+
+
+@router.post(API + "/runs/{run_id}/retry")
+async def api_run_retry(run_id: str, request: Request, user: str = Depends(_api_user)):
+    """실패·미실행 세트만 같은 실행 폴더에서 다시 돌리고 전체를 다시 채점한다.
+
+    둘 다(동시 실행)로 함께 시작한 실행도 끝났고 다시 할 세트가 있으면 같이 다시 시작한다 (include_parallel, 기본 켬).
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    body = body if isinstance(body, dict) else {}
+    run = _get_run(run_id)
+    if run.kind != "batch":
+        raise ConsoleError(400, "not_batch", "일괄 시험만 다시 실행할 수 있습니다")
+    if run.state not in RETRYABLE_STATES:
+        raise ConsoleError(409, "not_finished", "실행이 끝난 뒤에 다시 실행할 수 있습니다")
+    targets = [run]
+    if _bool_param(body.get("include_parallel"), True):
+        for p in run.config.get("parallel") or []:
+            with _RUNS_LOCK:
+                o = _RUNS.get(str(p.get("run_id")))
+            if o is not None and o.kind == "batch" and o.state in RETRYABLE_STATES:
+                targets.append(o)
+    plan: List[Tuple[TestRun, list, Dict[str, int]]] = []
+    for r in targets:
+        entries = await run_in_threadpool(_retry_entries, r)
+        if entries:
+            plan.append((r, entries, _remaining(r)))
+    if not plan or plan[0][0] is not run:
+        raise ConsoleError(400, "nothing_to_retry", "다시 실행할 세트가 없습니다 — 모든 세트가 성공했습니다")
+    with _RUNS_LOCK:
+        active = _active_run("batch")
+        if active is not None:
+            raise _busy_error(active)
+        for r, _, rem in plan:
+            prev_cost = float((r.progress or {}).get("cost_krw_total") or 0.0)
+            r.config["cost_prev_krw"] = round(float(r.config.get("cost_prev_krw") or 0.0) + prev_cost, 2)
+            r.config["retries"] = (r.config.get("retries") or []) + [
+                {"at": _iso(), "failed": rem["failed"], "pending": rem["pending"], "state_before": r.state}]
+            r.cancel_requested = r.cost_exceeded = False
+            r.error = r.summary = r.final = r.finished_at = None
+            r.progress = {"i": 0, "total": rem["failed"] + rem["pending"], "failed": 0, "cost_krw_total": 0.0,
+                          "last_set": None}
+            r._index = None
+            r.state = "queued"
+    for r, entries, rem in plan:
+        r.save()
+        with LC.bind(run_id=r.run_id, set_id=None):
+            logger.info("다시 실행 — 실패 %d · 미실행 %d세트 (성공한 %d세트는 건너뜀, 끝나면 전체를 다시 채점)",
+                        rem["failed"], rem["pending"], rem["ok"], extra={"component": "시스템"})
+        _start(r, entries)
+    return {"ok": True, "runs": [{"run_id": r.run_id, "test": r.test, "failed": rem["failed"], "pending": rem["pending"]}
+                                 for r, _, rem in plan]}
 
 
 @router.get(API + "/runs/{run_id}/metrics")
@@ -2853,7 +3359,7 @@ def api_preview_work(run_id: str, set_id: str, user: str = Depends(_api_user)):
         frames = _frames(wdir)
         src = (wdir / "keyframes" / frames[0]["name"]) if (wdir is not None and frames) else None
     elif kind == "image":
-        src = _record_file(rec, "work")
+        src = _source_file(run, rec, "work")
     if src is None or not src.is_file():
         raise _not_found("미리보기할 저작물 그림이 없습니다")
     if src != _record_file(rec, "work") and not _inside(src, run.dir):
@@ -2889,7 +3395,7 @@ def api_preview_contract(run_id: str, set_id: str, page: str, user: str = Depend
     if not re.fullmatch(r"\d{1,3}", page or ""):
         raise _not_found("계약서 쪽을 찾을 수 없습니다")
     pg = int(page)
-    src = _record_file(rec, "contract")
+    src = _source_file(run, rec, "contract")
     if src is None or pg < 1 or pg > min(_page_count(src), MAX_CONTRACT_PAGES):
         raise _not_found("계약서 쪽을 찾을 수 없습니다")
     try:
@@ -2903,11 +3409,19 @@ def api_preview_contract(run_id: str, set_id: str, page: str, user: str = Depend
 @router.get(API + "/runs/{run_id}/download/{name}")
 def api_download(run_id: str, name: str, user: str = Depends(_api_user)):
     run = _get_run(run_id)
+    if name == UNFINISHED_CSV:
+        return Response(_unfinished_csv(run), media_type="text/csv; charset=utf-8",
+                        headers=_attachment(f"{run.run_id}_{name}"))
     if name not in DOWNLOADS:
         raise _not_found("내려받을 수 없는 파일입니다")
     fname = f"{run.run_id}_{name}"
     if name == "run.zip":
         return StreamingResponse(_zip_stream(_run_zip_items(run)), media_type="application/zip",
+                                 headers=_attachment(fname))
+    if name == PREDICTIONS_ZIP:
+        if not run.n_predictions():
+            raise _not_found("속성정보 파일이 아직 없습니다")
+        return StreamingResponse(_zip_stream(_predictions_zip_items(run)), media_type="application/zip",
                                  headers=_attachment(fname))
     path = run.out_dir / name
     if not path.is_file():

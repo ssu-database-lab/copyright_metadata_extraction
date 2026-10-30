@@ -107,6 +107,43 @@ _MANAGED_KEYS = ("OPENROUTER_API_KEY", "DASHSCOPE_API_KEY", "OPENROUTER_VLM_MODE
                  "OPENROUTER_BASE_URL", "DASHSCOPE_BASE_URL", "GEMMA_URL", "GEMINI_API_KEY")
 
 
+def _dashscope_json_mode() -> bool:
+    """DashScope 백엔드(omni·qwen3.7-plus)에 JSON 만 출력하게 강제하는가 — 환경변수 VLM_JSON_MODE (기본 on).
+    무하유 2026-10-12 시험에서 omni-flash 응답 8건 중 2건을 JSON 으로 읽지 못해 2순위 모델로 넘어갔다(7.7초로 짧았다)."""
+    return os.getenv("VLM_JSON_MODE", "on").strip().lower() not in ("off", "0", "false", "no")
+
+
+def _parse_retries() -> int:
+    """JSON 을 읽지 못한 응답이면 같은 백엔드로 몇 번 더 부르는가 — VLM_PARSE_RETRIES (기본 1). 그다음 폴백한다.
+    파일럿 이미지 100건의 해석 실패 2건은 같은 모델로 다시 부르자 둘 다 읽혔다."""
+    try:
+        return max(0, int(os.getenv("VLM_PARSE_RETRIES", "1")))
+    except ValueError:
+        return 1
+
+
+def _call_parse_retry(backend, call, label: str, fails: list):
+    """call() 을 부르고, JSON 을 읽지 못하면 같은 백엔드로 _parse_retries() 번 더 부른다. 못 읽은 원문은 fails 에 남긴다
+    (호출한 쪽이 결과 폴더에 저장 — 다음에 같은 일이 생기면 무엇이 왔는지 볼 수 있게). 예외는 (None, 오류문) 으로 돌려준다."""
+    tries = 1 + _parse_retries()
+    result, err = None, ""
+    for k in range(tries):
+        try:
+            result = call()
+        except Exception as e:  # noqa: BLE001 — defensive: client shouldn't raise
+            return None, f"{type(e).__name__}: {e}"
+        if not (result.ok and not result.parse_ok):
+            return result, err
+        raw = result.raw_text or ""
+        fails.append({"backend": backend.model_label, "attempt": k + 1, "latency_s": result.latency_s,
+                      "finish_reason": getattr(result, "finish_reason", None), "usage": result.usage,
+                      "chars": len(raw), "raw": raw[:8000]})
+        logger.warning("VLM 응답을 JSON 으로 읽지 못함 — %s · %s · %.1f초 · 종료 사유 %s · %d자 %r%s",
+                       backend.model_label, label, result.latency_s or 0.0, getattr(result, "finish_reason", None),
+                       len(raw), raw[:200], " → 같은 모델로 다시" if k + 1 < tries else "")
+    return result, err
+
+
 def _ensure_env_loaded() -> None:
     """
     Load .env so API keys (OPENROUTER_API_KEY / DASHSCOPE_API_KEY) are available,
@@ -190,6 +227,7 @@ def make_qwen_backend():
         api_key=os.getenv("DASHSCOPE_API_KEY", ""),
         image_first=False,  # matches existing OCR pipeline ordering
         extra_body={"enable_thinking": False},
+        json_mode=_dashscope_json_mode(),
     )
 
 
@@ -239,6 +277,7 @@ def make_omni_backend():
         model=omni_model,
         api_key=os.getenv("DASHSCOPE_API_KEY", ""),
         image_first=False,
+        json_mode=_dashscope_json_mode(),
     )
 
 
@@ -252,6 +291,7 @@ def make_omni_backup_backend():
         model=model,
         api_key=os.getenv("DASHSCOPE_API_KEY", ""),
         image_first=False,
+        json_mode=_dashscope_json_mode(),
     )
 
 
@@ -412,20 +452,20 @@ class VLMExtractor:
         start = self._active_index or 0
 
         last_error = ""
+        fails: list = []                    # JSON 으로 읽지 못한 응답 원문 (결과의 parse_failures)
         for idx in range(start, len(self.backends)):
             backend = self.backends[idx]
-            try:
-                result = backend.extract(
-                    image_path, SYSTEM_PROMPT, user_prompt,
-                    max_tokens=self.max_tokens, temperature=self.temperature,
-                )
-            except Exception as e:  # noqa: BLE001 — defensive: client shouldn't raise
-                last_error = f"{type(e).__name__}: {e}"
-                result = None
+            result, exc = _call_parse_retry(backend, lambda: backend.extract(
+                image_path, SYSTEM_PROMPT, user_prompt,
+                max_tokens=self.max_tokens, temperature=self.temperature,
+            ), image_path.name, fails)
+            if exc:
+                last_error = exc
 
-            if result is not None and result.ok and result.parse_ok:   # JSON 을 못 읽은 응답도 실패로 보고 다음 백엔드로
+            if result is not None and result.ok and result.parse_ok:   # 다시 불러도 못 읽으면 실패로 보고 다음 백엔드로
                 _attach_backend(result, backend.model_label)
                 _attach_context(result, context)
+                setattr(result, "parse_failures", fails)
                 if idx != start:
                     logger.info("VLM 폴백 성공 — %s (%s, %.1f초)",
                                 backend.model_label, image_path.name, getattr(result, "latency_s", 0.0) or 0.0)
@@ -454,6 +494,7 @@ class VLMExtractor:
             error=f"all {len(self.backends)} backend(s) failed; last: {last_error}",
         )
         _attach_backend(fail, "none")
+        setattr(fail, "parse_failures", fails)
         return fail
 
     def extract_video(self, frame_paths: list, frame_times: list | None = None,
@@ -478,21 +519,21 @@ class VLMExtractor:
         start = self._active_index or 0
 
         last_error = ""
+        fails: list = []
         for idx in range(start, len(self.backends)):
             backend = self.backends[idx]
-            try:
-                result = backend.extract_frames(
-                    frame_paths, VIDEO_SYSTEM_PROMPT, user_prompt,
-                    max_tokens=self.max_tokens, temperature=self.temperature,
-                    label=label,
-                )
-            except Exception as e:  # noqa: BLE001
-                last_error = f"{type(e).__name__}: {e}"
-                result = None
+            result, exc = _call_parse_retry(backend, lambda: backend.extract_frames(
+                frame_paths, VIDEO_SYSTEM_PROMPT, user_prompt,
+                max_tokens=self.max_tokens, temperature=self.temperature,
+                label=label,
+            ), label, fails)
+            if exc:
+                last_error = exc
 
-            if result is not None and result.ok and result.parse_ok:   # JSON 을 못 읽은 응답도 실패로 보고 다음 백엔드로
+            if result is not None and result.ok and result.parse_ok:   # 다시 불러도 못 읽으면 실패로 보고 다음 백엔드로
                 _attach_backend(result, backend.model_label)
                 _attach_context(result, context)
+                setattr(result, "parse_failures", fails)
                 if idx != start:
                     logger.info("VLM 영상 폴백 성공 — %s (%s, %.1f초)",
                                 backend.model_label, label, getattr(result, "latency_s", 0.0) or 0.0)
@@ -512,6 +553,7 @@ class VLMExtractor:
         fail = VLMResult(model_label="none", image=label, ok=False, latency_s=0.0,
                          error=f"all {len(self.backends)} backend(s) failed; last: {last_error}")
         _attach_backend(fail, "none")
+        setattr(fail, "parse_failures", fails)
         return fail
 
     def extract_batch(self, image_paths: list) -> list:

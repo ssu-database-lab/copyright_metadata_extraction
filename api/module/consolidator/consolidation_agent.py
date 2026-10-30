@@ -22,6 +22,42 @@ from module.consolidator.schemas.consolidation_schemas import ConsolidationSchem
 logger = logging.getLogger(__name__)
 
 
+def _is_empty(v) -> bool:
+    return v in (None, "", [], {})
+
+
+def _norm_decisions(decisions) -> List[Dict[str, Any]]:
+    """중재자의 decisions → dict 목록. {필드: {...}} 형태도 받고, 글자만 있는 항목은 버린다
+    (예전에는 문자열 항목에서 'str' object has no attribute 'copy' 로 통합 전체가 실패했다)."""
+    if isinstance(decisions, dict):
+        decisions = [{"field": k, **v} if isinstance(v, dict) else {"field": k, "final_value": v}
+                     for k, v in decisions.items()]
+    if not isinstance(decisions, list):
+        return []
+    return [d for d in decisions if isinstance(d, dict)]
+
+
+def _thinking_off(env_name: str) -> bool:
+    """qwen3.5 의 생각(thinking) 모드를 끄는가 — 기본은 끔(2026-10-20 결정). 환경변수를 on 으로 주면 켠다.
+    근거 (docs/v4/load_test_20261019.md): 계약서 200건(스캔 50) 끔 — 일치율 텍스트 99.9 %·스캔 97.2 %(켬 98.3–99.8 %·
+    94.4–96.9 %), 신양식 5건 Macro-F1 100 %, 1건 16.7k 토큰(켬 ~24k), 중앙 32초(켬 77–127초)."""
+    return os.getenv(env_name, "off").strip().lower() in ("off", "0", "false", "no")
+
+
+def _thinking_kwargs(env_name: str) -> Dict[str, Any]:
+    return {"extra_body": {"enable_thinking": False}} if _thinking_off(env_name) else {}
+
+
+def consolidation_timeout_sec(fallback: bool = False) -> float:
+    """중재 호출 1회의 시간 제한(초). CONSOLIDATION_TIMEOUT_SEC 가 있으면 그 값이다.
+    없으면 생각 끔 90초 · 켬 240초. 생각 끔 정상 호출은 8–48초인데(200건) 약 10 %가 응답 없이 멈췄다가 SDK 의 재시도로
+    ~15초에 답했다 — 240초를 기다리면 그 작업자가 4분을 논다. 폴백(qwen3.5-plus)은 생각 끔에서 재 보지 않았으므로 240초를 둔다."""
+    v = os.getenv("CONSOLIDATION_TIMEOUT_SEC")
+    if v:
+        return float(v)
+    return 90.0 if _thinking_off("CONSOLIDATION_THINKING") and not fallback else 240.0
+
+
 def _nonnull_count(d) -> int:
     return sum(1 for v in (d or {}).values() if v not in (None, "", [], {}))
 
@@ -37,13 +73,19 @@ def _consolidation_diagnostics(llm_result, consolidated_result) -> Dict[str, Any
     raw_md = (llm_result or {}).get("metadata") or {}
     con_md = (consolidated_result or {}).get("consolidated_metadata") or {}
     before, after = _nonnull_count(raw_md), _nonnull_count(con_md)
+    removed = set((consolidated_result or {}).get("removed_by_arbiter") or [])
     lost = [k for k, v in raw_md.items()
-            if v not in (None, "", [], {}) and con_md.get(k) in (None, "", [], {})]
+            if v not in (None, "", [], {}) and con_md.get(k) in (None, "", [], {}) and k not in removed]
     diag = {
         "consolidation_fields_before": before,
         "consolidation_fields_after": after,
         "consolidation_lost_fields": lost,
+        "consolidation_removed_fields": sorted(removed),
+        "consolidation_kept_from_llm": (consolidated_result or {}).get("kept_from_llm") or [],
+        "consolidation_truncated": bool((consolidated_result or {}).get("truncated")),
     }
+    if removed:
+        logger.info(f"중재자가 근거를 들어 비운 필드 {len(removed)}개: {sorted(removed)[:8]}")
     if lost:
         logger.error(
             f"통합에서 필드 손실: {before} → {after} (잃은 필드 {len(lost)}개: {lost[:8]}). "
@@ -153,6 +195,9 @@ class ConsolidationAgent:
                 document_type=document_type
             )
             
+            if not consolidated_result.get('degraded'):
+                consolidated_result = self._merge_with_llm(llm_metadata, consolidated_result, field_mappings)
+
             # Step 4: Post-process and generate evidence
             logger.debug("4단계: 근거·판정 이유 정리")
             final_result = self._post_process(
@@ -160,7 +205,8 @@ class ConsolidationAgent:
                 llm_result=llm_result,
                 ner_result=ner_result,
                 field_mappings=field_mappings,
-                validation_errors=validation_errors
+                validation_errors=validation_errors,
+                ocr_text=ocr_text,
             )
             
             # Add model usage info to final result
@@ -212,8 +258,8 @@ class ConsolidationAgent:
                 document_type=document_type
             )
             
-            # Validate JSON was parsed successfully
-            if result and result.get('consolidated_metadata') is not None:
+            # 읽은 결과가 쓸 만해야 성공 — LLM 에 값이 있는데 중재 결과가 비었으면 실패로 보고 폴백한다
+            if self._usable(result, llm_metadata):
                 result['model_used'] = self.model_name
                 result['fallback_used'] = False
                 logger.debug(f"주 중재자 성공 — {self.model_name}")
@@ -245,7 +291,7 @@ class ConsolidationAgent:
                         extractor=fallback_processor.extractor
                     )
                     
-                    if result and result.get('consolidated_metadata') is not None:
+                    if self._usable(result, llm_metadata):
                         result['model_used'] = self.fallback_model
                         result['fallback_used'] = True
                         result['primary_model_failed'] = True
@@ -341,14 +387,14 @@ class ConsolidationAgent:
                             temperature=0.1,   # Low temperature for deterministic JSON
                             top_p=0.8,
                             max_tokens=8192,
-                            # 기본값 240초는 실측에서 나왔다(2026-09, 30계약서 × 6중재자 × 2회):
+                            # 생각 켬 240초는 실측에서 나왔다(2026-09, 30계약서 × 6중재자 × 2회):
                             #   현행 qwen3.5-122b  중앙 68초 · p95 108초
                             #   폴백 qwen3.5-plus  중앙 149초 · p95 180초
-                            # 이전 기본값 90초에서는 폴백이 **단 한 번도 성공한 적이 없고**
-                            # (전 호출 90초×4회 재시도=365초 후 무동작 반환), 현행 모델조차
-                            # 재시도로 겨우 통과했다. 240초는 폴백 p95 에 여유를 둔 값이다.
-                            timeout=float(os.getenv('CONSOLIDATION_TIMEOUT_SEC', '240')),
-                            response_format={"type": "json_object"}  # Force valid JSON output
+                            # 그때 90초에서는 폴백이 **단 한 번도 성공한 적이 없었다**. 생각 끔(기본)은 주 모델만 90초
+                            # — consolidation_timeout_sec() 참고.
+                            timeout=consolidation_timeout_sec(fallback=model_name == self.fallback_model),
+                            response_format={"type": "json_object"},  # Force valid JSON output
+                            **_thinking_kwargs("CONSOLIDATION_THINKING"),
                         )
                         
                         extracted_text = response.choices[0].message.content
@@ -528,7 +574,8 @@ class ConsolidationAgent:
                             "status": "completed",
                             "llm_confidence": llm_confidence,
                             "raw_response": raw_response_text,
-                            "prompt_chars": len(prompt_text or "")
+                            "prompt_chars": len(prompt_text or ""),
+                            "truncated": finish_reason == "length",
                         }
                         
                     except Exception as e:
@@ -596,108 +643,112 @@ class ConsolidationAgent:
         ocr_text: str,
         document_type: str
     ) -> str:
+        """중재 프롬프트 — **값이 있는 필드만** 보내고, 값이 있는 필드만 답하게 한다.
+
+        예전에는 87개 필드(대부분 빈 값)를 모두 보내고 '빈 값까지 모든 필드를, 필드마다 판정 이유와 함께' 답하게 했다.
+        응답이 8,192 토큰 상한에 닿아 잘리거나(계약서 336건 중 2건, 이미지 8건 중 6건) 비어 돌아왔다 (2026-10-19/20).
+        빠진 필드는 _merge_with_llm 이 LLM 값으로 지키므로, 중재자는 판단이 필요한 필드만 다루면 된다.
         """
-        Create consolidation prompt for Qwen3-Next-80B
-        
-        Creates a comprehensive prompt that instructs the LLM to compare
-        and merge LLM and NER extraction results.
-        """
-        # Prepare NER entities grouped by type
-        ner_by_type = {}
+        ner_by_type: Dict[str, List[str]] = {}
         for entity_text, entity_type in ner_entities:
-            if entity_type not in ner_by_type:
-                ner_by_type[entity_type] = []
-            ner_by_type[entity_type].append(entity_text)
-        
+            ner_by_type.setdefault(entity_type, []).append(entity_text)
+        present = {k: v for k, v in (llm_metadata or {}).items() if not _is_empty(v)}
+        mapped = {k: v for k, v in (field_mappings or {}).items() if v}
+
         # Truncate OCR text if too long (keep first 3000 chars for context)
         ocr_excerpt = ocr_text[:3000] + ("..." if len(ocr_text) > 3000 else "")
-        
+
         prompt = f"""Compare and merge the LLM and NER extraction results for this Korean document.
 Output ONLY valid JSON. No markdown, no explanations.
 
 ## Original OCR text:
 {ocr_excerpt}
 
-## LLM extraction result (structured metadata):
-{json.dumps(llm_metadata, ensure_ascii=False, indent=2)}
+## LLM extraction result — only the {len(present)} fields that have a value (all other fields are empty):
+{json.dumps(present, ensure_ascii=False, indent=1)}
 
 ## NER extraction result (entity list):
-{json.dumps(ner_by_type, ensure_ascii=False, indent=2)}
+{json.dumps(ner_by_type, ensure_ascii=False, indent=1)}
 
 ## Field mapping (NER entities mapped to LLM fields):
-{json.dumps(field_mappings, ensure_ascii=False, indent=2)}
+{json.dumps(mapped, ensure_ascii=False, indent=1)}
 
 ## Instructions:
 
-1. Compare each field between LLM and NER:
-   - Both match → decision: "AGREED"
-   - Both exist but differ → decision: "CONFLICT" (check OCR text, pick the more accurate one)
-   - Only in LLM → decision: "LLM_ONLY"
-   - Only in NER → decision: "NER_ONLY"
-   - Neither has it → decision: "MISSING"
-
-2. Select final value:
-   - AGREED: use the matched value
-   - CONFLICT: reference OCR text to pick the correct one
-   - LLM_ONLY: use LLM value (lower confidence)
-   - NER_ONLY: use NER value (lower confidence)
-   - MISSING: use null
-
-3. Provide reasoning in Korean for each decision.
-
-4. Confidence scores:
-   - AGREED: 0.9-1.0
-   - CONFLICT resolved: 0.7-0.9
-   - LLM_ONLY: 0.5-0.7
-   - NER_ONLY: 0.6-0.8
-   - MISSING: 0.0
-
-5. Include ALL fields in consolidated_metadata (including null values).
+1. Look only at fields that have an LLM value or a mapped NER entity. Never list empty fields.
+2. Decide each such field:
+   - Both match → "AGREED"
+   - Both exist but differ → "CONFLICT" (check the OCR text and pick the correct one)
+   - Only in LLM → "LLM_ONLY"
+   - Only in NER → "NER_ONLY"
+   - The OCR text shows the value is wrong and no correct value exists → "REMOVED" (final_value null)
+3. consolidated_metadata: only the fields whose final value is not null. A field you leave out keeps its LLM value.
+4. decisions is required: one entry for every field you looked at, not only conflicts.
+   reasoning: one short Korean sentence (60 characters or fewer).
+5. confidence: AGREED 0.9-1.0 · CONFLICT 0.7-0.9 · LLM_ONLY 0.5-0.7 · NER_ONLY 0.6-0.8 · REMOVED 0.0
 
 ## Required JSON output format:
 
 {{
-  "consolidated_metadata": {{
-    "field1": "final_value1",
-    "field2": "final_value2"
-  }},
+  "consolidated_metadata": {{"field_name": "final value"}},
   "decisions": [
-    {{
-      "field": "field_name",
-      "llm_value": "value_from_llm",
-      "ner_value": "value_from_ner",
-      "final_value": "selected_value",
-      "decision": "AGREED",
-      "reasoning": "Korean reasoning here",
-      "confidence": 1.0
-    }}
+    {{"field": "field_name", "llm_value": "…", "ner_value": "…", "final_value": "…",
+      "decision": "AGREED", "reasoning": "짧은 한국어 이유", "confidence": 1.0}}
   ],
-  "summary": {{
-    "total_fields": 15,
-    "agreed_fields": 12,
-    "conflicted_fields": 2,
-    "llm_only_fields": 1,
-    "ner_only_fields": 0,
-    "missing_fields": 0,
-    "overall_confidence": 0.92
-  }}
+  "summary": {{"total_fields": 0, "agreed_fields": 0, "conflicted_fields": 0, "llm_only_fields": 0,
+              "ner_only_fields": 0, "missing_fields": 0, "overall_confidence": 0.9}}
 }}
 
 JSON response:
 """
         return prompt
     
+    @staticmethod
+    def _usable(result: Optional[Dict[str, Any]], llm_metadata: Dict[str, Any]) -> bool:
+        """중재 결과를 쓸 수 있는가 — 결과가 있고, LLM 에 값이 있었다면 중재 결과도 비어 있지 않아야 한다."""
+        if not result or result.get('consolidated_metadata') is None:
+            return False
+        if any(not _is_empty(v) for v in (llm_metadata or {}).values()):
+            return bool(result.get('consolidated_metadata'))
+        return True
+
+    @staticmethod
+    def _merge_with_llm(llm_metadata: Dict[str, Any], result: Dict[str, Any],
+                        field_mappings: Optional[Dict[str, List]] = None) -> Dict[str, Any]:
+        """중재자 응답 → 완전한 결과.
+
+        LLM 결과(전체 스키마)에서 시작해 중재자가 값을 준 필드를 덮어쓴다. 중재자가 빼먹은 필드는 LLM 값을 지키고,
+        근거를 들어 REMOVED 로 판정한 필드만 비운다. 스키마에 없는 키(지어낸 키)는 NER 대응 필드가 아니면 버린다.
+        """
+        base = dict(llm_metadata or {})
+        arb = result.get('consolidated_metadata') or {}
+        allowed = set(base) | set((field_mappings or {}).keys())
+        removed = {d.get('field') for d in _norm_decisions(result.get('decisions'))
+                   if str(d.get('decision', '')).upper() == 'REMOVED' and d.get('field')}
+        for k, v in arb.items():
+            if _is_empty(v) or (allowed and k not in allowed):
+                continue
+            base[k] = v
+        for k in removed:
+            if k in base:
+                base[k] = None
+        kept = [k for k, v in (llm_metadata or {}).items()
+                if not _is_empty(v) and _is_empty(arb.get(k)) and k not in removed]
+        return {**result, 'consolidated_metadata': base, 'kept_from_llm': kept,
+                'removed_by_arbiter': sorted(removed & set(base))}
+
     def _post_process(
         self,
         consolidated_result: Dict[str, Any],
         llm_result: Dict[str, Any],
         ner_result: Dict[str, Any],
         field_mappings: Dict[str, List],
-        validation_errors: List[str]
+        validation_errors: List[str],
+        ocr_text: str = "",
     ) -> Dict[str, Any]:
         """Post-process consolidation result"""
         
-        decisions = consolidated_result.get('decisions', [])
+        decisions = _norm_decisions(consolidated_result.get('decisions', []))
         summary = consolidated_result.get('summary', {})
         
         # Calculate statistics from decisions if summary not provided
@@ -724,11 +775,13 @@ JSON response:
                 ner_value=decision.get('ner_value'),
                 final_value=decision.get('final_value'),
                 decision=decision.get('decision', 'UNKNOWN'),
-                ocr_text=llm_result.get('ocr_text', ''),
+                ocr_text=ocr_text or llm_result.get('ocr_text', ''),
                 confidence=decision.get('confidence', 0.0)
             )
             
-            enhanced_decision['evidence'] = evidence.get('evidence', {})
+            # generate_evidence 는 평평한 dict 를 돌려준다 — 예전 코드는 없는 'evidence' 키를 읽어 늘 {} 였다
+            enhanced_decision['evidence'] = {k: evidence.get(k) for k in ("reasoning", "ocr_excerpt")
+                                             if evidence.get(k)}
             enhanced_decisions.append(enhanced_decision)
         
         # Generate validation report

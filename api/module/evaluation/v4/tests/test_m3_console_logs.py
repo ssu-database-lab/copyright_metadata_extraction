@@ -523,7 +523,7 @@ def test_evidence_decision_items_unit():
     entry = {"items": []}
     CA._add_decision_items(entry, "rental_right", by["rental_right"])
     assert [i["label"] for i in entry["items"]] == ["NER 값", "통합 판정", "판정 근거", "통합 검증"]
-    assert entry["items"][1]["value"] == "LLM_ONLY (신뢰도 0.7)"
+    assert entry["items"][1]["value"] == "LLM 전용 (LLM_ONLY) · 신뢰도 0.7"
     entry = {"items": []}
     CA._add_decision_items(entry, "reproduction_right", by["reproduction_right"])
     assert "통합 판정 · 복제권 허락 여부" in [i["label"] for i in entry["items"]]

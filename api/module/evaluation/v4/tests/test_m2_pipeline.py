@@ -908,7 +908,8 @@ def test_unparseable_answer_falls_back_to_next_backend():
     first, second = B("first", False), B("second", True)
     ex = X.VLMExtractor(backends=[first, second])
     r = ex.extract_video(["f1.jpg"], [0.5])
-    assert r.ok and r.parse_ok and first.calls == 1 and second.calls == 1 and r.backend_used == "second"
+    # 같은 백엔드로 한 번 더 부른 뒤(VLM_PARSE_RETRIES 기본 1) 폴백한다
+    assert r.ok and r.parse_ok and first.calls == 2 and second.calls == 1 and r.backend_used == "second"
 
 
 def test_thought_block_is_stripped_before_json():

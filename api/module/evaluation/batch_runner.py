@@ -35,6 +35,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shutil
 import subprocess
 import threading
 import time
@@ -116,6 +117,9 @@ V3_SCORING_SETS = ("plan", "tta")
 COST_OCR_PER_PAGE = 2.7
 COST_LLM_EXTRACT = 10.2
 COST_CONSOLIDATION_DOC = 34.6
+# 생각 끔(기본, 2026-10-20) 실측 — 계약서 200건 평균 토큰: 추출 입력 7,239 / 출력 1,505 · 중재 4,866 / 2,672
+COST_LLM_EXTRACT_NO_THINK = 10.8
+COST_CONSOLIDATION_DOC_NO_THINK = 14.7
 COST_CONSOLIDATION_IMG = 35.4
 COST_VLM_IMAGE = 1.34     # qwen3.8-omni-flash 실측 (파일럿 이미지 100건, 2026-10-11)
 COST_VLM_VIDEO = 1.77     # qwen3.8-omni-flash 실측 (파일럿 영상, 2026-10-10/11)
@@ -187,6 +191,11 @@ def _pdf_page_count(path: str) -> int:
     return 1
 
 
+def _thinking_off(env_name: str) -> bool:
+    """추출·중재의 생각(thinking) 모드가 꺼져 있는가 — 기본 끔 (module/consolidator/consolidation_agent.py 와 같은 규칙)."""
+    return os.getenv(env_name, "off").strip().lower() in ("off", "0", "false", "no")
+
+
 def _is_direct_text(resp: Optional[Dict[str, Any]]) -> bool:
     """응답이 PDF 텍스트층(direct_text)으로 처리됐는가 — 그러면 OCR 모델을 부르지 않았으므로 쪽당 OCR 요금이 없다.
 
@@ -226,7 +235,9 @@ def _estimate_cost(resp: Dict[str, Any], media: str, is_contract: bool,
                 except (TypeError, ValueError):
                     pass
         ocr = 0.0 if _is_direct_text(resp) else COST_OCR_PER_PAGE * n
-        return ocr + COST_LLM_EXTRACT + (COST_CONSOLIDATION_DOC if with_con else 0.0)
+        ext = COST_LLM_EXTRACT_NO_THINK if _thinking_off("EXTRACTION_THINKING") else COST_LLM_EXTRACT
+        con_krw = COST_CONSOLIDATION_DOC_NO_THINK if _thinking_off("CONSOLIDATION_THINKING") else COST_CONSOLIDATION_DOC
+        return ocr + ext + (con_krw if with_con else 0.0)
     vlm = COST_VLM_VIDEO if media == "video" else COST_VLM_IMAGE
     return vlm + (COST_CONSOLIDATION_IMG if with_con else 0.0)
 
@@ -591,6 +602,27 @@ class BatchRunner:
         return out
 
     # -- v4: 다리 하나 + 23키 기록 ------------------------------------------
+    def _keep_contract_copy(self, request_id: Optional[str], contract_path: str) -> None:
+        """Te-2 짝 계약서를 저작물 leg 결과 폴더 source/contract.pdf 로 남긴다 — 원본 폴더가 사라져도 콘솔이 쪽을 보여 주게
+        (Te-1 은 파이프라인이 source/document.pdf 로 남긴다). 계약서는 작아서(≈100 KB) 드라이브 줄에 서도 짧다."""
+        base = getattr(self.orch, "results_dir", None)
+        if not request_id or base is None or not str(contract_path).lower().endswith(".pdf"):
+            return
+        try:
+            try:
+                from module.local_limits import disk_slot
+            except ImportError:
+                from api.module.local_limits import disk_slot  # type: ignore
+            leg = Path(base) / str(request_id)
+            if not leg.is_dir():
+                return
+            dst = leg / "source" / "contract.pdf"
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            with disk_slot(contract_path):
+                shutil.copy2(contract_path, dst)
+        except Exception as e:  # noqa: BLE001 — 미리보기용 사본이 시험을 막지 않게
+            self.log.warning("계약서 사본 저장 실패 (%s): %s", os.path.basename(str(contract_path)), e)
+
     def _contract_context(self, contract_path: str) -> Optional[Dict[str, Any]]:
         """계약서 PDF → {"title", "work_type", "source": "rules"} — 규칙 파싱만, 모델 호출 없음 (M2 A4)."""
         fn = _load_context_parser()
@@ -680,11 +712,9 @@ class BatchRunner:
             if test == "T-001":
                 if not entry.contract:
                     raise ValueError("T-001 세트에 계약서가 없습니다")
-                with open(entry.contract, "rb") as f:
-                    cbytes = f.read()
                 t1 = time.perf_counter()
                 resp = self.orch.run(
-                    cbytes, os.path.basename(entry.contract),
+                    b"", os.path.basename(entry.contract), source_path=entry.contract,   # 메모리에 올리지 않는다 — setup() 이 작업 사본으로 복사하고 세트 끝에 지운다
                     model_name=self.cfg.model_name,
                     document_type=self.cfg.contract_document_type,
                     ocr_provider=self.cfg.ocr_provider, ocr_model=self.cfg.ocr_model,
@@ -730,11 +760,9 @@ class BatchRunner:
                     context = {"title": entry.extra["title"].strip(), "work_type": None, "source": "manifest_title"}
                     legs["context"] = {"ok": True, "elapsed_sec": 0.0, "source": "manifest_title",
                                        "title": context["title"], "work_type": None}
-                with open(entry.work, "rb") as f:
-                    wbytes = f.read()
                 t1 = time.perf_counter()
                 resp = self.orch.run(
-                    wbytes, os.path.basename(entry.work),
+                    b"", os.path.basename(entry.work), source_path=entry.work,   # 영상(최대 8.6 GB)을 메모리에 올리지 않는다 — setup() 이 드라이브마다 하나씩 작업 사본으로 복사, 세트 끝에 지움
                     model_name=self.cfg.model_name,
                     document_type=self.cfg.work_document_type,
                     ocr_provider=self.cfg.ocr_provider, ocr_model=self.cfg.ocr_model,
@@ -751,6 +779,8 @@ class BatchRunner:
                 cost_box["v"] += _estimate_cost(resp, entry.media, False, consolidated=self.cfg.consolidate_work)
                 legs["work"] = _leg_info(resp, time.perf_counter() - t1)
                 out["work_request_id"] = resp.get("request_id")
+                if entry.contract:
+                    self._keep_contract_copy(resp.get("request_id"), entry.contract)
             else:
                 raise ValueError(f"시험 구분을 정할 수 없습니다 (test={test!r}; 엔트리 test 또는 --test 를 주세요)")
 

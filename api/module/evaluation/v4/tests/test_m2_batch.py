@@ -65,6 +65,8 @@ class FakeOrch:
         self.ocr_provider_used = ocr_provider_used
 
     def run(self, file_bytes: bytes, filename: str, **kw) -> Dict[str, Any]:
+        if not file_bytes and kw.get("source_path"):          # 실행기는 파일을 제자리로 넘긴다 (source_path)
+            file_bytes = Path(kw["source_path"]).read_bytes()
         self.calls.append({"filename": filename, **kw})
         low = filename.lower()
         is_pdf = low.endswith(".pdf")
@@ -265,15 +267,15 @@ def test_build_prediction_record_shape():
 # ---------------------------------------------------------------------------
 def test_estimate_cost_direct_text_and_consolidation():
     direct = {"success": True, "ocr_provider": "direct_text"}
-    assert _estimate_cost(direct, "text", True, pages=5) == pytest.approx(BR.COST_LLM_EXTRACT + BR.COST_CONSOLIDATION_DOC)
+    assert _estimate_cost(direct, "text", True, pages=5) == pytest.approx(BR.COST_LLM_EXTRACT_NO_THINK + BR.COST_CONSOLIDATION_DOC_NO_THINK)   # 생각 끔(기본)
     ocr = {"success": True, "ocr_provider": "alibaba"}
-    assert _estimate_cost(ocr, "text", True, pages=5) == pytest.approx(5 * BR.COST_OCR_PER_PAGE + BR.COST_LLM_EXTRACT + BR.COST_CONSOLIDATION_DOC)
+    assert _estimate_cost(ocr, "text", True, pages=5) == pytest.approx(5 * BR.COST_OCR_PER_PAGE + BR.COST_LLM_EXTRACT_NO_THINK + BR.COST_CONSOLIDATION_DOC_NO_THINK)
     nested = {"success": True, "ocr_provider": "alibaba", "ocr_result": {"ocr_provider": "direct_text"}}
-    assert _estimate_cost(nested, "text", True, pages=5) == pytest.approx(BR.COST_LLM_EXTRACT + BR.COST_CONSOLIDATION_DOC)
+    assert _estimate_cost(nested, "text", True, pages=5) == pytest.approx(BR.COST_LLM_EXTRACT_NO_THINK + BR.COST_CONSOLIDATION_DOC_NO_THINK)
     # 죽은 분기 제거 — 응답의 token_usage.cost_krw 는 더 이상 믿지 않는다
     assert _estimate_cost({"success": True, "ocr_provider": "direct_text", "token_usage": {"cost_krw": 999}}, "text", True, pages=1) != 999
     # 요청한 통합검증 여부
-    assert _estimate_cost(direct, "text", True, pages=5, consolidated=False) == pytest.approx(BR.COST_LLM_EXTRACT)
+    assert _estimate_cost(direct, "text", True, pages=5, consolidated=False) == pytest.approx(BR.COST_LLM_EXTRACT_NO_THINK)
     assert _estimate_cost({"success": True}, "image", False, consolidated=False) == pytest.approx(BR.COST_VLM_IMAGE)
     assert _estimate_cost({"success": True}, "video", False, consolidated=False) == pytest.approx(BR.COST_VLM_VIDEO)
     assert _estimate_cost({"success": True}, "image", False) == pytest.approx(BR.COST_VLM_IMAGE + BR.COST_CONSOLIDATION_IMG)
@@ -291,12 +293,12 @@ def test_estimate_cost_reads_ocr_provider_used_from_real_pipeline_shape():
     real = {"success": True, "ocr_provider": "alibaba", "ocr_provider_used": "direct_text", "ocr_pages": 5,
             "consolidate": True}
     assert BR._is_direct_text(real) is True
-    assert _estimate_cost(real, "text", True, pages=5, consolidated=True) == pytest.approx(44.8)
-    assert _estimate_cost(real, "text", True, pages=5, consolidated=True) == pytest.approx(BR.COST_LLM_EXTRACT + BR.COST_CONSOLIDATION_DOC)
+    assert _estimate_cost(real, "text", True, pages=5, consolidated=True) == pytest.approx(25.5)   # 생각 끔(기본): ₩10.8 + ₩14.7
+    assert _estimate_cost(real, "text", True, pages=5, consolidated=True) == pytest.approx(BR.COST_LLM_EXTRACT_NO_THINK + BR.COST_CONSOLIDATION_DOC_NO_THINK)
     # 실제로 OCR 모델을 부른 경우(스캔 PDF)는 쪽당 요금이 붙는다
     scanned = {"success": True, "ocr_provider": "alibaba", "ocr_provider_used": "alibaba", "ocr_pages": 5}
     assert BR._is_direct_text(scanned) is False
-    assert _estimate_cost(scanned, "text", True, pages=5) == pytest.approx(5 * BR.COST_OCR_PER_PAGE + BR.COST_LLM_EXTRACT + BR.COST_CONSOLIDATION_DOC)
+    assert _estimate_cost(scanned, "text", True, pages=5) == pytest.approx(5 * BR.COST_OCR_PER_PAGE + BR.COST_LLM_EXTRACT_NO_THINK + BR.COST_CONSOLIDATION_DOC_NO_THINK)
     # 옛 모양(ocr_provider 자체가 direct_text)·ocr_result 중첩도 계속 인식한다
     assert BR._is_direct_text({"ocr_provider": "direct_text"}) is True
     assert BR._is_direct_text({"ocr_result": {"ocr_provider": "direct_text"}}) is True
@@ -344,7 +346,7 @@ def test_runner_eval23_t001_contract_only_end_to_end(tmp_path: Path):
         assert " " in c["filename"]                                   # 원본 basename(공백 포함)을 넘긴다
         assert c["test"] == "T-001"                                    # 파이프라인 쪽 test_prediction 도 같은 규칙을 따르게
     # 비용: 텍스트층(ocr_provider_used == direct_text; ocr_provider 는 요청값 'alibaba') → OCR 쪽당 요금 없음
-    assert summary["cost_krw"] == pytest.approx(5 * (BR.COST_LLM_EXTRACT + BR.COST_CONSOLIDATION_DOC), abs=0.1)
+    assert summary["cost_krw"] == pytest.approx(5 * (BR.COST_LLM_EXTRACT_NO_THINK + BR.COST_CONSOLIDATION_DOC_NO_THINK), abs=0.1)
 
     # 출력 배치
     pred_dir = out / "test_predictions"
@@ -922,3 +924,83 @@ def test_title_fallback_gives_context_only_without_contract(tmp_path: Path, work
     rec = json.loads((tmp_path / "on" / "test_predictions" / "s.json").read_text(encoding="utf-8"))
     assert rec["_meta"]["prompt"]["contract_context_used"] is True
     runner2.close_log()
+
+
+def test_pipeline_stages_one_copy_and_cleans_up(tmp_path, monkeypatch):
+    """폴더 시험: 파일을 메모리에 올리지 않고 순서대로 한 번 읽어 작업 사본을 만들며 SHA-256 을 계산하고, 세트가 끝나면
+    (실패해도) 사본을 지운다 — 원본은 건드리지 않는다 (2026-10-19/20 부하 시험)."""
+    from web import pipeline as PL
+    monkeypatch.setattr(PL, "INPUT_STAGING_DIR", tmp_path / "stage")
+    src = tmp_path / "data" / "90000001 영상, 원본.mp4"
+    src.parent.mkdir()
+    src.write_bytes(os.urandom(1 << 10) * (9 << 10))            # 9 MB — 조각(8 MB)보다 크게
+    p = PL.PipelineOrchestrator.__new__(PL.PipelineOrchestrator)
+    p.upload_dir, p.results_dir = tmp_path / "up", tmp_path / "res"
+    ctx = p.setup(b"", src.name, source_path=src)
+    assert ctx["staged"] is True and ctx["source_path"] == str(src)
+    assert ctx["upload_path"].parent.parent == tmp_path / "stage"
+    assert ctx["upload_path"].read_bytes() == src.read_bytes() and src.is_file()
+    assert ctx["sha256"] == hashlib.sha256(src.read_bytes()).hexdigest()
+    assert ctx["file_size"] == src.stat().st_size and ctx["original_filename"] == src.name
+    assert os.path.getmtime(ctx["upload_path"]) == pytest.approx(os.path.getmtime(src))
+    assert not (tmp_path / "up").exists()                         # 실행 폴더(업로드)에는 쓰지 않는다
+    ctx2 = p.setup(b"abc", "a b.pdf")                             # 업로드(API)는 예전처럼 저장한다
+    assert ctx2["staged"] is False and ctx2["upload_path"].read_bytes() == b"abc"
+    with pytest.raises(FileNotFoundError):
+        p.setup(b"", "x.mp4", source_path=tmp_path / "없음.mp4")
+    import shutil as _sh
+    _sh.rmtree(ctx["upload_path"].parent)                         # 위의 setup 직접 호출분 — run() 을 거치지 않았다
+
+    def boom(self, fb, fn, _staged=None, **kw):                   # 처리 중 실패해도 사본은 지운다
+        c = self.setup(fb, fn, source_path=kw["source_path"])
+        _staged.append(c["upload_path"])
+        raise RuntimeError("처리 실패")
+    monkeypatch.setattr(PL.PipelineOrchestrator, "_run", boom)
+    with pytest.raises(RuntimeError):
+        p.run(b"", src.name, source_path=src)
+    assert not list((tmp_path / "stage").rglob("*.mp4")) and src.is_file()
+
+
+def test_heavy_slot_limits_concurrency(monkeypatch):
+    """무거운 로컬 작업은 LOCAL_HEAVY_SLOTS 개까지만 동시에 (0 이면 제한 없음)."""
+    import threading as th, time as tm
+    from module import local_limits as LL
+    monkeypatch.setenv("LOCAL_HEAVY_SLOTS", "2")
+    cur, peak, lock = [0], [0], th.Lock()
+
+    def job():
+        with LL.heavy_slot():
+            with lock:
+                cur[0] += 1; peak[0] = max(peak[0], cur[0])
+            tm.sleep(0.05)
+            with lock:
+                cur[0] -= 1
+    ts = [th.Thread(target=job) for _ in range(8)]
+    [t.start() for t in ts]; [t.join() for t in ts]
+    assert peak[0] == 2
+    monkeypatch.setenv("LOCAL_HEAVY_SLOTS", "0")
+    assert LL.slots() == 0
+    with LL.heavy_slot():
+        pass
+
+
+def test_disk_slot_is_per_drive(monkeypatch):
+    """드라이브마다 한 번에 하나씩 — 다른 드라이브는 서로 기다리지 않는다."""
+    import threading as th, time as tm
+    from module import local_limits as LL
+    assert LL.drive_key("/mnt/e/gongu/a.mp4") == "mnt/e" and LL.drive_key("E:\\a.mp4") == "E:" and LL.drive_key("/tmp/x") == "local"
+    monkeypatch.setenv("LOCAL_DISK_SLOTS", "1")
+    peaks, cur, lock = {}, {}, th.Lock()
+
+    def job(path):
+        k = LL.drive_key(path)
+        with LL.disk_slot(path):
+            with lock:
+                cur[k] = cur.get(k, 0) + 1; peaks[k] = max(peaks.get(k, 0), cur[k]); cur["all"] = cur.get("all", 0) + 1
+                peaks["all"] = max(peaks.get("all", 0), cur["all"])
+            tm.sleep(0.05)
+            with lock:
+                cur[k] -= 1; cur["all"] -= 1
+    ts = [th.Thread(target=job, args=(p,)) for p in ["/mnt/e/a", "/mnt/e/b", "/mnt/e/c", "/mnt/c/a", "/mnt/c/b"]]
+    [t.start() for t in ts]; [t.join() for t in ts]
+    assert peaks["mnt/e"] == 1 and peaks["mnt/c"] == 1 and peaks["all"] == 2

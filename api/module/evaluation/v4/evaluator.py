@@ -28,6 +28,7 @@ PASS_MARK = 0.85
 N_BOOT = 1000
 BOOT_SEED = 0
 TEST_TITLES = {"T-001": "공유저작물 속성정보 정확도", "T-002": "멀티모달 저작물 속성정보 정확도"}
+TEST_LABELS = {"T-001": "Te-1", "T-002": "Te-2"}   # 시험 절차서의 이름 (보고서 제목에 쓴다 — 데이터의 test 값은 T-001 · T-002 그대로)
 KIND_KEYS = ("description", "hashtags")  # gold 종류(kind)별로도 보고하는 키
 
 
@@ -458,7 +459,7 @@ def render_report(m: dict[str, Any], cells: bool = False) -> str:
     keys = list(scored_keys(test))
     s = m["settings"]
     L: list[str] = []
-    L.append(f"# v4 평가 보고서 — {test} {TEST_TITLES.get(test, '')}".rstrip())
+    L.append(f"# v4 평가 보고서 — {TEST_LABELS.get(test, test)} {TEST_TITLES.get(test, '')}".rstrip())
     L.append("")
     L.append(f"- 판정 규칙: `{SPEC}` · 채점 키: {keys[0]}~{keys[-1]} ({len(keys)}개)")
     L.append(f"- gold: `{m['inputs']['gold']}` · 예측: `{m['inputs']['pred']}`")

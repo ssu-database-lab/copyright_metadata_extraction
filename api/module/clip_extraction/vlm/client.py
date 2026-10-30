@@ -22,6 +22,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+try:                                   # 큰 그림 풀기는 동시 개수를 제한한다 (module/local_limits.py)
+    from ...local_limits import heavy_slot
+except ImportError:                    # 스크립트로 직접 실행할 때 — 제한 없음
+    import contextlib as _contextlib
+    heavy_slot = _contextlib.nullcontext
+
 # ping 전용 timeout(초). 추출 호출의 timeout(기본 300s)·재시도를 ping 에도 쓰면 SYN 단계에서 멎은
 # 서버 하나에 5분을 기다린다. 환경변수 VLM_PING_TIMEOUT_SEC 로 바꿀 수 있다.
 PING_TIMEOUT_SEC = 10.0
@@ -46,6 +52,7 @@ class VLMResult:
     parse_ok: bool = False
     usage: dict[str, int] = field(default_factory=dict)
     error: str | None = None
+    finish_reason: str | None = None
 
 
 # DashScope rejects images over ~10 MB ("Multimodal file size is too large").
@@ -97,9 +104,12 @@ def _extract_json(text: str) -> dict[str, Any] | None:
         if start != -1 and end != -1 and end > start:
             candidate = candidate[start:end + 1]
     try:
-        return json.loads(candidate)
+        obj = json.loads(candidate)
     except (json.JSONDecodeError, ValueError):
         return None
+    # 빈 객체({})·배열·문자열은 읽지 못한 것으로 본다 — 2026-10-30 영상 1건이 읽기 성공·내용 없음으로 와서
+    # 같은 모델 재시도도 폴백도 없이 실패했다. None 이면 재시도 → 폴백 → vlm_unparsed.jsonl 에 원문이 남는다.
+    return obj if isinstance(obj, dict) and obj else None
 
 
 class VLMClient:
@@ -116,9 +126,12 @@ class VLMClient:
         extra_body: dict | None = None,
         connect_timeout: float | None = None,
         max_retries: int = 1,
+        json_mode: bool = False,
     ):
         from openai import OpenAI
         self.extra_body = extra_body   # 예: {"enable_thinking": False} — qwen3.7 계열은 기본이 생각 켬
+        # JSON 만 출력하게 강제(response_format json_object) — omni-flash 가 가끔 읽을 수 없는 응답을 냈다(무하유 8건 중 2건)
+        self.json_mode = json_mode
         self.model_label = model_label
         self.model = model
         self.image_first = image_first
@@ -154,7 +167,8 @@ class VLMClient:
         temperature: float = 0.0,
     ) -> VLMResult:
         """Run one image through the model. Times the call, parses JSON."""
-        data_url = _encode_image(image_path)
+        with heavy_slot():                 # 수백 MB TIF 를 푸는 일 — 동시에 몇 개만 (메모리)
+            data_url = _encode_image(image_path)
         image_part = {"type": "image_url", "image_url": {"url": data_url}}
         text_part = {"type": "text", "text": user_prompt}
         content = [image_part, text_part] if self.image_first else [text_part, image_part]
@@ -167,6 +181,7 @@ class VLMClient:
         try:
             resp = self.client.chat.completions.create(
                 **({'extra_body': self.extra_body} if self.extra_body else {}),
+                **({'response_format': {"type": "json_object"}} if self.json_mode else {}),
                 model=self.model,
                 messages=messages,
                 max_tokens=max_tokens,
@@ -174,6 +189,7 @@ class VLMClient:
             )
             latency = time.perf_counter() - t0
             text = resp.choices[0].message.content or ""
+            finish = getattr(resp.choices[0], "finish_reason", None)
             parsed = _extract_json(text)
             usage = {}
             if resp.usage:
@@ -190,6 +206,7 @@ class VLMClient:
                 parsed=parsed,
                 parse_ok=parsed is not None,
                 usage=usage,
+                finish_reason=finish,
             )
         except Exception as e:  # noqa: BLE001
             return VLMResult(
@@ -231,6 +248,7 @@ class VLMClient:
         try:
             resp = self.client.chat.completions.create(
                 **({'extra_body': self.extra_body} if self.extra_body else {}),
+                **({'response_format': {"type": "json_object"}} if self.json_mode else {}),
                 model=self.model,
                 messages=messages,
                 max_tokens=max_tokens,
@@ -238,6 +256,7 @@ class VLMClient:
             )
             latency = time.perf_counter() - t0
             text = resp.choices[0].message.content or ""
+            finish = getattr(resp.choices[0], "finish_reason", None)
             parsed = _extract_json(text)
             usage = {}
             if resp.usage:
@@ -246,7 +265,7 @@ class VLMClient:
             return VLMResult(
                 model_label=self.model_label, image=label, ok=True,
                 latency_s=round(latency, 2), raw_text=text, parsed=parsed,
-                parse_ok=parsed is not None, usage=usage,
+                parse_ok=parsed is not None, usage=usage, finish_reason=finish,
             )
         except Exception as e:  # noqa: BLE001
             return VLMResult(
