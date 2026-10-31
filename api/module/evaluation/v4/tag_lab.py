@@ -81,8 +81,19 @@ HT_G = ("\"hashtags\": [\"해시태그 5~10개 — '#태그' 형식, 띄어쓰�
         "#상반신 #실내 #야외 #흑백사진 #드론 #항공). 개인 이름·나이, 라이선스·출처·기증 낱말, 평가어, 장르·분위기 태그는 쓰지 않는다. "
         "설명과 같은 근거(화면)에서만 뽑는다\"],")
 
+# 2026-10-31 production 반영분 — prompts.py 의 새 줄 (영상 설명 줄은 Te-2 확인 뒤 되돌려 지금은 옛 줄 그대로 — 아래 replace 는 할 일이 없다). 'prev' 는 이것을 위 옛 줄로 되돌린 2026-10-11~10-31 프롬프트이고,
+# 아래 변형들은 모두 그 'prev' 위에 덧댄다 (실험 당시와 같은 기준 — 결과를 그대로 재현할 수 있게).
+NEW_IMG_DESC = ('"description": "' + DESC_RULES + ". '이 이미지는'으로 시작하지 않고, 평가·감상 어휘와 '~로 보인다' 같은 추측은 쓰지 않는다\",")
+NEW_VID_DESC = ('"description": "' + DESC_RULES + ", 시간에 따른 변화(주 장면 1개와 시작→끝의 카메라·피사체 이동, 장면 전환). 줄거리는 쓰지 않는다. "
+                "'이 영상은'으로 시작하지 않고, 평가·감상 어휘와 '~로 보인다' 같은 추측은 쓰지 않는다\",")
+NEW_VID_KW = KW_FILM.replace("화면·자막·저작물명으로 알 수 있는 이야기 소재(범죄·결혼·전투·스포츠 등). 부리·손잡이 같은 세부 부분",
+                             "화면·자막·저작물명으로 알 수 있는 이야기 소재(범죄·결혼·전투·스포츠 등). 사람 이름(감독·배우·등장인물)과 부리·손잡이 같은 세부 부분")
+NEW_VID_BAN = ("★ 줄거리·사건 전개·등장인물의 역할은 쓰지 마세요. 설명·해시태그는 프레임에 실제로 보이는 대상·장소·행위·화면 특성\n"
+               "   (흑백, 자막, 구도 등)만으로 쓰고, 장르·연대·이야기 소재는 키워드에만 쓸 수 있습니다.")
+
 VARIANTS: dict[str, dict[str, Any]] = {
-    "prod": {},                                                              # 현행 그대로 (기준)
+    "prod": {"current": True},                                               # 지금 production 그대로
+    "prev": {},                                                              # 2026-10-31 이전 production (실험의 기준)
     "kwcat": {"kw": KW_CAT, "vid_ban": VID_BAN_CAT},                          # 키워드만 분류어 방식
     "descg": {"desc": (IMG_DESC_G, VID_DESC_G)},                              # 설명만 정답 지침 규칙
     "htg": {"ht": HT_G},                                                     # 해시태그만 정답 지침 규칙 + 표준 낱말
@@ -98,7 +109,12 @@ def build_prompts(variant: str) -> tuple[str, str, str]:
     from api.module.clip_extraction.vlm import prompts as P
     v = VARIANTS[variant]
     img, vid = P.USER_PROMPT, P._VIDEO_USER_TEMPLATE
+    if v.get("current"):
+        return img, vid, P._CONTEXT_LINE
     esc = lambda t: t.replace("{", "{{").replace("}", "}}")              # noqa: E731 — 영상 템플릿은 format 을 거친다
+    # 지금 production → 2026-10-31 이전 production ('prev')
+    img = img.replace(NEW_IMG_DESC, IMG_DESC)
+    vid = vid.replace(esc(NEW_VID_DESC), VID_DESC).replace(esc(NEW_VID_KW), KW1).replace(NEW_VID_BAN, VID_BAN)
     for name, base, desc in (("image", img, IMG_DESC), ("video", vid, VID_DESC)):
         assert KW1 in base and HT1 in base and desc in base, f"{name} 프롬프트가 바뀌었다 — 변형 조각을 다시 맞춰야 한다"
     assert VID_BAN in vid
