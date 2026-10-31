@@ -2576,20 +2576,32 @@ def _same_origin(request: Request) -> bool:
     return urlsplit(origin).netloc.lower() == (request.headers.get("host") or "").lower()
 
 
-# 시험 PC 에서는 로그인 없이 — 시험원이 같은 PC 의 브라우저로 여는 간소화 콘솔(/test)용.
-# 켜짐 조건: CONSOLE_NO_LOGIN (값이 없으면 WSL 에서만 켬 — 공개 서버는 기본 꺼짐) + 같은 PC(루프백)에서 온 요청 +
-# 프록시 머리말 없음(nginx 같은 앞단을 거친 요청은 루프백처럼 보여도 바깥 요청이다).
+# 간소화 콘솔(/test)은 로그인 없이 쓴다. CONSOLE_NO_LOGIN 으로 범위를 정한다:
+#   local (1·on·true·yes, 값이 없으면 WSL 에서 기본) — 같은 PC(루프백)에서 온 요청 + 프록시 머리말 없음 + 주소가 localhost 일 때만
+#                (nginx 같은 앞단을 거친 요청은 루프백처럼 보여도 바깥 요청이다 · DNS 리바인딩 차단)
+#   all (all·public·everyone) — 어디서 온 요청이든 로그인 없이 (공개 서버 — 2026-10-31 사용자 결정: 간소화 콘솔은 로그인을 쓰지 않는다)
+#   off (0·off·false·no, 값이 없고 WSL 이 아니면 기본) — 콘솔 로그인
+# 어느 경우든 다른 사이트에서 보낸 POST 는 막는다 (_same_origin).
 NO_LOGIN_ENV = "CONSOLE_NO_LOGIN"
 LOCAL_USER = "시험"
 _LOOPBACK = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
 _PROXY_HEADERS = ("x-forwarded-for", "x-real-ip", "forwarded", "x-forwarded-host")
 
 
-def no_login_enabled() -> bool:
+def no_login_mode() -> str:
+    """'local' | 'all' | 'off' — CONSOLE_NO_LOGIN (위 설명)."""
     v = (os.environ.get(NO_LOGIN_ENV) or "").strip().lower()
+    if v in ("all", "public", "everyone"):
+        return "all"
+    if v in ("1", "on", "true", "yes", "local"):
+        return "local"
     if v:
-        return v in ("1", "on", "true", "yes")
-    return CF.is_wsl()
+        return "off"
+    return "local" if CF.is_wsl() else "off"
+
+
+def no_login_enabled() -> bool:
+    return no_login_mode() != "off"
 
 
 def _client_host(request: Request) -> str:
@@ -2597,7 +2609,10 @@ def _client_host(request: Request) -> str:
 
 
 def _open_local(request: Request) -> bool:
-    if not no_login_enabled() or _client_host(request) not in _LOOPBACK:
+    mode = no_login_mode()
+    if mode == "all":
+        return True
+    if mode != "local" or _client_host(request) not in _LOOPBACK:
         return False
     if any(request.headers.get(h) for h in _PROXY_HEADERS):
         return False
@@ -2754,7 +2769,7 @@ async def console_logout(request: Request):
 
 @router.get("/test", include_in_schema=False)
 async def simple_console_page(request: Request):
-    """간소화 시험 콘솔 (시험 · 진행 · 결과·지표) — 시험 PC 에서는 로그인 없이, 그 밖에는 콘솔 로그인으로."""
+    """간소화 시험 콘솔 (시험 · 진행 · 결과·지표) — 로그인 없이 (CONSOLE_NO_LOGIN 범위 안), 그 밖에는 콘솔 로그인으로."""
     if _open_local(request):
         user, open_mode = LOCAL_USER, True
     else:

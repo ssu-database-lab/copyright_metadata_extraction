@@ -60,6 +60,26 @@ def test_open_local_refuses_without_flag_remote_proxy_or_foreign_host(console, m
     assert r.status_code == 403
 
 
+def test_all_mode_opens_test_page_and_api_from_anywhere(console, monkeypatch):
+    """CONSOLE_NO_LOGIN=all — 공개 서버에서도 간소화 콘솔을 로그인 없이 (다른 사이트의 POST 는 여전히 막는다)."""
+    c = _local(console, monkeypatch, host="203.0.113.7", flag="all")
+    hdr = {"Host": "150.230.114.9:5000"}
+    r = c.get("/api/test/status", headers=hdr)
+    assert r.status_code == 200 and r.json()["user"] == CA.LOCAL_USER
+    p = c.get("/test", headers=hdr, follow_redirects=False)
+    assert p.status_code == 200 and "열림=True" in p.text
+    assert c.get("/api/test/status", headers={**hdr, "X-Forwarded-For": "1.2.3.4"}).status_code == 200
+    r = c.post("/api/test/folder/peek", json={"kind": "contract", "path": "/x"},
+               headers={**hdr, "Origin": "http://evil.example"})
+    assert r.status_code == 403
+    r = c.post("/api/test/folder/peek", json={"kind": "nope", "path": "/x"},
+               headers={**hdr, "Origin": "http://150.230.114.9:5000"})
+    assert r.status_code == 400                                          # 같은 사이트의 POST 는 통과 (종류가 틀려 400)
+    for v in ("public", "everyone"):
+        monkeypatch.setenv(CA.NO_LOGIN_ENV, v)
+        assert CA.no_login_mode() == "all"
+
+
 def test_default_is_on_only_on_wsl(monkeypatch):
     monkeypatch.delenv(CA.NO_LOGIN_ENV, raising=False)
     monkeypatch.setattr(CF, "is_wsl", lambda: False)
@@ -68,6 +88,8 @@ def test_default_is_on_only_on_wsl(monkeypatch):
     assert CA.no_login_enabled() is True
     monkeypatch.setenv(CA.NO_LOGIN_ENV, "off")
     assert CA.no_login_enabled() is False
+    monkeypatch.setenv(CA.NO_LOGIN_ENV, "1")
+    assert CA.no_login_mode() == "local"                                  # "1" 은 예전처럼 같은 PC 에서만
 
 
 def test_simple_page_needs_login_when_not_local(console, monkeypatch):
