@@ -82,7 +82,7 @@ table.t tr.dim td{color:var(--mut)}
 .bar{height:10px;border-radius:5px;background:var(--track);overflow:hidden;position:relative}
 .bar i{display:block;height:100%;background:var(--acc);transition:width .4s}
 .bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--err)}
-.runsum{display:grid;grid-template-columns:minmax(0,2fr) repeat(4,minmax(0,1fr));gap:14px;align-items:center}
+.runsum{display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr));gap:14px;align-items:center}
 .runsum .k{font-size:12px;color:var(--mut)}.runsum .v{font-family:var(--f-mono);font-size:16px;font-weight:700}
 .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:12px}
 .split .tw,.split .log{height:470px}
@@ -619,8 +619,7 @@ function progHeadHTML(P){
       <div><div class="bar" style="margin:4px 0 6px"><i style="width:${(N.frac * 100).toFixed(1)}%"></i></div><div class="mono" style="font-size:12px">${nf(N.done)} / ${nf(N.tot)} 세트 · ${pct(N.frac)}</div></div>
       <div><div class="k">소요</div><div class="v">${dur(N.el)}</div></div>
       <div><div class="k">남은 시간 (약)</div><div class="v">${N.eta != null ? dur(N.eta) : '—'}</div></div>
-      <div><div class="k">실패</div><div class="v ${P.failed ? 'errc' : ''}">${nf(P.failed)}</div></div>
-      <div><div class="k">비용 (추정)</div><div class="v">${won(P.cost)}</div></div></div>
+      <div><div class="k">실패</div><div class="v ${P.failed ? 'errc' : ''}">${nf(P.failed)}</div></div></div>
     ${P.err && !N.term ? `<div class="pb" style="padding-top:0"><p class="msg err">${esc(P.err)}</p></div>` : ''}</section>`;
 }
 function progRowsHTML(P){
