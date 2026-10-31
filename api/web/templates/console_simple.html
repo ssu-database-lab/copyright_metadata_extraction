@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:,">
+<title>공유저작물 속성정보 추출 및 검증 시스템 {{ version or 'v1.0' }}</title>
+<script>try{var t=localStorage.getItem('console-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+{% raw %}
+<style>
+/* 간소화 시험 콘솔 — 시안 1 (콘솔 간소화). 화면 3개: 시험 · 진행 · 결과·지표. 어둡게/밝게 전환. */
+:root{--f-sans:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;--f-mono:"D2Coding","Consolas","JetBrains Mono","NanumGothicCoding",ui-monospace,monospace;--r:6px;--r2:8px}
+:root[data-theme=dark]{--bg:#0a0d10;--pane:#11151a;--pane2:#171c22;--th:#141a20;--line:#252d36;--line2:#323c47;--ink:#d3dae1;--ink2:#a3adba;--mut:#848f9d;--acc:#f5a524;--onacc:#0a0d10;--accs:rgba(245,165,36,.13);--acci:#f5b54a;--ok:#3ccf7a;--oks:rgba(60,207,122,.12);--err:#ff6b6b;--errs:rgba(255,107,107,.12);--warn:#ffd24a;--warns:rgba(255,210,74,.12);--info:#7ea6ff;--infos:rgba(126,166,255,.13);--focus:#7ea6ff;--inbg:#0d1115;--track:#1a2027;--logbg:#0c1014;--shade:rgba(0,0,0,.6);color-scheme:dark}
+:root[data-theme=light]{--bg:#f3f4f6;--pane:#fff;--pane2:#f5f6f8;--th:#eef0f3;--line:#d8dde3;--line2:#c3cbd4;--ink:#10151a;--ink2:#3e4853;--mut:#5d6874;--acc:#b86d00;--onacc:#fff;--accs:rgba(184,109,0,.1);--acci:#8a5200;--ok:#1d8048;--oks:rgba(29,128,72,.1);--err:#c22525;--errs:rgba(194,37,37,.09);--warn:#7d5c00;--warns:rgba(125,92,0,.1);--info:#2456b0;--infos:rgba(36,86,176,.09);--focus:#2f6fdb;--inbg:#fff;--track:#e5e8ec;--logbg:#fafbfc;--shade:rgba(16,21,26,.3);color-scheme:light}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:13.5px;line-height:1.5}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--acc)}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.mut{color:var(--mut)}.okc{color:var(--ok)}.errc{color:var(--err)}.warnc{color:var(--warn)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+[hidden]{display:none!important}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);background:var(--pane2);color:var(--ink);border-radius:var(--r);padding:6px 12px;cursor:pointer;white-space:nowrap;font-size:13px;text-decoration:none}
+.btn:hover:not([disabled]){border-color:var(--acc)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:var(--onacc);font-weight:700}
+.btn.big{padding:11px 26px;font-size:15px}
+.btn.sm{padding:3px 9px;font-size:12px}
+.btn.danger{border-color:var(--err);color:var(--err)}
+/* 상단 */
+.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:22px;padding:0 18px;height:52px;border-bottom:1px solid var(--line);background:var(--pane)}
+.sys{font-weight:700;white-space:nowrap}.sys .v{font-family:var(--f-mono);color:var(--acc);margin-left:6px}
+.nav{display:flex;gap:2px;height:100%}
+.nav button{border:0;background:none;padding:0 16px;cursor:pointer;color:var(--ink2);border-bottom:2px solid transparent;font-size:14px;white-space:nowrap}
+.nav button[aria-current=page]{color:var(--ink);border-bottom-color:var(--acc);font-weight:700}
+.nav .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--acc);margin-left:6px;vertical-align:1px;animation:pl 1.4s infinite}
+@keyframes pl{50%{opacity:.3}}
+.lights{margin-left:auto;display:flex;gap:14px;align-items:center;font-size:12px;color:var(--ink2);font-family:var(--f-mono);white-space:nowrap}
+.led{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--mut);margin-right:5px;vertical-align:1px}
+.led.ok{background:var(--ok)}.led.err{background:var(--err)}.led.run{background:var(--acc)}
+.body{padding:16px 18px 40px;display:flex;flex-direction:column;gap:14px;max-width:1720px;margin:0 auto}
+.scr{display:flex;flex-direction:column;gap:14px}
+/* 판 */
+.pane{background:var(--pane);border:1px solid var(--line);border-radius:var(--r2);min-width:0}
+.ph{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line)}
+.ph .t{font-weight:700;font-size:14px}.ph .r{margin-left:auto;font-size:12px;color:var(--mut);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pb{padding:12px 14px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:12px;padding:1px 8px;border-radius:10px;border:1px solid var(--line2);background:var(--pane2);color:var(--ink2);white-space:nowrap}
+.chip.warn{border-color:var(--warn);color:var(--warn)}
+.note{font-size:12px;color:var(--mut);margin:6px 0 0}
+.msg{margin:6px 0 0;font-size:12.5px}.msg.err{color:var(--err)}.msg.warn{color:var(--warn)}
+.role{font-size:12px;padding:2px 8px;border-radius:5px;display:inline-block}
+.role.use{background:var(--accs);color:var(--acci)}.role.skip{background:var(--pane2);color:var(--mut);border:1px dashed var(--line2)}
+.tw{overflow:auto}
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t th{text-align:left;font-weight:600;color:var(--ink2);background:var(--th);padding:6px 9px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:1;white-space:nowrap}
+table.t td{padding:5px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t td.n,table.t th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+table.t td.nw{white-space:nowrap}
+table.t tr.tot td{font-weight:700;background:var(--pane2)}
+table.t tr.dim td{color:var(--mut)}
+.ell{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{padding:36px 14px;text-align:center;color:var(--mut)}
+.empty b{display:block;color:var(--ink2);margin-bottom:4px}
+/* 시험 화면 */
+.ttabs{display:flex;gap:8px}
+.ttab{flex:1;text-align:left;border:1px solid var(--line);background:var(--pane);border-radius:var(--r2);padding:10px 14px;cursor:pointer}
+.ttab .c{font-family:var(--f-mono);color:var(--acc);font-weight:700;margin-right:8px}
+.ttab small{display:block;color:var(--mut);font-size:12px}
+.ttab[aria-selected=true]{border-color:var(--acc);box-shadow:inset 0 -3px 0 var(--acc)}
+.prow{display:grid;grid-template-columns:150px minmax(0,1fr) auto auto 230px;gap:8px;align-items:center;padding:7px 0}
+.prow+.prow{border-top:1px dashed var(--line)}
+.plab{font-weight:600}.plab small{display:block;font-weight:400;color:var(--mut);font-size:11.5px}
+.pin{width:100%;padding:7px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--inbg);color:var(--ink);font-size:12.5px;font-family:var(--f-mono)}
+.pstat{font-size:12px;min-width:0}
+.prev3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.prev3 .tw{height:320px}
+.prev3 .ell{max-width:200px}
+.runbar{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 16px;background:var(--pane2);border-radius:var(--r2)}
+/* 진행 */
+.bar{height:10px;border-radius:5px;background:var(--track);overflow:hidden;position:relative}
+.bar i{display:block;height:100%;background:var(--acc);transition:width .4s}
+.bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--err)}
+.runsum{display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr));gap:14px;align-items:center}
+.runsum .k{font-size:12px;color:var(--mut)}.runsum .v{font-family:var(--f-mono);font-size:16px;font-weight:700}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:12px}
+.split .tw,.split .log{height:470px}
+.log{font-family:var(--f-mono);font-size:12px;line-height:1.55;overflow:auto;padding:8px 12px;background:var(--logbg);border-radius:0 0 var(--r2) var(--r2)}
+.log .ln{white-space:pre-wrap;overflow-wrap:anywhere}
+.log .ts{color:var(--mut)}.log .lvb{font-weight:700;color:var(--ok)}.log .L-WARNING .lvb{color:var(--warn)}.log .L-ERROR .lvb,.log .L-CRITICAL .lvb{color:var(--err)}
+.log .L-ERROR .m,.log .L-CRITICAL .m{color:var(--err)}
+.log .cb{color:var(--mut)}.log .id{color:var(--acc)}.log .cont{padding-left:24px;color:var(--mut)}
+.st{font-size:12px;padding:1px 8px;border-radius:9px;white-space:nowrap;display:inline-block}
+.st.ok{background:var(--oks);color:var(--ok)}.st.run{background:var(--accs);color:var(--acci)}.st.wait{background:var(--pane2);color:var(--mut)}.st.bad{background:var(--errs);color:var(--err)}
+.done-card{display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:space-between;padding:18px 20px;border:2px solid var(--ok);border-radius:var(--r2);background:var(--oks)}
+.done-card.bad{border-color:var(--err);background:var(--errs)}
+.done-card h3{margin:0;font-size:18px;color:var(--ok)}.done-card.bad h3{color:var(--err)}
+.done-card p{margin:3px 0 0;color:var(--ink2)}
+/* 결과 */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:var(--r2);padding:10px 12px;background:var(--pane2)}
+.kpi .l{font-size:12px;color:var(--mut)}.kpi .v{font-size:22px;font-weight:700;font-family:var(--f-mono);font-variant-numeric:tabular-nums}.kpi .s{font-size:11.5px;color:var(--mut)}
+.kpi.good{border-color:var(--ok)}.kpi.good .v{color:var(--ok)}.kpi.bad{border-color:var(--err)}.kpi.bad .v{color:var(--err)}
+.runsel{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;color:var(--ink2);font-weight:600}
+.runsel select,.filters select{padding:4px 8px;border:1px solid var(--line2);border-radius:var(--r);background:var(--inbg);color:var(--ink);font-family:var(--f-mono);font-size:12px;font-weight:400;max-width:520px}
+.filters{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12.5px;padding:8px 14px;border-bottom:1px solid var(--line)}
+.filters input[type=search]{padding:4px 8px;border:1px solid var(--line2);border-radius:var(--r);background:var(--inbg);width:170px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-left:auto}
+.grid-v{border-collapse:collapse;font-size:12px;width:100%}
+.grid-v th,.grid-v td{border-bottom:1px solid var(--line);padding:4px 6px;white-space:nowrap}
+.grid-v th{background:var(--th);color:var(--ink2);font-weight:600;position:sticky;top:0;z-index:1;text-align:left}
+.grid-v td.m,.grid-v th.m{text-align:center;width:24px;padding:4px 2px;font-family:var(--f-mono)}
+.grid-v th.m small{display:block;font-family:var(--f-sans);font-weight:400;font-size:10.5px;color:var(--mut)}
+.vm{display:inline-block;min-width:17px;height:17px;line-height:17px;border-radius:4px;font-size:11px;font-weight:700;text-align:center}
+.vm.ok{background:var(--oks);color:var(--ok)}.vm.err{background:var(--errs);color:var(--err)}.vm.fn{background:var(--warns);color:var(--warn)}.vm.fp{background:var(--infos);color:var(--info)}.vm.warn{background:var(--warns);color:var(--warn)}.vm.na{color:var(--mut)}
+.gridwrap{max-height:620px}
+.pager{display:flex;gap:6px;align-items:center;justify-content:flex-end;padding:8px 14px;font-size:12.5px;color:var(--ink2)}
+.files{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+/* 창 · 알림 */
+.modal-bk{position:fixed;inset:0;background:var(--shade);display:flex;align-items:center;justify-content:center;z-index:40}
+.modal{width:640px;max-width:94vw;background:var(--pane);border:1px solid var(--line);border-radius:var(--r2);box-shadow:0 10px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;max-height:86vh}
+.modal .pb{overflow:auto}
+.fl{font-family:var(--f-mono);font-size:12.5px}
+.fl button{display:block;width:100%;text-align:left;border:0;background:none;padding:4px 8px;border-radius:5px;cursor:pointer;color:var(--ink)}
+.fl button:hover{background:var(--accs)}
+.fl .sec{font-family:var(--f-sans);font-size:11.5px;color:var(--mut);margin:8px 0 2px}
+.modal .ft{display:flex;gap:8px;justify-content:flex-end;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:13px;z-index:60;max-width:80vw}
+#toast.err{background:var(--err);color:#fff}
+@media (max-width:1150px){.prev3,.split{grid-template-columns:1fr}.runsum{grid-template-columns:1fr 1fr}.prow{grid-template-columns:120px minmax(0,1fr) auto auto}.prow .pstat{grid-column:1/-1}}
+</style>
+{% endraw %}
+</head>
+<body>
+<header class="top">
+  <span class="sys">공유저작물 속성정보 추출 및 검증 시스템<span class="v">{{ version or 'v1.0' }}</span></span>
+  <nav class="nav" aria-label="화면" id="nav">
+    <button type="button" data-act="go" data-v="test" aria-current="page">시험</button>
+    <button type="button" data-act="go" data-v="progress">진행<span class="dot" id="navDot" hidden></span></button>
+    <button type="button" data-act="go" data-v="results">결과·지표</button>
+  </nav>
+  <span class="lights" id="lights"></span>
+  <button type="button" class="btn sm" id="themeBtn" data-act="theme"></button>
+  {% if not open_mode %}<a class="btn sm" href="/console/logout">로그아웃</a>{% endif %}
+</header>
+<main class="body">
+  <section class="scr" id="scr-test" aria-label="시험"></section>
+  <section class="scr" id="scr-progress" aria-label="진행" hidden></section>
+  <section class="scr" id="scr-results" aria-label="결과·지표" hidden></section>
+</main>
+<div id="modal"></div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+{% raw %}
+<script>
+'use strict';
+/* ====================================================================
+   간소화 시험 콘솔 — 시험 절차서(Te-1 · Te-2)대로 한 시험씩.
+   API 는 전체 콘솔과 같다: /api/test/* (folder/peek · folder/scan · folder/start · runs/*).
+   ==================================================================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const enc = encodeURIComponent;
+const KEYS = [
+  [1,'work_title','저작물명','T-001'],[2,'file_name','파일명','T-001'],[3,'work_type','저작물유형','T-001'],[4,'creator','저작자','T-001'],[5,'copyright_holder','저작권자','T-001'],
+  [6,'reproduction_right','복제권','T-001'],[7,'performance_right','공연권','T-001'],[8,'public_transmission_right','공중송신권','T-001'],[9,'exhibition_right','전시권','T-001'],
+  [10,'distribution_right','배포권','T-001'],[11,'rental_right','대여권','T-001'],[12,'derivative_work_right','2차적저작물작성권','T-001'],[13,'other_rights','기타 권리','T-001'],
+  [14,'license_start_date','이용허락 시작일','T-001'],[15,'license_end_date','이용허락 종료일','T-001'],[16,'contract_validity_period','계약 유효기간','T-001'],
+  [17,'keywords','키워드','T-002'],[18,'hashtags','해시태그','T-002'],[19,'file_format','파일포맷','T-002'],[20,'file_size','파일크기','T-002'],
+  [21,'resolution','해상도','T-002'],[22,'description','설명','T-002'],[23,'file_hash','Hash 데이터','T-002']
+].map(([no, key, label, test]) => ({no, key, label, test}));
+const SHORT = {work_title:'제목',file_name:'파일명',work_type:'유형',creator:'저작자',copyright_holder:'권리자',reproduction_right:'복제',performance_right:'공연',public_transmission_right:'공중송신',exhibition_right:'전시',distribution_right:'배포',rental_right:'대여',derivative_work_right:'2차적',other_rights:'기타',license_start_date:'시작일',license_end_date:'종료일',contract_validity_period:'유효기간',keywords:'키워드',hashtags:'해시태그',file_format:'포맷',file_size:'크기',resolution:'해상도',description:'설명',file_hash:'해시'};
+// 시험 이름·순서는 시험 절차서 그대로 (내부 코드 T-001 · T-002)
+const TESTS = ['T-001', 'T-002'];
+const TN = t => ({'T-001': 'Te-1', 'T-002': 'Te-2'})[t] || t || '';
+const TFULL = {'T-001': '공유저작물 속성정보 정확도', 'T-002': '멀티모달 저작물 속성정보 정확도'};
+// 채점 항목 = 평가기와 같은 범위 — 최종 절차서: Te-1 은 1~16번, Te-2 는 1~23번 (기타 권리는 정답이 없어 제외)
+const scopeKeys = test => test === 'T-002' ? KEYS.slice() : KEYS.filter(K => K.test === 'T-001');
+const scopeTxt = test => { const k = scopeKeys(test); return `${k[0].no}~${k[k.length - 1].no}번 항목`; };
+const INPUT = {'T-001': '계약서', 'T-002': '저작물'};
+const SRC = {contract: {label: '계약서 폴더', short: '계약서', kind: 'dir'}, work: {label: '저작물 폴더', short: '저작물', kind: 'dir'}, answers: {label: '정답 파일', short: '정답', kind: 'file'}};
+const KINDS = ['contract', 'work', 'answers'];
+const MEDIA_KO = {text: '어문', image: '이미지', video: '영상'};
+const STATE_KO = {queued: '대기', running: '진행 중', scoring: '채점 중', done: '완료', cancelled: '취소됨', error: '오류', interrupted: '중단됨'};
+const TERMINAL = new Set(['done', 'cancelled', 'error', 'interrupted']);
+const VM = {TP: ['✓', '일치', 'ok'], EMPTY_OK: ['✓', '빈 값 일치', 'ok'], PARTIAL: ['◐', '부분 일치', 'warn'], WRONG: ['✕', '오답 (FP+FN)', 'err'],
+  FP: ['+', '과잉 예측 (FP)', 'fp'], FN: ['−', '누락 (FN)', 'fn'], NA: ['·', '해당 없음', 'na']};
+const COMPS = ['시스템','업로드','문맥','OCR','LLM','NER','통합','VLM','API','측정','채점'];
+const ICON_DL = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+const svgI = d => `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px">${d}</svg>`;
+const ICON_DIR = svgI('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>');
+const ICON_FILE = svgI('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>');
+const RUNLOG_CAP = 3000, PAGE = 50, SCAN_TTL_MS = 25 * 60 * 1000, LS_PATHS = 'simple-console-paths';
+
+/* ---------- 표시 ---------- */
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isNum = x => typeof x === 'number' && isFinite(x);
+const pct = (x, d) => isNum(x) ? (x * 100).toFixed(d == null ? 1 : d) + '%' : '—';
+const nf = n => isNum(n) ? Math.round(n).toLocaleString('ko-KR') : '—';
+const won = x => isNum(x) ? '₩' + (x >= 100 ? Math.round(x).toLocaleString('ko-KR') : x.toLocaleString('ko-KR', {maximumFractionDigits: 1})) : '—';
+const secs = x => isNum(x) ? (x < 100 ? x.toFixed(1) : Math.round(x).toLocaleString('ko-KR')) + '초' : '—';
+const dur = s => { if(!isNum(s) || s < 0) return '—'; s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h ? `${h}시간 ${m}분` : m ? `${m}분 ${x}초` : `${x}초`; };
+const size = b => !isNum(b) ? '—' : b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+function toMs(t){ if(t == null || t === '') return null; if(typeof t === 'number') return t < 1e12 ? t * 1000 : t; const v = Date.parse(/^\d{4}-\d\d-\d\d \d/.test(String(t)) ? String(t).replace(' ', 'T') : String(t)); return isNaN(v) ? null : v; }
+function fmtWhen(t){ const ms = toMs(t); if(ms == null) return '—'; const d = new Date(ms), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+const fv = (o, ...ks) => { for(const k of ks){ if(o && o[k] != null) return o[k]; } return null; };
+const baseName = p => String(p || '').split(/[\\/]/).pop();
+// 로그에서는 경로를 빼고 파일 이름만 보인다
+function scrub(s){ return String(s == null ? '' : s).replace(/(?<=^|[\s=(:'"])(?:[A-Za-z]:)?(?:[^\s\\/·,'"()]*[\\/]){2,}([^\s\\/·,'"()]+)/g, '$1').replace(/프레임 v\d+\b/g, '프레임 표준').replace(/frame_schedule=v\d+/g, 'frame_schedule=표준'); }
+
+/* ---------- 로그 줄 (서버 형식 `HH:MM:SS LEVEL [세트] [구성요소] 메시지`) ---------- */
+const normLv = x => { const s = String(x || '').toUpperCase(); return s === 'WARN' ? 'WARNING' : s === 'FATAL' ? 'CRITICAL' : s; };
+const LV_RANK = {DEBUG: 10, INFO: 20, WARNING: 30, ERROR: 40, CRITICAL: 50};
+const lvRank = lv => LV_RANK[lv] || 20;
+function hms(t){ if(typeof t === 'string'){ const m = t.match(/(\d\d:\d\d:\d\d)/); if(m) return m[1]; } const ms = toMs(t); if(ms == null) return ''; const d = new Date(ms), p = n => String(n).padStart(2, '0'); return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+const LOG_RX = /^(?:(\d{4}-\d\d-\d\d)[ T])?(\d\d:\d\d:\d\d)(?:[,.]\d+)?\s+(DEBUG|INFO|WARNING|WARN|ERROR|CRITICAL|FATAL)\s+([\s\S]*)$/;
+function parseLog(raw, ev){
+  const o = {raw: String(raw == null ? '' : raw), ts: '', lv: '', comp: '', set: '', msg: '', cont: false};
+  let rest = o.raw;
+  const m = rest.match(LOG_RX);
+  if(m){ o.ts = m[2]; o.lv = normLv(m[3]); rest = m[4]; }
+  const ec = ev && ev.component && ev.component !== '-' ? String(ev.component) : '';
+  let b = rest.match(/^\[([^\]\s]{1,40})\][ \t]*/);
+  if(b && !COMPS.includes(b[1]) && b[1] !== ec){ o.set = b[1]; rest = rest.slice(b[0].length); b = rest.match(/^\[([^\]\s]{1,16})\][ \t]*/); }
+  if(b && (COMPS.includes(b[1]) || (ec && b[1] === ec))){ o.comp = b[1]; rest = rest.slice(b[0].length); }
+  o.msg = rest;
+  if(ev){ if(ev.level) o.lv = normLv(ev.level); if(ec) o.comp = ec; if(ev.set_id != null && ev.set_id !== '') o.set = String(ev.set_id); if(!o.ts && ev.ts != null) o.ts = hms(ev.ts); }
+  if(o.set === '-') o.set = '';
+  o.cont = !m && !(ev && ev.level);
+  o.text = o.comp === 'API' ? o.msg : scrub(o.msg);
+  return o;
+}
+function inheritLog(o, prev){ if(o.cont && prev){ o.lv = o.lv || prev.lv; o.set = o.set || prev.set; o.comp = o.comp || prev.comp; } if(!o.lv) o.lv = 'INFO'; return o; }
+function logLineHTML(o){
+  const lv = o.lv || 'INFO', msg = esc(o.text != null ? o.text : o.msg);
+  if(o.cont) return `<div class="ln cont L-${lv}">${msg}</div>`;
+  return `<div class="ln L-${lv}"><span class="ts">${esc(o.ts || '--:--:--')}</span> <span class="lvb">${lv === 'WARNING' ? 'WARN' : lv === 'CRITICAL' ? 'CRIT' : lv}</span> ${o.set ? `<span class="id">[${esc(o.set)}]</span> ` : ''}${o.comp ? `<span class="cb">[${esc(o.comp)}]</span> ` : ''}<span class="m">${msg}</span></div>`;
+}
+
+/* ---------- API ---------- */
+class ApiError extends Error{ constructor(status, data, msg){ super(msg); this.status = status; this.data = data; } }
+function errText(status, data){
+  const code = data && (data.error || data.code);
+  if(status === 0) return '서버에 연결할 수 없습니다. 서버가 켜져 있는지 확인하세요.';
+  if(status === 409 || code === 'busy') return '다른 시험이 진행 중입니다. 진행 화면에서 확인하세요.';
+  let m = data && (data.message || data.detail || data.error);
+  if(m && typeof m === 'object') m = JSON.stringify(m);
+  if(status === 401) return '로그인이 필요합니다.';
+  if(status === 404) return m && m !== 'not_found' ? m : '찾을 수 없습니다.';
+  if(status >= 500) return '서버 오류가 발생했습니다' + (m ? ' — ' + m : '') + '.';
+  return m || `요청이 실패했습니다 (HTTP ${status}).`;
+}
+async function api(path, opt){
+  opt = opt || {};
+  const o = {credentials: 'same-origin', headers: {Accept: 'application/json'}, method: opt.method || 'GET'};
+  if(opt.json !== undefined){ o.method = opt.method || 'POST'; o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(opt.json); }
+  let r;
+  try{ r = await fetch('/api/test' + path, o); }catch(e){ throw new ApiError(0, null, errText(0, null)); }
+  let data = null; const txt = await r.text();
+  if(txt){ try{ data = JSON.parse(txt); }catch(e){ data = {message: txt.slice(0, 300)}; } }
+  if(r.status === 401){ location.href = '/console/login?next=/test'; }
+  if(!r.ok) throw new ApiError(r.status, data, errText(r.status, data));
+  return data;
+}
+async function apiText(path){
+  const r = await fetch('/api/test' + path, {credentials: 'same-origin'});
+  if(!r.ok) throw new ApiError(r.status, null, errText(r.status, null));
+  return r.text();
+}
+const runPath = id => '/runs/' + enc(id);
+const dlHref = (id, name) => '/api/test' + runPath(id) + '/download/' + enc(name);
+
+/* 실행 이벤트 (SSE, ?after=seq 로 이어 받기) */
+class RunStream{
+  constructor(runId, onEvent, onEnd){ this.runId = runId; this.seq = 0; this.onEvent = onEvent; this.onEnd = onEnd; this.closed = false; this.fails = 0; this.open(); }
+  open(){
+    if(this.closed) return;
+    const es = new EventSource('/api/test' + runPath(this.runId) + '/stream?after=' + this.seq);
+    this.es = es;
+    es.onopen = () => { this.fails = 0; };
+    es.onmessage = e => {
+      let ev; try{ ev = JSON.parse(e.data); }catch(_){ return; }
+      if(isNum(ev.seq)){ if(ev.seq <= this.seq && ev.type !== 'closed') return; this.seq = ev.seq; }
+      try{ this.onEvent(ev); }catch(err){ console.warn('event', err); }
+      if(ev.type === 'closed') this.finish(ev);
+    };
+    es.onerror = () => { es.close(); if(this.closed) return; this.fails++; setTimeout(() => this.check(), Math.min(10000, 800 * Math.pow(1.7, this.fails))); };
+  }
+  async check(){
+    if(this.closed) return;
+    try{ const run = await api(runPath(this.runId)); if(TERMINAL.has(run.state) && this.fails >= 2){ this.finish({type: 'closed', state: run.state}); return; } this.open(); }
+    catch(e){ if(e.status === 404){ this.finish({type: 'closed', state: 'missing'}); return; } setTimeout(() => this.check(), 3000); }
+  }
+  finish(ev){ if(this.closed) return; this.closed = true; if(this.es) this.es.close(); if(this.onEnd) this.onEnd(ev); }
+  close(){ this.closed = true; if(this.es) this.es.close(); }
+}
+
+/* ---------- 상태 ---------- */
+function loadPaths(){
+  const empty = () => ({contract: '', work: '', answers: ''});
+  try{ const v = JSON.parse(localStorage.getItem(LS_PATHS) || '{}'); return {'T-001': {...empty(), ...(v['T-001'] || {})}, 'T-002': {...empty(), ...(v['T-002'] || {})}}; }
+  catch(e){ return {'T-001': empty(), 'T-002': empty()}; }
+}
+function savePaths(){ try{ localStorage.setItem(LS_PATHS, JSON.stringify(S.paths)); }catch(e){} }
+const S = {
+  screen: 'test', status: null, test: 'T-001', paths: loadPaths(),
+  peek: {}, peekErr: {}, peekBusy: {},              // '<test>:<kind>' → 미리보기
+  scan: {}, scanErr: {}, scanBusy: {},              // test → 짝 맞춤 결과
+  starting: false, startErr: null,
+  prog: null,
+  res: {runs: null, runId: null, run: null, metrics: null, mErr: null, items: [], total: 0, offset: 0, onlyBad: false, failed: false, q: '', loading: false, setsErr: null},
+  fb: null
+};
+const pk = (t, k) => t + ':' + k;
+const activeRuns = () => ((S.status && S.status.active && S.status.active.batches) || []);
+
+/* ---------- 화면 전환 · 공통 ---------- */
+function go(screen){
+  S.screen = screen;
+  for(const id of ['test', 'progress', 'results']) $('#scr-' + id).hidden = id !== screen;
+  for(const b of document.querySelectorAll('#nav button')){ if(b.dataset.v === screen) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
+  try{ history.replaceState(null, '', '#' + screen); }catch(e){}
+  if(screen === 'test') renderTest();
+  else if(screen === 'progress') enterProgress();
+  else enterResults();
+  window.scrollTo(0, 0);
+}
+let toastT = null;
+function toast(msg, isErr){ const el = $('#toast'); el.textContent = msg; el.className = isErr ? 'err' : ''; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, isErr ? 5200 : 2800); }
+function themeLabel(){ const light = document.documentElement.getAttribute('data-theme') === 'light'; $('#themeBtn').textContent = light ? '☾ 어둡게' : '☀ 밝게'; $('#themeBtn').title = light ? '어두운 화면으로' : '밝은 화면으로'; }
+function toggleTheme(){ const r = document.documentElement, light = r.getAttribute('data-theme') !== 'light'; r.setAttribute('data-theme', light ? 'light' : 'dark'); try{ localStorage.setItem('console-theme', light ? 'light' : 'dark'); }catch(e){} themeLabel(); }
+async function loadStatus(){
+  try{ S.status = await api('/status'); }catch(e){ S.status = null; }
+  const svc = S.status && S.status.services && S.status.services.dashscope, act = activeRuns();
+  $('#lights').innerHTML = `<span><span class="led ${svc === 'ok' ? 'ok' : svc === 'fail' ? 'err' : ''}"></span>Alibaba API ${svc === 'ok' ? '정상' : svc === 'fail' ? '응답 없음' : '확인 중'}</span>` +
+    (act.length ? `<span><span class="led run"></span>${esc(act.map(a => TN(a.test)).join(' · '))} 진행 중</span>` : '');
+  $('#navDot').hidden = !act.length;
+  if(S.screen === 'test') patchStartBar();
+}
+
+/* ======================================================================
+   1 · 시험 — 경로 셋 · 미리보기 셋 · 추출 및 검증
+   ====================================================================== */
+function roleHTML(t, k){
+  if(k === 'answers') return `<span class="role use">채점 — ${scopeTxt(t)}</span>`;
+  if(t === 'T-001') return k === 'contract' ? `<span class="role use">처리 대상 · ${scopeTxt(t)}</span>` : '<span class="role skip">등록만 — Te-1 에서는 처리하지 않음</span>';
+  return k === 'work' ? '<span class="role use">처리 대상 · 17~23번 항목</span>' : '<span class="role use">1~16번 항목 — Te-1 결과 사용, 없으면 처리</span>';
+}
+function peekCount(p, k){
+  if(!p) return '';
+  if(k === 'answers') return `${nf(p.n)}세트 · ${esc((p.format || '').toUpperCase())}`;
+  const m = k === 'work' ? Object.entries(p.by_media || {}).map(([a, n]) => `${MEDIA_KO[a] || a} ${nf(n)}`).join(' · ') : Object.entries(p.by_ext || {}).slice(0, 3).map(([a, n]) => `${a.toUpperCase()} ${nf(n)}`).join(' · ');
+  return `${nf(p.n_files)}개${m ? ' · ' + m : ''}`;
+}
+function pathRowHTML(t, k){
+  const v = S.paths[t][k], p = S.peek[pk(t, k)], busy = S.peekBusy[pk(t, k)], err = S.peekErr[pk(t, k)], D = SRC[k];
+  const stat = busy ? '<span class="mut">불러오는 중…</span>' : err ? `<span class="errc">${esc(err)}</span>` : p ? `<b class="okc">✓</b> ${peekCount(p, k)}` : v ? '<span class="mut">불러오기 전</span>' : '<span class="mut">경로 없음</span>';
+  return `<div class="prow">
+    <label class="plab" for="p-${k}">${D.label}<small>${D.kind === 'file' ? '*.jsonl · *.json · *.csv · *.xlsx' : '하위 폴더 포함'}</small></label>
+    <input id="p-${k}" class="pin" data-bind="path" data-k="${k}" value="${esc(v)}" spellcheck="false" autocomplete="off" placeholder="${D.kind === 'file' ? '예: E:\\시험자료\\정답\\gold.jsonl' : '예: E:\\시험자료\\' + D.short}">
+    <button type="button" class="btn" data-act="browse" data-k="${k}">찾아보기</button>
+    <button type="button" class="btn${p ? '' : ' pri'}" id="load-${k}" data-act="load" data-k="${k}"${v && !busy ? '' : ' disabled'}>불러오기</button>
+    <span class="pstat" id="stat-${k}">${stat}</span></div>`;
+}
+function previewHTML(t, k){
+  const p = S.peek[pk(t, k)], D = SRC[k];
+  if(!p) return `<section class="pane" id="prev-${k}"><div class="ph"><span class="t">${D.short}</span></div><div class="empty">${S.peekBusy[pk(t, k)] ? '불러오는 중…' : `${D.label} 경로를 넣고 「불러오기」를 누르면<br>여기에 목록이 나옵니다`}</div></section>`;
+  let chips = '', table = '';
+  if(k === 'answers'){
+    chips = `<span class="chip">세트 ${nf(p.n)}</span><span class="chip">계약서 정답(1~16) ${nf(p.n_with_contract_keys)}</span><span class="chip">저작물 정답(17~23) ${nf(p.n_with_work_keys)}</span>` +
+      (p.n_problems ? `<span class="chip warn" title="${esc((p.problems || []).join('\n'))}">확인 필요 ${nf(p.n_problems)}건</span>` : '') +
+      (p.missing_columns && p.missing_columns.length ? `<span class="chip warn" title="${esc(p.missing_columns.join(', '))}">없는 열 ${p.missing_columns.length}개</span>` : '');
+    table = `<table class="t"><thead><tr><th>세트 ID</th><th>저작물명</th><th>유형</th><th class="n">1~16</th><th class="n">17~23</th></tr></thead><tbody>${(p.items || []).map(r =>
+      `<tr><td class="mono nw">${esc(r.set_id)}</td><td class="ell" title="${esc(r.work_title || '')}">${esc(r.work_title || '—')}</td><td class="nw">${esc(r.work_type || '—')}</td><td class="n">${nf(r.n_contract_keys)}/${p.n_contract_keys}</td><td class="n">${nf(r.n_work_keys)}/${p.n_work_keys}</td></tr>`).join('')}</tbody></table>`;
+  } else {
+    chips = (k === 'work' ? Object.entries(p.by_media || {}).map(([a, n]) => `<span class="chip">${MEDIA_KO[a] || a} ${nf(n)}</span>`).join('') : '') +
+      Object.entries(p.by_ext || {}).slice(0, 5).map(([a, n]) => `<span class="chip">${esc(a.toUpperCase())} ${nf(n)}</span>`).join('') +
+      `<span class="chip">세트 ID ${nf(p.n_ids)}</span>` + (p.n_no_id ? `<span class="chip warn" title="파일 이름(또는 바로 위 폴더 이름)에 5~8자리 숫자가 없습니다">세트 ID 없음 ${nf(p.n_no_id)}</span>` : '');
+    table = `<table class="t"><thead><tr><th>세트 ID</th><th>${k === 'contract' ? '계약서' : '저작물'} 파일</th>${k === 'work' ? '<th>유형</th>' : ''}<th class="n">크기</th></tr></thead><tbody>${(p.items || []).map(r =>
+      `<tr><td class="mono nw">${r.set_id ? esc(r.set_id) : '<span class="warnc">—</span>'}</td><td class="ell" title="${esc((r.dir ? r.dir + '\\' : '') + r.name)}">${esc(r.name)}</td>${k === 'work' ? `<td class="nw">${esc(MEDIA_KO[r.media] || r.media || '')}</td>` : ''}<td class="n">${size(r.size)}</td></tr>`).join('')}</tbody></table>`;
+  }
+  const n = k === 'answers' ? p.n : p.n_files;
+  return `<section class="pane" id="prev-${k}"><div class="ph"><span class="t">${D.short}</span><span class="r">${peekCount(p, k)}</span></div>
+    <div class="pb" style="padding-bottom:6px">${roleHTML(t, k)}<div class="chips" style="margin-top:6px">${chips}</div></div>
+    <div class="tw">${table}</div><p class="note" style="padding:0 14px 10px">${p.truncated ? `처음 ${nf((p.items || []).length)}개 표시 · 전체 ${nf(n)}개` : `${nf(n)}개 전부 표시`}</p></section>`;
+}
+function startBarHTML(){
+  const t = S.test, L = KINDS.map(k => S.peek[pk(t, k)]), act = activeRuns();
+  const missing = KINDS.filter((k, i) => !L[i]).map(k => SRC[k].label);
+  const sc = S.scan[t], v = sc && sc.view;
+  let info;
+  if(missing.length) info = `<span class="mut">${esc(missing.join(', '))}을(를) 불러오면 시작할 수 있습니다</span>`;
+  else if(S.scanBusy[t]) info = '<span class="mut">세트 짝을 맞추는 중…</span>';
+  else if(S.scanErr[t]) info = `<span class="errc">${esc(S.scanErr[t])}</span>`;
+  else if(v){
+    const media = Object.entries(v.media || {}).map(([a, n]) => `${MEDIA_KO[a] || a} ${nf(n)}`).join(' · ');
+    const probs = [v.n_missing ? `${INPUT[t]} 파일 없는 정답 ${nf(v.n_missing)}` : '', v.n_unkeyed ? `정답에 없는 파일 ${nf(v.n_unkeyed)}` : '', v.n_duplicates ? `같은 ID 파일 여럿 ${nf(v.n_duplicates)}` : '', v.n_no_id ? `세트 ID 없는 파일 ${nf(v.n_no_id)}` : ''].filter(Boolean);
+    info = `<b>${TN(t)} ${TFULL[t]}</b> — ${INPUT[t]} ${nf(v.n_sets)}건 처리${t === 'T-002' && media ? ` (${media})` : ''} · ${scopeTxt(t)} 채점
+      <div class="note" style="margin:2px 0 0">정답 있는 세트 ${nf(v.n_scored)}${t === 'T-002' ? ` · 계약서 짝 ${nf(v.paired)}` : ''}${v.estimate ? ` · 예상 ${dur(v.estimate.sec)} · ${won(v.estimate.krw)} (작업자 ${nf(v.estimate.workers)})` : ''}</div>
+      ${t === 'T-002' && v.contract_items ? contractPlanHTML(v.contract_items) : ''}
+      ${probs.length ? `<div class="msg warn">확인: ${esc(probs.join(' · '))}${v.missing && v.missing.length ? ` — 예: ${esc(v.missing.slice(0, 3).map(x => x.set_id).join(', '))}` : ''}</div>` : ''}`;
+  } else info = '<span class="mut">세트 짝을 맞추는 중…</span>';
+  const busyOther = act.length > 0;
+  const can = !missing.length && v && v.n_sets > 0 && !S.starting && !busyOther && !S.scanBusy[t];
+  return `<div class="runbar" id="startBar"><div style="min-width:0;flex:1">${info}${busyOther ? `<div class="msg warn">진행 중인 시험이 있습니다 (${esc(act.map(a => TN(a.test)).join(' · '))}) — <a href="#progress" data-act="go" data-v="progress">진행 화면</a>에서 확인하세요</div>` : ''}${S.startErr ? `<div class="msg err">${esc(S.startErr)}</div>` : ''}</div>
+    <button type="button" class="btn pri big" data-act="start"${can ? '' : ' disabled'}>${S.starting ? '시작하는 중…' : '추출 및 검증'}</button></div>`;
+}
+let lastStartBar = '';
+// Te-2 의 1~16번을 어디서 받는지 — 불러오기 때의 어림 (실행 중에는 세트마다 계약서 sha256 으로 다시 확인)
+function contractPlanHTML(c){
+  const runs = (c.runs || []).slice(0, 3).map(r => `${esc(r.name || r.run_id)} ${nf(r.n)}`).join(', ');
+  const parts = [c.te1 ? `Te-1 결과 사용 <b>${nf(c.te1)}</b>세트${runs ? ` (${runs}${(c.runs || []).length > 3 ? ' …' : ''})` : ''}` : '',
+    c.process ? `계약서 새로 처리 <b>${nf(c.process)}</b>세트` : '', c.no_contract ? `계약서 없음 ${nf(c.no_contract)}세트 (1~16번 비움)` : ''].filter(Boolean);
+  return `<div class="note" style="margin:2px 0 0">1~16번 항목: ${parts.join(' · ') || '—'}${c.process && !c.te1 ? ' — Te-1 을 먼저 실행하면 같은 계약서의 결과를 씁니다' : ''}</div>`;
+}
+// 결과 화면 — 이 Te-2 실행의 1~16번 출처 (채점 때 센 실제 값)
+function contractSourceHTML(run){
+  const ev = (run.summary && run.summary.evaluation) || {}, c = ev.contract_items;
+  if(!c || (!c.te1 && !c.contract_leg && !c.none)) return '';
+  const runs = Object.entries(c.runs || {}).map(([rid, n]) => `${esc(rid)} ${nf(n)}`).join(', ');
+  return `<p class="note" style="margin:8px 0 0">1~16번 항목: ${[c.te1 ? `Te-1 결과 ${nf(c.te1)}세트 (${runs})` : '', c.contract_leg ? `이 실행에서 계약서 처리 ${nf(c.contract_leg)}세트` : '', c.none ? `없음 ${nf(c.none)}세트` : ''].filter(Boolean).join(' · ')}</p>`;
+}
+function patchStartBar(){ const el = $('#startBar'); if(!el) return; const x = startBarHTML(); if(x !== lastStartBar){ lastStartBar = x; el.outerHTML = x; } }
+function patchRow(t, k){
+  if(S.test !== t || S.screen !== 'test') return;
+  const v = S.paths[t][k], p = S.peek[pk(t, k)], st = $('#stat-' + k), lb = $('#load-' + k), pv = $('#prev-' + k);
+  if(st) st.innerHTML = p ? `<b class="okc">✓</b> ${peekCount(p, k)}` : v ? '<span class="mut">불러오기 전</span>' : '<span class="mut">경로 없음</span>';
+  if(lb){ lb.disabled = !v; lb.classList.toggle('pri', !p); }
+  if(pv) pv.outerHTML = previewHTML(t, k);
+  patchStartBar();
+}
+function renderTest(){
+  const t = S.test;
+  $('#scr-test').innerHTML = `<div class="ttabs" role="tablist" aria-label="시험">${TESTS.map(x => `<button type="button" class="ttab" role="tab" aria-selected="${t === x}" data-act="test" data-v="${x}"><span class="c">${TN(x)}</span><b>${TFULL[x]}</b><small>${INPUT[x]}를 입력으로 ${scopeTxt(x)} 평가</small></button>`).join('')}</div>
+    <section class="pane"><div class="ph"><span class="t">시험 자료</span><span class="r">계약서 폴더 · 저작물 폴더 · 정답 파일을 모두 불러오면 「추출 및 검증」이 열립니다</span></div>
+      <div class="pb">${KINDS.map(k => pathRowHTML(t, k)).join('')}</div></section>
+    <div class="prev3">${KINDS.map(k => previewHTML(t, k)).join('')}</div>
+    ${(lastStartBar = startBarHTML())}`;
+}
+async function loadPeek(t, k){
+  const path = (S.paths[t][k] || '').trim(); if(!path) return;
+  const key = pk(t, k);
+  S.peekBusy[key] = true; S.peekErr[key] = null; S.peek[key] = null; S.scan[t] = null; S.scanErr[t] = null;
+  if(S.test === t && S.screen === 'test') renderTest();
+  try{ S.peek[key] = await api('/folder/peek', {json: {kind: k, path, test: t}}); }
+  catch(e){ S.peekErr[key] = e.message; }
+  S.peekBusy[key] = false;
+  if(S.test === t && S.screen === 'test') renderTest();
+  if(S.test === t) maybeScan(t);
+}
+async function doScan(t){
+  const P = S.paths[t];
+  const body = {test: t, recursive: true, contract_dirs: [P.contract], work_dirs: t === 'T-002' ? [P.work] : [],
+                answers: {[t]: {mode: 'file', path: P.answers}}};
+  S.scanBusy[t] = true; S.scanErr[t] = null; if(S.test === t) patchStartBar();
+  try{ const r = await api('/folder/scan', {json: body}); S.scan[t] = {scan_id: r.scan_id, at: Date.now(), view: (r.tests || {})[t]}; }
+  catch(e){ S.scan[t] = null; S.scanErr[t] = e.message; }
+  S.scanBusy[t] = false;
+  if(S.test === t && S.screen === 'test') patchStartBar();
+}
+function maybeScan(t){ if(KINDS.every(k => S.peek[pk(t, k)]) && !S.scan[t] && !S.scanBusy[t]) doScan(t); }
+async function startRun(){
+  const t = S.test; S.starting = true; S.startErr = null; patchStartBar();
+  try{
+    if(!S.scan[t] || Date.now() - S.scan[t].at > SCAN_TTL_MS) await doScan(t);
+    if(!S.scan[t]) throw new Error(S.scanErr[t] || '불러오기를 다시 하세요');
+    const r = await api('/folder/start', {json: {scan_id: S.scan[t].scan_id}});
+    S.scan[t] = null; S.starting = false;
+    await loadStatus();
+    openProgress(r.run_id);
+    go('progress');
+    maybeScan(t);
+    return;
+  }catch(e){ S.startErr = e.message; if(e.status === 404) S.scan[t] = null; }
+  S.starting = false; patchStartBar();
+}
+
+/* 찾아보기 — 시험 PC 의 허용된 위치 안쪽 폴더 · 정답 파일 */
+async function openBrowser(k){
+  S.fb = {kind: k, test: S.test, data: null, err: null, loading: true}; renderModal();
+  const cur = (S.paths[S.test][k] || '').trim();
+  const start = k === 'answers' && cur ? cur.replace(/[\\/][^\\/]*\.(jsonl|json|csv|xlsx)$/i, '') : cur;
+  await fbGo(start, true);
+}
+async function fbGo(path, fallback){
+  const F = S.fb; if(!F) return;
+  F.loading = true; renderModal();
+  try{ F.data = await api('/fs/list?path=' + enc(path || '')); F.err = null; }
+  catch(e){ if(fallback && path){ try{ F.data = await api('/fs/list'); F.err = null; }catch(e2){ F.err = e2.message; } } else F.err = e.message; }
+  F.loading = false; renderModal();
+}
+function renderModal(){
+  const F = S.fb, el = $('#modal');
+  if(!F){ el.innerHTML = ''; return; }
+  const d = F.data, isFile = SRC[F.kind].kind === 'file';
+  const body = F.err ? `<p class="msg err">${esc(F.err)}</p>` : !d ? '<p class="mut">불러오는 중…</p>' : `
+    <div class="chips" style="margin-bottom:8px">${(d.roots || []).map(r => `<button type="button" class="btn sm" data-act="fb-go" data-v="${esc(r.path || r.display || r)}">${esc(r.label || r.display || r.path || r)}</button>`).join('')}</div>
+    <div class="mono" style="margin-bottom:6px;overflow-wrap:anywhere"><b>${esc(d.path)}</b></div>
+    <div class="note" style="margin:0 0 6px">이 폴더: 계약서 형식 ${nf(d.counts && d.counts.contract)} · 저작물 형식 ${nf(d.counts && d.counts.work)} · 정답 파일 ${nf(d.counts && d.counts.answer)}</div>
+    <div class="fl">${d.parent ? `<button type="button" data-act="fb-go" data-v="${esc(d.parent)}">↑ 상위 폴더</button>` : ''}
+      ${isFile && (d.answer_files || []).length ? `<div class="sec">정답 파일 — 눌러서 고르기</div>${d.answer_files.map(f => `<button type="button" data-act="fb-file" data-v="${esc(f.path)}">${ICON_FILE} ${esc(f.name)}</button>`).join('')}` : ''}
+      <div class="sec">하위 폴더</div>${(d.dirs || []).map(x => `<button type="button" data-act="fb-go" data-v="${esc(x.path)}">${ICON_DIR} ${esc(x.name)}</button>`).join('') || '<div class="mut" style="padding:4px 8px">하위 폴더 없음</div>'}</div>`;
+  el.innerHTML = `<div class="modal-bk" data-act="fb-close"><div class="modal" role="dialog" aria-modal="true" aria-label="${SRC[F.kind].label} 고르기" data-stop="1">
+    <div class="ph"><span class="t">${SRC[F.kind].label} 고르기</span><span class="r">시험 PC 의 폴더 · 허용된 위치 안쪽만</span></div>
+    <div class="pb">${body}</div>
+    <div class="ft"><button type="button" class="btn" data-act="fb-close">취소</button>${isFile ? '' : `<button type="button" class="btn pri" data-act="fb-pick"${d && !F.err ? '' : ' disabled'}>이 폴더 선택</button>`}</div></div></div>`;
+}
+function setPath(t, k, v){
+  v = String(v || '').trim();
+  if(S.paths[t][k] === v) return false;
+  S.paths[t][k] = v; savePaths();
+  const key = pk(t, k); S.peek[key] = null; S.peekErr[key] = null; S.scan[t] = null; S.scanErr[t] = null;
+  return true;
+}
+
+/* ======================================================================
+   2 · 진행 — 지금 실행의 세트 · 실행 로그 (실시간)
+   ====================================================================== */
+function newProg(runId){ return {runId, run: null, rows: new Map(), order: [], log: [], total: 0, done: 0, failed: 0, cost: 0, state: null, startedMs: null, finishedMs: null, stream: null, follow: true, filter: 'all', warnOnly: false, err: null, rem: null, nErr: 0, nWarn: 0, seqN: 0}; }
+function applyRun(P, run){
+  P.run = run; P.state = run.state;
+  const pr = run.progress || {};
+  if(isNum(pr.total)) P.total = pr.total; else if(isNum(run.n_sets)) P.total = run.n_sets;
+  if(isNum(pr.i)) P.done = Math.max(P.done, pr.i);
+  if(isNum(pr.failed)) P.failed = pr.failed;
+  if(isNum(pr.cost_krw_total)) P.cost = pr.cost_krw_total; else if(isNum(run.cost_krw)) P.cost = run.cost_krw;
+  P.startedMs = toMs(run.started_at) || toMs(run.created_at); P.finishedMs = toMs(run.finished_at);
+  P.rem = run.remaining || null;
+  if(run.error) P.err = scrub(run.error);
+}
+async function openProgress(runId){
+  if(S.prog && S.prog.runId === runId) return;
+  if(S.prog && S.prog.stream) S.prog.stream.close();
+  const P = newProg(runId); S.prog = P;
+  try{ applyRun(P, await api(runPath(runId))); }catch(e){ P.err = e.message; }
+  if(S.prog !== P) return;
+  await loadSetList(P);
+  if(TERMINAL.has(P.state)) await loadLog(P);
+  else if(S.prog === P) P.stream = new RunStream(runId, ev => onProgEvent(P, ev), ev => progClosed(P, ev));
+  if(S.screen === 'progress') renderProgress(true);
+}
+async function enterProgress(){
+  if(!S.prog){
+    const act = activeRuns();
+    let id = act.length ? act[0].run_id : null;
+    if(!id){ try{ const runs = await loadRuns(); const r = runs.find(x => x.kind === 'batch'); id = r ? r.run_id : null; }catch(e){} }
+    if(id){ await openProgress(id); return; }
+  }
+  renderProgress(true);
+}
+async function loadSetList(P){
+  try{
+    const r = await api(runPath(P.runId) + '/sets?limit=5000'); if(S.prog !== P) return;
+    (r.items || []).forEach(it => {
+      const ex = P.rows.get(it.set_id);
+      if(ex){ ex.file = it.file_name; if(!ex.title) ex.title = it.title; if(!ex.media) ex.media = it.media; return; }
+      P.rows.set(it.set_id, {id: it.set_id, media: it.media, title: it.title, file: it.file_name, st: it.state === 'pending' ? 'wait' : (it.ok === false ? 'bad' : 'ok'), el: it.elapsed_sec, err: it.error});
+      P.order.push(it.set_id);
+    });
+  }catch(e){}
+}
+async function loadLog(P){
+  try{ const t = await apiText(runPath(P.runId) + '/download/test.log'); if(S.prog !== P) return; t.split(/\r?\n/).filter(Boolean).forEach(l => pushLog(P, l, null)); }catch(e){}
+}
+function rowFor(P, id){ let r = P.rows.get(id); if(!r){ r = {id, st: 'run', t0: Date.now()}; P.rows.set(id, r); P.order.push(id); } return r; }
+function pushLog(P, raw, ev){
+  const o = inheritLog(parseLog(raw, ev), P.log[P.log.length - 1]);
+  if(!o.cont){ if(lvRank(o.lv) >= 40) P.nErr++; else if(o.lv === 'WARNING') P.nWarn++; }
+  P.log.push(o); if(P.log.length > RUNLOG_CAP) P.log.splice(0, P.log.length - RUNLOG_CAP);
+  return o;
+}
+function logToRows(P, o){
+  if(!o || o.cont || !o.set) return;
+  let m = (o.msg || '').match(/^시작 —(.*)$/);
+  if(m){ const r = rowFor(P, o.set); if(!r.t0) r.t0 = Date.now(); const md = m[1].match(/media=(\w+)/); if(md && !r.media) r.media = md[1]; return; }
+  m = (o.msg || '').match(/^종료 — (OK|FAIL) · ([\d.]+)s(?:.*?₩([\d.]+))?(?: · (.*))?/);
+  if(m){ const r = rowFor(P, o.set); if(r.st === 'run') r.st = m[1] === 'OK' ? 'ok' : 'bad'; if(!isNum(r.el)) r.el = +m[2]; if(m[1] === 'FAIL' && !r.err) r.err = m[4] || '실패'; }
+}
+function onProgEvent(P, ev){
+  const t = ev.type;
+  if(t === 'start'){ if(isNum(ev.total)) P.total = ev.total; }
+  else if(t === 'set_start'){ const r = rowFor(P, ev.set_id); Object.assign(r, {st: 'run', t0: toMs(ev.ts) || Date.now()}); ['media', 'title'].forEach(k => { if(ev[k] != null) r[k] = ev[k]; }); }
+  else if(t === 'set_done'){ const r = rowFor(P, ev.set_id); r.st = ev.ok === false ? 'bad' : 'ok'; r.doneSeq = ++P.seqN; r.el = ev.elapsed_sec; r.err = ev.error; ['media', 'title'].forEach(k => { if(ev[k] != null) r[k] = ev[k]; }); }
+  else if(t === 'progress'){ if(isNum(ev.i)) P.done = Math.max(P.done, ev.i); if(isNum(ev.total)) P.total = ev.total; if(isNum(ev.failed)) P.failed = ev.failed; if(isNum(ev.cost_krw_total)) P.cost = ev.cost_krw_total;
+    if(ev.set_id){ const r = rowFor(P, ev.set_id); if(r.st === 'run' || r.st === 'wait'){ r.st = ev.ok === false ? 'bad' : 'ok'; r.doneSeq = ++P.seqN; if(isNum(ev.elapsed_sec)) r.el = ev.elapsed_sec; if(ev.error) r.err = ev.error; } } }
+  else if(t === 'log'){ const line = fv(ev, 'line', 'text', 'message', 'msg'); if(line != null){ const o = pushLog(P, line, ev); logToRows(P, o); appendLog(P, o); } }
+  else if(t === 'state'){ P.state = ev.state; if(ev.state === 'running' && !P.startedMs) P.startedMs = toMs(ev.ts) || Date.now(); if(ev.error) P.err = scrub(ev.error); }
+  else if(t === 'error'){ P.err = scrub(ev.error || ev.message || '오류'); }
+  else if(t === 'cost_limit'){ P.err = `비용 상한에 도달해 멈췄습니다 (${won(ev.cost_krw)} / 상한 ${won(ev.limit)})`; }
+  scheduleProg();
+}
+async function progClosed(P, ev){
+  P.stream = null; if(ev.state && ev.state !== 'missing') P.state = ev.state;
+  try{ const run = await api(runPath(P.runId)); if(S.prog !== P) return; applyRun(P, run); }catch(e){}
+  P.rows.forEach(r => { if(r.st === 'run') r.st = P.state === 'done' ? 'ok' : 'wait'; });
+  await loadStatus();
+  if(S.screen === 'progress') renderProgress(true);
+  if(P.state === 'done') toast('추출 및 검증이 끝났습니다' + (P.run && isNum(P.run.macro_f1) ? ` · Macro F1 ${pct(P.run.macro_f1)}` : ''));
+  else if(P.state === 'cancelled') toast('실행이 취소되었습니다. 끝난 세트의 결과는 남아 있습니다');
+  else if(P.state === 'error') toast('실행이 오류로 끝났습니다' + (P.err ? ' — ' + P.err : ''), true);
+}
+let progT = null;
+function scheduleProg(){ if(progT) return; progT = setTimeout(() => { progT = null; if(S.screen === 'progress') renderProgress(false); }, 250); }
+function progNums(P){
+  const term = TERMINAL.has(P.state), tot = P.total, done = P.done;
+  const el = P.startedMs ? ((P.finishedMs || (term ? null : Date.now())) - P.startedMs) / 1000 : null;
+  const frac = tot ? Math.min(1, done / tot) : 0, eta = tot && done && el && !term ? el / done * (tot - done) : null;
+  return {term, tot, done, el: isNum(el) && el >= 0 ? el : null, frac, eta};
+}
+function progHeadHTML(P){
+  const run = P.run || {}, t = run.test, N = progNums(P), st = P.state;
+  const scored = isNum(run.macro_f1), nRem = P.rem ? (P.rem.failed || 0) + (P.rem.pending || 0) : 0;
+  const card = st === 'done' ? `<div class="done-card"><div><h3>✓ 추출 및 검증 완료</h3><p>${TN(t)} ${TFULL[t] || ''} · ${nf(N.done)} / ${nf(N.tot)} 세트 · 실패 ${nf(P.failed)} · 소요 ${dur(N.el)} · 속성정보 파일(*.json) ${nf(run.n_predictions)}개 생성</p>${scored ? '' : '<p class="mut">채점 결과가 없습니다 — 정답 파일을 확인하세요</p>'}</div>
+      <button type="button" class="btn pri big" data-act="open-results" data-v="${esc(P.runId)}"${scored ? '' : ' disabled'}>${esc(TFULL[t] || '')} 결과보기</button></div>`
+    : N.term ? `<div class="done-card bad"><div><h3>${esc(STATE_KO[st] || st)}</h3><p>${nf(N.done)} / ${nf(N.tot)} 세트 처리${P.err ? ' · ' + esc(P.err) : ''}</p></div></div>` : '';
+  const btns = [!N.term && st ? `<button type="button" class="btn sm danger" data-act="cancel">취소</button>` : '',
+    N.term && nRem ? `<button type="button" class="btn sm" data-act="retry">실패·미실행 ${nf(nRem)}세트 다시 실행</button>` : ''].join('');
+  return `${card}<section class="pane"><div class="ph"><span class="t">${TN(t)} ${esc(TFULL[t] || '')}</span><span class="st ${st === 'done' ? 'ok' : N.term ? 'bad' : 'run'}">${esc(STATE_KO[st] || st || '—')}</span><span class="mut mono">${esc(P.runId)}</span><span class="r">${btns}</span></div>
+    <div class="pb runsum">
+      <div><div class="bar" style="margin:4px 0 6px"><i style="width:${(N.frac * 100).toFixed(1)}%"></i></div><div class="mono" style="font-size:12px">${nf(N.done)} / ${nf(N.tot)} 세트 · ${pct(N.frac)}</div></div>
+      <div><div class="k">소요</div><div class="v">${dur(N.el)}</div></div>
+      <div><div class="k">남은 시간 (약)</div><div class="v">${N.eta != null ? dur(N.eta) : '—'}</div></div>
+      <div><div class="k">실패</div><div class="v ${P.failed ? 'errc' : ''}">${nf(P.failed)}</div></div></div>
+    ${P.err && !N.term ? `<div class="pb" style="padding-top:0"><p class="msg err">${esc(P.err)}</p></div>` : ''}</section>`;
+}
+function progRowsHTML(P){
+  const all = P.order.map(id => P.rows.get(id)).filter(Boolean);
+  const pick = P.filter === 'all' ? all : all.filter(r => r.st === P.filter);
+  const recent = (a, b) => (b.doneSeq || 0) - (a.doneSeq || 0);
+  const run = pick.filter(r => r.st === 'run'), bad = pick.filter(r => r.st === 'bad').sort(recent), ok = pick.filter(r => r.st === 'ok').sort(recent), wait = pick.filter(r => r.st === 'wait');
+  const shown = run.concat(bad, ok, wait).slice(0, 400);
+  const stKo = {run: ['run', '진행 중'], ok: ['ok', '완료'], bad: ['bad', '실패'], wait: ['wait', TERMINAL.has(P.state) ? '미실행' : '대기']};
+  const waiting = P.total ? Math.max(0, P.total - all.length) : 0;
+  return `<table class="t"><thead><tr><th>세트 ID</th><th>저작물명</th><th>유형</th><th>상태</th><th class="n">소요</th></tr></thead><tbody>${shown.map(r => `<tr${r.err ? ` title="${esc(scrub(r.err))}"` : ''}>
+    <td class="mono nw">${esc(r.id)}</td><td class="ell" title="${esc(r.file || '')}">${esc(r.title || r.file || '')}</td><td class="nw">${esc(MEDIA_KO[r.media] || r.media || '')}</td>
+    <td class="nw"><span class="st ${stKo[r.st][0]}">${stKo[r.st][1]}</span>${r.st === 'bad' && r.err ? `<div class="errc" style="font-size:11.5px;white-space:normal">${esc(scrub(r.err)).slice(0, 140)}</div>` : ''}</td>
+    <td class="n">${r.st === 'run' ? secs((Date.now() - (r.t0 || Date.now())) / 1000) : secs(r.el)}</td></tr>`).join('') || `<tr><td colspan="5" class="mut" style="padding:14px 9px">${P.filter === 'bad' ? '실패한 세트가 없습니다.' : '아직 시작한 세트가 없습니다.'}</td></tr>`}</tbody></table>
+    <p class="note" style="padding:0 10px 8px">${waiting ? `목록 밖 대기 ${nf(waiting)}세트 · ` : ''}진행 중 → 실패 → 완료(최근 먼저) → 대기 순서${pick.length > shown.length ? ` · ${nf(pick.length)}세트 중 ${shown.length}행 표시` : ''}</p>`;
+}
+const logShown = P => P.log.filter(o => !P.warnOnly || lvRank(o.lv) >= 30);
+function appendLog(P, o){
+  if(S.prog !== P || S.screen !== 'progress') return;
+  const el = $('#pLog'); if(!el || (P.warnOnly && lvRank(o.lv) < 30)) return;
+  if(el.dataset.empty){ el.innerHTML = ''; delete el.dataset.empty; }
+  el.insertAdjacentHTML('beforeend', logLineHTML(o));
+  if(el.childElementCount > RUNLOG_CAP + 500) el.innerHTML = logShown(P).map(logLineHTML).join('');
+  if(P.follow) el.scrollTop = el.scrollHeight;
+}
+function renderProgress(full){
+  const root = $('#scr-progress'), P = S.prog;
+  if(!P){ root.innerHTML = `<section class="pane"><div class="empty"><b>진행 중인 시험이 없습니다</b>시험 화면에서 경로를 불러온 뒤 「추출 및 검증」을 누르세요.<div style="margin-top:12px"><button type="button" class="btn pri" data-act="go" data-v="test">시험 화면으로</button></div></div></section>`; return; }
+  if(full || !$('#pHead')){
+    root.innerHTML = `<div id="pHead">${progHeadHTML(P)}</div>
+    <div class="split">
+      <section class="pane"><div class="ph"><span class="t">세트</span><span class="r"><label>보기 <select data-bind="pfilter"><option value="all"${P.filter === 'all' ? ' selected' : ''}>전체</option><option value="run"${P.filter === 'run' ? ' selected' : ''}>진행 중</option><option value="bad"${P.filter === 'bad' ? ' selected' : ''}>실패</option><option value="wait"${P.filter === 'wait' ? ' selected' : ''}>대기</option></select></label></span></div><div class="tw" id="pRows">${progRowsHTML(P)}</div></section>
+      <section class="pane"><div class="ph"><span class="t">실행 로그</span><span class="r" id="pLogN"></span><span class="r"><label><input type="checkbox" data-bind="pwarn"${P.warnOnly ? ' checked' : ''}> 경고·오류만</label><label><input type="checkbox" data-bind="pfollow"${P.follow ? ' checked' : ''}> 따라가기</label></span></div>
+        <div class="log" id="pLog" tabindex="0" aria-label="실행 로그"></div></section></div>`;
+    const el = $('#pLog'), sh = logShown(P);
+    if(sh.length) el.innerHTML = sh.map(logLineHTML).join(''); else { el.innerHTML = `<div class="mut">${TERMINAL.has(P.state) ? '기록된 로그가 없습니다.' : '로그를 기다리는 중…'}</div>`; el.dataset.empty = '1'; }
+    el.scrollTop = el.scrollHeight;
+    el.addEventListener('scroll', () => { const near = el.scrollHeight - el.scrollTop - el.clientHeight < 40; if(P.follow !== near){ P.follow = near; const c = document.querySelector('[data-bind="pfollow"]'); if(c) c.checked = near; } });
+  } else {
+    const h = $('#pHead'), x = progHeadHTML(P); if(h._h !== x){ h.innerHTML = x; h._h = x; }
+    const rows = $('#pRows'), y = progRowsHTML(P); if(rows._h !== y){ const st = rows.scrollTop; rows.innerHTML = y; rows._h = y; rows.scrollTop = st; }
+  }
+  const n = $('#pLogN'); if(n) n.innerHTML = `${nf(P.log.length)}줄${P.nErr ? ` · <span class="errc">오류 ${nf(P.nErr)}</span>` : ''}${P.nWarn ? ` · <span class="warnc">경고 ${nf(P.nWarn)}</span>` : ''}`;
+}
+setInterval(() => { if(S.screen === 'progress' && S.prog && !TERMINAL.has(S.prog.state)) renderProgress(false); }, 1000);
+
+/* ======================================================================
+   3 · 결과·지표 — 실행 선택 · 지표 · 항목별 P/R/F1 · 세트 × 항목 판정 · 결과 파일
+   ====================================================================== */
+async function loadRuns(){ const runs = await api('/runs'); S.res.runs = runs; return runs; }
+const resultRuns = () => (S.res.runs || []).filter(r => r.kind === 'batch' && TESTS.includes(r.test) && (r.macro_f1 != null || r.state === 'done'));
+async function enterResults(){
+  const R = S.res;
+  try{ await loadRuns(); }catch(e){ R.err = e.message; }
+  const list = resultRuns();
+  if(!R.runId || !list.some(r => r.run_id === R.runId)) R.runId = list.length ? list[0].run_id : null;
+  if(R.runId) await openResults(R.runId); else renderResults();
+}
+async function openResults(runId){
+  const R = S.res;
+  if(R.runId !== runId){ R.onlyBad = false; R.failed = false; R.q = ''; }
+  R.runId = runId; R.run = null; R.metrics = null; R.mErr = null; R.items = []; R.total = 0; R.offset = 0; R.loading = true;
+  if(S.screen !== 'results'){ go('results'); return; }
+  renderResults();
+  // 응답은 지금 고른 실행의 것만 쓴다 (먼저 고른 실행의 늦은 응답이 덮어쓰지 않게)
+  let run = null, metrics = null, mErr = null;
+  try{ run = await api(runPath(runId)); }catch(e){ mErr = e.message; }
+  try{ metrics = await api(runPath(runId) + '/metrics'); }catch(e){ mErr = e.status === 404 ? 'notyet' : e.message; }
+  if(R.runId !== runId) return;
+  R.run = run; R.metrics = metrics; R.mErr = mErr;
+  R.loading = false; renderResults(); loadSets();
+}
+function resultKeys(){
+  const R = S.res, m = R.metrics, test = (m && m.test) || (R.run && R.run.test) || 'T-002';
+  if(!m || !m.keys) return scopeKeys(test);
+  const ex = (m.excluded_keys || []).map(x => x.key || x);
+  return KEYS.filter(K => m.keys[K.key] || ex.includes(K.key));
+}
+async function loadSets(){
+  const R = S.res, id = R.runId; if(!id) return;
+  const q = new URLSearchParams({offset: R.offset, limit: PAGE});
+  if(R.onlyBad) q.set('verdict', 'WRONG,FP,FN,PARTIAL');
+  if(R.failed) q.set('failed', '1');
+  if(R.q.trim()) q.set('q', R.q.trim());
+  try{ const r = await api(runPath(id) + '/sets?' + q); if(R.runId !== id) return; R.items = r.items || []; R.total = r.total || 0; R.setsErr = null; }
+  catch(e){ R.setsErr = e.message; }
+  const g = $('#rGrid'); if(g) g.innerHTML = gridHTML();
+}
+function runOption(r){
+  const t = r.test, ok = r.macro_f1 != null ? (r.passed ? '만족' : '미달') : (STATE_KO[r.state] || r.state);
+  return `${fmtWhen(r.created_at)} · ${TN(t)} · ${nf(r.n_sets)}세트${r.macro_f1 != null ? ' · Macro ' + pct(r.macro_f1) : ''} · ${ok}${r.name ? ' · ' + r.name : ''}`;
+}
+function prfTableHTML(m, ks){
+  const mk = m.keys || {}, ex = m.excluded_keys || [], exR = k => { const e = ex.find(x => (x.key || x) === k); return e ? (e.reason || '채점 제외') : null; };
+  const ma = m.macro || {}, mi = m.micro || {}, pm = isNum(m.pass_mark) ? m.pass_mark : 0.85, mf = isNum(m.macro_f1) ? m.macro_f1 : ma.f1;
+  return `<table class="t"><thead><tr><th class="n">No</th><th>항목</th><th>JSON KEY</th><th class="n">Precision</th><th class="n">Recall</th><th class="n">F1-score</th><th class="n">TP</th><th class="n">FP</th><th class="n">FN</th><th class="n">평가 세트</th></tr></thead><tbody>
+    ${ks.map(K => { const k = mk[K.key], why = exR(K.key);
+      if(!k || why || !isNum(k.f1)) return `<tr class="dim"><td class="n">${K.no}</td><td>${esc(K.label)}</td><td class="mono">${K.key}</td><td colspan="7">채점 제외 — ${why && !/^n_scored=0$/.test(why) ? esc(why) : '평가할 정답 값이 없음'}</td></tr>`;
+      return `<tr><td class="n">${K.no}</td><td class="nw">${esc(K.label)}</td><td class="mono mut">${K.key}</td><td class="n">${pct(k.precision)}</td><td class="n">${pct(k.recall)}</td><td class="n"><b>${pct(k.f1)}</b></td><td class="n">${nf(k.tp)}</td><td class="n">${nf(k.fp)}</td><td class="n">${nf(k.fn)}</td><td class="n">${nf(k.n_scored)}</td></tr>`; }).join('')}
+    <tr class="tot"><td></td><td colspan="2">Macro 평균 · 최종 지표${isNum(ma.n_keys) ? ` (${nf(ma.n_keys)}개 항목)` : ''}</td><td class="n">${pct(ma.precision)}</td><td class="n">${pct(ma.recall)}</td><td class="n">${pct(mf)}</td><td colspan="4" class="${mf >= pm ? 'okc' : 'errc'}">${isNum(mf) ? (mf >= pm ? `${pct(pm, 0)} 이상 · 만족` : `${pct(pm, 0)} 미만 · 미달`) : ''}</td></tr>
+    <tr class="dim"><td></td><td colspan="2">Micro 평균 · 참고</td><td class="n">${pct(mi.precision)}</td><td class="n">${pct(mi.recall)}</td><td class="n">${pct(isNum(m.micro_f1) ? m.micro_f1 : mi.f1)}</td><td class="n">${nf(mi.tp)}</td><td class="n">${nf(mi.fp)}</td><td class="n">${nf(mi.fn)}</td><td></td></tr></tbody></table>`;
+}
+function gridHTML(){
+  const R = S.res, ks = resultKeys().filter(K => K.key !== 'other_rights');
+  if(R.setsErr) return `<p class="msg err" style="padding:10px 14px">${esc(R.setsErr)}</p>`;
+  const from = R.total ? R.offset + 1 : 0, to = Math.min(R.total, R.offset + R.items.length), last = Math.max(0, Math.floor((R.total - 1) / PAGE) * PAGE);
+  const pager = `<div class="pager"><span>${nf(R.total)}세트 중 ${nf(from)}–${nf(to)}</span><button type="button" class="btn sm" data-act="pg" data-v="first"${R.offset <= 0 ? ' disabled' : ''}>처음</button><button type="button" class="btn sm" data-act="pg" data-v="prev"${R.offset <= 0 ? ' disabled' : ''}>이전</button><button type="button" class="btn sm" data-act="pg" data-v="next"${R.offset + PAGE >= R.total ? ' disabled' : ''}>다음</button><button type="button" class="btn sm" data-act="pg" data-v="last"${R.offset >= last ? ' disabled' : ''}>끝</button></div>`;
+  const rows = R.items.map(it => {
+    const kv = it.keys || {}, vs = ks.map(K => (kv[K.key] || {}).verdict).filter(v => v && v !== 'NA');
+    const ok = vs.filter(v => v === 'TP' || v === 'EMPTY_OK').length;
+    return `<tr><td class="mono">${esc(it.set_id)}</td><td class="ell" style="max-width:240px" title="${esc(it.title || it.file_name || '')}">${esc(it.title || it.file_name || '')}</td><td>${esc(MEDIA_KO[it.media] || it.media || '')}</td>
+      <td>${it.ok === false ? `<span class="st bad" title="${esc(scrub(it.error || ''))}">실패</span>` : ''}<span class="mono ${vs.length && ok === vs.length ? 'okc' : ''}">${vs.length ? ok + '/' + vs.length : '—'}</span></td>
+      ${ks.map(K => { const x = kv[K.key] || {}, v = x.verdict, d = VM[v] || ['·', v ? v : '판정 없음', 'na']; return `<td class="m"><span class="vm ${d[2]}" title="${esc(`${K.no} ${K.label}: ${d[1]}${x.value_short != null ? ' · 예측 ' + String(x.value_short).slice(0, 80) : ''}`)}">${d[0]}</span></td>`; }).join('')}</tr>`;
+  }).join('');
+  return `<div class="tw gridwrap"><table class="grid-v"><thead><tr><th>세트 ID</th><th>저작물명</th><th>유형</th><th>일치</th>${ks.map(K => `<th class="m" title="${K.no} ${esc(K.label)} (${K.key})">${K.no}<small>${esc(SHORT[K.key] || '')}</small></th>`).join('')}</tr></thead>
+    <tbody>${rows || `<tr><td colspan="${4 + ks.length}" class="mut" style="padding:16px 9px">${R.loading ? '불러오는 중…' : '조건에 맞는 세트가 없습니다.'}</td></tr>`}</tbody></table></div>${pager}`;
+}
+function renderResults(){
+  const root = $('#scr-results'), R = S.res, list = resultRuns();
+  if(!R.runId){
+    root.innerHTML = `<section class="pane"><div class="empty"><b>${R.err ? '실행 목록을 불러오지 못했습니다' : R.runs ? '채점된 실행이 없습니다' : '실행 목록을 불러오는 중…'}</b>${R.err ? esc(R.err) : '시험 화면에서 「추출 및 검증」을 실행하면 여기에 결과가 나옵니다.'}</div></section>`;
+    return;
+  }
+  const run = R.run || list.find(r => r.run_id === R.runId) || {}, m = R.metrics, t = (m && m.test) || run.test;
+  const cfg = run.config || {}, el = toMs(run.started_at) && toMs(run.finished_at) ? (toMs(run.finished_at) - toMs(run.started_at)) / 1000 : null;
+  const gold = baseName((m && m.inputs && m.inputs.gold) || cfg.gold || (cfg.answer && cfg.answer.file) || '');
+  const sel = `<label class="runsel">실행 선택 <select data-bind="run">${list.map(r => `<option value="${esc(r.run_id)}"${r.run_id === R.runId ? ' selected' : ''}>${esc(runOption(r))}</option>`).join('')}</select></label>`;
+  const meta = [gold ? '정답 ' + gold : '', fmtWhen(run.started_at || run.created_at), el != null ? '소요 ' + dur(el) : ''].filter(Boolean).join(' · ');
+  let body;
+  if(R.loading && !m) body = '<div class="pb"><p class="mut">불러오는 중…</p></div>';
+  else if(!m) body = `<div class="empty"><b>${R.mErr === 'notyet' ? '아직 채점 결과가 없습니다' : '지표를 불러오지 못했습니다'}</b>${R.mErr && R.mErr !== 'notyet' ? esc(R.mErr) : '실행 상태: ' + esc(STATE_KO[run.state] || run.state || '—')}</div>`;
+  else {
+    const ma = m.macro || {}, mi = m.micro || {}, pm = isNum(m.pass_mark) ? m.pass_mark : 0.85;
+    const macro = isNum(m.macro_f1) ? m.macro_f1 : ma.f1, micro = isNum(m.micro_f1) ? m.micro_f1 : mi.f1;
+    const passed = m.passed != null ? !!m.passed : (isNum(macro) && macro >= pm), nk = ma.n_keys || (m.included_keys || []).length;
+    body = `<div class="pb"><div class="kpis">
+      <div class="kpi"><div class="l">Precision · Macro</div><div class="v">${pct(ma.precision)}</div><div class="s">Micro ${pct(mi.precision)}</div></div>
+      <div class="kpi"><div class="l">Recall · Macro</div><div class="v">${pct(ma.recall)}</div><div class="s">Micro ${pct(mi.recall)}</div></div>
+      <div class="kpi ${passed ? 'good' : 'bad'}"><div class="l">F1-score · Macro (최종 지표)</div><div class="v">${pct(macro)}</div><div class="s">${nf(nk)}개 항목 평균</div></div>
+      <div class="kpi"><div class="l">Micro-F1 · 참고</div><div class="v">${pct(micro)}</div><div class="s">${isNum(mi.tp) ? `TP ${nf(mi.tp)} · FP ${nf(mi.fp)} · FN ${nf(mi.fn)}` : ''}</div></div>
+      <div class="kpi"><div class="l">성능목표</div><div class="v">${pct(pm, 0)}</div><div class="s">Macro F1-score 기준</div></div>
+      <div class="kpi ${passed ? 'good' : 'bad'}"><div class="l">결과</div><div class="v">${passed ? '만족' : '미달'}</div><div class="s">${isNum(macro) ? `목표${passed ? '보다' : '까지'} ${(Math.abs(macro - pm) * 100).toFixed(1)}%p` : ''}</div></div>
+      <div class="kpi"><div class="l">세트</div><div class="v">${nf(m.n_sets)}</div><div class="s">${isNum(m.n_predictions) ? '속성정보 파일 ' + nf(m.n_predictions) + '개' : ''}</div></div></div>
+      <div style="margin-top:12px"><div class="bar"><i style="width:${(Math.max(0, Math.min(1, macro || 0)) * 100).toFixed(1)}%"></i><u style="left:${pm * 100}%"></u></div><p class="note">Macro ${pct(macro)} · 성능목표 ${pct(pm, 0)} (빨간 선)</p>${t === 'T-002' ? contractSourceHTML(run) : ''}</div></div>`;
+  }
+  const ks = resultKeys();
+  root.innerHTML = `<section class="pane"><div class="ph"><span class="t">${TN(t)} · ${esc(TFULL[t] || '')}</span><span class="r">${sel}<span>${esc(meta)}</span></span></div>${body}</section>
+    ${m ? `<section class="pane"><div class="ph"><span class="t">항목별 Precision · Recall · F1-score</span><span class="r">항목마다 전체 세트의 TP · FP · FN 을 합산 · 최종 지표 = 항목별 F1-score 의 산술평균(Macro)</span></div><div class="tw">${prfTableHTML(m, ks)}</div></section>` : ''}
+    <section class="pane"><div class="ph"><span class="t">세트 × 항목 판정</span><span class="r">세트마다 ${ks.filter(K => K.key !== 'other_rights').length}개 항목의 판정 · 칸에 마우스를 올리면 항목과 예측 값</span></div>
+      <div class="filters"><label><input type="checkbox" data-bind="r-bad"${R.onlyBad ? ' checked' : ''}> 불일치가 있는 세트만</label><label><input type="checkbox" data-bind="r-failed"${R.failed ? ' checked' : ''}> 처리 실패만</label>
+        <label>검색 <input type="search" data-bind="r-q" value="${esc(R.q)}" placeholder="세트 ID · 저작물명"></label>
+        <span class="legend">${['TP', 'PARTIAL', 'WRONG', 'FN', 'FP', 'NA'].map(k => `<span><span class="vm ${VM[k][2]}">${VM[k][0]}</span> ${VM[k][1]}</span>`).join('')}</span></div>
+      <div id="rGrid">${gridHTML()}</div></section>
+    <section class="pane"><div class="ph"><span class="t">결과 파일</span><span class="r mono">${esc(R.runId)}</span></div><div class="pb">
+      ${isNum(run.n_predictions) ? `<div class="files" style="margin-bottom:10px"><b>속성정보 파일 ${nf(run.n_predictions)}개 (*.json)</b>${run.predictions_dir ? `<span class="mono mut" style="overflow-wrap:anywhere">${esc(run.predictions_dir)}</span><button type="button" class="btn sm" data-act="copy" data-v="${esc(run.predictions_dir)}">경로 복사</button>` : ''}</div>` : ''}
+      <div class="files"><a class="btn" href="${dlHref(R.runId, 'test.log')}" download="test.log">${ICON_DL} 실행 로그 <span class="mono mut">test.log</span></a><a class="btn pri" href="${dlHref(R.runId, 'run.zip')}" download="run.zip">${ICON_DL} 실행 묶음 (ZIP) <span class="mono">run.zip</span></a></div>
+      <p class="note">run.zip = 속성정보 파일(*.json) · 지표(test_metrics.json · report.md) · 세트별 판정(per_set.jsonl) · 예측 모음(test_predictions.jsonl) · 실행 설정 · test.log</p></div></section>`;
+}
+
+/* ---------- 이벤트 ---------- */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if(!b) return;
+  const a = b.dataset.act, v = b.dataset.v, k = b.dataset.k;
+  if(a === 'fb-close' && e.target.closest('[data-stop]') && !e.target.closest('button')) return;
+  if(b.disabled) return;
+  if(b.tagName === 'A' && a === 'go') e.preventDefault();
+  if(a === 'go') go(v);
+  else if(a === 'theme') toggleTheme();
+  else if(a === 'test'){ S.test = v; S.startErr = null; renderTest(); maybeScan(v); }
+  else if(a === 'load'){ const inp = $('#p-' + k); if(inp) setPath(S.test, k, inp.value); loadPeek(S.test, k); }
+  else if(a === 'browse') openBrowser(k);
+  else if(a === 'fb-go') fbGo(v, false);
+  else if(a === 'fb-close'){ S.fb = null; renderModal(); }
+  else if(a === 'fb-pick' || a === 'fb-file'){ const F = S.fb; const path = a === 'fb-file' ? v : F.data.path; S.fb = null; renderModal(); setPath(F.test, F.kind, path); if(S.test === F.test) renderTest(); loadPeek(F.test, F.kind); }
+  else if(a === 'start') startRun();
+  else if(a === 'cancel'){ const P = S.prog; if(!P || !confirm('실행을 취소할까요? 진행 중인 세트만 마치고 멈춥니다.')) return; try{ await api(runPath(P.runId) + '/cancel', {json: {}}); toast('취소를 요청했습니다 — 진행 중인 세트만 마치고 멈춥니다'); }catch(err){ toast(err.message, true); } }
+  else if(a === 'retry'){ const P = S.prog; if(!P) return; try{ await api(runPath(P.runId) + '/retry', {json: {}}); const id = P.runId; S.prog = null; await loadStatus(); await openProgress(id); renderProgress(true); toast('실패·미실행 세트를 다시 실행합니다'); }catch(err){ toast(err.message, true); } }
+  else if(a === 'open-results') openResults(v);
+  else if(a === 'pg'){ const R = S.res, last = Math.max(0, Math.floor((R.total - 1) / PAGE) * PAGE); R.offset = v === 'first' ? 0 : v === 'prev' ? Math.max(0, R.offset - PAGE) : v === 'next' ? R.offset + PAGE : last; loadSets(); }
+  else if(a === 'copy'){ try{ await navigator.clipboard.writeText(v); toast('경로를 복사했습니다'); }catch(err){ toast('복사하지 못했습니다 — 경로를 직접 선택해 복사하세요', true); } }
+});
+document.addEventListener('change', e => {
+  const el = e.target, bd = el.dataset.bind; if(!bd) return;
+  if(bd === 'path'){ if(setPath(S.test, el.dataset.k, el.value)) patchRow(S.test, el.dataset.k); }
+  else if(bd === 'pfilter' && S.prog){ S.prog.filter = el.value; const rows = $('#pRows'); if(rows){ const x = progRowsHTML(S.prog); rows.innerHTML = x; rows._h = x; rows.scrollTop = 0; } }
+  else if(bd === 'pwarn' && S.prog){ S.prog.warnOnly = el.checked; renderProgress(true); }
+  else if(bd === 'pfollow' && S.prog){ S.prog.follow = el.checked; if(el.checked){ const lg = $('#pLog'); if(lg) lg.scrollTop = lg.scrollHeight; } }
+  else if(bd === 'run') openResults(el.value);
+  else if(bd === 'r-bad'){ S.res.onlyBad = el.checked; S.res.offset = 0; loadSets(); }
+  else if(bd === 'r-failed'){ S.res.failed = el.checked; S.res.offset = 0; loadSets(); }
+});
+let qT = null;
+document.addEventListener('input', e => {
+  if(e.target.dataset.bind === 'path'){ const lb = $('#load-' + e.target.dataset.k); if(lb && !S.peekBusy[pk(S.test, e.target.dataset.k)]) lb.disabled = !e.target.value.trim(); return; }
+  if(e.target.dataset.bind !== 'r-q') return; S.res.q = e.target.value; clearTimeout(qT); qT = setTimeout(() => { S.res.offset = 0; loadSets(); }, 300); });
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && S.fb){ S.fb = null; renderModal(); }
+  if(e.key === 'Enter' && e.target.dataset && e.target.dataset.bind === 'path'){ const k = e.target.dataset.k; setPath(S.test, k, e.target.value); loadPeek(S.test, k); }
+});
+
+/* ---------- 시작 ---------- */
+(async function init(){
+  themeLabel();
+  await loadStatus();
+  setInterval(loadStatus, 10000);
+  const want = (location.hash || '').slice(1);
+  // 경로가 이미 있으면 미리보기를 다시 불러온다 (새로 고침해도 그대로)
+  for(const t of TESTS) for(const k of KINDS) if(S.paths[t][k]) loadPeek(t, k);
+  if(['test', 'progress', 'results'].includes(want)) go(want);
+  else if(activeRuns().length) go('progress');
+  else go('test');
+})();
+</script>
+{% endraw %}
+</body>
+</html>

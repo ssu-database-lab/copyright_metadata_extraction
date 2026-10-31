@@ -16,8 +16,10 @@ CLI 하네스와 웹 배치 API가 **이 클래스 하나**를 공유한다. 실
 **v4 — 채점 기준 "eval23" (docs/v4/M2_runner_spec.md §1.B B2·B3)** 에서는 세트가 **다리 하나**다:
     T-001 계약서 단독 → 파이프라인(텍스트층/OCR → LLM ∥ NER → 통합검증) → response["test_prediction"](23키)
                         를 그대로 기록, 17~23 키는 null 로 고정
-    T-002 저작물      → 계약서는 규칙 파싱(제목·종별, 모델 호출 없음)으로 **문맥만** 주고 저작물 leg 만 부른다
-                        (consolidate_work=False · frame_schedule="v4"); 1~16 은 문맥의 제목·종별만 채우고 나머지 null
+    T-002 저작물      → 계약서는 규칙 파싱(제목·종별, 모델 호출 없음)으로 **문맥만** 주고 저작물 leg 를 부른다
+                        (consolidate_work=False · frame_schedule="v4"). 1~16번(파일명 제외)은 같은 계약서를 처리한
+                        Te-1 결과를 쓰고(v4/te1_reuse — 세트 ID + 계약서 sha256), 없으면 그 세트에서 계약서 leg 를
+                        직접 돌린다 (RunConfig.contract_items; 2610028 최종 절차서: Te-2 는 1~23번 평가)
   여기서는 채점하지 않는다 — <out>/test_predictions/<set_id>.json (+ test_predictions.jsonl) 에 기록만 하고,
   지표는 M1 평가기(api.module.evaluation.v4.evaluate) 가 gold23.jsonl 과 대조해 test_metrics.json · report.md 를
   낸다(--gold 를 주면 finalize_eval23 이 호출). 다리가 하나뿐이므로 세트 = 스레드풀의 작업 단위 하나다.
@@ -50,7 +52,9 @@ from typing import Any, Callable, Dict, List, Optional
 from .. import log_context as LC
 from .manifest import ManifestEntry, effective_test
 from .scoring import attributes_for, score_set
-from .v4.keys23 import KEY_NAMES, T001_KEYS, T002_KEYS, empty_prediction
+from .v4.keys23 import CONTRACT_ITEM_KEYS, KEY_NAMES, T001_KEYS, T002_KEYS, empty_prediction
+from .v4.te1_reuse import contract_items as _te1_contract_items
+from .v4.te1_reuse import set_filename as _set_filename
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +163,9 @@ class RunConfig:
     n_boot: Optional[int] = None          # 부트스트랩 반복 수(M1 §7) — None 이면 평가기 기본값(1,000)
     title_fallback: bool = False          # T-002 계약서가 없는 세트에 매니페스트 제목(extra.title)을 문맥으로 준다 — 모든 저작물에 계약서가 있는 본 시험을 흉내 내는 개발·파일럿용. 기본 off
     only_predicted: bool = False          # gold 를 예측이 있는 set_id 로 제한(M2b 수정 4) — 개발·파일럿 런이 4,000세트 전부를 FN 으로 세지 않도록. 기본 off = M1 동작
+    # T-002 의 1~16번(파일명 제외): "te1" = 같은 계약서의 Te-1 결과(BatchRunner.te1_lookup)를 쓰고, 없으면 그 세트에서
+    # 계약서 leg 를 돌린다 · "process" = 늘 계약서 leg 를 돌린다 · "off" = 돌리지 않는다(제목·종별 문맥만 — 개발용, 1~16 은 FN)
+    contract_items: str = "te1"
 
 
 def _pdf_page_count(path: str) -> int:
@@ -350,13 +357,15 @@ def _context_payload(context: Optional[Dict[str, Any]]) -> Optional[Dict[str, An
 
 def build_prediction_record(test: Optional[str], set_id: str, test_prediction: Optional[Dict[str, Any]], *,
                             file_name: Optional[str] = None,
-                            contract_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                            contract_context: Optional[Dict[str, Any]] = None,
+                            contract_items: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """파이프라인의 test_prediction(23키) → 시험용 예측 레코드 (M2 §2, M1 §6).
 
     T-001: 1~16 은 응답 그대로, 17~23 은 **null 로 고정**(평가기가 비채점 키의 값을 경고로 보고한다),
            other_rights 는 전 계약서 상태 ③ 이므로 항상 null.
-    T-002: 17~23 은 응답 그대로, 1~16 은 계약서 규칙 파싱의 제목·종별만 채우고 나머지 null(비채점).
-    file_name 은 **원본 파일명**(basename, 공백 포함) — 파이프라인의 정제된 filename 이 아니다.
+    T-002: 17~23 은 응답 그대로, 1~16(파일명 제외)은 contract_items(Te-1 결과 또는 이 세트의 계약서 leg)에서.
+           contract_items 가 없거나 제목·종별이 비면 계약서 규칙 파싱의 제목·종별을 쓴다.
+    file_name 은 **원본 파일명**(basename, 공백 포함) — 파이프라인의 정제된 filename 이 아니다 (T-002 는 저작물 파일).
     """
     src = test_prediction if isinstance(test_prediction, dict) else {}
     rec: Dict[str, Any] = {"set_id": str(set_id), "test": test, **empty_prediction()}
@@ -368,19 +377,19 @@ def build_prediction_record(test: Optional[str], set_id: str, test_prediction: O
         for k in T002_KEYS:
             rec[k] = src.get(k)
         ctx = contract_context or {}
-        rec["work_title"] = ctx.get("title") or None
-        rec["work_type"] = ctx.get("work_type") or None
+        for k in CONTRACT_ITEM_KEYS:
+            if contract_items and k in contract_items:
+                rec[k] = contract_items[k]
+        rec["work_title"] = rec["work_title"] or ctx.get("title") or None
+        rec["work_type"] = rec["work_type"] or ctx.get("work_type") or None
     if file_name:
         rec["file_name"] = file_name
-    elif test == "T-002" and src.get("file_name"):   # T-002 는 file_name 이 채점 키 목록에 없어 따로 옮긴다
+    elif test == "T-002" and src.get("file_name"):   # T-002 의 file_name 은 저작물 파일의 이름 (T002_KEYS 밖이라 따로 옮긴다)
         rec["file_name"] = src.get("file_name")
     return rec
 
 
-def _safe_set_filename(set_id: str) -> str:
-    """<set_id>.json 의 파일명 — 평가기는 파일 stem 을 set_id 로 읽으므로 가능한 한 그대로 둔다."""
-    s = str(set_id).strip() or "_"
-    return s.replace(os.sep, "_").replace("/", "_")
+_safe_set_filename = _set_filename      # <set_id>.json 의 파일명 — Te-1 결과를 찾는 쪽(te1_reuse)과 같은 규칙
 
 
 class BatchRunner:
@@ -393,6 +402,9 @@ class BatchRunner:
         self.results_path = self.out_dir / "results.jsonl"
         self.progress_cb = progress_cb
         self.cancel_event = threading.Event()
+        # T-002: ManifestEntry → 같은 계약서의 Te-1 결과 {record, run_id, path, contract_sha256} 또는 None.
+        # 콘솔(지난 Te-1 실행 · 함께 도는 Te-1)과 CLI(--te1-predictions)가 넣는다. 없으면 계약서 leg 를 돌린다.
+        self.te1_lookup: Optional[Callable[[ManifestEntry], Optional[Dict[str, Any]]]] = None
 
         self._lock = threading.Lock()
         self._cost = 0.0
@@ -623,6 +635,68 @@ class BatchRunner:
         except Exception as e:  # noqa: BLE001 — 미리보기용 사본이 시험을 막지 않게
             self.log.warning("계약서 사본 저장 실패 (%s): %s", os.path.basename(str(contract_path)), e)
 
+    def _contract_leg(self, entry: ManifestEntry, cost_box: Dict[str, float], legs: Dict[str, Any]) -> Dict[str, Any]:
+        """계약서 leg — 파이프라인(텍스트층/OCR → LLM ∥ NER → 통합검증). T-001 세트와 Te-1 결과가 없는 T-002 세트가 부른다."""
+        t1 = time.perf_counter()
+        resp = self.orch.run(
+            b"", os.path.basename(entry.contract), source_path=entry.contract,   # 메모리에 올리지 않는다 — setup() 이 작업 사본으로 복사하고 세트 끝에 지운다
+            model_name=self.cfg.model_name,
+            document_type=self.cfg.contract_document_type,
+            ocr_provider=self.cfg.ocr_provider, ocr_model=self.cfg.ocr_model,
+            ner_model=self.cfg.ner_model, consolidate=self.cfg.consolidate,
+            consolidation_model=self.cfg.consolidation_model,
+            # 파이프라인 쪽 test_prediction(llm_metadata.json)도 계약서 시험 규칙(17~23 null)을 따르게 한다 —
+            # 최종 권위는 build_prediction_record 지만, 같은 leg 의 두 산출물이 서로 달라서는 안 된다
+            test="T-001",
+        ) or {}
+        cost_box["v"] += _estimate_cost(resp, "text", True, pages=_pdf_page_count(entry.contract),
+                                        consolidated=self.cfg.consolidate)
+        legs["contract"] = _leg_info(resp, time.perf_counter() - t1)
+        return resp
+
+    def _t002_contract_items(self, entry: ManifestEntry, cost_box: Dict[str, float], legs: Dict[str, Any],
+                             out: Dict[str, Any]) -> tuple:
+        """T-002 세트의 1~16번(파일명 제외) → (항목 dict 또는 None, 출처 dict). 출처에 error 가 있으면 세트를 실패로 둔다
+        (다시 실행하면 이 세트를 처음부터 다시 처리한다)."""
+        mode = self.cfg.contract_items
+        if mode == "off":
+            return None, {"source": "off"}
+        if not entry.contract:
+            self.log.warning("[%s] 1~16번 — 짝 계약서가 없어 비워 둡니다", entry.set_id, extra={"component": "계약서"})
+            return None, {"source": "none", "reason": "계약서 없음"}
+        if mode == "te1" and self.te1_lookup is not None:
+            t1 = time.perf_counter()
+            try:
+                hit = self.te1_lookup(entry)
+            except Exception as e:  # noqa: BLE001 — 찾기가 깨져도 계약서를 직접 처리하면 된다
+                self.log.warning("[%s] Te-1 결과 찾기 실패 (%s: %s) — 계약서를 직접 처리합니다",
+                                 entry.set_id, type(e).__name__, e, extra={"component": "계약서"})
+                hit = None
+            if hit:
+                legs["te1"] = {"ok": True, "elapsed_sec": round(time.perf_counter() - t1, 3), "run_id": hit.get("run_id")}
+                self.log.info("[%s] 1~16번 — Te-1 실행 %s 의 결과를 씁니다 (같은 계약서 %s · sha256 %s…)", entry.set_id,
+                              hit.get("run_id"), os.path.basename(entry.contract), str(hit.get("contract_sha256"))[:12],
+                              extra={"component": "계약서"})
+                return _te1_contract_items(hit["record"]), {
+                    "source": "te1", "run_id": hit.get("run_id"), "path": hit.get("path"),
+                    "contract_sha256": hit.get("contract_sha256")}
+        reason = "Te-1 결과 없음" if mode == "te1" else "늘 처리(contract_items=process)"
+        self.log.info("[%s] 1~16번 — %s → 계약서 %s 를 이 세트에서 처리합니다", entry.set_id, reason,
+                      os.path.basename(entry.contract), extra={"component": "계약서"})
+        try:
+            resp = self._contract_leg(entry, cost_box, legs)
+        except Exception as e:  # noqa: BLE001
+            return None, {"source": "contract_leg", "reason": reason,
+                          "error": f"계약서 처리 실패 — {type(e).__name__}: {e}"}
+        out["contract_request_id"] = resp.get("request_id")
+        pc = resp.get("test_prediction")
+        src = {"source": "contract_leg", "reason": reason, "request_id": resp.get("request_id"),
+               "contract_sha256": resp.get("file_hash")}
+        if not resp.get("success") or not isinstance(pc, dict):
+            src["error"] = f"계약서 처리 실패: {resp.get('error') or 'test_prediction 없음'}"
+            return None, src
+        return {k: pc.get(k) for k in CONTRACT_ITEM_KEYS}, src
+
     def _contract_context(self, contract_path: str) -> Optional[Dict[str, Any]]:
         """계약서 PDF → {"title", "work_type", "source": "rules"} — 규칙 파싱만, 모델 호출 없음 (M2 A4)."""
         fn = _load_context_parser()
@@ -705,6 +779,8 @@ class BatchRunner:
         resp: Dict[str, Any] = {}
         pred_src: Any = None
         ok, error = False, None
+        citems: Optional[Dict[str, Any]] = None
+        csrc: Optional[Dict[str, Any]] = None
         self.log.info("[%s] 시작 — test=%s · media=%s · 계약서=%s · 저작물=%s", entry.set_id, test, entry.media,
                       os.path.basename(entry.contract) if entry.contract else "-",
                       os.path.basename(entry.work) if entry.work else "-")
@@ -712,21 +788,7 @@ class BatchRunner:
             if test == "T-001":
                 if not entry.contract:
                     raise ValueError("T-001 세트에 계약서가 없습니다")
-                t1 = time.perf_counter()
-                resp = self.orch.run(
-                    b"", os.path.basename(entry.contract), source_path=entry.contract,   # 메모리에 올리지 않는다 — setup() 이 작업 사본으로 복사하고 세트 끝에 지운다
-                    model_name=self.cfg.model_name,
-                    document_type=self.cfg.contract_document_type,
-                    ocr_provider=self.cfg.ocr_provider, ocr_model=self.cfg.ocr_model,
-                    ner_model=self.cfg.ner_model, consolidate=self.cfg.consolidate,
-                    consolidation_model=self.cfg.consolidation_model,
-                    # 파이프라인 쪽 test_prediction(llm_metadata.json)도 같은 시험 규칙(17~23 null)을 따르게 한다 —
-                    # 최종 권위는 build_prediction_record 지만, 같은 leg 의 두 산출물이 서로 달라서는 안 된다
-                    test=test,
-                ) or {}
-                cost_box["v"] += _estimate_cost(resp, "text", True, pages=_pdf_page_count(entry.contract),
-                                                consolidated=self.cfg.consolidate)
-                legs["contract"] = _leg_info(resp, time.perf_counter() - t1)
+                resp = self._contract_leg(entry, cost_box, legs)
                 out["contract_request_id"] = resp.get("request_id")
             elif test == "T-002":
                 if not entry.work:
@@ -792,6 +854,10 @@ class BatchRunner:
                 error = "응답에 test_prediction(23키) 이 없습니다 — 파이프라인 eval23 직렬화기(M2 A2) 미반영"
             else:
                 ok = True
+            if ok and test == "T-002":
+                citems, csrc = self._t002_contract_items(entry, cost_box, legs, out)
+                if csrc.get("error"):
+                    ok, error = False, csrc["error"]
         except Exception as e:
             error = f"{type(e).__name__}: {e}"
             out["traceback"] = traceback.format_exc()[-800:]
@@ -800,9 +866,11 @@ class BatchRunner:
         src_file = entry.contract if test == "T-001" else entry.work
         file_name = resp.get("file_name") or (os.path.basename(src_file) if src_file else None)
         record = build_prediction_record(test, entry.set_id, pred_src, file_name=file_name,
-                                         contract_context=context)
+                                         contract_context=context, contract_items=citems)
         elapsed = round(time.perf_counter() - t0, 2)
         record["_meta"] = self._meta(entry, test, ok, error, elapsed, cost_box["v"], legs, context, resp, pred_src)
+        if test == "T-002":
+            record["_meta"]["contract_items"] = csrc
         path = self._write_prediction(record)
 
         timing = " · ".join(f"{leg} {info.get('elapsed_sec')}s" for leg, info in legs.items()
@@ -929,8 +997,9 @@ class BatchRunner:
             except (OSError, json.JSONDecodeError):
                 continue
             if isinstance(r, dict):
-                out.append({"set_id": r.get("set_id") or f.stem, "test": r.get("test"),
-                            "ok": bool((r.get("_meta") or {}).get("ok"))})
+                meta = r.get("_meta") or {}
+                out.append({"set_id": r.get("set_id") or f.stem, "test": r.get("test"), "ok": bool(meta.get("ok")),
+                            "contract_items": meta.get("contract_items")})
         return out
 
     def _render_predictions_report(self, summary: Dict[str, Any]) -> str:
@@ -974,6 +1043,20 @@ class BatchRunner:
             "embed_cache": self.cfg.embed_cache, "embed_revision": self.cfg.embed_revision,
             "n_boot": self.cfg.n_boot, "only_predicted": self.cfg.only_predicted, "evaluated": False,
         }
+        if test == "T-002":
+            # 1~16번의 출처 — Te-1 실행별 세트 수 · 이 실행에서 계약서를 처리한 세트 수 (결과 화면과 report.json)
+            ci: Dict[str, Any] = {"te1": 0, "contract_leg": 0, "none": 0, "runs": {}}
+            for pr in preds:
+                c = pr.get("contract_items") if isinstance(pr.get("contract_items"), dict) else {}
+                src = c.get("source")
+                if src == "te1" and pr["ok"]:
+                    ci["te1"] += 1
+                    ci["runs"][str(c.get("run_id"))] = ci["runs"].get(str(c.get("run_id")), 0) + 1
+                elif src == "contract_leg" and pr["ok"]:
+                    ci["contract_leg"] += 1
+                else:
+                    ci["none"] += 1
+            summary["contract_items"] = ci
         if self.cfg.gold:
             if not test:
                 summary["warning"] = ("시험 구분을 정할 수 없어(예측에 T-001·T-002 혼재 또는 없음) 평가를 건너뜁니다 — "

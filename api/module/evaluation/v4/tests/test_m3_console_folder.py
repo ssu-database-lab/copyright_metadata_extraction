@@ -330,7 +330,10 @@ def test_t002_folder_run_with_csv_answers_scores_like_jsonl(console, roots):
     c = logged_in(console)
     sc = _scan(c, test="T-002", work_dirs=[str(syn["img"].parent)], answers={"T-002": {"mode": "file", "path": str(ans)}})
     v = sc["tests"]["T-002"]
-    assert v["answer"]["format"] == "csv" and v["answer"]["missing_columns"] == [] and v["n_scored"] == 3
+    # 최종 절차서: Te-2 는 1~23번 — 저작물 열만 있는 표는 1~16번 열(파일명 제외)이 없다고 알린다
+    from module.evaluation.v4.keys23 import CONTRACT_ITEM_KEYS
+    assert v["answer"]["format"] == "csv" and v["n_scored"] == 3
+    assert v["answer"]["missing_columns"] == list(CONTRACT_ITEM_KEYS)
     rid = c.post("/api/test/folder/start", json={"scan_id": sc["scan_id"]}).json()["run_id"]
     d1 = wait_done(c, rid)
     assert (console.runs / rid / "answers.jsonl").is_file() and (console.runs / rid / "answers_source.csv").is_file()

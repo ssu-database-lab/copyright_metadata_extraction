@@ -152,9 +152,10 @@ def test_t002_per_key_counts(t002_run):
         st = m["keys"][key]
         assert (st["tp"], st["fp"], st["fn"], st["n_scored"]) == (tp, fp, fn, n), key
         assert st["f1"] == pytest.approx(float(f1(tp, fp, fn)))
-    assert set(m["keys"]) == set(T002_KEYS)
+    assert set(m["keys"]) == set(KEY_NAMES)       # 최종 절차서: Te-2 는 1~23번 모두 채점
     assert judge.calls == 3                      # 판정기는 gold value + 예측 non-null 일 때만 호출: S1, S2, S5 (S3 empty, S4 누락, S6 na)
-    assert m["excluded_keys"] == []
+    # 이 gold 에는 1~16번 정답이 없다(상태 ③) — 분모에서 빠지고 평균은 17~23번 그대로
+    assert {x["key"] for x in m["excluded_keys"]} == set(KEY_NAMES) - set(T002_KEYS)
 
 
 def test_t002_macro_micro(t002_run):
@@ -206,15 +207,18 @@ def test_t002_outputs_and_determinism(t002_run, tmp_path: Path):
     m, out, _ = t002_run
     assert (out / "test_metrics.json").exists() and (out / "report.md").exists() and (out / "per_set.jsonl").exists()
     rows = [json.loads(l) for l in (out / "per_set.jsonl").read_text(encoding="utf-8").splitlines()]
-    assert len(rows) == 6 * 7
-    assert [r["set_id"] for r in rows[:7]] == ["S1"] * 7 and [r["key"] for r in rows[:7]] == list(T002_KEYS)
+    assert len(rows) == 6 * 23
+    assert [r["set_id"] for r in rows[:23]] == ["S1"] * 23 and [r["key"] for r in rows[:23]] == list(KEY_NAMES)
     d = next(r for r in rows if r["set_id"] == "S1" and r["key"] == "description")
     assert d["tp"] == 1 and d["detail"]["cosine"] == 0.9 and "해변에" in d["detail"]["shared_tokens"]
     s4 = [r for r in rows if r["set_id"] == "S4"]
     assert sum(r["fn"] for r in s4) == 3 + 1 + 1 + 1 + 1 + 1 and all(r["pred"] is None for r in s4)
     na = next(r for r in rows if r["set_id"] == "S6" and r["key"] == "description")
     assert (na["state"], na["kind"], na["tp"], na["fp"], na["fn"], na["matched"]) == ("na", "label", 0, 0, 0, None)
-    for st in m["keys"].values():
+    for name, st in m["keys"].items():
+        if name not in T002_KEYS:                # 1~16번은 이 gold 에 정답이 없어(상태 ③) 신뢰구간도 없다
+            assert st["ci95_f1"] is None and st["n_scored"] == 0
+            continue
         lo, hi = st["ci95_f1"]
         assert 0.0 <= lo <= hi <= 1.0
     assert m["macro"]["ci95_f1"] and m["micro"]["ci95_f1"]

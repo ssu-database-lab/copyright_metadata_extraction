@@ -201,7 +201,7 @@ def check_known_keys(set_id: str, pred: dict[str, Any], warnings: Warnings) -> N
 
 
 def check_unscored(test: str, set_id: str, pred: dict[str, Any], warnings: Warnings) -> None:
-    """T-001 예측은 17~23 이 null 이어야 한다(§6). T-002 의 1~16 은 계약서 복사가 허용되므로 경고하지 않는다(§0)."""
+    """T-001 예측은 17~23 이 null 이어야 한다(§6). T-002 는 1~23 을 모두 채점하므로 비채점 키가 없다."""
     if test != "T-001":
         return
     for name in T002_KEYS:

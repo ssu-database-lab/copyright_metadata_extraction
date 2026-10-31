@@ -803,7 +803,16 @@ def test_vlm_prompts_request_hashtags_and_keep_other_lines():
         lines = text.splitlines()
         i = next(idx for idx, l in enumerate(lines) if l.startswith('  "keywords"'))
         assert lines[i + 1].startswith('  "hashtags"')                           # keywords 줄 바로 다음
-        assert lines[i].startswith('  "keywords": ["키워드 5~7개 — 저작물명에 주제어')    # 2026-10-10: 지침 정렬 키워드 규칙
+        if text is P.USER_PROMPT:                                               # 2026-10-10: 지침 정렬 키워드 규칙 (이미지)
+            assert lines[i].startswith('  "keywords": ["키워드 5~7개 — 저작물명에 주제어')
+        else:                                                                   # 2026-10-31: 영상은 아카이브 분류어
+            assert lines[i].startswith('  "keywords": ["키워드 5~10개 — 아카이브 검색용 분류어')
+            assert "사람 이름" in lines[i] and "'영상'을 넣고" in lines[i]
+        d = block["description"]
+        if text is P.USER_PROMPT:                                               # 2026-10-31: 이미지 설명 = 정답 초안 지침의 글쓰기 규칙
+            assert "1~3문장, 공백 포함 30~200자" in d and "첫 문장 = 주 피사체" in d and "추측" in d
+        else:                                                                   # 영상 설명은 그대로 (Te-2 확인에서 옛 영화가 떨어짐)
+            assert d.startswith("영상 내용을 한국어 2~3문장으로 구체적으로")
         assert "키워드·해시태그 작성 예시" in text and text.rstrip().endswith("JSON 객체 하나만 출력하세요.")
     # 나머지 줄은 그대로: 규칙 문단·마무리 문장·영상용 머리말·계약서 문맥 줄
     assert "★ 매우 중요: work_type은 '무엇을 찍었는가(피사체)'가 아니라" in P.USER_PROMPT
