@@ -430,7 +430,7 @@ function patchRow(t, k){
 }
 function renderTest(){
   const t = S.test;
-  $('#scr-test').innerHTML = `<div class="ttabs" role="tablist" aria-label="시험">${TESTS.map(x => `<button type="button" class="ttab" role="tab" aria-selected="${t === x}" data-act="test" data-v="${x}"><span class="c">${TN(x)}</span><b>${TFULL[x]}</b><small>${INPUT[x]}를 입력으로 ${scopeTxt(x)} 평가</small></button>`).join('')}</div>
+  $('#scr-test').innerHTML = `<div class="ttabs" role="tablist" aria-label="시험">${TESTS.map(x => `<button type="button" class="ttab" role="tab" aria-selected="${t === x}" data-act="test" data-v="${x}"><span class="c">${TN(x)}</span><b>${TFULL[x]}</b><small>계약서와 저작물 입력으로 ${scopeTxt(x)} 평가</small></button>`).join('')}</div>
     <section class="pane"><div class="ph"><span class="t">시험 자료</span><span class="r">계약서 폴더 · 저작물 폴더 · 정답 파일을 모두 불러오면 「추출 및 검증」이 열립니다</span></div>
       <div class="pb">${KINDS.map(k => pathRowHTML(t, k)).join('')}</div></section>
     <div class="prev3">${KINDS.map(k => previewHTML(t, k)).join('')}</div>
