@@ -268,17 +268,35 @@ def test_t002_fills_title_and_type_from_contract_context():
         eval23.build(vlm, resp, "T-003")
 
 
-def test_copyright_holder_is_licensee_party_not_model_value():
-    out = eval23.build(_md(licensee_party="한국저작권위원회"), RESP, None)
+def test_copyright_holder_is_licensor_party_then_model_value():
+    """v5 (2026-11-03): 키 5 = 권리자(이용허락자) 당사자 규칙 → 모델 copyright_holder. 이용자 당사자는 비교용(_meta)."""
+    out = eval23.build(_md(licensor_party="한국저작권위원회", licensee_party="주식회사 A"), RESP, None)
     assert out["copyright_holder"] == ["한국저작권위원회"]
-    assert out["_meta"]["copyright_holder_source"] == "licensee_party"
-    assert out["_meta"]["model_copyright_holder"] == ["김은혜"]
-    out = eval23.build(_md(licensee_party="A기관, B기관"), RESP, None)
+    assert out["_meta"]["copyright_holder_source"] == "licensor_party"
+    assert out["_meta"]["model_copyright_holder"] == ["김은혜"] and out["_meta"]["licensee_party"] == ["주식회사 A"]
+    out = eval23.build(_md(licensor_party="A기관, B기관"), RESP, None)
     assert out["copyright_holder"] == ["A기관", "B기관"]
-    out = eval23.build(_md(user="합성이용기관 교육정보센터"), RESP, None)            # 규칙 값이 없으면 모델의 user
-    assert out["copyright_holder"] == ["합성이용기관 교육정보센터"] and out["_meta"]["copyright_holder_source"] == "user"
-    out = eval23.build(_md(), RESP, None)
+    out = eval23.build(_md(licensee_party="합성이용기관 교육정보센터"), RESP, None)   # 규칙 값이 없으면 모델의 저작권자
+    assert out["copyright_holder"] == ["김은혜"] and out["_meta"]["copyright_holder_source"] == "copyright_holder"
+    out = eval23.build(_md(copyright_holder=None, user="합성이용기관"), RESP, None)  # 이용자는 키 5 로 쓰지 않는다
     assert out["copyright_holder"] is None and out["_meta"]["copyright_holder_source"] is None
+
+
+def test_find_licensor_reads_all_v5_layouts():
+    a = ("저작자 또는 저작재산권 이용허락자 한국저작권위원회(이하 “권리자”라 함)와 저작재산권 이용자 문소희 (이하 “이용자”라 함)는\n"
+         "권리자 : 한국저작권위원회\n성\n명(인) : 한국저작권위원회\n이용자 : 문소희")
+    b = ("저작재산권자 『조선유적유물도감』 복제(이하 “권리자”라 한다)와 이용자 임소희(이하 “이용자”라 한다)는\n"
+         "권리자\n성명(상호) : 『조선유적유물도감』 복제          (서명 또는 인)\n사업자등록번호 : 1\n이용자\n성명(상호) : 임소희")
+    c = ("김대봉(이하 “갑”이라 한다)과 한국저작권위원회(이하 “을”이라 한다)은\n제호(제목)\n내 마음\n저작자\n김대봉\n"
+         "저작재산권자\n김대봉\n저작물의 종류\n")
+    assert party_rules.find_licensor(a) == {"name": "한국저작권위원회", "names": ["한국저작권위원회"], "source": "signature",
+                                            "preamble": "한국저작권위원회", "agree": True}
+    rb = party_rules.find_licensor(b)
+    assert rb["names"] == ["『조선유적유물도감』 복제"] and rb["source"] == "signature_block" and rb["agree"] is True
+    rc = party_rules.find_licensor(c)
+    assert rc["names"] == ["김대봉"] and rc["source"] == "table" and rc["agree"] is True
+    assert party_rules.find_licensor("저작물 이용허락 계약서\n김대봉(이하 “갑”이라 한다)과")["source"] == "preamble"
+    assert party_rules.find_licensor("")["name"] is None
 
 
 def test_creator_never_falls_back_and_title_year_prefix_kept():
@@ -587,8 +605,11 @@ def test_build_response_t001_contract(tmp_path, light_llm_extraction):
     assert resp["ocr_provider"] == "alibaba" and resp["ocr_provider_used"] == "direct_text" and resp["ocr_pages"] == 5
     assert resp["licensee_party"] == LICENSEE and resp["licensee_party_detail"]["source"] == "signature"
     assert resp["metadata"]["licensee_party"] == LICENSEE
+    assert resp["licensor_party_detail"]["source"] == "signature"
     pred = resp["test_prediction"]
-    assert pred["copyright_holder"] == [LICENSEE] and pred["_meta"]["model_copyright_holder"] == ["김은혜"]
+    # v5: 키 5 = 권리자 당사자 (서명란 `권리자 : 김은혜`) — 이용자(한국저작권위원회)는 비교용
+    assert pred["copyright_holder"] == ["김은혜"] and pred["_meta"]["model_copyright_holder"] == ["김은혜"]
+    assert pred["_meta"]["copyright_holder_source"] == "licensor_party" and pred["_meta"]["licensee_party"] == [LICENSEE]
     assert pred["file_name"] == pdfs[0].name and pred["work_title"] == "운수 자판기" and pred["creator"] == ["양지웅", "이영지", "신혜진"]
     # M2b 수정 2: 제목·종별은 규칙 파싱(contract_context_rules)이 모델 값을 이긴다 — 모델 값은 _meta 에만
     assert pred["_meta"]["work_title_source"] == "rules" and pred["_meta"]["work_type_source"] == "rules"

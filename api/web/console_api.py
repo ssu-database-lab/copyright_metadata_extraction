@@ -1749,8 +1749,7 @@ def _previews(run: TestRun, set_id: str, rec: Dict[str, Any]) -> Dict[str, Any]:
 FIELD_KEY23: Dict[str, str] = {
     "work_title": "work_title", "file_name": "file_name", "work_type": "work_type",
     "author": "creator", "creator": "creator",
-    "copyright_holder": "copyright_holder", "licensee_party": "copyright_holder", "licensee": "copyright_holder",
-    "user": "copyright_holder",
+    "copyright_holder": "copyright_holder", "licensor_party": "copyright_holder",
     **{flat: k for k, flat in RIGHTS_MAP.items()}, **{k: k for k in RIGHTS_MAP},
     "other_rights": "other_rights",
     "license_start_date": "license_start_date", "license_end_date": "license_end_date",
@@ -1962,9 +1961,10 @@ def _consolidation_payload(run: "TestRun", rec: Dict[str, Any], test: Optional[s
 
 
 _SOURCE_KO = {"rules": "계약서 규칙 파싱", "model": "모델 추출", "contract_context": "계약서 문맥",
-              "manifest_title": "시험 목록 제목", "licensee_party": "본문 규칙(이용자 당사자)",
+              "manifest_title": "시험 목록 제목", "licensor_party": "본문 규칙(권리자 당사자)",
+              "copyright_holder": "모델 추출(저작권자)", "licensee_party": "본문 규칙(이용자 당사자)",
               "licensee": "모델 추출(이용자)", "user": "모델 추출(이용자)", "keywords": "키워드에서 변환",
-              "signature": "서명란", "preamble": "전문(前文)"}
+              "signature": "서명란", "signature_block": "서명란", "table": "대상저작물 표", "preamble": "전문(前文)"}
 _KIND_KO = {"generated": "생성 정답", "caption": "캡션 정답", "label": "라벨 정답", "site": "사이트 정답"}
 
 
@@ -2000,7 +2000,7 @@ def _build_evidence(test: str, rec: Dict[str, Any], resp: Dict[str, Any], vrows:
     md.update({k: v for k, v in con_md.items() if v not in (None, "", [], {})})
     rules = resp.get("contract_context_rules") if isinstance(resp.get("contract_context_rules"), dict) else {}
     ctx = meta.get("contract_context") if isinstance(meta.get("contract_context"), dict) else {}
-    lp = resp.get("licensee_party_detail") or pm.get("licensee_rule") or {}
+    lp = resp.get("licensor_party_detail") or pm.get("licensor_rule") or {}
     lp = lp if isinstance(lp, dict) else {}
     unparsed = pm.get("unparsed") if isinstance(pm.get("unparsed"), dict) else {}
     decisions = resp.get("consolidation_decisions")
@@ -2079,11 +2079,11 @@ def _build_evidence(test: str, rec: Dict[str, Any], resp: Dict[str, Any], vrows:
         elif k == "copyright_holder":
             src = pm.get("copyright_holder_source")
             ev[k] = _ev(_SOURCE_KO.get(src) if src else None,
-                        "저작권자는 계약서의 이용자 당사자입니다 — 본문 규칙(서명란 → 전문 순)으로 읽고, 모델의 저작권자 값은 "
-                        "대조용으로만 남깁니다.",
-                        [("서명란", lp.get("signature")), ("전문(前文)", lp.get("preamble")),
-                         ("두 출처 일치", lp.get("agree")), ("규칙 채택 출처", _SOURCE_KO.get(lp.get("source"))),
-                         ("모델 저작권자 값(쓰지 않음)", pm.get("model_copyright_holder"))])
+                        "저작권자는 계약서의 권리자(이용허락자) 당사자입니다 — 본문 규칙(서명란 → 대상저작물 표 → 전문 순)으로 "
+                        "읽고, 규칙이 못 찾으면 모델의 저작권자 값을 씁니다.",
+                        [("규칙 채택 출처", _SOURCE_KO.get(lp.get("source"))), ("전문(前文)", lp.get("preamble")),
+                         ("전문과 일치", lp.get("agree")), ("모델 저작권자 값", pm.get("model_copyright_holder")),
+                         ("이용자 당사자(비교용)", pm.get("licensee_party"))])
         elif k in RIGHTS_MAP:
             raw = md.get(RIGHTS_MAP[k])
             ev[k] = _ev("모델 추출(체크 칸)", f"계약서 {key.label_ko} 체크 칸의 표시를 허용/불허로 바꿉니다.",

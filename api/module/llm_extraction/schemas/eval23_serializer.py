@@ -14,8 +14,9 @@ tta_serializer 와 같은 자리에서 같은 입력(평면 metadata + 파이프
   3  work_type        ← 같은 우선순위(규칙 파싱 종별 → 모델 work_type) → 닫힌 집합(어문/음악/…/기타, 끝의 '저작물' 제거);
                         _meta.work_type_source · _meta.model_work_type
   4  creator          ← author (목록; `(저작물 N 건)` 주석 제거, 개행·쉼표로 분리). 다른 필드로 대체하지 않는다.
-  5  copyright_holder ← **이용자 당사자**: metadata["licensee_party"](본문 규칙, party_rules) → licensee → user.
-                        모델의 copyright_holder 는 쓰지 않고 _meta.model_copyright_holder 에만 남긴다.
+  5  copyright_holder ← **권리자(이용허락자) 당사자**: metadata["licensor_party"](본문 규칙, party_rules.find_licensor)
+                        → 모델의 copyright_holder. v5 시험 계약서(2026-11-03)는 원장의 권리자를 이용허락자 자리에 인쇄한다.
+                        9월 서식용 '이용자 당사자'(licensee_party)는 _meta.licensee_party 에 비교용으로만 남긴다.
   6~12 권리 7종       ← 개별 필드(bool/문자) 또는 granted_rights(tta_serializer._right_from_granted 재사용) → 허용/불허/null
   13 other_rights     ← 항상 null (모든 계약서가 상태 ③; 모델 값은 _meta.model_other_rights)
   14/15 시작·종료일   ← license_start_date / license_end_date (대체: effective_date / expiration_date) → YYYY-MM-DD
@@ -258,8 +259,17 @@ def _resolution(v: Any) -> Optional[str]:
         return _norm.norm_text(_scalar(v))
 
 
+def _holder(md: Dict[str, Any]) -> Tuple[Optional[List[str]], Optional[str]]:
+    """키 5 — 권리자(이용허락자) 당사자. 본문 규칙(licensor_party) → 모델의 copyright_holder 순."""
+    for key in ("licensor_party", "copyright_holder"):
+        names = _names(md.get(key))
+        if names:
+            return names, key
+    return None, None
+
+
 def _licensee(md: Dict[str, Any]) -> Tuple[Optional[List[str]], Optional[str]]:
-    """키 5 — 이용자 당사자. 본문 규칙(licensee_party) → 모델의 licensee → user 순."""
+    """이용자 당사자 (비교용). 본문 규칙(licensee_party) → 모델의 licensee → user 순."""
     for key in ("licensee_party", "licensee", "user"):
         v = md.get(key)
         if isinstance(v, dict):
@@ -312,8 +322,9 @@ def build(metadata: Optional[Dict[str, Any]],
 
     # 4~5 권리주체
     out["creator"] = _names(md.get("author"))
-    out["copyright_holder"], meta["copyright_holder_source"] = _licensee(md)
+    out["copyright_holder"], meta["copyright_holder_source"] = _holder(md)
     meta["model_copyright_holder"] = md.get("copyright_holder")
+    meta["licensee_party"], _ = _licensee(md)
 
     # 6~13 권리
     for key23, flat in RIGHTS_MAP.items():
@@ -375,6 +386,9 @@ def build(metadata: Optional[Dict[str, Any]],
     detail = resp.get("licensee_party_detail")
     if isinstance(detail, dict):
         meta["licensee_rule"] = detail
+    detail = resp.get("licensor_party_detail")
+    if isinstance(detail, dict):
+        meta["licensor_rule"] = detail
     if unparsed:
         meta["unparsed"] = unparsed
     out["_meta"] = meta

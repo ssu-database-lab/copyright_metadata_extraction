@@ -40,10 +40,17 @@ UNTICKED_GLYPHS = "□◻▫○◯☐"           # 빈 칸 (실측: □ / ◻ / 
 
 _ID_PREFIX = re.compile(r"^\d{5,8}\s+")
 _TITLE_LABEL = re.compile(r"제\s*목\s*\(\s*제\s*호\s*\)\s*[:：]\s*(?P<rest>.*)")
+# v5 계약서 B·C (2026-11-03): B `1. 제호 : <제목>` · C 표 `제호(제목)` 칸(값은 다음 줄)
+_TITLE_LABEL_B = re.compile(r"^\s*(?:\d+\s*\.\s*)?제\s*호\s*[:：]\s*(?P<rest>.*)")
+_TITLE_LABEL_C = re.compile(r"^\s*제\s*호\s*\(\s*제\s*목\s*\)\s*$")
+_NUMBERED_ITEM = re.compile(r"^\s*\d+\s*\.\s+\S+\s*[:：]")   # B 의 다음 항목 `2. 저작자 :`
+# C 표에서 제목 칸 다음에 오는 라벨 칸 — 제목 이어붙이기를 여기서 멈춘다
+_TABLE_LABEL = re.compile(r"^\s*(?:저\s*작\s*자|저\s*작\s*재\s*산\s*권\s*자|저\s*작\s*물\s*의\s*종\s*류|"
+                          r"이\s*용\s*허\s*락\s*(?:권\s*리|기\s*간)|이\s*용\s*료)\s*$")
 # '라벨 : 값' · '제N조 (…)' · '(1)' 처럼 새 항목을 여는 줄 — 제목 이어붙이기를 여기서 멈춘다
 _NEW_FIELD = re.compile(r"^\s*(?:제\s*\d+\s*조\b|\(\s*\d+\s*\)|[^\s:：]{1,12}\s*[:：])")
-_TYPE_LABEL = re.compile(r"종\s*별\s*[:：]")
-_RIGHTS_LABEL = re.compile(r"권\s*리\s*[:：]")
+_TYPE_LABEL = re.compile(r"종\s*별\s*[:：]|저\s*작\s*물\s*의\s*종\s*류\s*[:：]?")   # A `종별 :` · B `저작물의 종류 :` · C 표 칸
+_RIGHTS_LABEL = re.compile(r"권\s*리\s*[:：]|제\s*\d+\s*조|이\s*용\s*허\s*락\s*권\s*리")  # 종별 목록의 끝
 _TYPE_ITEM = re.compile(
     r"(?P<glyph>[" + re.escape(TICKED_GLYPHS) + re.escape(UNTICKED_GLYPHS) + r"])\s*"
     r"(?P<label>" + "|".join(sorted(WORK_TYPES, key=len, reverse=True)) + r")"
@@ -52,15 +59,24 @@ _MAX_TITLE_CONTINUATION = 3    # 제목이 넘어갈 수 있는 최대 줄 수 (
 _TYPE_WINDOW = 400             # '종별 :' 뒤에서 읽는 최대 글자 수
 
 
+def _title_start(line: str) -> Optional[str]:
+    """제목 라벨 줄이면 라벨 뒤 글자(C 표 칸이면 ''), 아니면 None."""
+    for pat in (_TITLE_LABEL, _TITLE_LABEL_B):
+        m = pat.search(line) if pat is _TITLE_LABEL else pat.match(line)
+        if m:
+            return m.group("rest")
+    return "" if _TITLE_LABEL_C.match(line) else None
+
+
 def _extract_title(lines: List[str]) -> Tuple[Optional[str], Optional[str]]:
-    """(관리번호를 뗀 제목, 인쇄된 원문) — `제목(제호) :` 줄과 이어지는 줄에서."""
+    """(관리번호를 뗀 제목, 인쇄된 원문) — 제목 라벨 줄(A `제목(제호) :` · B `1. 제호 :` · C `제호(제목)`)과 이어지는 줄에서."""
     for i, line in enumerate(lines):
-        m = _TITLE_LABEL.search(line)
-        if not m:
+        rest = _title_start(line)
+        if rest is None:
             continue
-        parts = [m.group("rest")]
+        parts = [rest]
         for nxt in lines[i + 1: i + 1 + _MAX_TITLE_CONTINUATION]:
-            if not nxt.strip() or _NEW_FIELD.match(nxt):
+            if not nxt.strip() or _NEW_FIELD.match(nxt) or _TABLE_LABEL.match(nxt) or _NUMBERED_ITEM.match(nxt):
                 break
             parts.append(nxt)
         # 줄 경계에 공백이 인쇄돼 있으면(`구축 ⏎전략`) 그대로 살고, 낱말 안에서 넘어갔으면 붙는다.

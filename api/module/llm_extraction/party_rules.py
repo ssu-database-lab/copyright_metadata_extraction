@@ -129,6 +129,66 @@ def extract_licensee(text: str) -> Optional[str]:
     return find_licensee(text)["name"]
 
 
+# ---------------------------------------------------------------- 권리자(이용허락자) 당사자 — v5 계약서 (2026-11-03)
+# v5 시험 계약서(장세영 템플릿 2. 계약서.hwpx = A, 숭실대 B·C)는 원장의 권리자를 **이용허락자** 자리에 인쇄한다.
+#   A  전문 `저작자 또는 저작재산권 이용허락자 <이름>(이하 “권리자”라 함)` · 서명란 `권리자 : <이름>`
+#   B  전문 `저작재산권자 <이름>(이하 “권리자”라 한다)` · 서명란 `권리자` 다음 줄 `성명(상호) : <이름>`
+#   C  표 `저작재산권자` 칸 다음 줄 `<이름>` · 전문 `<이름>(이하 “갑”이라 한다)`
+# 키 5(저작권자)는 이 당사자다. 9월 서식(권리자 열이 이용자 자리에 인쇄됨)용 find_licensee 는 비교용으로 남긴다.
+_LICENSOR_SIGNATURE = re.compile(r"^[ \t]*권\s*리\s*자\s*[:：][ \t]*(?P<name>[^\n]*)$", re.M)
+_LICENSOR_BLOCK = re.compile(r"^[ \t]*권\s*리\s*자[ \t]*\n[ \t]*성\s*명\s*\(\s*상\s*호\s*\)\s*[:：][ \t]*(?P<name>[^\n]*?)"
+                             r"(?:\s{2,}\(서명 또는 인\))?[ \t]*$", re.M)
+_LICENSOR_TABLE = re.compile(r"^[ \t]*저\s*작\s*재\s*산\s*권\s*자[ \t]*\n(?P<name>[^\n]+)$", re.M)
+_LICENSOR_PREAMBLE_LABELLED = re.compile(      # A·B: 라벨 뒤 이름 (이름이 줄을 넘을 수 있다)
+    r"저\s*작\s*재\s*산\s*권\s*(?:이\s*용\s*허\s*락\s*자|자)\s+"
+    r"(?P<name>[^\n(]{1,80}?(?:\n[^\n(]{1,40}?)?)"
+    r"\s*\(\s*이\s*하\s*[" + _OPEN_Q + r"]?\s*권\s*리\s*자\s*[" + _CLOSE_Q + r"]?")
+_LICENSOR_PREAMBLE_GAP = re.compile(           # C: 문단 첫머리 `<이름>(이하 “갑”` — 한 줄 안에서만
+    r"^(?P<name>[^\n(]{1,80}?)\s*\(\s*이\s*하\s*[" + _OPEN_Q + r"]?\s*갑\s*[" + _CLOSE_Q + r"]?", re.M)
+
+
+def _clean_party(name: Optional[str]) -> Optional[str]:
+    """권리자 이름 정리 — 낱말 안 줄바꿈 제거, 공백 접기, 양끝 쉼표·일반 따옴표만 뗀다 (『』「」 는 이름의 일부일 수 있다)."""
+    if not name:
+        return None
+    s = " ".join(name.replace("\n", "").split()).strip(" ,.;\"'“”‘’")
+    return s if s and "이하" not in s else None
+
+
+def find_licensor(text: str) -> Dict[str, Any]:
+    """권리자(이용허락자) 당사자 — 서명란 → 표 → 전문 순. 반환은 find_licensee 와 같은 모양."""
+    text = text or ""
+    found: List[str] = []
+    source = None
+    lines = text.splitlines()
+    sig = [(i, m) for i, line in enumerate(lines) for m in [_LICENSOR_SIGNATURE.match(line)] if m]
+    if sig:                                    # A 서명란 `권리자 : 이름` (+ 다음 줄로 이어지는 이름들, 9월 서식)
+        i, m = sig[-1]
+        for raw in [m.group("name")] + _continuation(lines, i):
+            n = _clean_party(raw)
+            if n and n not in found:
+                found.append(n)
+        source = "signature" if found else None
+    for name, pat, last in (("signature_block", _LICENSOR_BLOCK, True), ("table", _LICENSOR_TABLE, False)):
+        if found:
+            break
+        hits = list(pat.finditer(text))
+        if hits:
+            n = _clean_party((hits[-1] if last else hits[0]).group("name"))
+            if n:
+                found, source = [n], name
+    m = _LICENSOR_PREAMBLE_LABELLED.search(text) or _LICENSOR_PREAMBLE_GAP.search(text)
+    preamble = _clean_party(m.group("name")) if m else None
+    if not found and preamble:
+        found, source = [preamble], "preamble"
+    agree = None
+    if found and preamble and source != "preamble":
+        strip = lambda x: _NAME_ANNOT.sub("", x).replace(" ", "")
+        agree = "".join(map(strip, found)) == strip(preamble)
+    return {"name": ", ".join(found) if found else None, "names": found, "source": source,
+            "preamble": preamble, "agree": agree}
+
+
 def find_author(text: str) -> List[str]:
     """제2조 '저작자 : …' 의 이름 목록 (인쇄된 그대로 — `(저작물 N 건)` 주석 포함)."""
     return _labelled_names(text or "", _AUTHOR, last=False)

@@ -891,9 +891,9 @@ class PipelineOrchestrator:
                     _log(logging.INFO, "문맥",
                          f"이용자 당사자 규칙 — {licensee_party!r} (출처 {src_ko}"
                          + (" · 서명란·전문 일치" if agree is True else " · 서명란·전문 불일치" if agree is False else "")
-                         + ") → 저작권자(키 5)")
+                         + ") — 비교용 (키 5 는 권리자 당사자)")
                 else:
-                    _log(logging.WARNING, "문맥", "이용자 당사자 규칙 — 서명란·전문에서 이용자를 찾지 못했습니다 (저작권자 키 5 는 모델 값 대체)")
+                    _log(logging.INFO, "문맥", "이용자 당사자 규칙 — 서명란·전문에서 이용자를 찾지 못했습니다 (비교용)")
             except Exception as e:                  # 규칙 실패가 응답을 깨면 안 된다
                 _log(logging.WARNING, "문맥", f"이용자 당사자 규칙 추출 실패: {e}")
         response["licensee_party"] = licensee_party
@@ -902,6 +902,33 @@ class PipelineOrchestrator:
                 _meta = response.get(_key)
                 if isinstance(_meta, dict):
                     _meta["licensee_party"] = licensee_party
+
+        # v5 (2026-11-03): 저작권자(키 5) = 권리자(이용허락자) 당사자. v5 시험 계약서(장세영 템플릿 A + B·C)는 원장의
+        # 권리자를 이용허락자 자리('저작재산권 이용허락자 X (이하 권리자)', '저작재산권자 X', '갑 (권리자)')에 인쇄한다.
+        # 9월 서식의 '이용자 당사자' 규칙(A5)은 위에서 비교용으로만 남는다.
+        licensor_party = None
+        if ocr_text:
+            try:
+                from module.llm_extraction.party_rules import find_licensor
+                lf = find_licensor(ocr_text)
+                licensor_party = lf.get("name")
+                response["licensor_party_detail"] = {k: lf.get(k) for k in ("source", "preamble", "agree")}
+                if licensor_party:
+                    src_ko = {"signature": "서명란", "signature_block": "서명란", "table": "표",
+                              "preamble": "전문(前文)"}.get(lf.get("source"), lf.get("source"))
+                    _log(logging.INFO, "문맥", f"권리자 당사자 규칙 — {licensor_party!r} (출처 {src_ko}"
+                         + (" · 전문과 일치" if lf.get("agree") is True else " · 전문과 불일치" if lf.get("agree") is False else "")
+                         + ") → 저작권자(키 5)")
+                else:
+                    _log(logging.WARNING, "문맥", "권리자 당사자 규칙 — 권리자를 찾지 못했습니다 (저작권자 키 5 는 모델 값)")
+            except Exception as e:                  # 규칙 실패가 응답을 깨면 안 된다
+                _log(logging.WARNING, "문맥", f"권리자 당사자 규칙 추출 실패: {e}")
+        response["licensor_party"] = licensor_party
+        if licensor_party:
+            for _key in ("metadata", "consolidated_metadata"):
+                _meta = response.get(_key)
+                if isinstance(_meta, dict):
+                    _meta["licensor_party"] = licensor_party
 
         # TTA 표준 중첩 구조(10그룹·66 하위요소)를 함께 낸다. 추출은 평면 그대로 두고
         # 출력 직전에 한 번 접는다 — 추출 자체를 중첩시키면 통합·NER 매핑·채점이 모두

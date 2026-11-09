@@ -107,10 +107,12 @@ class ConsoleOrch:
                                            "title_raw": "13387752 운수 자판기", "work_type_ticked": ["어문"]},
                 "licensee_party_detail": {"source": "signature", "signature": ["한국저작권위원회"],
                                           "preamble": "한국저작권위원회", "agree": True},
+                "licensor_party_detail": {"source": "signature", "preamble": "한국저작권위원회", "agree": True},
                 "test_prediction": {**pred, "_meta": {
                     "serializer": "eval23", "test": "T-001", "work_title_source": "rules",
                     "model_work_title": "운수자판기", "work_type_source": "rules", "model_work_type": "어문저작물",
-                    "copyright_holder_source": "licensee_party", "model_copyright_holder": "김은혜",
+                    "copyright_holder_source": "licensor_party", "model_copyright_holder": "김은혜",
+                    "licensee_party": ["주식회사 다온미디어"],
                     "unparsed": {"rental_right": "△"}}},
             })
         else:
@@ -716,8 +718,9 @@ def test_single_t001_end_to_end_record_evidence_previews(console):
     assert items("work_title")["모델 추출값"] == "운수자판기"
     assert items("work_type")["체크된 칸"] == "어문"
     ch = items("copyright_holder")
-    assert ch["서명란"] == "한국저작권위원회" and ch["두 출처 일치"] == "예" and ch["모델 저작권자 값(쓰지 않음)"] == "김은혜"
-    assert ev["copyright_holder"]["source_label"] == "본문 규칙(이용자 당사자)"
+    assert ch["규칙 채택 출처"] == "서명란" and ch["전문과 일치"] == "예" and ch["모델 저작권자 값"] == "김은혜"
+    assert ch["이용자 당사자(비교용)"] == "주식회사 다온미디어"
+    assert ev["copyright_holder"]["source_label"] == "본문 규칙(권리자 당사자)"
     assert items("creator")["통합 판정"] == "일치 (AGREED) · 신뢰도 1.0"
     assert items("rental_right")["해석 불가 원문"] == "△"
     assert items("contract_validity_period")["기간 원문"] == "2009.9.27 ~ 2033.4.14"
