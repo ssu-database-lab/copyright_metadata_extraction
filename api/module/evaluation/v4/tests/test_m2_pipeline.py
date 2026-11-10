@@ -1006,3 +1006,15 @@ def test_video_chain_falls_back_to_google_gemma_after_qwen():
     labels = [b.model_label for b in X.default_backends("omni")]
     assert labels[:4] == ["qwen3.8-omni-flash (DashScope)", "Qwen3.5-Omni-Plus (DashScope)", "Qwen3.7-Plus (DashScope)",
                           "Gemma 4 31B (Google AI Studio)"]
+
+
+def test_google_gemma_gets_a_temperature_floor_and_qwen_stays_greedy(monkeypatch):
+    """At temperature 0 Google's Gemma looped on the credits' dot leaders ('. . . .') until the token limit (G0050 Te-2
+    rerun, 13223267); at 0.5 the same frames parsed 3/3. Only the Google backend gets the floor."""
+    from module.clip_extraction.vlm import extractor as X
+    monkeypatch.delenv("GOOGLE_GEMMA_TEMPERATURE", raising=False)
+    backends = {b.model_label: b for b in X.default_backends("omni")}
+    google = backends["Gemma 4 31B (Google AI Studio)"]
+    assert google._temperature(0.0) == 0.5 and google._temperature(0.7) == 0.7
+    for label in ("qwen3.8-omni-flash (DashScope)", "Qwen3.5-Omni-Plus (DashScope)", "Qwen3.7-Plus (DashScope)"):
+        assert backends[label]._temperature(0.0) == 0.0

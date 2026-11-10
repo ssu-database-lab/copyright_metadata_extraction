@@ -271,13 +271,14 @@ const dlHref = (id, name) => '/api/test' + runPath(id) + '/download/' + enc(name
 
 /* 실행 이벤트 (SSE, ?after=seq 로 이어 받기) */
 class RunStream{
-  constructor(runId, onEvent, onEnd){ this.runId = runId; this.seq = 0; this.onEvent = onEvent; this.onEnd = onEnd; this.closed = false; this.fails = 0; this.open(); }
+  constructor(runId, onEvent, onEnd){ this.runId = runId; this.seq = 0; this.onEvent = onEvent; this.onEnd = onEnd; this.closed = false; this.fails = 0; this.lastMs = Date.now(); this.open(); }
   open(){
     if(this.closed) return;
     const es = new EventSource('/api/test' + runPath(this.runId) + '/stream?after=' + this.seq);
     this.es = es;
-    es.onopen = () => { this.fails = 0; };
+    es.onopen = () => { this.fails = 0; this.lastMs = Date.now(); };
     es.onmessage = e => {
+      this.lastMs = Date.now();
       let ev; try{ ev = JSON.parse(e.data); }catch(_){ return; }
       if(isNum(ev.seq)){ if(ev.seq <= this.seq && ev.type !== 'closed') return; this.seq = ev.seq; }
       try{ this.onEvent(ev); }catch(err){ console.warn('event', err); }
@@ -290,6 +291,8 @@ class RunStream{
     try{ const run = await api(runPath(this.runId)); if(TERMINAL.has(run.state) && this.fails >= 2){ this.finish({type: 'closed', state: run.state}); return; } this.open(); }
     catch(e){ if(e.status === 404){ this.finish({type: 'closed', state: 'missing'}); return; } setTimeout(() => this.check(), 3000); }
   }
+  // 연결이 오류 없이 멈춘 경우 (2026-11-10 G0050 Te-2: 마지막 이벤트를 받지 못해 '진행 중' 으로 남음) — 받은 seq 다음부터 다시 연다
+  revive(){ if(this.closed) return; if(this.es) this.es.close(); this.lastMs = Date.now(); this.open(); }
   finish(ev){ if(this.closed) return; this.closed = true; if(this.es) this.es.close(); if(this.onEnd) this.onEnd(ev); }
   close(){ this.closed = true; if(this.es) this.es.close(); }
 }
@@ -335,6 +338,9 @@ async function loadStatus(){
     (act.length ? `<span><span class="led run"></span>${esc(act.map(a => TN(a.test)).join(' · '))} 진행 중</span>` : '');
   $('#navDot').hidden = !act.length;
   if(S.screen === 'test') patchStartBar();
+  // 안전장치: 스트림이 30초 넘게 조용하거나, 서버 상태에서 이 실행이 더 이상 진행 중이 아니면 다시 연결해 놓친 이벤트(끝 포함)를 받는다
+  const P = S.prog, st = P && P.stream;
+  if(st && !st.closed && !TERMINAL.has(P.state) && (Date.now() - st.lastMs > 30000 || (S.status && !act.some(a => a.run_id === P.runId)))) st.revive();
 }
 
 /* ======================================================================

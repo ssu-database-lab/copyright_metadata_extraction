@@ -127,8 +127,12 @@ class VLMClient:
         connect_timeout: float | None = None,
         max_retries: int = 1,
         json_mode: bool = False,
+        min_temperature: float | None = None,
     ):
         from openai import OpenAI
+        # 이 백엔드만 온도 하한을 둔다 — Google AI Studio 의 Gemma 4 는 온도 0 에서 크레딧 자막의 점선(". . . .")을 반복하다
+        # 출력 한도에 걸렸다 (G0050 Te-2 재실행 13223267, 2026-11-10: 2/2 실패). 0.5 에서는 같은 프레임 3/3 성공.
+        self.min_temperature = min_temperature
         self.extra_body = extra_body   # 예: {"enable_thinking": False} — qwen3.7 계열은 기본이 생각 켬
         # JSON 만 출력하게 강제(response_format json_object) — omni-flash 가 가끔 읽을 수 없는 응답을 냈다(무하유 8건 중 2건)
         self.json_mode = json_mode
@@ -158,6 +162,9 @@ class VLMClient:
         except Exception as e:  # noqa: BLE001
             return False, f"{type(e).__name__}: {e}"
 
+    def _temperature(self, temperature: float) -> float:
+        return max(temperature, self.min_temperature) if self.min_temperature is not None else temperature
+
     def extract(
         self,
         image_path: Path,
@@ -185,7 +192,7 @@ class VLMClient:
                 model=self.model,
                 messages=messages,
                 max_tokens=max_tokens,
-                temperature=temperature,
+                temperature=self._temperature(temperature),
             )
             latency = time.perf_counter() - t0
             text = resp.choices[0].message.content or ""
@@ -252,7 +259,7 @@ class VLMClient:
                 model=self.model,
                 messages=messages,
                 max_tokens=max_tokens,
-                temperature=temperature,
+                temperature=self._temperature(temperature),
             )
             latency = time.perf_counter() - t0
             text = resp.choices[0].message.content or ""

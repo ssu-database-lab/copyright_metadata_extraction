@@ -1051,10 +1051,10 @@ class BatchRunner:
             for pr in preds:
                 c = pr.get("contract_items") if isinstance(pr.get("contract_items"), dict) else {}
                 src = c.get("source")
-                if src == "te1" and pr["ok"]:
+                if src == "te1" and not c.get("error"):   # 실패한 세트도 1~16번은 붙는다 (G0050 수정 3) — 실제로 붙은 출처만 센다
                     ci["te1"] += 1
                     ci["runs"][str(c.get("run_id"))] = ci["runs"].get(str(c.get("run_id")), 0) + 1
-                elif src == "contract_leg" and pr["ok"]:
+                elif src == "contract_leg" and not c.get("error"):   # 계약서 처리 실패는 항목이 없다
                     ci["contract_leg"] += 1
                 else:
                     ci["none"] += 1

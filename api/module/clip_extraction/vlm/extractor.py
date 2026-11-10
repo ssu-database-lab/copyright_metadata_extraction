@@ -259,6 +259,7 @@ def make_google_gemma_backend():
         # 무료 등급은 과부하 응답(500 INTERNAL · 503 UNAVAILABLE "high demand")이 잦다 — 2026-11-10 실측. 같은 영화 프레임이
         # 한 시간 전에는 통과하고 뒤에는 계속 500 이었다. 재시도 5회는 막힌 세트마다 ~4분을 더 썼으므로 2회로 둔다.
         max_retries=int(os.getenv("GOOGLE_GEMMA_MAX_RETRIES", "2")),
+        min_temperature=float(os.getenv("GOOGLE_GEMMA_TEMPERATURE", "0.5")),   # 온도 0 은 반복 루프 (client.VLMClient 참고)
     )
 
 
