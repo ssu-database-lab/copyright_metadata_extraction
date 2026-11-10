@@ -256,6 +256,9 @@ def make_google_gemma_backend():
         model=os.getenv("GOOGLE_GEMMA_MODEL", "gemma-4-31b-it"),
         api_key=os.getenv("GEMINI_API_KEY", ""),
         image_first=True,
+        # 무료 등급은 과부하 응답(500 INTERNAL · 503 UNAVAILABLE "high demand")이 잦다 — 2026-11-10 실측. 같은 영화 프레임이
+        # 한 시간 전에는 통과하고 뒤에는 계속 500 이었다. 재시도 5회는 막힌 세트마다 ~4분을 더 썼으므로 2회로 둔다.
+        max_retries=int(os.getenv("GOOGLE_GEMMA_MAX_RETRIES", "2")),
     )
 
 
@@ -312,11 +315,14 @@ def default_backends(prefer: str = "gemma", gemma_url: str | None = None) -> lis
     openrouter = make_openrouter_backend()
     gemma_local = make_gemma_backend(gemma_url)
     qwen = make_qwen_backend()
+    google_gemma = make_google_gemma_backend()
     if prefer == "omni":
         # 영상 트랙 기본 체인 — 비교시험 순위 그대로(92.3% → 80.8% → 76.9%)
-        # 영상: qwen3.8-omni-flash → qwen3.5-omni-plus(이전 1순위, 백업) → qwen3.7-plus → Gemma
-        return [make_omni_backend(), make_omni_backup_backend(), qwen, openrouter, gemma_local]
-    google_gemma = make_google_gemma_backend()
+        # 영상: qwen3.8-omni-flash → qwen3.5-omni-plus(이전 1순위, 백업) → qwen3.7-plus → Gemma(Google, 무료) → Gemma
+        # Gemma(Google) 추가 2026-11-10: 알리바바 내용 검열(data_inspection_failed)이 세 Qwen 을 모두 막은 옛 영화
+        # (13223267 'Diary of a Nudist 1961', G0050 내부 시험)를 Google 은 받아 처리했다 (2/2, ~33초, max_tokens 4096).
+        # 저작물 프레임만 보낸다 — 계약서·개인정보는 이 백엔드로 가지 않는다 (make_google_gemma_backend 참고).
+        return [make_omni_backend(), make_omni_backup_backend(), qwen, google_gemma, openrouter, gemma_local]
     if prefer == "auto":
         # 이미지 기본 체인 (2026-10-11 결정): qwen3.8-omni-flash → qwen3.7-plus → Gemma 4(Google, 무료) → Gemma(OpenRouter) → Gemma(연구실)
         # 파일럿 이미지 100건: omni-flash 100/100·설명 통과 0.916·19초·₩1.34, qwen3.7-plus 98/100·0.863, Gemma(Google) 97/100·0.874·92초

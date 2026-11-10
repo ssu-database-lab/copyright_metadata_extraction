@@ -189,6 +189,35 @@ def find_licensor(text: str) -> Dict[str, Any]:
             "preamble": preamble, "agree": agree}
 
 
+# 저작자(키 4) — 인쇄된 그대로 읽는다 (2026-11-10, G0050 내부 시험: 모델이 '김홍도(金弘道)' 의 한자를 떼어 300건 위험).
+#   A `저작자 : X` · B `2. 저작자 : X` (+ 다음 줄로 이어지는 이름들, 9월 서식) · C 표 `저작자` 칸 다음 줄 `X`
+_CREATOR_LINE = re.compile(r"^[ \t]*(?:\d+\s*\.\s*)?저\s*작\s*자\s*[:：][ \t]*(?P<name>[^\n]*)$", re.M)
+_CREATOR_CELL = re.compile(r"^[ \t]*저\s*작\s*자[ \t]*\n(?P<name>[^\n]+)$", re.M)
+
+
+def find_creator(text: str) -> Dict[str, Any]:
+    """저작자 당사자 — 라벨 줄(A·B) → 표 칸(C). {"name", "names", "source": "line"|"table"|None}. 이름은 인쇄된 그대로
+    (괄호 속 한자·『』 유지, `(저작물 N 건)` 주석은 평가기와 직렬화기가 뗀다)."""
+    text = text or ""
+    lines = text.splitlines()
+    names: List[str] = []
+    source = None
+    for i, line in enumerate(lines):
+        m = _CREATOR_LINE.match(line)
+        if m:
+            for raw in [m.group("name")] + _continuation(lines, i):
+                n = _clean_party(raw)
+                if n and n not in names:
+                    names.append(n)
+            source = "line" if names else None
+            break
+    if not names:
+        m = _CREATOR_CELL.search(text)
+        if m and _clean_party(m.group("name")):
+            names, source = [_clean_party(m.group("name"))], "table"
+    return {"name": ", ".join(names) if names else None, "names": names, "source": source}
+
+
 def find_author(text: str) -> List[str]:
     """제2조 '저작자 : …' 의 이름 목록 (인쇄된 그대로 — `(저작물 N 건)` 주석 포함)."""
     return _labelled_names(text or "", _AUTHOR, last=False)

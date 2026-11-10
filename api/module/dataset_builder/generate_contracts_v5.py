@@ -747,6 +747,22 @@ def stage_gold(values: list[dict[str, Any]], pdf_dir: Path) -> None:
         raise FileNotFoundError(f"{verified} 없음 — 먼저 --stage review 로 93건 검수 결과를 합친다")
     te2 = G.build_gold("T-002", OUT / "te2_ids.csv", INDEX, None, DRAFTS, verified, "verified",
                        True, ROOT / "dataset/_probe/file_sha256.jsonl")
+    # 이미지 해상도 = 실제 파일의 크기 (시스템과 같이 Pillow 원본 크기, 회전 정보 미적용). 사이트 게시값이 시험에 주는
+    # 파일과 다른 이미지가 60건 있었다 (2026-11-10 G0050 내부 시험: 13239516 게시 496x280 ↔ 파일 3591x2166).
+    from PIL import Image
+    Image.MAX_IMAGE_PIXELS = None
+    res_fixed = 0
+    for rec in te2:
+        cell = rec["keys"]["resolution"]
+        if rec["media"] != "image" or cell["state"] != "value":
+            continue
+        with Image.open(by_id[rec["set_id"]]["work_file"]) as im:
+            measured = f"{im.width}x{im.height}"
+        if measured != cell["value"]:
+            rec["keys"]["resolution"] = G.make_cell(measured, G.STATE_VALUE,
+                                                    f"file:Pillow 원본 크기 (사이트 게시값 {cell['value']} 과 다름)", G.TIER_FILE)
+            res_fixed += 1
+    print(f"  이미지 해상도를 파일 실측으로 고침: {res_fixed}건")
     te1_rows = list(csv.DictReader(open(OUT / "te1_ids.csv", encoding="utf-8-sig")))
     records = []
     for r in te1_rows:

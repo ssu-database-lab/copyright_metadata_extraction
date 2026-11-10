@@ -854,9 +854,11 @@ class BatchRunner:
                 error = "응답에 test_prediction(23키) 이 없습니다 — 파이프라인 eval23 직렬화기(M2 A2) 미반영"
             else:
                 ok = True
-            if ok and test == "T-002":
+            if test == "T-002":
+                # 저작물 leg 가 실패해도(예: 모든 VLM 이 내용 검열로 거부) 계약서의 1~16번은 붙인다 — 세트는 실패로 남아
+                # 재시도 대상이지만, 그 전까지 계약서 항목까지 통째로 잃지 않는다 (2026-11-10 G0050: 13223267)
                 citems, csrc = self._t002_contract_items(entry, cost_box, legs, out)
-                if csrc.get("error"):
+                if ok and csrc.get("error"):
                     ok, error = False, csrc["error"]
         except Exception as e:
             error = f"{type(e).__name__}: {e}"

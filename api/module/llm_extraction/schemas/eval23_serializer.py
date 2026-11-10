@@ -13,7 +13,8 @@ tta_serializer 와 같은 자리에서 같은 입력(평면 metadata + 파이프
   2  file_name        ← response["file_name"] (setup 이 정제 전에 잡아 둔 원본 이름)
   3  work_type        ← 같은 우선순위(규칙 파싱 종별 → 모델 work_type) → 닫힌 집합(어문/음악/…/기타, 끝의 '저작물' 제거);
                         _meta.work_type_source · _meta.model_work_type
-  4  creator          ← author (목록; `(저작물 N 건)` 주석 제거, 개행·쉼표로 분리). 다른 필드로 대체하지 않는다.
+  4  creator          ← metadata["creator_party"](본문 규칙, 인쇄된 그대로) → 모델의 author (목록; `(저작물 N 건)` 주석 제거,
+                        개행·쉼표로 분리). 다른 필드로 대체하지 않는다. 모델 값은 _meta.model_creator.
   5  copyright_holder ← **권리자(이용허락자) 당사자**: metadata["licensor_party"](본문 규칙, party_rules.find_licensor)
                         → 모델의 copyright_holder. v5 시험 계약서(2026-11-03)는 원장의 권리자를 이용허락자 자리에 인쇄한다.
                         9월 서식용 '이용자 당사자'(licensee_party)는 _meta.licensee_party 에 비교용으로만 남긴다.
@@ -321,14 +322,23 @@ def build(metadata: Optional[Dict[str, Any]],
     meta["model_work_type"] = md.get("work_type")
 
     # 4~5 권리주체
-    out["creator"] = _names(md.get("author"))
+    rule_creator = _names(md.get("creator_party"))
+    out["creator"] = rule_creator or _names(md.get("author"))
+    meta["creator_source"] = "rules" if rule_creator else ("model" if out["creator"] else None)
+    meta["model_creator"] = md.get("author")
     out["copyright_holder"], meta["copyright_holder_source"] = _holder(md)
     meta["model_copyright_holder"] = md.get("copyright_holder")
     meta["licensee_party"], _ = _licensee(md)
 
     # 6~13 권리
+    rule_rights = rules.get("rights") if isinstance(rules.get("rights"), dict) else {}
     for key23, flat in RIGHTS_MAP.items():
         out[key23], bad = _rights(md, flat)
+        rv = rule_rights.get(key23)
+        if isinstance(rv, bool):                     # 체크 칸 규칙이 읽었으면 그것 — 모델 값은 비교용 (2026-11-10)
+            if out[key23] != ("허용" if rv else "불허"):
+                meta.setdefault("model_rights_overridden", {})[key23] = out[key23]
+            out[key23], bad = ("허용" if rv else "불허"), None
         if bad is not None:
             unparsed[key23] = bad
     out["other_rights"] = None

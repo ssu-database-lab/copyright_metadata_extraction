@@ -923,6 +923,19 @@ class PipelineOrchestrator:
                     _log(logging.WARNING, "문맥", "권리자 당사자 규칙 — 권리자를 찾지 못했습니다 (저작권자 키 5 는 모델 값)")
             except Exception as e:                  # 규칙 실패가 응답을 깨면 안 된다
                 _log(logging.WARNING, "문맥", f"권리자 당사자 규칙 추출 실패: {e}")
+        # 저작자(키 4)도 인쇄된 그대로 — 모델이 괄호 속 한자를 떼는 일이 있다 (2026-11-10 G0050)
+        if ocr_text:
+            try:
+                from module.llm_extraction.party_rules import find_creator
+                cf = find_creator(ocr_text)
+                response["creator_party_detail"] = {"source": cf.get("source"), "names": cf.get("names")}
+                if cf.get("name"):
+                    for _key in ("metadata", "consolidated_metadata"):
+                        _meta = response.get(_key)
+                        if isinstance(_meta, dict):
+                            _meta["creator_party"] = cf["name"]
+            except Exception as e:                  # 규칙 실패가 응답을 깨면 안 된다
+                _log(logging.WARNING, "문맥", f"저작자 규칙 추출 실패: {e}")
         response["licensor_party"] = licensor_party
         if licensor_party:
             for _key in ("metadata", "consolidated_metadata"):

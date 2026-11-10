@@ -1111,3 +1111,24 @@ def test_te1_index_matches_same_contract_file_newest_first(tmp_path: Path, contr
     (old / "13178069.json").write_text(json.dumps(legacy, ensure_ascii=False), encoding="utf-8")
     assert Te1Index([("old", old)]).find("13178069", str(contract_file))["run_id"] == "old"
     assert [r for r, _ in index_from_paths([tmp_path / "new", tmp_path / "old" / "out"]).sources] == ["new", "old"]
+
+
+def test_t002_work_leg_failure_still_attaches_contract_items(tmp_path: Path, work_file: Path, contract_file: Path, monkeypatch):
+    """2026-11-10 G0050: 모든 VLM 이 내용 검열로 거부한 영상(13223267)이 1~16번까지 통째로 잃었다 — 이제 계약서 항목은 남는다."""
+    monkeypatch.setattr(BR, "parse_contract_context", lambda path: {"title": "규칙 제목", "work_type": "사진", "source": "rules"})
+
+    class WorkFails(FakeOrch):
+        def run(self, file_bytes, filename, **kw):
+            r = super().run(file_bytes, filename, **kw)
+            if not filename.endswith(".pdf"):
+                r.update(success=False, error="all 5 backend(s) failed", test_prediction=None)
+            return r
+    runner = BatchRunner(WorkFails(pred_fn=_t002_pred), RunConfig(workers=1, scoring_set="eval23", test="T-002"), tmp_path / "o")
+    hit = {"record": _te1_record(contract_file), "run_id": "te1-run", "path": "x.json", "contract_sha256": "s"}
+    runner.te1_lookup = lambda e: hit
+    summary = runner.run([_t002_entry(work_file, contract_file)], {})
+    assert summary["ok"] == 0 and summary["failed"] == 1                 # 세트는 실패로 남는다 (재시도 대상)
+    rec = json.loads((tmp_path / "o" / "test_predictions" / "13178069.json").read_text(encoding="utf-8"))
+    assert "저작물 처리 실패" in rec["_meta"]["error"]
+    assert rec["creator"] == ["김은혜"] and rec["reproduction_right"] == "허용" and rec["license_start_date"] == "2026-01-01"
+    assert rec["_meta"]["contract_items"]["source"] == "te1" and rec["keywords"] is None

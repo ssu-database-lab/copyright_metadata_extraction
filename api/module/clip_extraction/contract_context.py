@@ -107,6 +107,24 @@ def _extract_work_type(text: str) -> Tuple[Optional[str], List[str]]:
     return ticked[0], ticked
 
 
+# 권리 7종 — 체크 칸 바로 뒤의 권리 이름 (공백을 모두 지운 본문에서). 한 권리가 여러 번 나와도 표시가 모두 같을 때만 값.
+# v5 시험 계약서 4,200건에서 7종 모두 원장과 일치 (2026-11-10). 못 읽으면 None → 직렬화기가 모델 값을 쓴다.
+RIGHT_LABELS: Tuple[Tuple[str, str], ...] = (
+    ("reproduction_right", "복제권"), ("performance_right", "공연권"), ("public_transmission_right", "공중송신권"),
+    ("exhibition_right", "전시권"), ("distribution_right", "배포권"), ("rental_right", "대여권"),
+    ("derivative_work_right", "2차적저작물"))
+
+
+def _extract_rights(text: str) -> Dict[str, Optional[bool]]:
+    flat = re.sub(r"\s+", "", text or "")
+    glyphs = re.escape(TICKED_GLYPHS + UNTICKED_GLYPHS)
+    out: Dict[str, Optional[bool]] = {}
+    for key, label in RIGHT_LABELS:
+        states = {g in TICKED_GLYPHS for g in re.findall(rf"([{glyphs}]){re.escape(label)}", flat)}
+        out[key] = True if states == {True} else False if states == {False} else None
+    return out
+
+
 def parse_text(text: str) -> Dict[str, Any]:
     """계약서 본문(문자열)에서 {title, work_type, source='rules', title_raw, work_type_ticked} 를 읽는다."""
     text = text or ""
@@ -118,6 +136,7 @@ def parse_text(text: str) -> Dict[str, Any]:
         "source": "rules",
         "title_raw": title_raw,
         "work_type_ticked": ticked,
+        "rights": _extract_rights(text),
     }
 
 

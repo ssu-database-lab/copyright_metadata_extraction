@@ -360,7 +360,7 @@ def test_contract_context_parse_text_glyphs_and_wraps():
     text = ("제2조 (계약의 대상) \n제목(제호) : 13385261 PPT 템플릿_여행계획용_001\n저작자 : 김모\n"
             "종별 : □어문저작물, □음악저작물, □연극저작물, □미술저작물, □건축저작물, ■사진\n"
             "저작물, □영상저작물, □도형저작물, □컴퓨터프로그램저작물, □기타(-)\n권리 : ■복제권, □공연권")
-    assert cc.parse_text(text) == {"title": "PPT 템플릿_여행계획용_001", "work_type": "사진", "source": "rules",
+    assert {k: v for k, v in cc.parse_text(text).items() if k != "rights"} == {"title": "PPT 템플릿_여행계획용_001", "work_type": "사진", "source": "rules",
                                    "title_raw": "13385261 PPT 템플릿_여행계획용_001", "work_type_ticked": ["사진"]}
     t2 = "제목(제호) : 2021 아리랑 응원가 가사\n저작자 : x\n종별 : □어문저작물, □사진저작물, V영상저작물, □기타(-)\n권리 : □복제권"
     assert cc.parse_text(t2)["title"] == "2021 아리랑 응원가 가사"           # 4자리 연도는 관리번호가 아니다
@@ -369,7 +369,7 @@ def test_contract_context_parse_text_glyphs_and_wraps():
     assert cc.parse_text(t3)["title"] == "긴 제목 첫 줄 둘째 줄"              # 다음 줄 이어붙임, 라벨에서 멈춤
     assert cc.parse_text(t3)["work_type"] is None                            # 체크 없음
     assert cc.parse_text("종별 : □어문저작물, v기타(사진집)\n권리 : □복제권")["work_type"] == "기타"
-    assert cc.parse_text("") == {"title": None, "work_type": None, "source": "rules", "title_raw": None,
+    assert {k: v for k, v in cc.parse_text("").items() if k != "rights"} == {"title": None, "work_type": None, "source": "rules", "title_raw": None,
                                  "work_type_ticked": []}
     missing = cc.parse(ROOT / "dataset" / "nope.pdf")
     assert missing["title"] is None and missing["work_type"] is None and "error" in missing
@@ -610,7 +610,9 @@ def test_build_response_t001_contract(tmp_path, light_llm_extraction):
     # v5: 키 5 = 권리자 당사자 (서명란 `권리자 : 김은혜`) — 이용자(한국저작권위원회)는 비교용
     assert pred["copyright_holder"] == ["김은혜"] and pred["_meta"]["model_copyright_holder"] == ["김은혜"]
     assert pred["_meta"]["copyright_holder_source"] == "licensor_party" and pred["_meta"]["licensee_party"] == [LICENSEE]
-    assert pred["file_name"] == pdfs[0].name and pred["work_title"] == "운수 자판기" and pred["creator"] == ["양지웅", "이영지", "신혜진"]
+    # 저작자는 인쇄된 그대로 (`저작자 : 김은혜`) — 가짜 모델 값(양지웅 …)은 비교용 _meta.model_creator 로 (2026-11-10)
+    assert pred["file_name"] == pdfs[0].name and pred["work_title"] == "운수 자판기" and pred["creator"] == ["김은혜"]
+    assert pred["_meta"]["creator_source"] == "rules" and pred["_meta"]["model_creator"] == _md()["author"]
     # M2b 수정 2: 제목·종별은 규칙 파싱(contract_context_rules)이 모델 값을 이긴다 — 모델 값은 _meta 에만
     assert pred["_meta"]["work_title_source"] == "rules" and pred["_meta"]["work_type_source"] == "rules"
     assert pred["_meta"]["model_work_title"] == "13387752 운수 자판기" and pred["_meta"]["model_work_type"] == "어문저작물"
@@ -960,3 +962,47 @@ def test_image_chain_auto_order():
     chain = X.default_backends(prefer="auto")
     assert [b.model for b in chain[:3]] == ["qwen3.8-omni-flash", "qwen3.7-plus", "gemma-4-31b-it"]
     assert X.VLMExtractor.__init__.__defaults__[1] == "auto"     # prefer 기본값
+
+
+def test_find_creator_keeps_printed_name_in_all_layouts():
+    """2026-11-10 G0050: 모델이 '김홍도(金弘道)' 의 한자를 뗐다 — 저작자는 인쇄된 그대로 읽는다."""
+    a = "제목(제호) : 탑상고사도(榻上高士圖)\n저작자 : 김홍도(金弘道)\n종별 : □어문저작물, ■사진저작물\n"
+    b = "1. 제호 : 부산25143\n2. 저작자 : 김상희 손솔인 이주현\n3. 저작물의 종류 :\n"
+    c = "제호(제목)\n내 마음\n저작자\n『조선유적유물도감』 복제\n저작재산권자\n김대봉\n"
+    sept = "저작자 : 양지웅 (저작물 3 건)\n이영지 (저작물 2 건)\n신혜진\n종별 : □어문저작물\n"
+    assert party_rules.find_creator(a) == {"name": "김홍도(金弘道)", "names": ["김홍도(金弘道)"], "source": "line"}
+    assert party_rules.find_creator(b)["names"] == ["김상희 손솔인 이주현"]
+    assert party_rules.find_creator(c) == {"name": "『조선유적유물도감』 복제", "names": ["『조선유적유물도감』 복제"], "source": "table"}
+    assert party_rules.find_creator(sept)["names"] == ["양지웅 (저작물 3 건)", "이영지 (저작물 2 건)", "신혜진"]
+    assert party_rules.find_creator("저작자 또는 저작재산권 이용허락자 김은혜(이하 “권리자”라 함)")["name"] is None
+
+
+def test_creator_rule_and_checkbox_rights_win_over_model_values():
+    md = _md(creator_party="김홍도(金弘道)", author=["김홍도"], public_transmission_right=None, reproduction_right=True)
+    resp = {**RESP, "contract_context_rules": {"title": "t", "work_type": "사진", "source": "rules",
+                                               "rights": {"public_transmission_right": False, "reproduction_right": False,
+                                                          "performance_right": None}}}
+    out = eval23.build(md, resp, "T-001")
+    assert out["creator"] == ["김홍도(金弘道)"] and out["_meta"]["creator_source"] == "rules"
+    assert out["_meta"]["model_creator"] == ["김홍도"]
+    assert out["public_transmission_right"] == "불허"                    # 모델이 비운 칸을 체크 칸 규칙이 채운다
+    assert out["reproduction_right"] == "불허"                            # 규칙이 읽으면 규칙 값 (모델 값은 _meta)
+    assert out["_meta"]["model_rights_overridden"]["reproduction_right"] == "허용"
+    assert eval23.build(_md(author=["김은혜"]), RESP, "T-001")["_meta"]["creator_source"] == "model"
+
+
+def test_contract_context_reads_rights_from_checkboxes():
+    from module.clip_extraction import contract_context as cc
+    text = ("권리 : ■복제권, □공연권, □공중송신권(□방송권, □전송권, □디지털음성송신권), V전시권, □배포권, v대여권, "
+            "□2차적저작물 원저작물을 번역")
+    r = cc.parse_text(text)["rights"]
+    assert r == {"reproduction_right": True, "performance_right": False, "public_transmission_right": False,
+                 "exhibition_right": True, "distribution_right": False, "rental_right": True, "derivative_work_right": False}
+    assert set(cc.parse_text("권리 표시 없음")["rights"].values()) == {None}
+
+
+def test_video_chain_falls_back_to_google_gemma_after_qwen():
+    from module.clip_extraction.vlm import extractor as X
+    labels = [b.model_label for b in X.default_backends("omni")]
+    assert labels[:4] == ["qwen3.8-omni-flash (DashScope)", "Qwen3.5-Omni-Plus (DashScope)", "Qwen3.7-Plus (DashScope)",
+                          "Gemma 4 31B (Google AI Studio)"]
