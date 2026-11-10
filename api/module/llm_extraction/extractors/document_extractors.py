@@ -15,6 +15,22 @@ from .checkbox_extractor import UniversalCheckboxExtractor
 
 logger = logging.getLogger(__name__)
 
+
+def _clean(value: Any, join: bool = False) -> Any:
+    """문자열은 앞뒤 공백을 지우고, 목록은 항목마다 지운다 (join=True 면 ', ' 로 이어 문자열 하나로).
+
+    모델이 문자열 자리에 목록을 줄 때가 있다 — G0100 Te-1(2026-11-10) 13314856 은 제호가 학명 세 개
+    ("Dichroma equestralis, Dichroma histrionalis, Dichroma arcualis")라 work_title 을 목록으로 돌려줬고,
+    .strip() 이 AttributeError 를 내 LLM 결과 전체를 버렸다."""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, list):
+        items = [v.strip() if isinstance(v, str) else v for v in value]
+        items = [v for v in items if v not in (None, "")]
+        return ", ".join(str(v) for v in items) if join else items
+    return value
+
+
 class ContractExtractor:
     """Specialized extractor for contract documents (계약서)"""
     
@@ -68,13 +84,13 @@ class ContractExtractor:
         """Post-process extracted contract metadata"""
         # Clean up extracted data
         if "rights_holder" in metadata and metadata["rights_holder"]:
-            metadata["rights_holder"] = metadata["rights_holder"].strip()
+            metadata["rights_holder"] = _clean(metadata["rights_holder"])
         
         if "user" in metadata and metadata["user"]:
-            metadata["user"] = metadata["user"].strip()
+            metadata["user"] = _clean(metadata["user"])
         
         if "work_title" in metadata and metadata["work_title"]:
-            metadata["work_title"] = metadata["work_title"].strip()
+            metadata["work_title"] = _clean(metadata["work_title"], join=True)
         
         # Convert payment amount to number if possible
         if "payment_amount" in metadata and isinstance(metadata["payment_amount"], str):
@@ -132,10 +148,10 @@ class ConsentExtractor:
         """Post-process extracted consent metadata"""
         # Clean up extracted data
         if "data_controller" in metadata and metadata["data_controller"]:
-            metadata["data_controller"] = metadata["data_controller"].strip()
+            metadata["data_controller"] = _clean(metadata["data_controller"])
         
         if "consent_status" in metadata and metadata["consent_status"]:
-            status = metadata["consent_status"].strip()
+            status = str(_clean(metadata["consent_status"], join=True))
             if "동의함" in status or "✓" in status:
                 metadata["consent_status"] = "동의함"
             elif "동의하지 않음" in status or "✗" in status:
@@ -197,7 +213,7 @@ class PublicCopyrightConsentExtractor:
         if "work_display" in metadata and metadata["work_display"]:
             work_display = metadata["work_display"]
             if "work_names" in work_display and work_display["work_names"]:
-                work_display["work_names"] = [name.strip() for name in work_display["work_names"]]
+                work_display["work_names"] = _clean(work_display["work_names"]) if isinstance(work_display["work_names"], list) else [_clean(work_display["work_names"])]
         
         return metadata
 
@@ -254,7 +270,7 @@ class CopyrightTransferConsentExtractor:
         if "work_info" in metadata and metadata["work_info"]:
             work_info = metadata["work_info"]
             if "work_title" in work_info and work_info["work_title"]:
-                work_info["work_title"] = work_info["work_title"].strip()
+                work_info["work_title"] = _clean(work_info["work_title"], join=True)
         
         return metadata
 

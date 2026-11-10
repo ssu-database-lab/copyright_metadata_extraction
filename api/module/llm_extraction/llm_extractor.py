@@ -6,6 +6,7 @@ LLM Extraction Processor for API Integration
 import os
 import json
 import logging
+import threading
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime
@@ -47,6 +48,11 @@ class LLMExtractionProcessor:
         
         self.extractor = None
         self.doc_extractor = None
+        # 처리기 하나를 모든 작업자 스레드가 함께 쓴다 (app.py). 모델 준비 중에 다른 스레드가 반쯤 준비된 상태를 보지 않게
+        # 잠금 + 이중 확인으로 한 번만 준비한다 — G0100 Te-1(2026-11-10, 재시작 직후 50건 동시 시작)에서
+        # current_model 이 아직 없을 때 다른 스레드가 읽어 AttributeError 로 세트 1건이 실패했다.
+        self.current_model: Optional[str] = None
+        self._init_lock = threading.Lock()
     
     def get_available_models(self) -> Dict[str, Dict[str, Any]]:
         """Get list of available models"""
@@ -75,20 +81,24 @@ class LLMExtractionProcessor:
         """Extract metadata from text using LLM"""
         try:
             # Initialize model if not already done or different model requested
-            if not self.extractor or self.current_model != model_name:
-                if not self.initialize_model(model_name):
-                    return {
-                        "success": False,
-                        "error": f"Failed to initialize model: {model_name}",
-                        "metadata": {},
-                        "confidence": 0.0,
-                        "extraction_time": 0.0,
-                        "model_used": model_name
-                    }
-                self.current_model = model_name
+            if self.doc_extractor is None or self.current_model != model_name:
+                with self._init_lock:
+                    if self.doc_extractor is None or self.current_model != model_name:
+                        self.current_model = None          # 준비 중 — 다른 스레드는 잠금에서 기다린다
+                        if not self.initialize_model(model_name):
+                            return {
+                                "success": False,
+                                "error": f"Failed to initialize model: {model_name}",
+                                "metadata": {},
+                                "confidence": 0.0,
+                                "extraction_time": 0.0,
+                                "model_used": model_name
+                            }
+                        self.current_model = model_name    # extractor · doc_extractor 를 다 만든 뒤에 표시
+            doc_extractor = self.doc_extractor
             
             # Extract metadata
-            result = self.doc_extractor.extract_metadata(text, document_type, document_name)
+            result = doc_extractor.extract_metadata(text, document_type, document_name)
             
             return {
                 "success": True,

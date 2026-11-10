@@ -1018,3 +1018,52 @@ def test_google_gemma_gets_a_temperature_floor_and_qwen_stays_greedy(monkeypatch
     assert google._temperature(0.0) == 0.5 and google._temperature(0.7) == 0.7
     for label in ("qwen3.8-omni-flash (DashScope)", "Qwen3.5-Omni-Plus (DashScope)", "Qwen3.7-Plus (DashScope)"):
         assert backends[label]._temperature(0.0) == 0.0
+
+
+def test_shared_llm_processor_initialises_once_under_concurrency(monkeypatch, tmp_path):
+    """G0100 Te-1 (2026-11-10): 50 contracts started at once right after a restart; one thread read current_model while
+    another was still preparing the model -> AttributeError, set failed. The shared processor must prepare once and
+    every thread must succeed."""
+    import threading, time
+    from module.llm_extraction import llm_extractor as L
+
+    calls = []
+
+    class FakeDoc:
+        def extract_metadata(self, text, document_type, document_name):
+            return types.SimpleNamespace(metadata={"work_title": text}, confidence=1.0, extraction_time=0.0,
+                                         model_used="fake", document_type=document_type, raw_response="", error=None)
+
+    def slow_init(self, model_name):
+        calls.append(model_name)
+        self.extractor = object()
+        time.sleep(0.2)                      # the window in which the old code crashed
+        self.doc_extractor = FakeDoc()
+        return True
+
+    monkeypatch.setattr(L.LLMExtractionProcessor, "initialize_model", slow_init)
+    proc = L.LLMExtractionProcessor(output_dir=str(tmp_path))
+    out, barrier = [], threading.Barrier(20)
+
+    def work(i):
+        barrier.wait()
+        out.append(proc.extract_metadata_from_text(f"t{i}", "저작재산권 이용허락 계약서", "x.pdf", model_name="m"))
+
+    threads = [threading.Thread(target=work, args=(i,)) for i in range(20)]
+    for t in threads: t.start()
+    for t in threads: t.join()
+    assert calls == ["m"]
+    assert len(out) == 20 and all(r["success"] for r in out), [r.get("error") for r in out if not r["success"]]
+
+
+def test_contract_postprocess_accepts_lists_from_the_model():
+    """G0100 Te-1 13314856: the title is three species names and the model returned work_title as a list; .strip()
+    crashed and the whole LLM result was dropped."""
+    from module.llm_extraction.extractors.document_extractors import ContractExtractor, _clean
+    ce = ContractExtractor.__new__(ContractExtractor)
+    md = ce._postprocess_contract_metadata({
+        "work_title": ["Dichroma equestralis ", " Dichroma histrionalis", "Dichroma arcualis"],
+        "rights_holder": [" James Duncan Canadian "], "user": "  (유)별빛북스 "})
+    assert md["work_title"] == "Dichroma equestralis, Dichroma histrionalis, Dichroma arcualis"
+    assert md["rights_holder"] == ["James Duncan Canadian"] and md["user"] == "(유)별빛북스"
+    assert _clean(None) is None and _clean(5) == 5 and _clean(["", None, " a "]) == ["a"]
