@@ -32,7 +32,8 @@ from typing import Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 # 품질 필터 임계값 (계획서 §3-4 실측)
-_DARK_MEAN = 12          # 평균 휘도가 이보다 낮으면 암전으로 본다
+_DARK_MEAN = 12          # 평균 휘도가 이보다 낮고 ...
+_DARK_FLAT_STD = 8       # ... 휘도 표준편차도 이보다 작으면 암전으로 본다 (검은 바탕의 흰 글자는 남긴다)
 _LOW_CONTRAST_RANGE = 20  # YMAX-YMIN 이 이보다 작으면 페이드/단색
 _MIN_BYTES = 2000        # ffmpeg 이 만든 껍데기 JPEG 걸러내기
 
@@ -119,11 +120,25 @@ def _hamming(a: List[int], b: List[int]) -> int:
     return sum(x != y for x, y in zip(a, b))
 
 
+def _readable(path: str) -> bool:
+    """이미지로 열리는 파일인지 (깨진 JPEG 은 거른다)."""
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            im.load()
+        return True
+    except Exception:
+        return False
+
+
 def _quality_ok(path: str) -> bool:
     """암전·페이드·단색 프레임을 거른다.
 
     ⚠️ 평균 휘도만으로 자르면 실제 야간 씬(pblack≈60)까지 버린다. 그래서
     '거의 완전한 검정'과 '명암 범위가 거의 없음' 두 조건만 본다.
+    ⚠️ '거의 완전한 검정'은 평균만이 아니라 표준편차도 본다. 검은 바탕에 흰 글자만 있는
+    타이틀 카드는 평균 휘도가 5~7 이지만 표준편차는 20~30 이다 — G0500 Te-2 13382042
+    ('SILENCE 침묵')는 평균만 보던 규칙에 모든 프레임이 걸려 세트가 실패했다.
     """
     try:
         if os.path.getsize(path) < _MIN_BYTES:
@@ -135,9 +150,10 @@ def _quality_ok(path: str) -> bool:
             hist = g.histogram()
             total = sum(hist) or 1
             mean = sum(i * n for i, n in enumerate(hist)) / total
+            std = math.sqrt(max(0.0, sum(n * (i - mean) ** 2 for i, n in enumerate(hist)) / total))
     except Exception:
         return False
-    if mean < _DARK_MEAN:
+    if mean < _DARK_MEAN and std < _DARK_FLAT_STD:
         return False
     if (hi - lo) < _LOW_CONTRAST_RANGE:
         return False
@@ -214,12 +230,19 @@ def _extract_sequential(video_path: str, out: Path, target: int,
                "-vf", f"thumbnail=n=50,scale=768:768:force_original_aspect_ratio=decrease",
                "-frames:v", str(target), "-vsync", "vfr", "-q:v", "3", "-y", pattern]
         subprocess.run(cmd, capture_output=True, timeout=300)
-        got = sorted(glob.glob(str(tmp / "seq*.jpg")))
-        got = [g for g in got if _quality_ok(g)]
+        raw = sorted(glob.glob(str(tmp / "seq*.jpg")))
+        got = [g for g in raw if _quality_ok(g)]
+        all_dark = False
         if not got:
-            return {"frames": [], "duration": 0.0, "target": target, "sampled": 0,
+            # 디코딩은 되는데 모든 프레임이 암전·단색이면(완전히 검은 영상 등) 그대로 쓴다 —
+            # 세트를 실패시키는 것보다 '검은 화면'이라도 모델이 보게 하는 편이 낫다.
+            got = [g for g in raw if _readable(g)]   # 검은 JPEG 은 2 KB 안팎이라 크기 기준은 쓰지 않는다
+            all_dark = bool(got)
+        if not got:
+            why = "재생시간 미상 + " if duration <= 0 else ""
+            return {"frames": [], "duration": round(duration, 1), "target": target, "sampled": 0,
                     "kept": 0,
-                    "error": "재생시간 미상 + 순차 디코딩에서도 프레임을 얻지 못했습니다"}
+                    "error": f"{why}순차 디코딩에서도 프레임을 얻지 못했습니다 (디코딩된 프레임 {len(raw)}장)"}
         sel = got[:target]
         frames = []
         for i, src in enumerate(sel, 1):
@@ -230,6 +253,8 @@ def _extract_sequential(video_path: str, out: Path, target: int,
             frames.append({"path": str(dst), "t": round(t, 1)})
         note = ("시크 불가 컨테이너 — 순차 디코딩(시점은 균등 보간)" if duration > 0
                 else "재생시간 미상 — 순차 디코딩(시점은 순번)")
+        if all_dark:
+            note += " · 모든 프레임이 암전·단색이라 품질 필터 없이 사용"
         return {"frames": frames, "duration": round(duration, 1), "target": target,
                 "sampled": len(got), "kept": len(frames), "error": None, "note": note}
     except (FileNotFoundError, subprocess.SubprocessError, OSError) as e:
