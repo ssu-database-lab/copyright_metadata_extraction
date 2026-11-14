@@ -1122,6 +1122,10 @@ class PipelineOrchestrator:
             response["consolidate_work"] = consolidate_work
             if vlm_ok and not consolidate_work:
                 self._skip_work_consolidation(response)
+            if not vlm_ok:
+                # 모델이 실패해도 해상도·크기·생성일은 파일에서 잰다 — 영상 경로와 같다. 성공하면 map_vlm_to_unified 가
+                # 이미 쟀으므로 부르지 않는다. (G1000 Te-2 13266336: 모든 백엔드 실패 → 해상도까지 비어 오답)
+                self._backfill_file_attributes(ctx, response)
             # 계약서→저작물 권리정보 상속 (HF Space 연동: contract_metadata 동봉 시)
             if kwargs.get("contract_metadata"):
                 self.apply_contract_inheritance(response, kwargs["contract_metadata"])

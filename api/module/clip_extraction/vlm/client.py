@@ -59,6 +59,9 @@ class VLMResult:
 # VLMs also internally downscale, so a long-edge cap costs no quality but keeps
 # us well under provider limits and makes Gemma/Qwen see the same pixels.
 _MAX_LONG_EDGE = 1536  # px
+# JPEG 가 이보다 크면 축소해서 푼다(draft) — 22,991×30,000(6.9억 px) 원본을 다 풀면 2 GB 가 넘는다.
+# 보통 그림은 지금과 똑같이 원본에서 줄인다 (모델 입력을 바꾸지 않는다).
+_HUGE_PIXELS = 100_000_000
 
 
 def _encode_image(image_path: Path) -> str:
@@ -66,11 +69,18 @@ def _encode_image(image_path: Path) -> str:
     Read an image, downscale if its long edge exceeds _MAX_LONG_EDGE, and
     return an OpenAI data: URL (base64 JPEG). Downscaling keeps large KOGL
     source files under the DashScope size limit.
+
+    Pillow 의 압축 폭탄 한도(약 1.79억 px)를 여기서 끈다. 예전에는 미리보기 저장(pipeline._keep_work_preview)이
+    전역으로 끄기 전까지 큰 그림이 DecompressionBombError 로 모든 백엔드에서 실패했다 — G4000 에 6.9억 px·2.6억 px
+    그림이 있다(13266578, 13266658). 우리 시험 자료라 폭탄 걱정은 없고, 아래 draft 로 메모리도 묶는다.
     """
     from PIL import Image
     import io
 
+    Image.MAX_IMAGE_PIXELS = None
     with Image.open(image_path) as im:
+        if im.format == "JPEG" and im.width * im.height > _HUGE_PIXELS:
+            im.draft("RGB", (_MAX_LONG_EDGE, _MAX_LONG_EDGE))   # 1/2·1/4·1/8 로 풀어 긴 변 1536 이상만 남긴다
         im = im.convert("RGB")
         long_edge = max(im.size)
         if long_edge > _MAX_LONG_EDGE:
