@@ -68,6 +68,11 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# API 키 (API_KEYS 가 있을 때만 — 공개 서버용). CORS 보다 먼저 등록해 CORS 가 바깥에 있게 한다:
+# 401 응답에도 CORS 헤더가 붙고, 사전 요청(OPTIONS)은 CORS 가 먼저 받는다.
+from web.api_keys import ApiKeyMiddleware
+app.add_middleware(ApiKeyMiddleware)
+
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
